@@ -40,7 +40,7 @@ Oratio is a global Christian prayer platform designed to connect people through 
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/Rkigozi/oratio_global.git
 cd Oratio_Prototype_MVP
 
 # Install dependencies
