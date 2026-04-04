@@ -6,18 +6,18 @@ import { useNavigate } from "react-router";
 
 const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
 
-// City coordinate lookup for placing the new light
+// City coordinate lookup for placing the new light - using approximate coordinates for privacy
 const cityCoords: Record<string, { lat: number; lng: number }> = {
-  "New York, United States": { lat: 40.7128, lng: -74.006 },
-  "Los Angeles, United States": { lat: 34.0522, lng: -118.2437 },
-  "London, United Kingdom": { lat: 51.5074, lng: -0.1278 },
-  "São Paulo, Brazil": { lat: -23.5505, lng: -46.6333 },
-  "Lagos, Nigeria": { lat: 6.5244, lng: 3.3792 },
-  "Manila, Philippines": { lat: 14.5995, lng: 120.9842 },
-  "Seoul, South Korea": { lat: 37.5665, lng: 126.978 },
-  "Tokyo, Japan": { lat: 35.6762, lng: 139.6503 },
-  "Sydney, Australia": { lat: -33.8688, lng: 151.2093 },
-  "Nairobi, Kenya": { lat: -1.2921, lng: 36.8219 },
+  "New York, United States": { lat: 40.7, lng: -74.0 },
+  "Los Angeles, United States": { lat: 34.1, lng: -118.2 },
+  "London, United Kingdom": { lat: 51.5, lng: -0.1 },
+  "São Paulo, Brazil": { lat: -23.6, lng: -46.6 },
+  "Lagos, Nigeria": { lat: 6.5, lng: 3.4 },
+  "Manila, Philippines": { lat: 14.6, lng: 121.0 },
+  "Seoul, South Korea": { lat: 37.6, lng: 127.0 },
+  "Tokyo, Japan": { lat: 35.7, lng: 139.7 },
+  "Sydney, Australia": { lat: -33.9, lng: 151.2 },
+  "Nairobi, Kenya": { lat: -1.3, lng: 36.8 },
 };
 
 export function Submit() {

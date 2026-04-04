@@ -13,6 +13,7 @@ export interface PrayerRequest {
 
 // ── City database ────────────────────────────────────────────────────
 // Map hotspots — the map shows trending activity regions, not individual prayers.
+// Coordinates are rounded to 0.1 degree (~11km) for privacy protection.
 const cityDatabase: Array<{
   name: string;
   country: string;
@@ -21,48 +22,48 @@ const cityDatabase: Array<{
   weight: number; // activity intensity: higher = more trending
 }> = [
   // ── North America ──
-  { name: "New York", country: "United States", lat: 40.7128, lng: -74.006, weight: 5 },
-  { name: "Los Angeles", country: "United States", lat: 34.0522, lng: -118.2437, weight: 3 },
-  { name: "Mexico City", country: "Mexico", lat: 19.4326, lng: -99.1332, weight: 3 },
+  { name: "New York", country: "United States", lat: 40.7, lng: -74.0, weight: 5 },
+  { name: "Los Angeles", country: "United States", lat: 34.1, lng: -118.2, weight: 3 },
+  { name: "Mexico City", country: "Mexico", lat: 19.4, lng: -99.1, weight: 3 },
 
   // ── South America ──
-  { name: "São Paulo", country: "Brazil", lat: -23.5505, lng: -46.6333, weight: 5 },
-  { name: "Bogotá", country: "Colombia", lat: 4.711, lng: -74.0721, weight: 2 },
-  { name: "Lima", country: "Peru", lat: -12.0464, lng: -77.0428, weight: 2 },
-  { name: "Buenos Aires", country: "Argentina", lat: -34.6037, lng: -58.3816, weight: 2 },
+  { name: "São Paulo", country: "Brazil", lat: -23.6, lng: -46.6, weight: 5 },
+  { name: "Bogotá", country: "Colombia", lat: 4.7, lng: -74.1, weight: 2 },
+  { name: "Lima", country: "Peru", lat: -12.0, lng: -77.0, weight: 2 },
+  { name: "Buenos Aires", country: "Argentina", lat: -34.6, lng: -58.4, weight: 2 },
 
   // ── Europe ──
-  { name: "London", country: "United Kingdom", lat: 51.5074, lng: -0.1278, weight: 5 },
-  { name: "Paris", country: "France", lat: 48.8566, lng: 2.3522, weight: 3 },
-  { name: "Berlin", country: "Germany", lat: 52.52, lng: 13.405, weight: 2 },
-  { name: "Rome", country: "Italy", lat: 41.9028, lng: 12.4964, weight: 2 },
+  { name: "London", country: "United Kingdom", lat: 51.5, lng: -0.1, weight: 5 },
+  { name: "Paris", country: "France", lat: 48.9, lng: 2.4, weight: 3 },
+  { name: "Berlin", country: "Germany", lat: 52.5, lng: 13.4, weight: 2 },
+  { name: "Rome", country: "Italy", lat: 41.9, lng: 12.5, weight: 2 },
 
   // ── Africa ──
-  { name: "Lagos", country: "Nigeria", lat: 6.5244, lng: 3.3792, weight: 5 },
-  { name: "Nairobi", country: "Kenya", lat: -1.2921, lng: 36.8219, weight: 3 },
-  { name: "Accra", country: "Ghana", lat: 5.6037, lng: -0.187, weight: 2 },
-  { name: "Johannesburg", country: "South Africa", lat: -26.2041, lng: 28.0473, weight: 2 },
-  { name: "Cairo", country: "Egypt", lat: 30.0444, lng: 31.2357, weight: 2 },
+  { name: "Lagos", country: "Nigeria", lat: 6.5, lng: 3.4, weight: 5 },
+  { name: "Nairobi", country: "Kenya", lat: -1.3, lng: 36.8, weight: 3 },
+  { name: "Accra", country: "Ghana", lat: 5.6, lng: -0.2, weight: 2 },
+  { name: "Johannesburg", country: "South Africa", lat: -26.2, lng: 28.0, weight: 2 },
+  { name: "Cairo", country: "Egypt", lat: 30.0, lng: 31.2, weight: 2 },
 
   // ── Middle East ──
-  { name: "Istanbul", country: "Turkey", lat: 41.0082, lng: 28.9784, weight: 2 },
-  { name: "Dubai", country: "UAE", lat: 25.2048, lng: 55.2708, weight: 2 },
+  { name: "Istanbul", country: "Turkey", lat: 41.0, lng: 29.0, weight: 2 },
+  { name: "Dubai", country: "UAE", lat: 25.2, lng: 55.3, weight: 2 },
 
   // ── South Asia ──
-  { name: "Mumbai", country: "India", lat: 19.076, lng: 72.8777, weight: 3 },
-  { name: "Delhi", country: "India", lat: 28.7041, lng: 77.1025, weight: 2 },
+  { name: "Mumbai", country: "India", lat: 19.1, lng: 72.9, weight: 3 },
+  { name: "Delhi", country: "India", lat: 28.7, lng: 77.1, weight: 2 },
 
   // ── Southeast Asia ──
-  { name: "Manila", country: "Philippines", lat: 14.5995, lng: 120.9842, weight: 5 },
-  { name: "Jakarta", country: "Indonesia", lat: -6.2088, lng: 106.8456, weight: 3 },
-  { name: "Bangkok", country: "Thailand", lat: 13.7563, lng: 100.5018, weight: 2 },
+  { name: "Manila", country: "Philippines", lat: 14.6, lng: 121.0, weight: 5 },
+  { name: "Jakarta", country: "Indonesia", lat: -6.2, lng: 106.8, weight: 3 },
+  { name: "Bangkok", country: "Thailand", lat: 13.8, lng: 100.5, weight: 2 },
 
   // ── East Asia ──
-  { name: "Seoul", country: "South Korea", lat: 37.5665, lng: 126.978, weight: 3 },
-  { name: "Tokyo", country: "Japan", lat: 35.6762, lng: 139.6503, weight: 2 },
+  { name: "Seoul", country: "South Korea", lat: 37.6, lng: 127.0, weight: 3 },
+  { name: "Tokyo", country: "Japan", lat: 35.7, lng: 139.7, weight: 2 },
 
   // ── Oceania ──
-  { name: "Sydney", country: "Australia", lat: -33.8688, lng: 151.2093, weight: 2 },
+  { name: "Sydney", country: "Australia", lat: -33.9, lng: 151.2, weight: 2 },
 ];
 
 // ── Prayer texts & names ─────────────────────────────────────────────

@@ -188,10 +188,10 @@ export function WorldMap({
     }
   }, [prayers, ready, updateMarkers]);
 
-  // Center map trigger
+  // Center map trigger - use approximate London coordinates for privacy
   useEffect(() => {
     if (mapRef.current && centerTrigger !== undefined) {
-      mapRef.current.setView([51.5074, -0.1278], 4);
+      mapRef.current.setView([51.5, -0.1], 4); // Approximate London coordinates
     }
   }, [centerTrigger]);
 

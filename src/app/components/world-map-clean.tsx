@@ -38,7 +38,7 @@ export function WorldMapClean({
       if (cancelled || !containerRef.current) return;
 
       const map = L.map(containerRef.current, {
-        center: [51.5074, -0.1278],
+        center: [51.5, -0.1], // Approximate London coordinates for privacy
         zoom: 4,
         minZoom: 2,
         maxZoom: 10, // Moderate increase for better tap accuracy (was 7)
@@ -180,10 +180,10 @@ export function WorldMapClean({
     }
   }, [prayers, ready, updateMarkers]);
 
-  // Center map trigger
+  // Center map trigger - use approximate coordinates for privacy
   useEffect(() => {
     if (mapRef.current && centerTrigger !== undefined) {
-      mapRef.current.setView([51.5074, -0.1278], 4);
+      mapRef.current.setView([51.5, -0.1], 4); // Approximate London coordinates
     }
   }, [centerTrigger]);
 
