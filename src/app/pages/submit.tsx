@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Send, Check, ChevronDown } from "lucide-react";
 import { cities } from "../data/prayer-data";
 import { useNavigate } from "react-router";
+import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
 
 const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
 
@@ -29,6 +30,7 @@ export function Submit() {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Get profile name from localStorage
   const profileName = (() => {
@@ -42,18 +44,40 @@ export function Submit() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || !location || !category) return;
+    
+    // Clear previous errors
+    setErrors({});
+    
+    // Validate form data using Zod schema
+    const validation = validatePrayerSubmission({
+      text: text.trim(),
+      location,
+      category,
+      anonymous,
+    });
+    
+    if (!validation.success) {
+      // Show validation errors to user
+      setErrors(validation.errors || {});
+      return;
+    }
+    
+    // If validation passes, proceed with submission
     setSubmitted(true);
 
     // Create a new prayer and push it to the map via the window bridge
     const coords = cityCoords[location] || { lat: 20 + (Math.random() - 0.5) * 40, lng: (Math.random() - 0.5) * 180 };
     const [cityName, countryName] = location.split(", ");
     const displayName = anonymous ? undefined : (profileName || undefined);
+    
+    // Sanitize text for extra safety
+    const sanitizedText = sanitizePrayerText(text.trim());
+    
     const newPrayer = {
       id: `new-${Date.now()}`,
       city: cityName || "Unknown",
       country: countryName || "Unknown",
-      text: text.trim(),
+      text: sanitizedText,
       name: displayName,
       prayerCount: 0,
       lat: coords.lat,
@@ -124,12 +148,15 @@ export function Submit() {
                   onChange={(e) => setText(e.target.value)}
                   placeholder="Share what you'd like others to pray for..."
                   rows={4}
-                  className="w-full rounded-xl px-4 py-3 text-[#e8eaf6] placeholder-[#5a5f80] resize-none border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)] focus:outline-none transition-colors text-sm"
+                  className={`w-full rounded-xl px-4 py-3 text-[#e8eaf6] placeholder-[#5a5f80] resize-none border ${errors.text ? 'border-red-500/50 focus:border-red-500/70' : 'border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)]'} focus:outline-none transition-colors text-sm`}
                   style={{
                     background: "rgba(15, 20, 50, 0.6)",
                     lineHeight: 1.7,
                   }}
                 />
+                {errors.text && (
+                  <p className="text-red-400 text-xs mt-1 ml-1">{errors.text}</p>
+                )}
               </div>
 
               {/* Anonymous toggle */}
