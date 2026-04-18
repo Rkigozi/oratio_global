@@ -406,44 +406,61 @@ Each story references our existing documentation:
 
 ---
 
-### Story 25: Instagram-style Profile Stats Navigation
-✅ **P2** - **As a user, I want to tap on my profile stats (Submitted, Prayed For, Answered, Following) to see detailed pages for each, so that I can explore my prayer journey in depth.**
+ ### Story 25: Instagram-style Profile Stats Navigation
+ ✅ **P2** - **As a user, I want to tap on my profile stats (Submitted, Prayed For, Answered, Following) to see detailed pages for each, so that I can explore my prayer journey in depth.**
 
-**Why this matters:** Instagram's pattern of separate pages for each stat is familiar to users, scales better for large lists, and provides better search/filter capabilities than drawers.
+ **Why this matters:** Instagram's pattern of separate pages for each stat is familiar to users, scales better for large lists, and provides better search/filter capabilities than drawers.
 
-**Linked to:** MVP-Scope.md (User Profile & Stats), User-flows.md (3.7 Profile)
+ **Linked to:** MVP-Scope.md (User Profile & Stats), User-flows.md (3.7 Profile)
 
-**Acceptance Criteria:**
-- All 4 profile stats are clickable with hover animations
-- Tapping a stat navigates to a dedicated page for that category
-- Detail pages have Instagram-style layout (header with back button, hides bottom nav)
-- Submitted page: Lists user's submitted prayers with edit/delete/answered actions
-- Prayed For page: Lists prayers user prayed for with current prayer counts
-- Answered page: Lists answered prayers with celebration visuals
-- Following page: Enhanced list with search/filter capability for large following lists
-- Consistent dark blue theme (#0A1A3A) across all detail pages
-- Smooth transitions and loading states
+ **Acceptance Criteria:**
+ - All 4 profile stats are clickable with hover animations
+ - Tapping a stat navigates to a dedicated page for that category
+ - Detail pages have Instagram-style layout (header with back button, hides bottom nav)
+ - Submitted page: Lists user's submitted prayers with edit/delete/answered actions
+ - Prayed For page: Lists prayers user prayed for with current prayer counts
+ - Answered page: Lists answered prayers with celebration visuals
+ - Following page: Enhanced list with search/filter capability for large following lists
+ - Consistent dark blue theme (#0A1A3A) across all detail pages
+ - Smooth transitions and loading states
 
----
+ ---
 
-## How Stories Connect to Epics
+ ### Story 26: City Label Display on Map
+ ✅ **P2** - **As a user, I want to see city names on the map when zoomed in, so that I can better orient myself and understand where prayers are coming from.**
 
-| Story | Epic | Phase |
-|-------|------|-------|
-| 1-2 | Core Prayer Loop | 1 |
-| 3-5 | Core Prayer Loop + Map | 1-2 |
-| 6-8 | Core Prayer Loop + Security | 1 |
-| 9-10 | Core Prayer Loop | 1-2 |
-| 11-14 | User Profile & Stats | 2 |
-| 15-16 | Security & Privacy | 1 |
-| 17-18 | Performance & PWA | 1-2 |
-| 19 | Technical Foundation | 1 |
-| 20 | Map & Visualization | 1 |
-| 21 | Core Prayer Loop | 1 |
-| 22 | Core Prayer Loop | 1 |
-| 23 | User Profile & Stats | 1 |
-| 24 | Core Prayer Loop | 2 |
-| 25 | User Profile & Stats | 2 |
+ **Why this matters:** City labels provide geographical context and help users connect prayer activity to specific locations.
+
+ **Linked to:** MVP-Scope.md (Map visualization), User-flows.md (3.2 Explore)
+
+ **Acceptance Criteria:**
+ - Toggle button to show/hide city labels
+ - Labels appear only when zoomed in (zoom ≥7) to avoid clutter
+ - Subtle label styling that matches dark theme (#0A1A3A)
+ - Privacy protection maintained (approximate coordinates only)
+ - Labels update dynamically when zoom changes
+
+ ---
+
+ ## How Stories Connect to Epics
+
+ | Story | Epic | Phase |
+ |-------|------|-------|
+ | 1-2 | Core Prayer Loop | 1 |
+ | 3-5 | Core Prayer Loop + Map | 1-2 |
+ | 6-8 | Core Prayer Loop + Security | 1 |
+ | 9-10 | Core Prayer Loop | 1-2 |
+ | 11-14 | User Profile & Stats | 2 |
+ | 15-16 | Security & Privacy | 1 |
+ | 17-18 | Performance & PWA | 1-2 |
+ | 19 | Technical Foundation | 1 |
+ | 20 | Map & Visualization | 1 |
+ | 21 | Core Prayer Loop | 1 |
+ | 22 | Core Prayer Loop | 1 |
+ | 23 | User Profile & Stats | 1 |
+ | 24 | Core Prayer Loop | 2 |
+ | 25 | User Profile & Stats | 2 |
+ | 26 | Map & Visualization | 1 |
 
 ---
 

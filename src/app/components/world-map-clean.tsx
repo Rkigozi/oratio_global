@@ -5,27 +5,31 @@ import L from "leaflet";
 
 // ── Main component ──────────────────────────────────────────────────
 interface WorldMapCleanProps {
-  prayers: PrayerRequest[];
-  onPrayerTap: (prayer: PrayerRequest) => void;
-  centerTrigger?: number;
-  prayedId?: string | null;
-  newPrayerId?: string | null;
-  flyTo?: { lat: number; lng: number } | null;
-}
+   prayers: PrayerRequest[];
+   onPrayerTap: (prayer: PrayerRequest) => void;
+   centerTrigger?: number;
+   prayedId?: string | null;
+   newPrayerId?: string | null;
+   flyTo?: { lat: number; lng: number } | null;
+   showCityLabels?: boolean;
+ }
 
 export function WorldMapClean({
-  prayers,
-  onPrayerTap,
-  centerTrigger,
-  prayedId,
-  newPrayerId,
-  flyTo,
-}: WorldMapCleanProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const layerGroupRef = useRef<L.LayerGroup | null>(null);
-  const onPrayerTapRef = useRef(onPrayerTap);
-  const [ready, setReady] = useState(false);
+   prayers,
+   onPrayerTap,
+   centerTrigger,
+   prayedId,
+   newPrayerId,
+   flyTo,
+   showCityLabels = false,
+ }: WorldMapCleanProps) {
+   const containerRef = useRef<HTMLDivElement>(null);
+   const mapRef = useRef<L.Map | null>(null);
+   const layerGroupRef = useRef<L.LayerGroup | null>(null);
+   const labelLayerRef = useRef<L.LayerGroup | null>(null);
+   const onPrayerTapRef = useRef(onPrayerTap);
+   const [ready, setReady] = useState(false);
+   const [zoom, setZoom] = useState(4);
 
   // Keep ref updated with latest callback
   useEffect(() => {
@@ -62,10 +66,14 @@ export function WorldMapClean({
         }
       ).addTo(map);
 
-      // Canvas renderer — most reliable (created in updateMarkers)
-      layerGroupRef.current = L.layerGroup().addTo(map);
-      mapRef.current = map;
-      setReady(true);
+        // Canvas renderer — most reliable (created in updateMarkers)
+        layerGroupRef.current = L.layerGroup().addTo(map);
+        labelLayerRef.current = L.layerGroup().addTo(map);
+        mapRef.current = map;
+        map.on('zoomend', () => {
+          setZoom(map.getZoom());
+        });
+        setReady(true);
 
       // Fix map sizing
       setTimeout(() => {
@@ -78,9 +86,10 @@ export function WorldMapClean({
     return () => {
       cancelled = true;
       if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        layerGroupRef.current = null;
+         mapRef.current.remove();
+         mapRef.current = null;
+         layerGroupRef.current = null;
+         labelLayerRef.current = null;
       }
     };
   }, []);
@@ -91,8 +100,10 @@ export function WorldMapClean({
     const group = layerGroupRef.current;
     if (!map || !group) return;
 
-    group.clearLayers();
-    const zoom = map.getZoom();
+     group.clearLayers();
+     const labelLayer = labelLayerRef.current;
+     if (labelLayer) labelLayer.clearLayers();
+     const zoom = map.getZoom();
 
     // Use a single renderer for all circles
     const renderer = L.canvas({ padding: 0.5 });
@@ -167,21 +178,32 @@ export function WorldMapClean({
         }
       );
 
-      // Make inner core clickable
-      innerCore.on("click", () => onPrayerTapRef.current(prayer));
-      
-      // Add to map - outer first (background), inner on top
-      outerGlow.addTo(group);
-      innerCore.addTo(group);
+       // Make inner core clickable
+       innerCore.on("click", () => onPrayerTapRef.current(prayer));
+       
+       // Add city label tooltip when enabled and zoomed in
+       if (showCityLabels && zoom >= 7) {
+         innerCore.bindTooltip(prayer.city, {
+           permanent: true,
+           direction: 'top',
+           className: 'city-label-tooltip',
+           offset: [0, -10],
+           opacity: 0.9
+         }).openTooltip();
+       }
+       
+       // Add to map - outer first (background), inner on top
+       outerGlow.addTo(group);
+       innerCore.addTo(group);
     }
-  }, [prayers]);
+   }, [prayers, showCityLabels]);
 
-  // Update markers when prayers or ready state changes
-  useEffect(() => {
-    if (ready) {
-      updateMarkers();
-    }
-  }, [prayers, ready, updateMarkers]);
+   // Update markers when prayers, ready, or zoom changes
+   useEffect(() => {
+     if (ready) {
+       updateMarkers();
+     }
+   }, [prayers, ready, updateMarkers, zoom]);
 
   // Center map trigger - use approximate coordinates for privacy
   useEffect(() => {

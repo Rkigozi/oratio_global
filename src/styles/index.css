@@ -239,12 +239,31 @@ input, textarea, select {
   filter: drop-shadow(0 0 8px currentColor);
 }
 
-/* ── Utility: hide scrollbar ─────────────────────────────────────── */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
+ /* ── Utility: hide scrollbar ─────────────────────────────────────── */
+ .no-scrollbar::-webkit-scrollbar {
+   display: none;
+ }
 
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+ .no-scrollbar {
+   -ms-overflow-style: none;
+   scrollbar-width: none;
+ }
+
+ /* ── City label tooltips ─────────────────────────────────────────── */
+ .city-label-tooltip {
+   background: rgba(10, 26, 58, 0.7) !important;
+   border: none !important;
+   color: #7a84a8 !important;
+   font-size: 10px !important;
+   font-weight: 500;
+   padding: 1px 5px !important;
+   border-radius: 6px !important;
+   backdrop-filter: blur(4px);
+   box-shadow: none;
+   margin-top: -2px !important;
+   white-space: nowrap;
+ }
+
+ .city-label-tooltip::before {
+   border-top-color: rgba(124, 143, 255, 0.1) !important;
+ }

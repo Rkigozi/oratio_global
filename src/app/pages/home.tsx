@@ -27,12 +27,13 @@ export function Home() {
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(
     null
   );
-  const [centerTrigger, setCenterTrigger] = useState(0);
-  const [locating, setLocating] = useState(false);
-  const [prayedId, setPrayedId] = useState<string | null>(null);
-  const [newPrayerId, setNewPrayerId] = useState<string | null>(null);
+   const [centerTrigger, setCenterTrigger] = useState(0);
+   const [locating, setLocating] = useState(false);
+   const [prayedId, setPrayedId] = useState<string | null>(null);
+   const [newPrayerId, setNewPrayerId] = useState<string | null>(null);
+   const [showCityLabels, setShowCityLabels] = useState(false);
 
-  // Search state
+   // Search state
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(
@@ -163,35 +164,54 @@ export function Home() {
 
       {/* Map area */}
       <div className="absolute inset-0 z-0">
-        <WorldMapClean
-          prayers={prayers}
-          onPrayerTap={handlePrayerTap}
-          centerTrigger={centerTrigger}
-          prayedId={prayedId}
-          newPrayerId={newPrayerId}
-          flyTo={flyTo}
-        />
+         <WorldMapClean
+           prayers={prayers}
+           onPrayerTap={handlePrayerTap}
+           centerTrigger={centerTrigger}
+           prayedId={prayedId}
+           newPrayerId={newPrayerId}
+           flyTo={flyTo}
+           showCityLabels={showCityLabels}
+         />
       </div>
 
-      {/* Floating controls */}
-      <div className="absolute bottom-24 right-5 z-[500] flex flex-col gap-3">
-        {/* Search button */}
-        <button
-          onClick={() => setSearchOpen(!searchOpen)}
-          className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer"
-          style={{
-            background: searchOpen
-              ? "rgba(124, 143, 255, 0.15)"
-              : "rgba(10, 26, 58, 0.8)",
-            border: "1px solid rgba(124, 143, 255, 0.15)",
-            backdropFilter: "blur(12px)",
-            boxShadow: "0 2px 16px rgba(0,0,0,0.3)",
-            color: searchOpen ? "#7c8fff" : "#8b96c0",
-          }}
-        >
-          <Search size={18} />
-        </button>
-      </div>
+       {/* Floating controls */}
+       <div className="absolute bottom-24 right-5 z-[500] flex flex-col gap-3">
+          {/* City labels toggle */}
+          <button
+            onClick={() => setShowCityLabels(!showCityLabels)}
+            className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer"
+            title={showCityLabels ? "Hide city labels" : "Show city labels"}
+            aria-label={showCityLabels ? "Hide city labels" : "Show city labels"}
+            style={{
+              background: showCityLabels
+                ? "rgba(124, 143, 255, 0.15)"
+                : "rgba(10, 26, 58, 0.8)",
+              border: "1px solid rgba(124, 143, 255, 0.15)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "0 2px 16px rgba(0,0,0,0.3)",
+              color: showCityLabels ? "#7c8fff" : "#8b96c0",
+            }}
+          >
+            <MapPin size={18} />
+          </button>
+         {/* Search button */}
+         <button
+           onClick={() => setSearchOpen(!searchOpen)}
+           className="w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer"
+           style={{
+             background: searchOpen
+               ? "rgba(124, 143, 255, 0.15)"
+               : "rgba(10, 26, 58, 0.8)",
+             border: "1px solid rgba(124, 143, 255, 0.15)",
+             backdropFilter: "blur(12px)",
+             boxShadow: "0 2px 16px rgba(0,0,0,0.3)",
+             color: searchOpen ? "#7c8fff" : "#8b96c0",
+           }}
+         >
+           <Search size={18} />
+         </button>
+       </div>
 
       {/* Prayer Card Drawer */}
       <Drawer.Root

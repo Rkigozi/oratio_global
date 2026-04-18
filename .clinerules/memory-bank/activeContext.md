@@ -37,6 +37,7 @@
 3. **Follow System Enhancement**: Clickable following count with drawer, avatar system (Story 24)
 4. **Instagram-style Profile Navigation**: Implemented separate pages for stats (Submitted, Prayed For, Answered, Following) with nested routing, DetailLayout, searchable following list, and updated profile stats navigation (Story 25)
 5. **Edit Profile in Quick Actions**: Added Edit Profile option to quick actions menu for easy profile updates (Story 23)
+6. **City Label Display**: Added toggle button to show city names on map at higher zoom levels (≥7), with subtle labels that respect privacy (approximate coordinates)
 
 ### Code Quality Issues Identified:
 

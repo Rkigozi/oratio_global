@@ -54,10 +54,11 @@
 - ✅ **Production Roadmap Created**: Comprehensive 9-week roadmap with 3 phases defined
 - ✅ **Project Management System Ready**: Complete project-management/ directory with guides, templates, and phase documentation
 - ✅ **UI Foundation Stories Added**: 6 key UI changes added to backlog (fonts, map tiles, search suggestions, follow system, etc.)
-- ✅ **Enhanced Map Visualization**: ESRI Dark Gray Canvas tiles implemented (Story 20)
-- ✅ **Intelligent Search with Suggestions**: Instagram-style search with recent searches, filtering (Story 21)
-- ✅ **Follow System Polish**: Following count clickable with drawer, avatar system (Story 24)
-- ✅ **Instagram-style Profile Navigation**: Implemented nested routes, DetailLayout, searchable following list, updated profile stats navigation (Story 25)
+ - ✅ **Enhanced Map Visualization**: ESRI Dark Gray Canvas tiles implemented (Story 20)
+ - ✅ **Intelligent Search with Suggestions**: Instagram-style search with recent searches, filtering (Story 21)
+ - ✅ **Follow System Polish**: Following count clickable with drawer, avatar system (Story 24)
+ - ✅ **Instagram-style Profile Navigation**: Implemented nested routes, DetailLayout, searchable following list, updated profile stats navigation (Story 25)
+ - ✅ **City Label Display**: Added toggle button for city names on map at higher zoom levels with subtle labels (Privacy-friendly)
 
 ### 🚧 Backend Integration (Future)
 1. **Supabase Setup**
