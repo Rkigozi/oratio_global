@@ -25,8 +25,12 @@ export function WorldMapClean({
   const mapRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
   const onPrayerTapRef = useRef(onPrayerTap);
-  onPrayerTapRef.current = onPrayerTap;
   const [ready, setReady] = useState(false);
+
+  // Keep ref updated with latest callback
+  useEffect(() => {
+    onPrayerTapRef.current = onPrayerTap;
+  }, [onPrayerTap]);
 
   // Initialize map
   useEffect(() => {
@@ -48,18 +52,17 @@ export function WorldMapClean({
         maxBoundsViscosity: 0.8,
       });
 
-      // CartoDB Dark Matter - Dark map without brightness filter (test continent colors)
+      // ESRI Dark Gray Canvas - Dark grey ocean, light grey continents, matches app theme
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
         {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-          subdomains: 'abcd',
+          attribution: '&copy; <a href="https://www.esri.com/">Esri</a>, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, and the GIS user community',
           maxZoom: 10,
+          crossOrigin: true,
         }
       ).addTo(map);
 
-      // Canvas renderer — most reliable
-      const renderer = L.canvas({ padding: 0.5 });
+      // Canvas renderer — most reliable (created in updateMarkers)
       layerGroupRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       setReady(true);

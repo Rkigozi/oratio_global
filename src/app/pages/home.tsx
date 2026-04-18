@@ -1,10 +1,10 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router";
 import { WorldMapClean } from "../components/world-map-clean";
 import { mockHotspots } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
-import { Crosshair, Loader2, Search, X, Heart, ArrowRight } from "lucide-react";
+import { Search, X, Heart, ArrowRight, MapPin } from "lucide-react";
 import { Drawer } from "vaul";
 
 // Build a searchable location index from prayer data
@@ -66,14 +66,20 @@ export function Home() {
   // Listen for new prayer submissions (via custom event from Submit page)
   // This is wired through the layout via a shared context or event
   // For now we expose a method on window for cross-page communication
-  if (typeof window !== "undefined") {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     (window as any).__oratio_addPrayer = (prayer: PrayerRequest) => {
       setPrayers((prev) => [prayer, ...prev]);
       setNewPrayerId(prayer.id);
       setFlyTo({ lat: prayer.lat, lng: prayer.lng });
       setTimeout(() => setNewPrayerId(null), 2000);
     };
-  }
+    return () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      delete (window as any).__oratio_addPrayer;
+    };
+  }, []);
 
   return (
     <div
@@ -108,61 +114,47 @@ export function Home() {
               transition={{ duration: 0.25 }}
               className="w-full max-w-sm"
             >
-              <div
-                className="flex items-center gap-2 rounded-xl px-4 py-2.5 border border-[rgba(124,143,255,0.2)]"
-                style={{
-                  background: "rgba(10, 26, 58, 0.92)",
-                  backdropFilter: "blur(20px)",
-                }}
-              >
-                <Search size={16} className="text-[#7c8fff] flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Search city or region..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
-                  className="flex-1 bg-transparent text-[#e2e4f0] placeholder-[#5a5f80] text-sm focus:outline-none"
-                />
-                <button
-                  onClick={() => {
-                    setSearchOpen(false);
-                    setSearchQuery("");
-                  }}
-                  className="text-[#6b7499] hover:text-[#c5cbe2] transition-colors cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
+               <div
+                 className="flex items-center gap-2 rounded-xl px-4 py-2.5 border border-border/20 bg-popover/92 backdrop-blur-xl"
+               >
+                 <Search size={16} className="text-primary flex-shrink-0" />
+                 <input
+                   type="text"
+                   placeholder="Search city or region..."
+                   value={searchQuery}
+                   onChange={(e) => setSearchQuery(e.target.value)}
+                   autoFocus
+                   className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground text-sm focus:outline-none"
+                 />
+                 <button
+                   onClick={() => {
+                     setSearchOpen(false);
+                     setSearchQuery("");
+                   }}
+                   className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                 >
+                   <X size={16} />
+                 </button>
+               </div>
 
               {/* Search results */}
               {searchResults.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-2 rounded-xl border border-[rgba(124,143,255,0.12)] overflow-hidden"
-                  style={{
-                    background: "rgba(10, 26, 58, 0.95)",
-                    backdropFilter: "blur(20px)",
-                  }}
-                >
-                  {searchResults.map((loc) => (
-                    <button
-                      key={loc.name}
-                      onClick={() => handleSearchSelect(loc)}
-                      className="w-full text-left px-4 py-3 text-sm text-[#c5cbe2] hover:bg-[rgba(124,143,255,0.1)] transition-colors cursor-pointer flex items-center gap-3"
-                    >
-                      <div
-                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                        style={{
-                          background: "#F5F3FF",
-                          boxShadow: "0 0 4px rgba(245,243,255,0.5)",
-                        }}
-                      />
-                      {loc.name}
-                    </button>
-                  ))}
-                </motion.div>
+                 <motion.div
+                   initial={{ opacity: 0, y: -4 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="mt-2 rounded-xl border border-border overflow-hidden bg-popover/95 backdrop-blur-xl"
+                 >
+                   {searchResults.map((loc) => (
+                     <button
+                       key={loc.name}
+                       onClick={() => handleSearchSelect(loc)}
+                       className="w-full text-left px-4 py-3 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer flex items-center gap-3"
+                     >
+                       <MapPin size={14} className="text-muted-foreground flex-shrink-0" />
+                       <span className="truncate">{loc.name}</span>
+                     </button>
+                   ))}
+                 </motion.div>
               )}
             </motion.div>
           )}
@@ -289,11 +281,11 @@ export function Home() {
                       const city = selectedPrayer?.city;
                       const country = selectedPrayer?.country;
                       setSelectedPrayer(null);
-                      navigate(
-                        city
-                          ? `/feed?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country || "")}`
-                          : "/feed"
-                      );
+                       void navigate(
+                         city
+                           ? `/feed?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country || "")}`
+                           : "/feed"
+                       );
                     }}
                     className="flex items-center gap-2.5 px-7 py-3 rounded-full text-sm cursor-pointer"
                     style={{

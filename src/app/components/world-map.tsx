@@ -62,8 +62,12 @@ export function WorldMap({
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
   const canvasRendererRef = useRef<L.Renderer | null>(null);
   const onPrayerTapRef = useRef(onPrayerTap);
-  onPrayerTapRef.current = onPrayerTap;
   const [ready, setReady] = useState(false);
+
+  // Keep ref updated with latest callback
+  useEffect(() => {
+    onPrayerTapRef.current = onPrayerTap;
+  }, [onPrayerTap]);
 
   // Initialize map
   useEffect(() => {
@@ -85,14 +89,13 @@ export function WorldMap({
         maxBoundsViscosity: 0.8,
       });
 
-      // Stadia Maps Alidade Smooth Dark - Dark theme built-in, acceptable English labels for MVP
-      // TODO: Integrate Google Maps API later for perfect English labels
+      // ESRI Dark Gray Canvas - Dark grey ocean, light grey continents, matches app theme
       L.tileLayer(
-        "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?lang=en",
+        "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
         {
-          attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
-          maxZoom: 7,
-          // No crossOrigin needed for Stadia Maps
+          attribution: '&copy; <a href="https://www.esri.com/">Esri</a>, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, and the GIS user community',
+          maxZoom: 10,
+          crossOrigin: true,
         }
       ).addTo(map);
 
@@ -228,9 +231,8 @@ export function WorldMap({
   return (
     <div
       ref={containerRef}
-      className="world-map h-full w-full rounded-2xl overflow-hidden"
+      className="world-map h-full w-full rounded-2xl overflow-hidden bg-background"
       style={{
-        background: "#0A1A3A",
         minHeight: "400px",
       }}
     />

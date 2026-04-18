@@ -1,0 +1,132 @@
+import type { PrayerRequest } from "./prayer-data";
+import { mockFeedPrayers } from "./prayer-data";
+
+export interface UserProfile {
+  name: string;
+  avatar: string;
+  photo?: string;
+  joinedAt: string;
+}
+
+export function getProfile(): UserProfile {
+  try {
+    const raw = localStorage.getItem("oratio_profile");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { name: "", avatar: "🙏", joinedAt: new Date().toISOString() };
+}
+
+export function saveProfile(profile: UserProfile) {
+  localStorage.setItem("oratio_profile", JSON.stringify(profile));
+}
+
+export function getSubmittedIds(): string[] {
+  try {
+    const raw = localStorage.getItem("oratio_submitted");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+export function getPrayedIds(): string[] {
+  try {
+    const raw = localStorage.getItem("oratio_prayed");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+export function getRemovedIds(): string[] {
+  try {
+    const raw = localStorage.getItem("oratio_removed");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+export function getAnsweredIds(): string[] {
+  try {
+    const raw = localStorage.getItem("oratio_answered");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+export function getFollowingIds(): string[] {
+  try {
+    const raw = localStorage.getItem("oratio_following");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+export function getStoredSubmittedPrayers(): PrayerRequest[] {
+  try {
+    const raw = localStorage.getItem("oratio_submitted_prayers");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
+
+export function addToList(key: string, id: string) {
+  try {
+    const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    if (!existing.includes(id)) {
+      localStorage.setItem(key, JSON.stringify([...existing, id]));
+    }
+  } catch {}
+}
+
+export function getAvatarForName(name: string) {
+  const avatars = ["🙏", "✝️", "🕊️", "💛", "🌿", "⭐", "🔥", "💜"];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
+  return avatars[hash % avatars.length];
+}
+
+export const categoryColors: Record<string, string> = {
+  Health: "#67e8f9",
+  Family: "#a78bfa",
+  Career: "#fbbf24",
+  Guidance: "#7c8fff",
+  Peace: "#6ee7b7",
+  Other: "#8890b5",
+};
+
+// Helper to get submitted prayers (excluding removed/answered)
+export function getSubmittedPrayers(): PrayerRequest[] {
+  const removed = new Set(getRemovedIds());
+  const answered = new Set(getAnsweredIds());
+  return getStoredSubmittedPrayers()
+    .filter((p) => !removed.has(p.id) && !answered.has(p.id))
+    .map((p) => ({ ...p, prayerCount: p.prayerCount || 0 }));
+}
+
+// Get all prayers (mock feed + user submitted)
+export function getAllPrayers(): PrayerRequest[] {
+  const submitted = getStoredSubmittedPrayers();
+  const submittedIds = new Set(submitted.map(p => p.id));
+  const mockPrayers = mockFeedPrayers.filter(p => !submittedIds.has(p.id));
+  return [...submitted, ...mockPrayers];
+}
+
+// Helper to get prayed-for prayers
+export function getPrayedForPrayers(): PrayerRequest[] {
+  const prayedIds = new Set(getPrayedIds());
+  return getAllPrayers().filter(p => prayedIds.has(p.id));
+}
+
+// Helper to get answered prayers
+export function getAnsweredPrayers(): PrayerRequest[] {
+  const answeredIds = new Set(getAnsweredIds());
+  const submitted = getStoredSubmittedPrayers();
+  return submitted.filter(p => answeredIds.has(p.id));
+}
+
+// Helper to get following list with search
+export function getFollowingList(searchQuery = ""): Array<{ name: string; avatar: string }> {
+  const following = getFollowingIds();
+  return following
+    .filter(name => name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .map(name => ({ name, avatar: getAvatarForName(name) }));
+}

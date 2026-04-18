@@ -1,25 +1,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Send, Check, ChevronDown } from "lucide-react";
-import { cities } from "../data/prayer-data";
+import { cities, getApproximateCoordinates } from "../data/prayer-data";
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
 
 const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
 
-// City coordinate lookup for placing the new light - using approximate coordinates for privacy
-const cityCoords: Record<string, { lat: number; lng: number }> = {
-  "New York, United States": { lat: 40.7, lng: -74.0 },
-  "Los Angeles, United States": { lat: 34.1, lng: -118.2 },
-  "London, United Kingdom": { lat: 51.5, lng: -0.1 },
-  "São Paulo, Brazil": { lat: -23.6, lng: -46.6 },
-  "Lagos, Nigeria": { lat: 6.5, lng: 3.4 },
-  "Manila, Philippines": { lat: 14.6, lng: 121.0 },
-  "Seoul, South Korea": { lat: 37.6, lng: 127.0 },
-  "Tokyo, Japan": { lat: 35.7, lng: 139.7 },
-  "Sydney, Australia": { lat: -33.9, lng: 151.2 },
-  "Nairobi, Kenya": { lat: -1.3, lng: 36.8 },
-};
+// Coordinates are now generated via getApproximateCoordinates with privacy jitter
 
 export function Submit() {
   const navigate = useNavigate();
@@ -66,8 +54,8 @@ export function Submit() {
     setSubmitted(true);
 
     // Create a new prayer and push it to the map via the window bridge
-    const coords = cityCoords[location] || { lat: 20 + (Math.random() - 0.5) * 40, lng: (Math.random() - 0.5) * 180 };
     const [cityName, countryName] = location.split(", ");
+    const coords = getApproximateCoordinates(cityName, countryName);
     const displayName = anonymous ? undefined : (profileName || undefined);
     
     // Sanitize text for extra safety
@@ -110,8 +98,7 @@ export function Submit() {
 
   return (
     <div
-      className="w-full min-h-full flex flex-col items-center px-6 pt-24 pb-28"
-      style={{ background: "#0A1A3A" }}
+      className="w-full min-h-full flex flex-col items-center px-6 pt-24 pb-28 bg-background"
     >
       {/* Ambient glow */}
       <div

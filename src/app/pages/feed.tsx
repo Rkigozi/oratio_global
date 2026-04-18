@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Globe, Users, Flame, Search, X, Heart, Share2, MapPin, UserPlus, UserCheck } from "lucide-react";
+import { Globe, Users, Flame, Search, X, Share2, MapPin, UserPlus, UserCheck, User, Tag, Clock } from "lucide-react";
 import { Drawer } from "vaul";
 import { useSearchParams } from "react-router";
 import { mockFeedPrayers, timeAgo } from "../data/prayer-data";
@@ -33,20 +33,31 @@ export function Feed() {
     setSearchParams({});
   };
 
+  useEffect(() => {
+    if (!hasLocationFilter) return;
+    const timer = setTimeout(() => {
+      setSearchParams({});
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [hasLocationFilter, setSearchParams]);
+
   const [tab, setTab] = useState<"global" | "nearby">("global");
   const [category, setCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [prayers, setPrayers] = useState(() => {
+  const [searchFilter, setSearchFilter] = useState<'all' | 'people' | 'locations' | 'categories'>('all');
+   const [prayers, setPrayers] = useState<PrayerRequest[]>(() => {
     try {
-      const submitted = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]");
+      const submitted = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
       if (submitted.length > 0) {
         // Merge submitted prayers at the top, deduplicating by id
         const existingIds = new Set(mockFeedPrayers.map((p: PrayerRequest) => p.id));
         const newOnes = submitted.filter((p: PrayerRequest) => !existingIds.has(p.id));
         return [...newOnes, ...mockFeedPrayers];
       }
-    } catch {}
+    } catch {
+      // ignore localStorage errors
+    }
     return mockFeedPrayers;
   });
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
@@ -55,14 +66,47 @@ export function Feed() {
   const [showWelcome, setShowWelcome] = useState(() => {
     return !localStorage.getItem("oratio_feed_visited");
   });
-  const [following, setFollowing] = useState<Set<string>>(() => {
+   const [following, setFollowing] = useState<Set<string>>(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem("oratio_following") || "[]");
+      const saved = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
       return new Set(saved);
     } catch {
       return new Set();
     }
   });
+
+  // Search suggestions state
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Recent searches
+  const [recentSearches, setRecentSearches] = useState<Array<{type: 'location' | 'person' | 'category', name: string}>>(() => {
+    try {
+      const saved = localStorage.getItem('oratio_recent_searches');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Avatar picker for people
+  const getAvatarForName = (name: string) => {
+    const avatars = ["🙏", "✝️", "🕊️", "💛", "🌿", "⭐", "🔥", "💜"];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
+    return avatars[hash % avatars.length];
+  };
+
+  // Add to recent searches
+  const addToRecentSearches = useCallback((item: {type: 'location' | 'person' | 'category', name: string}) => {
+    setRecentSearches(prev => {
+      const filtered = prev.filter(i => !(i.type === item.type && i.name === item.name));
+      const updated = [item, ...filtered].slice(0, 10);
+      localStorage.setItem('oratio_recent_searches', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   const dismissWelcome = () => {
     setShowWelcome(false);
@@ -81,6 +125,195 @@ export function Feed() {
       return next;
     });
   };
+
+  // Build search index from prayers data (locations, people, categories)
+  const searchIndex = useMemo(() => {
+    const locations = new Map<string, { city: string; country: string; prayerCount: number }>();
+    const people = new Set<string>();
+    const categories = new Set<string>();
+    
+    prayers.forEach(p => {
+      // Locations: "City, Country"
+      const locationKey = `${p.city}, ${p.country}`;
+      const existing = locations.get(locationKey);
+      if (existing) {
+        existing.prayerCount += p.prayerCount;
+      } else {
+        locations.set(locationKey, { city: p.city, country: p.country, prayerCount: p.prayerCount });
+      }
+      
+      // People (non-anonymous)
+      if (p.name) people.add(p.name);
+      
+      // Categories
+      if (p.category) categories.add(p.category);
+    });
+    
+    return { 
+      locations: Array.from(locations.entries()).map(([name, data]) => ({ 
+        type: 'location' as const,
+        name,
+        ...data 
+      })),
+      people: Array.from(people).map(name => ({
+        type: 'person' as const,
+        name
+      })),
+      categories: Array.from(categories).map(name => ({
+        type: 'category' as const,
+        name
+      }))
+    };
+  }, [prayers]);
+
+  // Filter suggestions based on search query
+  const filteredSections = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    
+    // Filter by searchFilter type
+    const filterByType = <T extends { type: string }>(items: T[]): T[] => {
+      if (searchFilter === 'all') return items;
+      return items.filter(item => item.type === searchFilter.slice(0, -1)); // 'people' -> 'person', 'locations' -> 'location', 'categories' -> 'category'
+    };
+    
+    // When query is empty, show recent searches and top suggestions
+    if (!q) {
+      const sections = [];
+      
+      // Recent searches section (filtered by type)
+      const filteredRecent = filterByType(recentSearches);
+      if (filteredRecent.length > 0) {
+        sections.push({
+          type: 'recent' as const,
+          title: 'Recent',
+          data: filteredRecent.slice(0, 5),
+          icon: Clock
+        });
+      }
+      
+      // Top suggestions (3 of each type, filtered by searchFilter)
+      const topLocations = searchFilter === 'all' || searchFilter === 'locations' ? searchIndex.locations.slice(0, 3) : [];
+      const topPeople = searchFilter === 'all' || searchFilter === 'people' ? searchIndex.people.slice(0, 3) : [];
+      const topCategories = searchFilter === 'all' || searchFilter === 'categories' ? searchIndex.categories.slice(0, 3) : [];
+      
+      if (topLocations.length > 0) {
+        sections.push({ type: 'location' as const, title: 'Locations', data: topLocations, icon: MapPin });
+      }
+      if (topPeople.length > 0) {
+        sections.push({ type: 'person' as const, title: 'People', data: topPeople, icon: User });
+      }
+      if (topCategories.length > 0) {
+        sections.push({ type: 'category' as const, title: 'Categories', data: topCategories, icon: Tag });
+      }
+      
+      return sections;
+    }
+    
+    // When query exists, filter results by query and type
+    const filterByQuery = (items: Array<{ name: string }>) => 
+      items.filter(item => item.name.toLowerCase().includes(q)).slice(0, 5);
+
+    const sections = [];
+    if (searchFilter === 'all' || searchFilter === 'locations') {
+      const data = filterByQuery(searchIndex.locations);
+      if (data.length > 0) sections.push({ type: 'location' as const, title: 'Locations', data, icon: MapPin });
+    }
+    if (searchFilter === 'all' || searchFilter === 'people') {
+      const data = filterByQuery(searchIndex.people);
+      if (data.length > 0) sections.push({ type: 'person' as const, title: 'People', data, icon: User });
+    }
+    if (searchFilter === 'all' || searchFilter === 'categories') {
+      const data = filterByQuery(searchIndex.categories);
+      if (data.length > 0) sections.push({ type: 'category' as const, title: 'Categories', data, icon: Tag });
+    }
+
+    return sections;
+  }, [searchIndex, searchQuery, recentSearches, searchFilter]);
+
+  // Flatten suggestions for keyboard navigation
+  const allSuggestions = useMemo(() => {
+    return filteredSections.flatMap(section => section.data);
+  }, [filteredSections]);
+
+  // Reset highlighted index when search query changes
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHighlightedIndex(-1);
+  }, [searchQuery]);
+
+  // Click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Handle suggestion selection
+  const handleSuggestionSelect = useCallback((suggestion: typeof allSuggestions[0]) => {
+    switch (suggestion.type) {
+      case 'location':
+        setSearchQuery(suggestion.name);
+        break;
+      case 'person':
+        setSearchQuery(suggestion.name);
+        break;
+      case 'category':
+        // Set category state to sync with category pills
+        setCategory(suggestion.name);
+        // Also set search query for visual feedback
+        setSearchQuery(suggestion.name);
+        break;
+    }
+    // Add to recent searches (excluding 'recent' section type)
+    if (suggestion.type !== 'recent') {
+      addToRecentSearches({ type: suggestion.type, name: suggestion.name });
+    }
+    setShowSuggestions(false);
+    setHighlightedIndex(-1);
+    // Keep search input focused for further typing
+    setTimeout(() => {
+      const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+      if (input) input.focus();
+    }, 10);
+  }, [setCategory, setSearchQuery, setShowSuggestions, setHighlightedIndex, addToRecentSearches]);
+
+  // Keyboard navigation for suggestions
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || allSuggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < allSuggestions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : allSuggestions.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < allSuggestions.length) {
+          handleSuggestionSelect(allSuggestions[highlightedIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+        break;
+    }
+  }, [showSuggestions, allSuggestions, highlightedIndex, handleSuggestionSelect]);
+
+
 
   const filteredPrayers = useMemo(() => {
     let result = prayers;
@@ -109,7 +342,8 @@ export function Feed() {
           p.text.toLowerCase().includes(q) ||
           p.city.toLowerCase().includes(q) ||
           p.country.toLowerCase().includes(q) ||
-          (p.name && p.name.toLowerCase().includes(q))
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.category && p.category.toLowerCase().includes(q))
       );
     }
 
@@ -129,11 +363,13 @@ export function Feed() {
     );
     // Persist to localStorage for profile tracking
     try {
-      const existing = JSON.parse(localStorage.getItem("oratio_prayed") || "[]");
+      const existing = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
       if (!existing.includes(id)) {
         localStorage.setItem("oratio_prayed", JSON.stringify([...existing, id]));
       }
-    } catch {}
+    } catch {
+      // ignore localStorage errors
+    }
   }, []);
 
   const handleTap = useCallback((prayer: PrayerRequest) => {
@@ -163,9 +399,11 @@ export function Feed() {
     const shareText = `🙏 Prayer request${prayer.name ? ` from ${prayer.name}` : ""} (${prayer.city}):\n\n"${prayer.text}"\n\n${prayer.prayerCount} people have prayed. Join them on Oratio.`;
     
     if (navigator.share) {
-      try {
+       try {
         await navigator.share({ text: shareText });
-      } catch {}
+      } catch {
+        // ignore share cancellation errors
+      }
     } else {
       await navigator.clipboard.writeText(shareText);
       // Could add a toast here — for now clipboard is silent
@@ -231,7 +469,12 @@ export function Feed() {
                   type="text"
                   placeholder="Search prayers, cities, people..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onKeyDown={handleSearchKeyDown}
                   autoFocus
                   className="flex-1 bg-transparent text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none"
                 />
@@ -243,8 +486,119 @@ export function Feed() {
                     <X size={14} />
                   </button>
                 )}
-              </div>
-            </motion.div>
+                </div>
+
+                {/* Search filter pills */}
+                <div className="flex gap-1.5 px-1 mb-3 overflow-x-auto no-scrollbar">
+                  {[
+                    { id: 'all', label: 'All', icon: Search },
+                    { id: 'people', label: 'People', icon: User },
+                    { id: 'locations', label: 'Locations', icon: MapPin },
+                    { id: 'categories', label: 'Categories', icon: Tag },
+                  ].map((filter) => {
+                    const Icon = filter.icon;
+                    const isActive = searchFilter === filter.id;
+                    return (
+                      <button
+                        key={filter.id}
+                        onClick={() => setSearchFilter(filter.id as 'all' | 'people' | 'locations' | 'categories')}
+                        className="flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer uppercase tracking-wider flex items-center gap-1"
+                        style={{
+                          background: isActive
+                            ? "rgba(124,143,255,0.1)"
+                            : "transparent",
+                          color: isActive ? "#c5cdff" : "#4e5573",
+                          border: isActive
+                            ? "1px solid rgba(124,143,255,0.15)"
+                            : "1px solid rgba(124,143,255,0.06)",
+                        }}
+                      >
+                        <Icon size={11} />
+                        {filter.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                 {/* Search suggestions dropdown */}
+                <AnimatePresence>
+                  {showSuggestions && (
+                    <motion.div
+                      ref={suggestionsRef}
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="rounded-xl border border-border/20 overflow-hidden bg-popover/92 backdrop-blur-xl"
+                    >
+                      {allSuggestions.length > 0 ? (
+                        /* Grouped sections */
+                        filteredSections.map((section) => (
+                          <div key={section.type}>
+                            <div className="px-4 py-2 text-xs text-muted-foreground uppercase tracking-wider border-b border-border/20 flex items-center justify-between">
+                              <span>{section.title}</span>
+                              {section.type === 'recent' && recentSearches.length > 0 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setRecentSearches([]);
+                                    localStorage.removeItem('oratio_recent_searches');
+                                  }}
+                                  className="text-muted-foreground hover:text-foreground text-[10px] normal-case tracking-normal cursor-pointer"
+                                >
+                                  Clear
+                                </button>
+                              )}
+                            </div>
+                            {section.data.map((item) => {
+                              const flatIndex = allSuggestions.findIndex(s => s.type === item.type && s.name === item.name);
+                              return (
+                                <button
+                                  key={`${item.type}-${item.name}`}
+                                  onClick={() => handleSuggestionSelect(item)}
+                                  className={`w-full text-left px-4 py-3 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer flex items-center gap-3 ${highlightedIndex === flatIndex ? 'bg-accent' : ''}`}
+                                >
+                                  {section.type === 'recent' ? (
+                                    <Clock size={14} className="text-muted-foreground flex-shrink-0" />
+                                  ) : item.type === 'person' ? (
+                                    <span className="text-base flex-shrink-0">{getAvatarForName(item.name)}</span>
+                                  ) : (
+                                    <section.icon size={14} className="text-muted-foreground flex-shrink-0" />
+                                  )}
+                                  <span className="truncate flex-1">{item.name}</span>
+                                  {item.type === 'location' && 'prayerCount' in item && (
+                                    <span className="text-xs text-muted-foreground bg-secondary/30 px-1.5 py-0.5 rounded-full">
+                                      {item.prayerCount}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ))
+                      ) : searchQuery.trim() ? (
+                        /* No results state */
+                        <div className="py-8 text-center">
+                          <Search size={20} className="text-muted-foreground mx-auto mb-2 opacity-50" />
+                          <p className="text-muted-foreground text-sm">No results for "{searchQuery}"</p>
+                          <p className="text-muted-foreground/70 text-xs mt-1">Try a different search term</p>
+                          <button
+                            onClick={() => setSearchQuery('')}
+                            className="mt-3 px-3 py-1.5 text-xs text-foreground/70 bg-secondary/30 rounded-full hover:bg-secondary/50 transition-colors cursor-pointer"
+                          >
+                            Clear search
+                          </button>
+                        </div>
+                      ) : (
+                        /* Empty query and no recent/top suggestions (should not happen) */
+                        <div className="py-8 text-center">
+                          <Clock size={20} className="text-muted-foreground mx-auto mb-2 opacity-50" />
+                          <p className="text-muted-foreground text-sm">Start typing to search</p>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+             </motion.div>
           )}
         </AnimatePresence>
 
@@ -314,17 +668,13 @@ export function Feed() {
               className="overflow-hidden mb-4"
             >
               <div
-                className="rounded-xl px-4 py-3 flex items-center gap-3"
-                style={{
-                  background: "rgba(124, 143, 255, 0.08)",
-                  border: "1px solid rgba(124, 143, 255, 0.15)",
-                }}
+                className="relative rounded-xl px-4 py-3 flex items-center gap-3 bg-primary/8 border border-primary/15"
               >
-                <MapPin size={14} className="text-[#7c8fff] flex-shrink-0" />
+                <MapPin size={14} className="text-primary flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[#c5cbe2] text-sm">
                     Showing prayers from{" "}
-                    <span className="text-[#7c8fff]">
+                    <span className="text-primary">
                       {locationCity}{locationCountry ? `, ${locationCountry}` : ""}
                     </span>
                   </p>
@@ -335,6 +685,13 @@ export function Feed() {
                 >
                   <X size={14} />
                 </button>
+                {/* Progress bar */}
+                <motion.div
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary/30 origin-left"
+                  initial={{ scaleX: 1 }}
+                  animate={{ scaleX: 0 }}
+                  transition={{ duration: 5, ease: "linear" }}
+                />
               </div>
             </motion.div>
           )}
@@ -436,8 +793,10 @@ export function Feed() {
                     <span className="text-[#5a6080] text-[10px]">
                       {prayer.prayerCount} prayers
                     </span>
-                  </div>
-                </motion.div>
+               </div>
+
+
+             </motion.div>
               ))}
             </div>
           </div>
@@ -610,42 +969,33 @@ export function Feed() {
                       </p>
 
                       {/* Name */}
-                      {selectedPrayer.name && (
-                        <div className="flex items-center gap-2.5 mb-4">
-                          <p className="text-[#6b7499] text-sm">
-                            &mdash; {selectedPrayer.name}
-                          </p>
-                          <button
-                            onClick={() => toggleFollow(selectedPrayer.name!)}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] transition-all cursor-pointer"
-                            style={{
-                              background: following.has(selectedPrayer.name!)
-                                ? "rgba(110, 231, 183, 0.1)"
-                                : "rgba(124,143,255,0.06)",
-                              color: following.has(selectedPrayer.name!)
-                                ? "#6ee7b7"
-                                : "#6b7499",
-                              border: `1px solid ${
-                                following.has(selectedPrayer.name!)
-                                  ? "rgba(110, 231, 183, 0.2)"
-                                  : "rgba(124,143,255,0.1)"
-                              }`,
-                            }}
-                          >
-                            {following.has(selectedPrayer.name!) ? (
-                              <>
-                                <UserCheck size={10} />
-                                Following
-                              </>
-                            ) : (
-                              <>
-                                <UserPlus size={10} />
-                                Follow
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      )}
+                      {selectedPrayer.name && (() => {
+                         const name = selectedPrayer.name;
+                        return (
+                          <div className="flex items-center gap-2.5 mb-4">
+                            <p className="text-[#6b7499] text-sm">
+                              &mdash; {name}
+                            </p>
+                            <motion.button
+                              onClick={() => toggleFollow(name)}
+                              whileTap={{ scale: 0.95 }}
+                              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] transition-all duration-200 cursor-pointer ${following.has(name) ? 'bg-[rgba(110,231,183,0.1)] text-[#6ee7b7] border border-[rgba(110,231,183,0.2)]' : 'bg-[rgba(124,143,255,0.06)] text-[#6b7499] border border-[rgba(124,143,255,0.1)]'}`}
+                            >
+                              {following.has(name) ? (
+                                <>
+                                  <UserCheck size={10} />
+                                  Following
+                                </>
+                              ) : (
+                                <>
+                                  <UserPlus size={10} />
+                                  Follow
+                                </>
+                              )}
+                            </motion.button>
+                          </div>
+                        );
+                      })()}
 
                       {/* Prayer count */}
                       <div className="flex items-center gap-1.5 text-[#6b7499] text-xs mb-8">
@@ -681,7 +1031,7 @@ export function Feed() {
 
                       {/* Share button */}
                       <button
-                        onClick={() => handleShare(selectedPrayer)}
+                        onClick={() => { void handleShare(selectedPrayer); }}
                         className="flex items-center gap-1.5 mt-4 px-4 py-1.5 rounded-full text-xs text-[#6b7499] hover:text-[#8b96c0] hover:bg-[rgba(124,143,255,0.06)] transition-all cursor-pointer"
                       >
                         <Share2 size={12} />

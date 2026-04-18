@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   User,
+  Users,
   Heart,
   Send,
   MapPin,
@@ -15,91 +16,30 @@ import {
   MessageCircle,
   Camera,
   X,
+  UserPlus,
+  UserCheck,
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
 import { mockFeedPrayers, timeAgo, cities } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
+import {
+  getProfile,
+  saveProfile,
+  getSubmittedIds,
+  getPrayedIds,
+  getRemovedIds,
+  getAnsweredIds,
+  getFollowingIds,
+  getStoredSubmittedPrayers,
+  addToList,
+  getAvatarForName,
+  categoryColors,
+  type UserProfile,
+} from "../data/profile-data";
 
 const AVATARS = ["🙏", "✝️", "🕊️", "💛", "🌿", "⭐", "🔥", "💜"];
 const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
-
-interface UserProfile {
-  name: string;
-  avatar: string;
-  photo?: string;
-  joinedAt: string;
-}
-
-function getProfile(): UserProfile {
-  try {
-    const raw = localStorage.getItem("oratio_profile");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { name: "", avatar: "🙏", joinedAt: new Date().toISOString() };
-}
-
-function saveProfile(profile: UserProfile) {
-  localStorage.setItem("oratio_profile", JSON.stringify(profile));
-}
-
-function getSubmittedIds(): string[] {
-  try {
-    const raw = localStorage.getItem("oratio_submitted");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
-function getPrayedIds(): string[] {
-  try {
-    const raw = localStorage.getItem("oratio_prayed");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
-function getRemovedIds(): string[] {
-  try {
-    const raw = localStorage.getItem("oratio_removed");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
-function getAnsweredIds(): string[] {
-  try {
-    const raw = localStorage.getItem("oratio_answered");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
-function getStoredSubmittedPrayers(): PrayerRequest[] {
-  try {
-    const raw = localStorage.getItem("oratio_submitted_prayers");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
-function addToList(key: string, id: string) {
-  try {
-    const existing = JSON.parse(localStorage.getItem(key) || "[]");
-    if (!existing.includes(id)) {
-      localStorage.setItem(key, JSON.stringify([...existing, id]));
-    }
-  } catch {}
-}
-
-const categoryColors: Record<string, string> = {
-  Health: "#67e8f9",
-  Family: "#a78bfa",
-  Career: "#fbbf24",
-  Guidance: "#7c8fff",
-  Peace: "#6ee7b7",
-  Other: "#8890b5",
-};
 
 export function Profile() {
   const navigate = useNavigate();
@@ -109,9 +49,7 @@ export function Profile() {
   const [profileAvatar, setProfileAvatar] = useState(profile.avatar);
   const [profilePhoto, setProfilePhoto] = useState<string | undefined>(profile.photo);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<"submitted" | "prayed">(
-    "submitted"
-  );
+
 
   // Prayer detail / action drawer
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
@@ -129,6 +67,9 @@ export function Profile() {
   const [localRemoved, setLocalRemoved] = useState<Set<string>>(() => new Set(getRemovedIds()));
   const [localAnswered, setLocalAnswered] = useState<Set<string>>(() => new Set(getAnsweredIds()));
   const [answeredCount, setAnsweredCount] = useState(getAnsweredIds().length);
+  const [following, setFollowing] = useState<Set<string>>(() => new Set(getFollowingIds()));
+  const followingCount = following.size;
+
 
   const submittedIds = getSubmittedIds();
   const prayedIds = getPrayedIds();
@@ -145,7 +86,7 @@ export function Profile() {
     return mockFeedPrayers.filter((p) => allIds.has(p.id));
   }, [prayedIds]);
 
-  const activePrayers = activeTab === "submitted" ? mySubmitted : myPrayed;
+
 
   const totalPrayersReceived = mySubmitted.reduce(
     (sum, p) => sum + p.prayerCount,
@@ -218,6 +159,19 @@ export function Profile() {
     setActionView("deleted");
   };
 
+  const toggleFollow = (name: string) => {
+    setFollowing((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      localStorage.setItem("oratio_following", JSON.stringify([...next]));
+      return next;
+    });
+  };
+
   return (
     <div
       className="w-full h-full flex flex-col"
@@ -285,12 +239,12 @@ export function Profile() {
             </p>
           </motion.div>
 
-          {/* Stats row */}
+           {/* Stats row */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
-            className="grid grid-cols-3 gap-2.5 mb-8"
+            className="grid grid-cols-4 gap-2 mb-8"
           >
             {[
               {
@@ -298,23 +252,33 @@ export function Profile() {
                 label: "Submitted",
                 value: mySubmitted.length,
                 color: "#7c8fff",
+                path: "/profile/submitted",
               },
               {
                 icon: Heart,
                 label: "Prayed For",
                 value: myPrayed.length,
                 color: "#a78bfa",
+                path: "/profile/prayed",
               },
               {
                 icon: Sparkles,
                 label: "Answered",
                 value: answeredCount,
                 color: "#fbbf24",
+                path: "/profile/answered",
+              },
+              {
+                icon: User,
+                label: "Following",
+                value: followingCount,
+                color: "#6ee7b7",
+                path: "/profile/following",
               },
             ].map((stat, i) => {
               const Icon = stat.icon;
               return (
-                <motion.div
+                <motion.button
                   key={stat.label}
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -324,7 +288,11 @@ export function Profile() {
                     background:
                       "linear-gradient(160deg, rgba(17, 26, 58, 0.8), rgba(12, 18, 48, 0.6))",
                     border: "1px solid rgba(124,143,255,0.06)",
+                    cursor: 'pointer',
                   }}
+                  onClick={() => navigate(stat.path)}
+                  whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <Icon
                     size={16}
@@ -340,76 +308,78 @@ export function Profile() {
                   <p className="text-[#4e5573] text-[10px] uppercase tracking-wider">
                     {stat.label}
                   </p>
-                </motion.div>
+                </motion.button>
               );
             })}
           </motion.div>
 
+
+
           {/* Tab toggle: My Prayers / Prayed For */}
+          {/* Recent Activity Preview */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.25 }}
-            className="flex gap-1 mb-5"
+            className="mb-8"
           >
-            {(
-              [
-                { id: "submitted", label: "My Prayers", icon: Send },
-                { id: "prayed", label: "Prayed For", icon: Heart },
-              ] as const
-            ).map((t) => {
-              const isActive = activeTab === t.id;
-              const Icon = t.icon;
-              return (
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[#e2e4f0] font-heading text-sm">Recent Activity</h3>
+              {mySubmitted.length > 0 && (
                 <button
-                  key={t.id}
-                  onClick={() => setActiveTab(t.id)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs transition-all duration-300 cursor-pointer"
-                  style={{
-                    background: isActive
-                      ? "rgba(124,143,255,0.12)"
-                      : "transparent",
-                    color: isActive ? "#7c8fff" : "#6b7499",
-                    border: isActive
-                      ? "1px solid rgba(124,143,255,0.2)"
-                      : "1px solid transparent",
-                  }}
+                  onClick={() => navigate('/profile/submitted')}
+                  className="text-[#7c8fff] text-xs hover:underline cursor-pointer"
                 >
-                  <Icon size={13} strokeWidth={isActive ? 2.2 : 1.8} />
-                  {t.label}
+                  View All
                 </button>
-              );
-            })}
-          </motion.div>
+              )}
+            </div>
 
-          {/* Prayer list */}
-          <div className="space-y-2.5">
-            {activePrayers.length > 0 ? (
-              activePrayers.map((prayer, i) => (
-                <PrayerRow
-                  key={prayer.id}
-                  prayer={prayer}
-                  index={i}
-                  showCount={activeTab === "submitted"}
-                  canManage={activeTab === "submitted"}
-                  onTap={handleOpenPrayer}
-                />
-              ))
+            {mySubmitted.length > 0 ? (
+              <div className="space-y-2.5">
+                {mySubmitted.slice(0, 2).map((prayer, i) => (
+                  <PrayerRow
+                    key={prayer.id}
+                    prayer={prayer}
+                    index={i}
+                    showCount={true}
+                    canManage={true}
+                    onTap={handleOpenPrayer}
+                  />
+                ))}
+                {mySubmitted.length > 2 && (
+                  <button
+                    onClick={() => navigate('/profile/submitted')}
+                    className="w-full py-3 rounded-xl text-[#7c8fff] text-sm bg-[rgba(124,143,255,0.04)] border border-[rgba(124,143,255,0.08)] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer"
+                  >
+                    + {mySubmitted.length - 2} more prayers
+                  </button>
+                )}
+              </div>
             ) : (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-center py-12"
+                className="text-center py-8 rounded-xl"
+                style={{
+                  background: "rgba(17, 26, 58, 0.4)",
+                  border: "1px solid rgba(124,143,255,0.05)",
+                }}
               >
-                <p className="text-[#6b7499] text-sm mb-1">Nothing here yet</p>
+                <Send size={20} className="text-[#4e5573] mx-auto mb-2" />
+                <p className="text-[#6b7499] text-sm mb-1">No prayers yet</p>
                 <p className="text-[#4e5573] text-xs">
-                  {activeTab === "submitted"
-                    ? "Submit your first prayer request"
-                    : "Pray for someone in the feed"}
+                  Submit your first prayer request
                 </p>
+                <button
+                  onClick={() => navigate('/submit')}
+                  className="mt-3 px-4 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer hover:bg-[rgba(124,143,255,0.12)] transition-all"
+                >
+                  Submit Prayer
+                </button>
               </motion.div>
             )}
-          </div>
+          </motion.div>
 
           {/* Quick actions */}
           <motion.div
@@ -474,6 +444,23 @@ export function Profile() {
               </div>
               <ChevronRight size={14} className="text-[#3e4460]" />
             </a>
+
+            <button
+              onClick={() => setEditOpen(true)}
+              className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"
+              style={{
+                background: "rgba(17, 26, 58, 0.4)",
+                border: "1px solid rgba(124,143,255,0.05)",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <User size={16} className="text-[#7c8fff] opacity-60" />
+                <span className="text-[#c5cbe2] text-sm">
+                  Edit Profile
+                </span>
+              </div>
+              <ChevronRight size={14} className="text-[#3e4460]" />
+            </button>
 
             <button
               onClick={() => {
@@ -1094,12 +1081,14 @@ export function Profile() {
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
+
+
     </div>
   );
 }
 
 /* ── Compact prayer row for profile lists ────────────────────────────── */
-function PrayerRow({
+export function PrayerRow({
   prayer,
   index,
   showCount,

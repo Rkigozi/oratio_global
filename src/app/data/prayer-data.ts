@@ -66,6 +66,35 @@ const cityDatabase: Array<{
   { name: "Sydney", country: "Australia", lat: -33.9, lng: 151.2, weight: 2 },
 ];
 
+// Add jitter to coordinates for privacy (approx +/- 0.05 degrees ~5.5 km)
+function addJitter(lat: number, lng: number, seed: number): { lat: number; lng: number } {
+  // Simple deterministic pseudo-random based on seed
+  const rand = () => {
+    seed = (seed * 16807 + 0) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+  const jitter = 0.05; // degrees
+  return {
+    lat: lat + (rand() * 2 - 1) * jitter,
+    lng: lng + (rand() * 2 - 1) * jitter,
+  };
+}
+
+// Get approximate coordinates for a city with deterministic jitter
+export function getApproximateCoordinates(cityName: string, country: string): { lat: number; lng: number } {
+  const city = cityDatabase.find(c => c.name === cityName && c.country === country);
+  if (!city) {
+    // Fallback to a random location (should not happen)
+    return { lat: 20 + (Math.random() - 0.5) * 40, lng: (Math.random() - 0.5) * 180 };
+  }
+  // Create a seed from city name and country
+  let seed = 0;
+  for (let i = 0; i < cityName.length; i++) seed += cityName.charCodeAt(i);
+  for (let i = 0; i < country.length; i++) seed += country.charCodeAt(i);
+  seed = seed % 1000000;
+  return addJitter(city.lat, city.lng, seed);
+}
+
 // ── Prayer texts & names ─────────────────────────────────────────────
 const prayerTexts = [
   // Health — specific, vulnerable, real
@@ -204,6 +233,7 @@ const generateHotspotData = (): PrayerRequest[] => {
     const city = cityDatabase[i];
     const activityLevel = city.weight * 30 + Math.floor(rand() * city.weight * 40);
 
+    const coords = getApproximateCoordinates(city.name, city.country);
     prayers.push({
       id: `hotspot-${id}`,
       city: city.name,
@@ -211,8 +241,8 @@ const generateHotspotData = (): PrayerRequest[] => {
       text: prayerTexts[Math.floor(rand() * prayerTexts.length)],
       name: shuffledNames[i % shuffledNames.length],
       prayerCount: activityLevel,
-      lat: city.lat,
-      lng: city.lng,
+      lat: coords.lat,
+      lng: coords.lng,
     });
     id++;
   }
@@ -239,6 +269,7 @@ const generateFeedData = (): PrayerRequest[] => {
   for (const city of cityDatabase) {
     // More prayers from higher-weight cities
     const count = city.weight + Math.floor(rand() * 2);
+    const coords = getApproximateCoordinates(city.name, city.country);
 
     for (let j = 0; j < count; j++) {
       // Spread timestamps across the last 48 hours
@@ -252,8 +283,8 @@ const generateFeedData = (): PrayerRequest[] => {
         text: shuffledTexts[textIdx % shuffledTexts.length],
         name: shuffledNames[nameIdx % shuffledNames.length],
         prayerCount: Math.floor(rand() * 80) + 1,
-        lat: city.lat,
-        lng: city.lng,
+        lat: coords.lat,
+        lng: coords.lng,
         category: CATEGORIES[Math.floor(rand() * CATEGORIES.length)],
         createdAt: createdAt.toISOString(),
       });
