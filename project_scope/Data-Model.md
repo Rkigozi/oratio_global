@@ -213,6 +213,23 @@ Represents summarised prayer activity for map display.
 - aggregation should exclude deleted prayers
 - map should never expose precise personal location
 
+### Location Classification
+
+Cities are categorized by weight for inclusive map display:
+
+- **Major cities**: Weight ≥4 (e.g., New York, London, Tokyo)
+- **Minor cities**: Weight ≤3 (e.g., regional centers, smaller cities)
+- **Special locations**: Weight = 1, type = "special" (Global, Online)
+
+#### Map Display Rules
+
+- **Zoom-based filtering**: Minor cities appear only at zoom level ≥6
+- **Visual distinction**:
+  - Major cities: blue hue (≈220°)
+  - Minor cities: purple hue (≈280°)
+  - Special locations: green hue (≈120°)
+- **Special locations**: "Global" and "Online" appear as map markers with approximate coordinates but are selectable in the location dropdown
+
 ---
 
 ## 7. TranslationCache

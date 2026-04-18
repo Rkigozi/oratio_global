@@ -58,7 +58,9 @@
  - ✅ **Intelligent Search with Suggestions**: Instagram-style search with recent searches, filtering (Story 21)
  - ✅ **Follow System Polish**: Following count clickable with drawer, avatar system (Story 24)
  - ✅ **Instagram-style Profile Navigation**: Implemented nested routes, DetailLayout, searchable following list, updated profile stats navigation (Story 25)
- - ✅ **City Label Display**: Added toggle button for city names on map at higher zoom levels with subtle labels (Privacy-friendly)
+  - ✅ **City Label Display**: Added toggle button for city names on map at higher zoom levels with subtle labels (Privacy-friendly)
+  - ✅ **Location Model Enhanced**: Designed inclusive location system with minor cities, zoom-based filtering, and special locations (Global, Online) for rural users and non-geographic prayers
+
 
 ### 🚧 Backend Integration (Future)
 1. **Supabase Setup**
@@ -188,6 +190,6 @@
 4. **Long-term**: Implement backend integration
 
 ---
-*Last Updated: 2026-04-18*
+*Last Updated: 2026-04-19*
 *Status: Phase 1 Foundation Cleanup In Progress (UI improvements complete)*
 *Next Session: Continue with security fixes (dependency cleanup, input validation, XSS protection)*
