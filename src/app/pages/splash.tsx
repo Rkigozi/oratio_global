@@ -9,12 +9,13 @@ export function Splash() {
     const timer = setTimeout(() => {
       try {
         const profile = localStorage.getItem("oratio_profile");
-        const hasProfile = profile ? JSON.parse(profile)?.name : false;
+        const parsed = profile ? JSON.parse(profile) as { name?: string } : null;
+        const hasProfile = parsed?.name;
         console.log('Splash: profile exists?', !!hasProfile);
-        navigate(hasProfile ? "/" : "/onboarding");
+        void navigate(hasProfile ? "/" : "/onboarding");
       } catch (error) {
         console.error('Splash: error parsing profile', error);
-        navigate("/onboarding");
+        void navigate("/onboarding");
       }
     }, 2500);
     return () => clearTimeout(timer);

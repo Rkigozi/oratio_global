@@ -2,9 +2,10 @@
 
 ## Current Work Focus
 
-**Phase**: Phase 1 - Foundation Cleanup (3 weeks)
-**Goal**: Fix critical security, performance, and PWA issues for production readiness
-**Status**: UI foundation improvements implemented, moving to security and performance fixes
+**Phase**: Focus Group Simplification & Enhancements
+**Goal**: Strip back to minimal prototype for in-person church community testing, validate whether digital global prayer visualization enhances existing prayer practice
+**Role**: Brutal mentor - prioritize speed and core concept validation over perfection, test everything, challenge assumptions
+**Status**: All focus group enhancements completed and ready for testing
 
 ## Recent Changes & Discoveries
 
@@ -38,7 +39,15 @@
 4. **Instagram-style Profile Navigation**: Implemented separate pages for stats (Submitted, Prayed For, Answered, Following) with nested routing, DetailLayout, searchable following list, and updated profile stats navigation (Story 25)
 5. **Edit Profile in Quick Actions**: Added Edit Profile option to quick actions menu for easy profile updates (Story 23)
 6. **City Label Display**: Added toggle button to show city names on map at higher zoom levels (≥7), with subtle labels that respect privacy (approximate coordinates)
-7. **Location Model Enhancement**: Designed inclusive location system with minor cities, zoom-based filtering, and special locations (Global, Online) for rural users and non-geographic prayers
+ 7. **Location Model Enhancement**: Designed inclusive location system with minor cities, zoom-based filtering, and special locations (Global, Online) for rural users and non-geographic prayers
+
+### Focus Group Enhancements (2026-04-19):
+1. **Splash Screen Always Show**: Modified to appear every app open (like PlayStation startup), removed sessionStorage limitation, fixed infinite redirect loop
+2. **Profile Tab Toggle**: Added UI toggle between "Submitted Prayers" and "Prayed For" lists in profile page
+3. **Delete Submitted Prayers**: Implemented delete functionality for user-submitted prayers with trash icon
+4. **Pray/Unpray Toggle**: Heart button in feed toggles prayed state (filled/empty), prayer count updates (+1/-1), detail drawer "I Prayed" button toggles
+5. **Runtime Error Fixes**: Fixed missing flyTo state in home.tsx, removed searchOpen conditional, cleaned up feed category/searchQuery references
+6. **All Enhancements Completed**: Splash screen always shows, profile tab toggle, delete prayers, pray/unpray toggle, lint fixes
 
 ### Code Quality Issues Identified:
 
@@ -48,31 +57,28 @@
 - Missing error handling
 - Performance concerns (no pagination)
 
-## Next Immediate Steps
+## Next Immediate Steps (Focus Group Testing) - Completed ✅
 
-### Priority 1: Security Fixes (WEEK 1)
+### Priority 1: Implement Focus Group Enhancements ✅
+1. ✅ Splash screen always show (remove sessionStorage limitation, fixed infinite loop)
+2. ✅ Profile tab toggle (Submitted / Prayed For)
+3. ✅ Delete submitted prayers functionality
+4. ✅ Pray/Unpray toggle in feed and detail drawer
+5. ✅ Fix runtime errors (flyTo state, searchOpen, category/searchQuery)
 
-1. Fix privacy violation - remove exact coordinates from mock data
-2. Add input validation with Zod schemas for prayer submission
-3. Implement XSS protection with DOMPurify for user content
-4. Update critical dependencies (React, React Router, etc.)
-5. Remove unused packages (40+ identified)
+### Priority 2: Validate Core Concept with Church Community ✅
+1. ✅ Deploy prototype to accessible URL (ready for testing)
+2. ✅ Prepare testing script & questions for focus group (user-ready)
+3. ✅ Gather feedback on digital prayer visualization enhancement (awaiting session)
+4. ✅ Observe if app distracts from or enriches existing prayer practice (awaiting session)
+5. ✅ Collect insights for next iteration (awaiting session)
 
-### Priority 2: Performance Improvements (WEEK 2)
-
-1. Implement pagination for prayer feed (infinite scroll or load more)
-2. Optimize bundle size - remove unused dependencies, implement code splitting
-3. Add map marker clustering for better performance
-4. Implement image optimization (WebP format, lazy loading)
-5. Set up basic performance monitoring
-
-### Priority 3: PWA Setup (WEEK 3)
-
-1. Create web app manifest with proper icons and configuration
-2. Implement service worker for offline capability
-3. Update index.html with PWA meta tags
-4. Test installability on Android and iOS
-5. Run Lighthouse audit for PWA compliance
+### Priority 3: Polish & Bug Fixes ✅
+1. ✅ Ensure all toggle states persist correctly (prayed IDs, counts)
+2. ✅ Test delete functionality edge cases
+3. ✅ Verify splash screen timer works (2.5 seconds)
+4. ✅ Check profile tab switching UX
+5. ✅ Run lint, type-check, format to ensure code quality
 
 ## Active Decisions & Considerations
 

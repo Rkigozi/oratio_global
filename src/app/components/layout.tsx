@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Header } from "./header";
 import { BottomNav } from "./bottom-nav";
 
@@ -8,15 +8,15 @@ export function Layout() {
   const location = useLocation();
   const [checked, setChecked] = useState(false);
 
+  const hasRedirected = useRef(false);
+
   useEffect(() => {
-    const hasVisited = sessionStorage.getItem("oratio_visited");
-    if (!hasVisited && location.pathname === "/") {
-      sessionStorage.setItem("oratio_visited", "true");
-      navigate("/splash");
-    } else {
-      // Use setTimeout to avoid synchronous setState in effect
-      setTimeout(() => setChecked(true), 0);
+    if (location.pathname === "/" && !hasRedirected.current) {
+      hasRedirected.current = true;
+      void navigate("/splash");
     }
+    // Use setTimeout to avoid synchronous setState in effect
+    setTimeout(() => setChecked(true), 0);
   }, [navigate, location]);
 
   if (!checked) return null;

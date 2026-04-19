@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { MapPin, Heart } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
@@ -7,6 +7,7 @@ import { timeAgo } from "../data/prayer-data";
 interface FeedCardProps {
   prayer: PrayerRequest;
   index: number;
+  hasPrayed: boolean;
   onPrayed: (id: string) => void;
   onTap: (prayer: PrayerRequest) => void;
 }
@@ -20,16 +21,18 @@ const categoryColors: Record<string, string> = {
   Other: "#8890b5",
 };
 
-export function FeedCard({ prayer, index, onPrayed, onTap }: FeedCardProps) {
-  const [prayed, setPrayed] = useState(false);
-  const [count, setCount] = useState(prayer.prayerCount);
+export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCardProps) {
+  const [prayed, setPrayed] = useState(hasPrayed);
+
+  useEffect(() => {
+    setPrayed(hasPrayed);
+  }, [hasPrayed]);
 
 
   const handlePray = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (prayed) return;
-    setPrayed(true);
-    setCount((c) => c + 1);
+    const newPrayed = !prayed;
+    setPrayed(newPrayed);
     onPrayed(prayer.id);
   };
 
@@ -115,7 +118,7 @@ export function FeedCard({ prayer, index, onPrayed, onTap }: FeedCardProps) {
             className="text-xs transition-colors duration-300"
             style={{ color: prayed ? "#7c8fff" : "#6b7499" }}
           >
-            {count}
+             {prayer.prayerCount}
           </span>
         </button>
       </div>

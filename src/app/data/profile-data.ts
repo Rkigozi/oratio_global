@@ -11,8 +11,10 @@ export interface UserProfile {
 export function getProfile(): UserProfile {
   try {
     const raw = localStorage.getItem("oratio_profile");
-    if (raw) return JSON.parse(raw);
-  } catch {}
+    if (raw) return JSON.parse(raw) as UserProfile;
+  } catch {
+    // empty
+  }
   return { name: "", avatar: "🙏", joinedAt: new Date().toISOString() };
 }
 
@@ -23,16 +25,20 @@ export function saveProfile(profile: UserProfile) {
 export function getSubmittedIds(): string[] {
   try {
     const raw = localStorage.getItem("oratio_submitted");
-    if (raw) return JSON.parse(raw);
-  } catch {}
+    if (raw) return JSON.parse(raw) as string[];
+  } catch {
+    // empty
+  }
   return [];
 }
 
 export function getPrayedIds(): string[] {
   try {
     const raw = localStorage.getItem("oratio_prayed");
-    if (raw) return JSON.parse(raw);
-  } catch {}
+    if (raw) return JSON.parse(raw) as string[];
+  } catch {
+    // empty
+  }
   return [];
 }
 
@@ -41,18 +47,22 @@ export function getPrayedIds(): string[] {
 export function getStoredSubmittedPrayers(): PrayerRequest[] {
   try {
     const raw = localStorage.getItem("oratio_submitted_prayers");
-    if (raw) return JSON.parse(raw);
-  } catch {}
+    if (raw) return JSON.parse(raw) as PrayerRequest[];
+  } catch {
+    // empty
+  }
   return [];
 }
 
 export function addToList(key: string, id: string) {
   try {
-    const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    const existing = JSON.parse(localStorage.getItem(key) || "[]") as string[];
     if (!existing.includes(id)) {
       localStorage.setItem(key, JSON.stringify([...existing, id]));
     }
-  } catch {}
+  } catch {
+    // empty
+  }
 }
 
 export function getAvatarForName(name: string) {

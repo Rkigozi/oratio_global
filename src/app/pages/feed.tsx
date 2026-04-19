@@ -58,11 +58,12 @@ export function Feed() {
     return mockFeedPrayers;
   });
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
-  const [detailPrayed, setDetailPrayed] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showWelcome, setShowWelcome] = useState(() => {
     return !localStorage.getItem("oratio_feed_visited");
   });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+  const [prayedIds, setPrayedIds] = useState<string[]>(() => getPrayedIds());
 
 
 
@@ -100,38 +101,60 @@ export function Feed() {
     return [...prayers].sort((a, b) => b.prayerCount - a.prayerCount).slice(0, 5);
   }, [prayers]);
 
-  const handlePrayed = useCallback((id: string) => {
+  const togglePrayed = useCallback((id: string) => {
+    const isCurrentlyPrayed = prayedIds.includes(id);
+    const newPrayed = !isCurrentlyPrayed;
+    
     setPrayers((prev) =>
       prev.map((p) =>
-        p.id === id ? { ...p, prayerCount: p.prayerCount + 1 } : p
+        p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
       )
     );
+    
+    setPrayedIds((prev) => {
+      if (newPrayed && !prev.includes(id)) {
+        return [...prev, id];
+      } else if (!newPrayed && prev.includes(id)) {
+        return prev.filter(pId => pId !== id);
+      }
+      return prev;
+    });
+    
     // Persist to localStorage for profile tracking
     try {
       const existing = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
-      if (!existing.includes(id)) {
+      if (newPrayed && !existing.includes(id)) {
         localStorage.setItem("oratio_prayed", JSON.stringify([...existing, id]));
+      } else if (!newPrayed && existing.includes(id)) {
+        localStorage.setItem("oratio_prayed", JSON.stringify(existing.filter(pId => pId !== id)));
       }
     } catch {
       // ignore localStorage errors
     }
-  }, []);
+  }, [prayedIds]);
 
   const handleTap = useCallback((prayer: PrayerRequest) => {
     setSelectedPrayer(prayer);
-    setDetailPrayed(false);
     setShowConfirmation(false);
   }, []);
 
   const handleDetailPray = () => {
-    if (!selectedPrayer || detailPrayed) return;
-    setDetailPrayed(true);
-    handlePrayed(selectedPrayer.id);
-    setTimeout(() => setShowConfirmation(true), 600);
-    // Auto-dismiss after 1.5 seconds (user feedback)
-    setTimeout(() => {
+    if (!selectedPrayer) return;
+    const isCurrentlyPrayed = prayedIds.includes(selectedPrayer.id);
+    
+    if (!isCurrentlyPrayed) {
+      // Pray: increment count, show confirmation
+      togglePrayed(selectedPrayer.id);
+      setTimeout(() => setShowConfirmation(true), 600);
+      // Auto-dismiss after 1.5 seconds (user feedback)
+      setTimeout(() => {
+        setSelectedPrayer(null);
+      }, 2100); // 600ms for animation + 1500ms for display
+    } else {
+      // Unpray: decrement count, no confirmation, close drawer
+      togglePrayed(selectedPrayer.id);
       setSelectedPrayer(null);
-    }, 2100); // 600ms for animation + 1500ms for display
+    }
   };
 
   const selectedCount = selectedPrayer
@@ -370,13 +393,14 @@ export function Feed() {
         <div className="space-y-2.5">
           {filteredPrayers.length > 0 ? (
             filteredPrayers.map((prayer, i) => (
-              <FeedCard
-                key={prayer.id}
-                prayer={prayer}
-                index={i}
-                onPrayed={handlePrayed}
-                onTap={handleTap}
-              />
+               <FeedCard
+                 key={prayer.id}
+                 prayer={prayer}
+                 index={i}
+                 hasPrayed={prayedIds.includes(prayer.id)}
+                 onPrayed={togglePrayed}
+                 onTap={handleTap}
+               />
             ))
           ) : (
             <motion.div
@@ -514,25 +538,25 @@ export function Feed() {
                         <span>{selectedCount} people prayed</span>
                       </div>
 
-                      {/* "I Prayed" button */}
-                      <motion.button
-                        onClick={handleDetailPray}
-                        disabled={detailPrayed}
-                        whileTap={!detailPrayed ? { scale: 0.96 } : undefined}
-                        className="flex items-center gap-2.5 px-8 py-3 rounded-full text-sm transition-all duration-500 cursor-pointer disabled:cursor-default"
-                        style={{
-                          background: detailPrayed
-                            ? "rgba(124, 143, 255, 0.12)"
-                            : "linear-gradient(135deg, #7c8fff, #5a6fd6)",
-                          color: detailPrayed ? "#7c8fff" : "#ffffff",
-                          boxShadow: detailPrayed
-                            ? "none"
-                            : "0 4px 24px rgba(124, 143, 255, 0.25), 0 0 0 1px rgba(124,143,255,0.1)",
-                        }}
-                      >
-                        <span className="text-base">🙏</span>
-                        {detailPrayed ? "Prayed" : "I Prayed"}
-                      </motion.button>
+                       {/* "I Prayed" button */}
+                       <motion.button
+                         onClick={handleDetailPray}
+                         disabled={false}
+                         whileTap={{ scale: 0.96 }}
+                         className="flex items-center gap-2.5 px-8 py-3 rounded-full text-sm transition-all duration-500 cursor-pointer"
+                         style={{
+                           background: prayedIds.includes(selectedPrayer.id)
+                             ? "rgba(124, 143, 255, 0.12)"
+                             : "linear-gradient(135deg, #7c8fff, #5a6fd6)",
+                           color: prayedIds.includes(selectedPrayer.id) ? "#7c8fff" : "#ffffff",
+                           boxShadow: prayedIds.includes(selectedPrayer.id)
+                             ? "none"
+                             : "0 4px 24px rgba(124, 143, 255, 0.25), 0 0 0 1px rgba(124,143,255,0.1)",
+                         }}
+                       >
+                         <span className="text-base">🙏</span>
+                         {prayedIds.includes(selectedPrayer.id) ? "Prayed" : "I Prayed"}
+                       </motion.button>
 
                       {/* Share button */}
                       <button

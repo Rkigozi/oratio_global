@@ -1,35 +1,35 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  User,
   Heart,
   Send,
   MapPin,
   ChevronRight,
   LogOut,
   MessageCircle,
+  Trash2,
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
-import { mockFeedPrayers, timeAgo, cities } from "../data/prayer-data";
+import { timeAgo } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import {
   getProfile,
-  saveProfile,
   getSubmittedIds,
   getPrayedIds,
   getStoredSubmittedPrayers,
-  getAvatarForName,
+  getPrayedForPrayers,
   categoryColors,
-  type UserProfile,
 } from "../data/profile-data";
 
 
-const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
+
 
 export function Profile() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(getProfile);
+  const [profile] = useState(getProfile);
+  const [activeTab, setActiveTab] = useState<'submitted' | 'prayed'>('submitted');
+  const [submittedVersion, setSubmittedVersion] = useState(0);
 
 
 
@@ -51,26 +51,41 @@ export function Profile() {
     const storedPrayers = getStoredSubmittedPrayers()
       .map((p) => ({ ...p, prayerCount: 0 }));
     return storedPrayers;
-  }, [submittedIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submittedIds, submittedVersion]);
 
   const myPrayed = useMemo(() => {
-    const allIds = new Set([...prayedIds]);
-    return mockFeedPrayers.filter((p) => allIds.has(p.id));
+    return getPrayedForPrayers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prayedIds]);
 
 
 
-  const totalPrayersReceived = mySubmitted.reduce(
-    (sum, p) => sum + p.prayerCount,
-    0
-  );
 
 
 
-  const handleOpenPrayer = (prayer: PrayerRequest) => {
-    setSelectedPrayer(prayer);
-    setActionView("options");
-  };
+
+   const handleOpenPrayer = (prayer: PrayerRequest) => {
+     setSelectedPrayer(prayer);
+     setActionView("options");
+   };
+
+   const handleDeletePrayer = (prayerId: string) => {
+     try {
+       // Remove from submitted prayers list
+       const submitted = JSON.parse(localStorage.getItem("oratio_submitted") || "[]") as string[];
+       localStorage.setItem("oratio_submitted", JSON.stringify(submitted.filter(id => id !== prayerId)));
+       
+       // Remove from submitted prayers storage
+       const storedPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
+       localStorage.setItem("oratio_submitted_prayers", JSON.stringify(storedPrayers.filter(p => p.id !== prayerId)));
+       
+       // Force re-render of submitted list
+       setSubmittedVersion(v => v + 1);
+     } catch (error) {
+       console.error("Failed to delete prayer:", error);
+     }
+   };
 
 
 
@@ -206,47 +221,99 @@ export function Profile() {
             transition={{ delay: 0.25 }}
             className="mb-8"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[#e2e4f0] font-heading text-sm">Recent Activity</h3>
-            </div>
+             <div className="flex items-center justify-between mb-4">
+               <h3 className="text-[#e2e4f0] font-heading text-sm">Recent Activity</h3>
+             </div>
+             
+             {/* Tab toggle */}
+             <div className="flex gap-1 mb-4">
+               <button
+                 onClick={() => setActiveTab('submitted')}
+                 className="flex-1 py-2 rounded-lg text-xs transition-all duration-300 cursor-pointer"
+                 style={{
+                   background: activeTab === 'submitted' 
+                     ? 'rgba(124,143,255,0.12)' 
+                     : 'transparent',
+                   color: activeTab === 'submitted' ? '#7c8fff' : '#6b7499',
+                   border: activeTab === 'submitted'
+                     ? '1px solid rgba(124,143,255,0.2)'
+                     : '1px solid transparent',
+                 }}
+               >
+                 Submitted
+               </button>
+               <button
+                 onClick={() => setActiveTab('prayed')}
+                 className="flex-1 py-2 rounded-lg text-xs transition-all duration-300 cursor-pointer"
+                 style={{
+                   background: activeTab === 'prayed' 
+                     ? 'rgba(124,143,255,0.12)' 
+                     : 'transparent',
+                   color: activeTab === 'prayed' ? '#7c8fff' : '#6b7499',
+                   border: activeTab === 'prayed'
+                     ? '1px solid rgba(124,143,255,0.2)'
+                     : '1px solid transparent',
+                 }}
+               >
+                 Prayed For
+               </button>
+             </div>
 
-            {mySubmitted.length > 0 ? (
-              <div className="space-y-2.5">
-                {mySubmitted.slice(0, 2).map((prayer, i) => (
-                  <PrayerRow
-                    key={prayer.id}
-                    prayer={prayer}
-                    index={i}
-                    showCount={true}
-                    canManage={true}
-                    onTap={handleOpenPrayer}
-                  />
-                ))}
-
-              </div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-8 rounded-xl"
-                style={{
-                  background: "rgba(17, 26, 58, 0.4)",
-                  border: "1px solid rgba(124,143,255,0.05)",
-                }}
-              >
-                <Send size={20} className="text-[#4e5573] mx-auto mb-2" />
-                <p className="text-[#6b7499] text-sm mb-1">No prayers yet</p>
-                <p className="text-[#4e5573] text-xs">
-                  Submit your first prayer request
-                </p>
-                <button
-                  onClick={() => navigate('/submit')}
-                  className="mt-3 px-4 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer hover:bg-[rgba(124,143,255,0.12)] transition-all"
-                >
-                  Submit Prayer
-                </button>
-              </motion.div>
-            )}
+             {(activeTab === 'submitted' ? mySubmitted : myPrayed).length > 0 ? (
+               <div className="space-y-2.5">
+                 {(activeTab === 'submitted' ? mySubmitted : myPrayed).map((prayer, i) => (
+                    <PrayerRow
+                      key={prayer.id}
+                      prayer={prayer}
+                      index={i}
+                      showCount={true}
+                      canManage={activeTab === 'submitted'}
+                      onTap={handleOpenPrayer}
+                      onDelete={activeTab === 'submitted' ? handleDeletePrayer : undefined}
+                    />
+                 ))}
+               </div>
+             ) : (
+               <motion.div
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 className="text-center py-8 rounded-xl"
+                 style={{
+                   background: "rgba(17, 26, 58, 0.4)",
+                   border: "1px solid rgba(124,143,255,0.05)",
+                 }}
+               >
+                 {activeTab === 'submitted' ? (
+                   <>
+                     <Send size={20} className="text-[#4e5573] mx-auto mb-2" />
+                     <p className="text-[#6b7499] text-sm mb-1">No prayers yet</p>
+                     <p className="text-[#4e5573] text-xs">
+                       Submit your first prayer request
+                     </p>
+                     <button
+                        onClick={() => void navigate('/submit')}
+                       className="mt-3 px-4 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer hover:bg-[rgba(124,143,255,0.12)] transition-all"
+                     >
+                       Submit Prayer
+                     </button>
+                   </>
+                 ) : (
+                   <>
+                     <Heart size={20} className="text-[#4e5573] mx-auto mb-2" />
+                     <p className="text-[#6b7499] text-sm mb-1">No prayers yet</p>
+                     <p className="text-[#4e5573] text-xs">
+                       Pray for someone to see them here
+                     </p>
+                     <button
+                        onClick={() => void navigate('/feed')}
+                       className="mt-3 px-4 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer hover:bg-[rgba(124,143,255,0.12)] transition-all"
+                     >
+                       Browse Feed
+                     </button>
+                   </>
+                 )}
+               </motion.div>
+             )}
           </motion.div>
 
           {/* Quick actions */}
@@ -261,7 +328,7 @@ export function Profile() {
             </p>
 
             <button
-              onClick={() => navigate("/submit")}
+               onClick={() => void navigate("/submit")}
               className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"
               style={{
                 background: "rgba(17, 26, 58, 0.4)",
@@ -278,7 +345,7 @@ export function Profile() {
             </button>
 
             <button
-              onClick={() => navigate("/feed")}
+               onClick={() => void navigate("/feed")}
               className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"
               style={{
                 background: "rgba(17, 26, 58, 0.4)",
@@ -317,7 +384,7 @@ export function Profile() {
               onClick={() => {
                 ['oratio_profile','oratio_submitted','oratio_submitted_prayers','oratio_prayed'].forEach(k => localStorage.removeItem(k));
                 sessionStorage.removeItem('oratio_visited');
-                navigate("/splash");
+                 void navigate("/splash");
               }}
               className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)] mt-4"
               style={{
@@ -436,12 +503,14 @@ export function PrayerRow({
   showCount,
   canManage,
   onTap,
+  onDelete,
 }: {
   prayer: PrayerRequest;
   index: number;
   showCount: boolean;
   canManage: boolean;
   onTap: (prayer: PrayerRequest) => void;
+  onDelete?: (prayerId: string) => void;
 }) {
   const catColor =
     categoryColors[prayer.category || "Other"] || "#8890b5";
@@ -492,14 +561,28 @@ export function PrayerRow({
           </div>
         </div>
 
-        {showCount && (
-          <div className="flex items-center gap-1 flex-shrink-0 pt-0.5">
-            <Heart size={11} className="text-[#7c8fff] opacity-60" />
-            <span className="text-[#6b7499] text-[11px]">
-              {prayer.prayerCount}
-            </span>
-          </div>
-        )}
+         <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
+           {showCount && (
+             <div className="flex items-center gap-1">
+               <Heart size={11} className="text-[#7c8fff] opacity-60" />
+               <span className="text-[#6b7499] text-[11px]">
+                 {prayer.prayerCount}
+               </span>
+             </div>
+           )}
+           {canManage && onDelete && (
+             <button
+               onClick={(e) => {
+                 e.stopPropagation();
+                 onDelete(prayer.id);
+               }}
+               className="text-[#5a6080] hover:text-[#8890b5] cursor-pointer"
+               title="Delete prayer"
+             >
+               <Trash2 size={12} />
+             </button>
+           )}
+         </div>
       </div>
     </motion.div>
   );
