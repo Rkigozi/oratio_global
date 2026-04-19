@@ -4,7 +4,6 @@ import { useNavigate } from "react-router";
 import { WorldMapClean } from "../components/world-map-clean";
 import { mockHotspots } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
-import { getPrayedIds } from "../data/profile-data";
 import { Heart, ArrowRight } from "lucide-react";
 import { Drawer } from "vaul";
 
@@ -13,12 +12,11 @@ export function Home() {
   
   const navigate = useNavigate();
    const [prayers, setPrayers] = useState(mockHotspots);
-   const [prayedIds, setPrayedIds] = useState<string[]>(() => getPrayedIds());
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(
     null
   );
    const [centerTrigger, _setCenterTrigger] = useState(0);
-   const [prayedId, setPrayedId] = useState<string | null>(null);
+   const [prayedId, _setPrayedId] = useState<string | null>(null);
    const [newPrayerId, setNewPrayerId] = useState<string | null>(null);
    const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -27,47 +25,7 @@ export function Home() {
     setSelectedPrayer(prayer);
    }, []);
 
-   const togglePrayed = useCallback((id: string) => {
-     console.log('Home togglePrayed called', id);
-     setPrayedIds((prev) => {
-       const isCurrentlyPrayed = prev.includes(id);
-       const newPrayed = !isCurrentlyPrayed;
-       console.log('Home prayedIds update', prev, 'newPrayed', newPrayed);
-       
-       // Update prayer count in state
-       setPrayers((prayersPrev) =>
-         prayersPrev.map((p) =>
-           p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
-         )
-       );
-       
-       // Persist to localStorage for profile tracking
-       try {
-         const existing = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
-         if (newPrayed && !existing.includes(id)) {
-           localStorage.setItem("oratio_prayed", JSON.stringify([...existing, id]));
-         } else if (!newPrayed && existing.includes(id)) {
-           localStorage.setItem("oratio_prayed", JSON.stringify(existing.filter(pId => pId !== id)));
-         }
-       } catch (e) {
-         console.error('localStorage error:', e);
-       }
 
-       // Trigger pulse effect on map
-       if (newPrayed) {
-         setPrayedId(id);
-         setTimeout(() => setPrayedId(null), 1000);
-       }
-       
-       // Return updated prayed IDs
-       if (newPrayed && !prev.includes(id)) {
-         return [...prev, id];
-       } else if (!newPrayed && prev.includes(id)) {
-         return prev.filter(pId => pId !== id);
-       }
-       return prev;
-     });
-   }, []);
 
    // Update selectedPrayer when prayers change
    useEffect(() => {
@@ -193,44 +151,7 @@ export function Home() {
                     People around {selectedPrayer.city} are lifting up prayers right now
                   </p>
 
-                  {/* Sample prayer preview */}
-                  <div
-                    className="w-full rounded-xl p-4 mb-6"
-                    style={{
-                      background: "rgba(15, 20, 50, 0.5)",
-                      border: "1px solid rgba(124,143,255,0.06)",
-                    }}
-                  >
-                    <p className="text-[#c5cbe2] text-sm mb-2" style={{ lineHeight: 1.6 }}>
-                      &ldquo;{selectedPrayer.text}&rdquo;
-                    </p>
-                    {selectedPrayer.name && (
-                      <p className="text-[#4e5573] text-xs">&mdash; {selectedPrayer.name}</p>
-                    )}
-                   </div>
 
-                   {/* Pray button */}
-                   <motion.button
-                     whileTap={{ scale: 0.97 }}
-                     onClick={() => {
-                       if (selectedPrayer) {
-                         togglePrayed(selectedPrayer.id);
-                       }
-                     }}
-                     className="flex items-center gap-2.5 px-7 py-3 rounded-full text-sm mb-3 cursor-pointer"
-                     style={{
-                       background: prayedIds.includes(selectedPrayer.id)
-                         ? "rgba(124, 143, 255, 0.12)"
-                         : "linear-gradient(135deg, #7c8fff, #5a6fd6)",
-                       color: prayedIds.includes(selectedPrayer.id) ? "#7c8fff" : "#ffffff",
-                       boxShadow: prayedIds.includes(selectedPrayer.id)
-                         ? "none"
-                         : "0 4px 24px rgba(124, 143, 255, 0.25)",
-                     }}
-                   >
-                     <span className="text-base">🙏</span>
-                     {prayedIds.includes(selectedPrayer.id) ? "Prayed" : "Pray for this"}
-                   </motion.button>
 
                    {/* CTA to feed */}
                   <motion.button

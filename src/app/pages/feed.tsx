@@ -27,13 +27,7 @@ export function Feed() {
     setSearchParams({});
   };
 
-  useEffect(() => {
-    if (!hasLocationFilter) return;
-    const timer = setTimeout(() => {
-      setSearchParams({});
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [hasLocationFilter, setSearchParams]);
+
 
   const [tab, setTab] = useState<"global">("global");
    const [prayers, setPrayers] = useState<PrayerRequest[]>(() => {
@@ -297,13 +291,7 @@ export function Feed() {
                 >
                   <X size={14} />
                 </button>
-                {/* Progress bar */}
-                <motion.div
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary/30 origin-left"
-                  initial={{ scaleX: 1 }}
-                  animate={{ scaleX: 0 }}
-                  transition={{ duration: 5, ease: "linear" }}
-                />
+
               </div>
             </motion.div>
           )}
