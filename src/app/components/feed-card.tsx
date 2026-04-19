@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "motion/react";
-import { MapPin, Heart, MoreVertical } from "lucide-react";
+import { MapPin, Heart } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo } from "../data/prayer-data";
 
@@ -23,18 +23,7 @@ const categoryColors: Record<string, string> = {
 export function FeedCard({ prayer, index, onPrayed, onTap }: FeedCardProps) {
   const [prayed, setPrayed] = useState(false);
   const [count, setCount] = useState(prayer.prayerCount);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const handlePray = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -72,18 +61,7 @@ export function FeedCard({ prayer, index, onPrayed, onTap }: FeedCardProps) {
         </span>
       </div>
 
-      {/* Quick actions menu button */}
-      <div className="absolute top-3 right-3">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log('Quick actions for', prayer.id);
-          }}
-          className="w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-colors bg-[rgba(124,143,255,0.06)] hover:bg-[rgba(124,143,255,0.12)] border border-[rgba(124,143,255,0.1)]"
-        >
-          <MoreVertical size={12} className="text-[#8890b5]" />
-        </button>
-      </div>
+
 
       {/* Prayer text — clamped to 3 lines */}
       <p
