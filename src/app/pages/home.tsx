@@ -11,13 +11,14 @@ import { Drawer } from "vaul";
 export function Home() {
   
   const navigate = useNavigate();
-  const [prayers, setPrayers] = useState(mockHotspots);
+   const [prayers, setPrayers] = useState(mockHotspots);
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(
     null
   );
    const [centerTrigger, setCenterTrigger] = useState(0);
    const [prayedId, setPrayedId] = useState<string | null>(null);
    const [newPrayerId, setNewPrayerId] = useState<string | null>(null);
+   const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null);
 
 
   const handlePrayerTap = useCallback((prayer: PrayerRequest) => {
@@ -49,22 +50,17 @@ export function Home() {
       className="relative w-full h-full overflow-hidden"
       style={{ background: "#0A1A3A" }}
     >
-      {/* Header hint - Mobile optimized with desktop adjustments */}
-      <div className="absolute top-16 md:top-12 left-0 right-0 z-[500] text-center pointer-events-none flex flex-col items-center">
-        <AnimatePresence>
-          {!searchOpen && (
-            <motion.p
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="text-[#7a84a8] text-xs tracking-widest uppercase bg-[#0A1A3A]/50 backdrop-blur-md px-4 py-1.5 md:px-3 md:py-1 rounded-full border border-[rgba(124,143,255,0.08)] max-w-xs mx-auto"
-            >
-              Tap a light to explore
-            </motion.p>
-          )}
-        </AnimatePresence>
-      </div>
+       {/* Header hint - Mobile optimized with desktop adjustments */}
+       <div className="absolute top-16 md:top-12 left-0 right-0 z-[500] text-center pointer-events-none flex flex-col items-center">
+         <motion.p
+           initial={{ opacity: 0, y: -10 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.5, duration: 0.8 }}
+           className="text-[#7a84a8] text-xs tracking-widest uppercase bg-[#0A1A3A]/50 backdrop-blur-md px-4 py-1.5 md:px-3 md:py-1 rounded-full border border-[rgba(124,143,255,0.08)] max-w-xs mx-auto"
+         >
+           Tap a light to explore
+         </motion.p>
+       </div>
 
 
       {/* Map area */}

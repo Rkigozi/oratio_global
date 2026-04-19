@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Globe, Users, Flame, Share2, MapPin, X, Search } from "lucide-react";
+import { Globe, Flame, Share2, MapPin, X, Search } from "lucide-react";
 import { Drawer } from "vaul";
 import { useSearchParams } from "react-router";
 import { mockFeedPrayers, timeAgo } from "../data/prayer-data";
@@ -27,6 +27,8 @@ export function Feed() {
   const locationCity = searchParams.get("city");
   const locationCountry = searchParams.get("country");
   const hasLocationFilter = !!locationCity;
+  const category = "All";
+  const searchQuery = "";
 
   const clearLocationFilter = () => {
     setSearchParams({});
@@ -357,11 +359,7 @@ export function Feed() {
         {/* Section label */}
         <div className="flex items-center justify-between px-1 mb-3">
           <span className="text-[#6b7499] text-[11px] uppercase tracking-[0.15em]">
-            {tab === "nearby"
-              ? "From People You Follow"
-              : hasLocationFilter
-                ? `Prayers from ${locationCity}`
-                : "Recent Prayers"}
+             {hasLocationFilter ? `Prayers from ${locationCity}` : "Recent Prayers"}
           </span>
           <span className="text-[#3e4460] text-[10px]">
             {filteredPrayers.length} requests
@@ -393,53 +391,30 @@ export function Feed() {
                     "radial-gradient(circle, rgba(124,143,255,0.08), transparent)",
                 }}
               >
-                {tab === "nearby" ? (
-                  <Users size={20} className="text-[#4e5573]" />
-                ) : hasLocationFilter ? (
-                  <MapPin size={20} className="text-[#4e5573]" />
-                ) : (
-                  <Search size={20} className="text-[#4e5573]" />
-                )}
+                 {hasLocationFilter ? (
+                   <MapPin size={20} className="text-[#4e5573]" />
+                 ) : (
+                   <Search size={20} className="text-[#4e5573]" />
+                 )}
               </div>
               <p className="text-[#6b7499] text-sm mb-1">
-                {tab === "nearby"
-                  ? "No one followed yet"
-                  : hasLocationFilter
-                    ? `No ${category !== "All" ? category.toLowerCase() + " " : ""}prayers in ${locationCity}`
-                    : "No prayers found"}
+                 {hasLocationFilter
+                   ? `No prayers in ${locationCity}`
+                   : "No prayers found"}
               </p>
               <p className="text-[#4e5573] text-xs">
-                {tab === "nearby"
-                  ? "Follow people from the Global feed to see their prayers here"
-                  : hasLocationFilter
-                    ? "Try a different category or view all prayers"
-                    : "Try a different filter or search"}
+                 View all prayers
               </p>
-              {tab === "nearby" ? (
-                <button
-                  onClick={() => setTab("global")}
-                  className="mt-4 px-5 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer hover:bg-[rgba(124,143,255,0.12)] transition-all"
-                >
-                  Browse Global Feed
-                </button>
-              ) : hasLocationFilter ? (
-                <div className="flex flex-col items-center gap-2 mt-4">
-                  {category !== "All" && (
-                    <button
-                      onClick={() => setCategory("All")}
-                      className="px-5 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer hover:bg-[rgba(124,143,255,0.12)] transition-all"
-                    >
-                      Show all categories
-                    </button>
-                  )}
-                  <button
-                    onClick={clearLocationFilter}
-                    className="px-5 py-2 rounded-full text-xs text-[#8890b5] bg-[rgba(124,143,255,0.04)] border border-[rgba(124,143,255,0.08)] cursor-pointer hover:bg-[rgba(124,143,255,0.08)] transition-all"
-                  >
-                    View all prayers
-                  </button>
-                </div>
-              ) : null}
+               {hasLocationFilter ? (
+                 <div className="flex flex-col items-center gap-2 mt-4">
+                   <button
+                     onClick={clearLocationFilter}
+                     className="px-5 py-2 rounded-full text-xs text-[#8890b5] bg-[rgba(124,143,255,0.04)] border border-[rgba(124,143,255,0.08)] cursor-pointer hover:bg-[rgba(124,143,255,0.08)] transition-all"
+                   >
+                     View all prayers
+                   </button>
+                 </div>
+               ) : null}
             </motion.div>
           )}
         </div>
