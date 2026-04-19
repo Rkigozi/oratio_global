@@ -7,9 +7,15 @@ export function Splash() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const profile = localStorage.getItem("oratio_profile");
-      const hasProfile = profile ? JSON.parse(profile)?.name : false;
-      navigate(hasProfile ? "/" : "/onboarding");
+      try {
+        const profile = localStorage.getItem("oratio_profile");
+        const hasProfile = profile ? JSON.parse(profile)?.name : false;
+        console.log('Splash: profile exists?', !!hasProfile);
+        navigate(hasProfile ? "/" : "/onboarding");
+      } catch (error) {
+        console.error('Splash: error parsing profile', error);
+        navigate("/onboarding");
+      }
     }, 2500);
     return () => clearTimeout(timer);
   }, [navigate]);

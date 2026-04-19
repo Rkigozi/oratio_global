@@ -14,7 +14,8 @@ export function Layout() {
       sessionStorage.setItem("oratio_visited", "true");
       navigate("/splash");
     } else {
-      setChecked(true);
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => setChecked(true), 0);
     }
   }, [navigate, location]);
 
