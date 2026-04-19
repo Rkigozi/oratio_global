@@ -8,14 +8,8 @@ import {
   MapPin,
   ChevronRight,
   ChevronDown,
-  Pencil,
-  Check,
   LogOut,
-  Trash2,
-  Sparkles,
   MessageCircle,
-  Camera,
-  X,
   UserPlus,
   UserCheck,
 } from "lucide-react";
@@ -28,47 +22,30 @@ import {
   saveProfile,
   getSubmittedIds,
   getPrayedIds,
-  getRemovedIds,
-  getAnsweredIds,
-  getFollowingIds,
   getStoredSubmittedPrayers,
-  addToList,
   getAvatarForName,
   categoryColors,
   type UserProfile,
 } from "../data/profile-data";
 
-const AVATARS = ["🙏", "✝️", "🕊️", "💛", "🌿", "⭐", "🔥", "💜"];
+
 const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
 
 export function Profile() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(getProfile);
-  const [editOpen, setEditOpen] = useState(false);
-  const [profileName, setProfileName] = useState(profile.name);
-  const [profileAvatar, setProfileAvatar] = useState(profile.avatar);
-  const [profilePhoto, setProfilePhoto] = useState<string | undefined>(profile.photo);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
 
   // Prayer detail / action drawer
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
-  const [actionView, setActionView] = useState<"options" | "edit" | "confirm-delete" | "answered" | "deleted">("options");
+  const [actionView, setActionView] = useState<"options">("options");
 
-  // Edit prayer state
-  const [editText, setEditText] = useState("");
-  const [editAuthorName, setEditAuthorName] = useState("");
-  const [editLocation, setEditLocation] = useState("");
-  const [editCategory, setEditCategory] = useState("");
-  const [showLocDrop, setShowLocDrop] = useState(false);
-  const [showCatDrop, setShowCatDrop] = useState(false);
+
+
 
   // Track removed/answered ids locally for instant UI updates
-  const [localRemoved, setLocalRemoved] = useState<Set<string>>(() => new Set(getRemovedIds()));
-  const [localAnswered, setLocalAnswered] = useState<Set<string>>(() => new Set(getAnsweredIds()));
-  const [answeredCount, setAnsweredCount] = useState(getAnsweredIds().length);
-  const [following, setFollowing] = useState<Set<string>>(() => new Set(getFollowingIds()));
-  const followingCount = following.size;
+
 
 
   const submittedIds = getSubmittedIds();
@@ -76,10 +53,9 @@ export function Profile() {
 
   const mySubmitted = useMemo(() => {
     const storedPrayers = getStoredSubmittedPrayers()
-      .filter((p) => !localRemoved.has(p.id) && !localAnswered.has(p.id))
       .map((p) => ({ ...p, prayerCount: 0 }));
     return storedPrayers;
-  }, [submittedIds, localRemoved, localAnswered]);
+  }, [submittedIds]);
 
   const myPrayed = useMemo(() => {
     const allIds = new Set([...prayedIds]);
@@ -93,23 +69,11 @@ export function Profile() {
     0
   );
 
-  const handleSaveProfile = () => {
-    const updated = {
-      ...profile,
-      name: profileName.trim() || "Anonymous",
-      avatar: profileAvatar,
-      photo: profilePhoto,
-    };
-    setProfile(updated);
-    saveProfile(updated);
-    setEditOpen(false);
-  };
+
 
   const handleOpenPrayer = (prayer: PrayerRequest) => {
     setSelectedPrayer(prayer);
     setActionView("options");
-    setShowLocDrop(false);
-    setShowCatDrop(false);
   };
 
   const handleOpenEdit = () => {
@@ -195,14 +159,8 @@ export function Profile() {
             transition={{ duration: 0.5 }}
             className="flex flex-col items-center mb-8"
           >
-            <button
-              onClick={() => {
-                setProfileName(profile.name);
-                setProfileAvatar(profile.avatar);
-                setProfilePhoto(profile.photo);
-                setEditOpen(true);
-              }}
-              className="relative w-20 h-20 rounded-full flex items-center justify-center mb-4 cursor-pointer group overflow-hidden"
+            <div
+              className="relative w-20 h-20 rounded-full flex items-center justify-center mb-4 overflow-hidden"
               style={{
                 background:
                   "linear-gradient(145deg, rgba(25, 32, 65, 0.9), rgba(15, 20, 50, 0.7))",
@@ -219,10 +177,7 @@ export function Profile() {
               ) : (
                 <span className="text-3xl">{profile.avatar}</span>
               )}
-              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera size={18} className="text-white opacity-80" />
-              </div>
-            </button>
+            </div>
 
             <h2
               className="text-[#e2e4f0] font-heading mb-1"
@@ -244,38 +199,22 @@ export function Profile() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
-            className="grid grid-cols-4 gap-2 mb-8"
+             className="grid grid-cols-2 gap-2 mb-8"
           >
-            {[
-              {
-                icon: Send,
-                label: "Submitted",
-                value: mySubmitted.length,
-                color: "#7c8fff",
-                path: "/profile/submitted",
-              },
-              {
-                icon: Heart,
-                label: "Prayed For",
-                value: myPrayed.length,
-                color: "#a78bfa",
-                path: "/profile/prayed",
-              },
-              {
-                icon: Sparkles,
-                label: "Answered",
-                value: answeredCount,
-                color: "#fbbf24",
-                path: "/profile/answered",
-              },
-              {
-                icon: User,
-                label: "Following",
-                value: followingCount,
-                color: "#6ee7b7",
-                path: "/profile/following",
-              },
-            ].map((stat, i) => {
+             {[
+               {
+                 icon: Send,
+                 label: "Submitted",
+                 value: mySubmitted.length,
+                 color: "#7c8fff",
+               },
+               {
+                 icon: Heart,
+                 label: "Prayed For",
+                 value: myPrayed.length,
+                 color: "#a78bfa",
+               },
+             ].map((stat, i) => {
               const Icon = stat.icon;
               return (
                 <motion.button
@@ -288,9 +227,7 @@ export function Profile() {
                     background:
                       "linear-gradient(160deg, rgba(17, 26, 58, 0.8), rgba(12, 18, 48, 0.6))",
                     border: "1px solid rgba(124,143,255,0.06)",
-                    cursor: 'pointer',
                   }}
-                  onClick={() => navigate(stat.path)}
                   whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -325,14 +262,6 @@ export function Profile() {
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-[#e2e4f0] font-heading text-sm">Recent Activity</h3>
-              {mySubmitted.length > 0 && (
-                <button
-                  onClick={() => navigate('/profile/submitted')}
-                  className="text-[#7c8fff] text-xs hover:underline cursor-pointer"
-                >
-                  View All
-                </button>
-              )}
             </div>
 
             {mySubmitted.length > 0 ? (
@@ -347,14 +276,7 @@ export function Profile() {
                     onTap={handleOpenPrayer}
                   />
                 ))}
-                {mySubmitted.length > 2 && (
-                  <button
-                    onClick={() => navigate('/profile/submitted')}
-                    className="w-full py-3 rounded-xl text-[#7c8fff] text-sm bg-[rgba(124,143,255,0.04)] border border-[rgba(124,143,255,0.08)] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer"
-                  >
-                    + {mySubmitted.length - 2} more prayers
-                  </button>
-                )}
+
               </div>
             ) : (
               <motion.div
@@ -482,165 +404,7 @@ export function Profile() {
         </div>
       </div>
 
-      {/* Edit Profile Drawer */}
-      <Drawer.Root
-        open={editOpen}
-        onOpenChange={(o) => {
-          if (!o) setEditOpen(false);
-        }}
-      >
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[600]" />
-          <Drawer.Content
-            className="flex flex-col rounded-t-[1.5rem] fixed bottom-0 left-0 right-0 z-[600] focus:outline-none"
-            style={{
-              background: "linear-gradient(180deg, #111a3a, #0c1230)",
-              borderTop: "1px solid rgba(124, 143, 255, 0.1)",
-            }}
-          >
-            <Drawer.Title className="sr-only">Edit Profile</Drawer.Title>
-            <Drawer.Description className="sr-only">
-              Update your display name and avatar
-            </Drawer.Description>
 
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-[rgba(124,143,255,0.2)]" />
-            </div>
-
-            <div className="max-w-md w-full mx-auto p-6 pt-3">
-              <h3
-                className="text-[#e2e4f0] font-heading text-center mb-6"
-                style={{ fontSize: "1.15rem", fontWeight: 300 }}
-              >
-                Edit Profile
-              </h3>
-
-              {/* Photo upload */}
-              <p className="text-[#6b7499] text-xs uppercase tracking-[0.15em] mb-3">
-                Profile Photo <span className="text-[#3e4460] normal-case tracking-normal">(optional)</span>
-              </p>
-              <div className="flex items-center gap-4 mb-6">
-                {/* Preview */}
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
-                  style={{
-                    background: "linear-gradient(145deg, rgba(25,32,65,0.9), rgba(15,20,50,0.7))",
-                    border: "1px solid rgba(124,143,255,0.15)",
-                  }}
-                >
-                  {profilePhoto ? (
-                    <img src={profilePhoto} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-2xl">{profileAvatar}</span>
-                  )}
-                </div>
-
-                <div className="flex gap-2 flex-1">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs cursor-pointer transition-all duration-200"
-                    style={{
-                      background: "rgba(124,143,255,0.08)",
-                      border: "1px solid rgba(124,143,255,0.18)",
-                      color: "#8890b5",
-                    }}
-                  >
-                    <Camera size={13} />
-                    {profilePhoto ? "Change" : "Upload"}
-                  </button>
-                  {profilePhoto && (
-                    <button
-                      onClick={() => setProfilePhoto(undefined)}
-                      className="w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer transition-all duration-200"
-                      style={{
-                        background: "rgba(255,107,107,0.06)",
-                        border: "1px solid rgba(255,107,107,0.12)",
-                      }}
-                    >
-                      <X size={13} className="text-[#ff6b6b] opacity-70" />
-                    </button>
-                  )}
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                      setProfilePhoto(ev.target?.result as string);
-                    };
-                    reader.readAsDataURL(file);
-                    e.target.value = "";
-                  }}
-                />
-              </div>
-
-              {/* Avatar picker */}
-              <p className="text-[#6b7499] text-xs uppercase tracking-[0.15em] mb-3">
-                {profilePhoto ? "Fallback icon" : "Choose an icon"}
-              </p>
-              <div className="flex gap-2 mb-6 flex-wrap">
-                {AVATARS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => setProfileAvatar(emoji)}
-                    className="w-11 h-11 rounded-full flex items-center justify-center text-xl cursor-pointer transition-all duration-200"
-                    style={{
-                      background:
-                        profileAvatar === emoji
-                          ? "rgba(124,143,255,0.15)"
-                          : "rgba(17, 26, 58, 0.5)",
-                      border:
-                        profileAvatar === emoji
-                          ? "1px solid rgba(124,143,255,0.3)"
-                          : "1px solid rgba(124,143,255,0.08)",
-                      transform:
-                        profileAvatar === emoji ? "scale(1.1)" : "scale(1)",
-                    }}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-
-              {/* Name input */}
-              <p className="text-[#6b7499] text-xs uppercase tracking-[0.15em] mb-2">
-                Your name
-              </p>
-              <input
-                type="text"
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-                placeholder="How should others see you?"
-                autoFocus
-                className="w-full rounded-xl px-4 py-3 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.15)] focus:border-[rgba(124,143,255,0.3)] transition-colors mb-6"
-                style={{ background: "rgba(15, 20, 50, 0.6)" }}
-              />
-
-              {/* Save button */}
-              <button
-                onClick={handleSaveProfile}
-                className="w-full py-3.5 rounded-full text-sm flex items-center justify-center gap-2 cursor-pointer transition-all duration-300"
-                style={{
-                  background: "linear-gradient(135deg, #7c8fff, #5a6fd6)",
-                  color: "#ffffff",
-                  boxShadow:
-                    "0 4px 24px rgba(124, 143, 255, 0.25), 0 0 0 1px rgba(124,143,255,0.1)",
-                }}
-              >
-                <Check size={16} />
-                Save Changes
-              </button>
-            </div>
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
 
       {/* Prayer Action Drawer */}
       <Drawer.Root
