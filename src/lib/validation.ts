@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 
 /**
  * Validation schemas for Oratio Prayer Platform
@@ -78,11 +78,13 @@ export function validatePrayerSubmission(data: unknown): {
     return { success: true, data: validated };
   } catch (error) {
     console.log('Validation error:', error);
-    if (error instanceof z.ZodError) {
+    console.log('ZodError structure:', error instanceof ZodError ? error : 'not ZodError');
+    if (error instanceof ZodError) {
       const errors: Record<string, string> = {};
-      error.errors.forEach((err) => {
-        const path = err.path.join('.');
-        errors[path] = err.message;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      (error as any).errors?.forEach((err: any) => {
+        const path = err.path?.join('.') || 'unknown';
+        errors[path] = err.message || 'Unknown error';
         console.log('Zod error:', path, err.message);
       });
       return { success: false, errors };

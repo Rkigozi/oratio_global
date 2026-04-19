@@ -1,4 +1,4 @@
-import React from "react";
+
 import { createBrowserRouter, redirect } from "react-router";
 import { Layout } from "./components/layout";
 

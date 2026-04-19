@@ -2,7 +2,7 @@
  * Basic error handling utilities for Oratio
  */
 
-import React from 'react';
+
 
 /**
  * Safely parse JSON with error handling

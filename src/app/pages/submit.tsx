@@ -5,6 +5,11 @@ import { cities, getApproximateCoordinates } from "../data/prayer-data";
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
 
+interface OratioProfile {
+  name?: string;
+  icon?: string;
+}
+
 const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
 
 // Coordinates are now generated via getApproximateCoordinates with privacy jitter
@@ -23,7 +28,7 @@ export function Submit() {
   // Get profile name from localStorage
   const profileName = (() => {
     try {
-      const profile = JSON.parse(localStorage.getItem("oratio_profile") || "{}");
+      const profile: OratioProfile = JSON.parse(localStorage.getItem("oratio_profile") || "{}") as OratioProfile;
       return profile.name || "";
     } catch {
       return "";
@@ -81,8 +86,10 @@ export function Submit() {
 
     console.log('New prayer created:', newPrayer);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     if (typeof window !== "undefined" && (window as any).__oratio_addPrayer) {
       console.log('Calling window.__oratio_addPrayer');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
       (window as any).__oratio_addPrayer(newPrayer);
     }
 

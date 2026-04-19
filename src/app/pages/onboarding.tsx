@@ -16,7 +16,7 @@ export function Onboarding() {
 
   const handleBegin = () => {
     saveProfile(name.trim() || "Anonymous");
-    navigate("/");
+    void navigate("/");
   };
 
   return (
@@ -48,7 +48,7 @@ export function Onboarding() {
             ORATIO
           </h1>
           <p className="text-[#6b7499] text-sm">
-            Who's praying today?
+             Who&apos;s praying today?
           </p>
         </motion.div>
 

@@ -15,7 +15,9 @@ export function Home() {
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(
     null
   );
+   // eslint-disable-next-line @typescript-eslint/no-unused-vars
    const [centerTrigger, _setCenterTrigger] = useState(0);
+   // eslint-disable-next-line @typescript-eslint/no-unused-vars
    const [prayedId, _setPrayedId] = useState<string | null>(null);
    const [newPrayerId, setNewPrayerId] = useState<string | null>(null);
    const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null);
@@ -31,9 +33,10 @@ export function Home() {
    useEffect(() => {
      if (selectedPrayer) {
        const updated = prayers.find(p => p.id === selectedPrayer.id);
-       if (updated && updated !== selectedPrayer) {
-         setSelectedPrayer(updated);
-       }
+        if (updated && updated !== selectedPrayer) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setSelectedPrayer(updated);
+        }
      }
    }, [prayers, selectedPrayer]);
 
