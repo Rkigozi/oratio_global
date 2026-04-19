@@ -1,10 +1,10 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { useState, useCallback, useEffect } from "react";
+import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { WorldMapClean } from "../components/world-map-clean";
 import { mockHotspots } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
-import { Heart, ArrowRight, MapPin } from "lucide-react";
+import { Heart, ArrowRight } from "lucide-react";
 import { Drawer } from "vaul";
 
 

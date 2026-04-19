@@ -20,7 +20,7 @@ export function Header({ showBack = false, title }: HeaderProps) {
       <div className="w-10">
         {showBack ? (
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => void navigate(-1)}
             className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.1)] active:scale-95"
             aria-label="Go back"
           >

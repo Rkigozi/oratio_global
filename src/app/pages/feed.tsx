@@ -1,10 +1,11 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Globe, Flame, Share2, MapPin, X, Search } from "lucide-react";
 import { Drawer } from "vaul";
 import { useSearchParams } from "react-router";
 import { mockFeedPrayers, timeAgo } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
+import { getPrayedIds, categoryColors } from "../data/profile-data";
 import { FeedCard } from "../components/feed-card";
 
 const TABS = [
@@ -13,14 +14,6 @@ const TABS = [
 
 
 
-const categoryColors: Record<string, string> = {
-  Health: "#67e8f9",
-  Family: "#a78bfa",
-  Career: "#fbbf24",
-  Guidance: "#7c8fff",
-  Peace: "#6ee7b7",
-  Other: "#8890b5",
-};
 
 export function Feed() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -64,10 +57,15 @@ export function Feed() {
   });
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
   const [prayedIds, setPrayedIds] = useState<string[]>(() => getPrayedIds());
+  const timeoutRefs = useRef<number[]>([]); // Store timeout IDs for cleanup
 
-
-
-
+  // Clean up timeouts on component unmount
+  useEffect(() => {
+    return () => {
+      timeoutRefs.current.forEach(id => clearTimeout(id));
+      timeoutRefs.current = [];
+    };
+  }, []);
 
   // Add to recent searches
 
@@ -102,16 +100,41 @@ export function Feed() {
   }, [prayers]);
 
   const togglePrayed = useCallback((id: string) => {
-    const isCurrentlyPrayed = prayedIds.includes(id);
-    const newPrayed = !isCurrentlyPrayed;
-    
-    setPrayers((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
-      )
-    );
-    
     setPrayedIds((prev) => {
+      const isCurrentlyPrayed = prev.includes(id);
+      const newPrayed = !isCurrentlyPrayed;
+      
+      // Update prayer count in state
+      setPrayers((prayersPrev) =>
+        prayersPrev.map((p) =>
+          p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
+        )
+      );
+      
+      // Persist to localStorage for profile tracking
+      try {
+        const existing = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
+        if (newPrayed && !existing.includes(id)) {
+          localStorage.setItem("oratio_prayed", JSON.stringify([...existing, id]));
+        } else if (!newPrayed && existing.includes(id)) {
+          localStorage.setItem("oratio_prayed", JSON.stringify(existing.filter(pId => pId !== id)));
+        }
+      } catch {
+        // ignore localStorage errors
+      }
+
+      // Update count in submitted prayers storage
+      try {
+        const submittedPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
+        const updated = submittedPrayers.map(p => 
+          p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
+        );
+        localStorage.setItem("oratio_submitted_prayers", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      
+      // Return updated prayed IDs
       if (newPrayed && !prev.includes(id)) {
         return [...prev, id];
       } else if (!newPrayed && prev.includes(id)) {
@@ -119,19 +142,7 @@ export function Feed() {
       }
       return prev;
     });
-    
-    // Persist to localStorage for profile tracking
-    try {
-      const existing = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
-      if (newPrayed && !existing.includes(id)) {
-        localStorage.setItem("oratio_prayed", JSON.stringify([...existing, id]));
-      } else if (!newPrayed && existing.includes(id)) {
-        localStorage.setItem("oratio_prayed", JSON.stringify(existing.filter(pId => pId !== id)));
-      }
-    } catch {
-      // ignore localStorage errors
-    }
-  }, [prayedIds]);
+  }, []); // No dependencies needed because using functional updates
 
   const handleTap = useCallback((prayer: PrayerRequest) => {
     setSelectedPrayer(prayer);
@@ -142,14 +153,19 @@ export function Feed() {
     if (!selectedPrayer) return;
     const isCurrentlyPrayed = prayedIds.includes(selectedPrayer.id);
     
+    // Clear any existing timeouts
+    timeoutRefs.current.forEach(id => clearTimeout(id));
+    timeoutRefs.current = [];
+    
     if (!isCurrentlyPrayed) {
       // Pray: increment count, show confirmation
       togglePrayed(selectedPrayer.id);
-      setTimeout(() => setShowConfirmation(true), 600);
+      const confirmTimeout = setTimeout(() => setShowConfirmation(true), 600);
       // Auto-dismiss after 1.5 seconds (user feedback)
-      setTimeout(() => {
+      const dismissTimeout = setTimeout(() => {
         setSelectedPrayer(null);
       }, 2100); // 600ms for animation + 1500ms for display
+      timeoutRefs.current.push(confirmTimeout, dismissTimeout);
     } else {
       // Unpray: decrement count, no confirmation, close drawer
       togglePrayed(selectedPrayer.id);
@@ -173,8 +189,12 @@ export function Feed() {
         // ignore share cancellation errors
       }
     } else {
-      await navigator.clipboard.writeText(shareText);
-      // Could add a toast here — for now clipboard is silent
+      try {
+        await navigator.clipboard.writeText(shareText);
+        // Could add a toast here — for now clipboard is silent
+      } catch {
+        // ignore clipboard errors
+      }
     }
   };
 

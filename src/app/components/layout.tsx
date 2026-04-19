@@ -1,18 +1,18 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "./header";
 import { BottomNav } from "./bottom-nav";
+
+let globalHasRedirected = false; // Module-level, resets on page load
 
 export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [checked, setChecked] = useState(false);
 
-  const hasRedirected = useRef(false);
-
   useEffect(() => {
-    if (location.pathname === "/" && !hasRedirected.current) {
-      hasRedirected.current = true;
+    if (location.pathname === "/" && !globalHasRedirected) {
+      globalHasRedirected = true; // Persists across component remounts
       void navigate("/splash");
     }
     // Use setTimeout to avoid synchronous setState in effect

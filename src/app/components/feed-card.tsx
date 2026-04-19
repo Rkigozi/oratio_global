@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { MapPin, Heart } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo } from "../data/prayer-data";
+import { categoryColors } from "../data/profile-data";
 
 interface FeedCardProps {
   prayer: PrayerRequest;
@@ -12,14 +13,6 @@ interface FeedCardProps {
   onTap: (prayer: PrayerRequest) => void;
 }
 
-const categoryColors: Record<string, string> = {
-  Health: "#67e8f9",
-  Family: "#a78bfa",
-  Career: "#fbbf24",
-  Guidance: "#7c8fff",
-  Peace: "#6ee7b7",
-  Other: "#8890b5",
-};
 
 export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCardProps) {
   const [prayed, setPrayed] = useState(hasPrayed);

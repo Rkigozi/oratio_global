@@ -54,16 +54,7 @@ export function getStoredSubmittedPrayers(): PrayerRequest[] {
   return [];
 }
 
-export function addToList(key: string, id: string) {
-  try {
-    const existing = JSON.parse(localStorage.getItem(key) || "[]") as string[];
-    if (!existing.includes(id)) {
-      localStorage.setItem(key, JSON.stringify([...existing, id]));
-    }
-  } catch {
-    // empty
-  }
-}
+
 
 export function getAvatarForName(name: string) {
   const avatars = ["🙏", "✝️", "🕊️", "💛", "🌿", "⭐", "🔥", "💜"];

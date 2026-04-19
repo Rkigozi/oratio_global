@@ -27,7 +27,7 @@ export function BottomNav() {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => void navigate(item.path)}
               className="flex flex-col items-center gap-0.5 px-3 py-1 transition-all cursor-pointer"
             >
               <Icon

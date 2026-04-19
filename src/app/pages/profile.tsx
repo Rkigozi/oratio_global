@@ -57,7 +57,7 @@ export function Profile() {
   const myPrayed = useMemo(() => {
     return getPrayedForPrayers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prayedIds]);
+  }, [prayedIds, submittedIds]);
 
 
 
@@ -70,22 +70,26 @@ export function Profile() {
      setActionView("options");
    };
 
-   const handleDeletePrayer = (prayerId: string) => {
-     try {
-       // Remove from submitted prayers list
-       const submitted = JSON.parse(localStorage.getItem("oratio_submitted") || "[]") as string[];
-       localStorage.setItem("oratio_submitted", JSON.stringify(submitted.filter(id => id !== prayerId)));
-       
-       // Remove from submitted prayers storage
-       const storedPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
-       localStorage.setItem("oratio_submitted_prayers", JSON.stringify(storedPrayers.filter(p => p.id !== prayerId)));
-       
-       // Force re-render of submitted list
-       setSubmittedVersion(v => v + 1);
-     } catch (error) {
-       console.error("Failed to delete prayer:", error);
-     }
-   };
+    const handleDeletePrayer = (prayerId: string) => {
+      try {
+        // Remove from submitted prayers list
+        const submitted = JSON.parse(localStorage.getItem("oratio_submitted") || "[]") as string[];
+        localStorage.setItem("oratio_submitted", JSON.stringify(submitted.filter(id => id !== prayerId)));
+        
+        // Remove from submitted prayers storage
+        const storedPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
+        localStorage.setItem("oratio_submitted_prayers", JSON.stringify(storedPrayers.filter(p => p.id !== prayerId)));
+        
+        // Remove from prayed IDs if present
+        const prayed = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
+        localStorage.setItem("oratio_prayed", JSON.stringify(prayed.filter(id => id !== prayerId)));
+        
+        // Force re-render of submitted list
+        setSubmittedVersion(v => v + 1);
+      } catch (error) {
+        console.error("Failed to delete prayer:", error);
+      }
+    };
 
 
 
