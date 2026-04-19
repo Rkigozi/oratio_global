@@ -77,6 +77,39 @@ Use these questions to spark conversation:
 2. Prioritize fixes for the next iteration.
 3. Decide whether to continue developing this direction or pivot.
 
+## Deployment Instructions
+
+### Option 1: Vercel (Recommended - Free & Multi‑User)
+1. **Install Vercel CLI** (if not installed):  
+   ```bash
+   npm install -g vercel
+   ```
+2. **Log in to Vercel** (one‑time):  
+   ```bash
+   vercel login
+   ```
+3. **Deploy from the project root**:  
+   ```bash
+   vercel --prod --yes
+   ```
+4. **Share the generated URL** (e.g., `https://oratio-*.vercel.app`) with your focus group.
+
+**Why Vercel?**
+- Free tier supports unlimited static hosting
+- Each user gets independent localStorage (no data mixing)
+- Automatic GitHub integration for future updates
+- No backend required for prototype testing
+
+### Option 2: Netlify (Alternative Free Hosting)
+1. Push the `focus-group-simplification` branch to GitHub.
+2. Visit [netlify.com](https://netlify.com), sign up with GitHub.
+3. Select your repository and deploy.
+4. Share the Netlify‑generated URL.
+
+### Option 3: GitHub Pages (Static)
+Requires adding the `gh-pages` package and modifying `vite.config.ts`.  
+See [Vite GitHub Pages guide](https://vitejs.dev/guide/static-deploy.html#github-pages).
+
 ## Prototype URL & Notes
 - **Deployed URL:** [TODO: add after deployment]
 - **Branch:** `focus-group-simplification`

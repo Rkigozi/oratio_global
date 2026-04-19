@@ -14,8 +14,8 @@ export const prayerSchema = z.object({
   text: z.string()
     .min(10, { message: "Prayer must be at least 10 characters" })
     .max(500, { message: "Prayer cannot exceed 500 characters" })
-    .regex(/^[a-zA-Z0-9\s.,!?'"()\-:;\u00C0-\u017F]+$/, { 
-      message: "Only letters, numbers, spaces, and basic punctuation allowed"
+    .regex(/^[\p{L}\p{N}\p{P}\p{Z}]+$/u, { 
+      message: "Only letters, numbers, spaces, and punctuation allowed"
     })
     .trim(),
   location: z.string()
@@ -48,7 +48,7 @@ export function sanitizePrayerText(text: string): string {
   const withoutHtml = text.replace(/<[^>]*>/g, '');
   
   // Limit to safe characters (same as validation regex)
-  const safeText = withoutHtml.replace(/[^a-zA-Z0-9\s.,!?'"()\-:;\u00C0-\u017F]/g, '');
+  const safeText = withoutHtml.replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '');
   
   // Trim and limit length
   return safeText.trim().slice(0, 500);
@@ -71,15 +71,19 @@ export function validatePrayerSubmission(data: unknown): {
   data?: PrayerFormData;
   errors?: Record<string, string>;
 } {
+  console.log('Validating data:', data);
   try {
     const validated = prayerSchema.parse(data);
+    console.log('Validation passed');
     return { success: true, data: validated };
   } catch (error) {
+    console.log('Validation error:', error);
     if (error instanceof z.ZodError) {
       const errors: Record<string, string> = {};
       error.errors.forEach((err) => {
         const path = err.path.join('.');
         errors[path] = err.message;
+        console.log('Zod error:', path, err.message);
       });
       return { success: false, errors };
     }

@@ -32,6 +32,7 @@ export function Submit() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submit form: text length', text.length, 'location', location, 'category', category);
     
     // Clear previous errors
     setErrors({});
@@ -44,9 +45,12 @@ export function Submit() {
       anonymous,
     });
     
+    console.log('Validation result:', validation);
+    
     if (!validation.success) {
       // Show validation errors to user
       setErrors(validation.errors || {});
+      console.log('Validation errors:', validation.errors);
       return;
     }
     
@@ -60,6 +64,7 @@ export function Submit() {
     
     // Sanitize text for extra safety
     const sanitizedText = sanitizePrayerText(text.trim());
+    console.log('Sanitized text:', sanitizedText);
     
     const newPrayer = {
       id: `new-${Date.now()}`,
@@ -74,18 +79,26 @@ export function Submit() {
       createdAt: new Date().toISOString(),
     };
 
+    console.log('New prayer created:', newPrayer);
+
     if (typeof window !== "undefined" && (window as any).__oratio_addPrayer) {
+      console.log('Calling window.__oratio_addPrayer');
       (window as any).__oratio_addPrayer(newPrayer);
     }
 
     // Track in localStorage for profile
     try {
       const existingIds = JSON.parse(localStorage.getItem("oratio_submitted") || "[]");
+      console.log('Existing submitted IDs:', existingIds);
       localStorage.setItem("oratio_submitted", JSON.stringify([...existingIds, newPrayer.id]));
       // Also store the full prayer object so profile and feed can display it
       const existingPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]");
+      console.log('Existing submitted prayers:', existingPrayers.length);
       localStorage.setItem("oratio_submitted_prayers", JSON.stringify([newPrayer, ...existingPrayers]));
-    } catch {}
+      console.log('Prayer saved to localStorage');
+    } catch (e) {
+      console.error('localStorage error:', e);
+    }
   };
 
   const resetForm = () => {

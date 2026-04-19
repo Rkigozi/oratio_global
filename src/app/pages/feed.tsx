@@ -100,46 +100,61 @@ export function Feed() {
   }, [prayers]);
 
   const togglePrayed = useCallback((id: string) => {
+    console.log('togglePrayed called', id);
     setPrayedIds((prev) => {
       const isCurrentlyPrayed = prev.includes(id);
       const newPrayed = !isCurrentlyPrayed;
+      console.log('prev prayedIds', prev, 'isCurrentlyPrayed', isCurrentlyPrayed, 'newPrayed', newPrayed);
       
       // Update prayer count in state
-      setPrayers((prayersPrev) =>
-        prayersPrev.map((p) =>
+      setPrayers((prayersPrev) => {
+        console.log('Updating prayers state for id', id, 'newPrayed', newPrayed);
+        const updated = prayersPrev.map((p) =>
           p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
-        )
-      );
+        );
+        console.log('Updated prayers:', updated.find(p => p.id === id));
+        return updated;
+      });
       
       // Persist to localStorage for profile tracking
       try {
         const existing = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
+        console.log('Existing prayed localStorage:', existing);
         if (newPrayed && !existing.includes(id)) {
           localStorage.setItem("oratio_prayed", JSON.stringify([...existing, id]));
+          console.log('Added to localStorage prayed:', id);
         } else if (!newPrayed && existing.includes(id)) {
           localStorage.setItem("oratio_prayed", JSON.stringify(existing.filter(pId => pId !== id)));
+          console.log('Removed from localStorage prayed:', id);
         }
-      } catch {
-        // ignore localStorage errors
+      } catch (e) {
+        console.error('localStorage error:', e);
       }
 
       // Update count in submitted prayers storage
       try {
         const submittedPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
+        console.log('Submitted prayers in localStorage:', submittedPrayers);
         const updated = submittedPrayers.map(p => 
           p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
         );
         localStorage.setItem("oratio_submitted_prayers", JSON.stringify(updated));
-      } catch {
-        // ignore
+        console.log('Updated submitted prayers localStorage');
+      } catch (e) {
+        console.error('localStorage submitted error:', e);
       }
       
       // Return updated prayed IDs
       if (newPrayed && !prev.includes(id)) {
-        return [...prev, id];
+        const newIds = [...prev, id];
+        console.log('Returning new prayedIds:', newIds);
+        return newIds;
       } else if (!newPrayed && prev.includes(id)) {
-        return prev.filter(pId => pId !== id);
+        const newIds = prev.filter(pId => pId !== id);
+        console.log('Returning filtered prayedIds:', newIds);
+        return newIds;
       }
+      console.log('Returning same prayedIds:', prev);
       return prev;
     });
   }, []); // No dependencies needed because using functional updates
