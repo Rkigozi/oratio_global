@@ -3,22 +3,19 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Check } from "lucide-react";
 
-const AVATARS = ["🙏", "✝️", "🕊️", "💛", "🌿", "⭐", "🔥", "💜"];
-
-function saveProfile(name: string, avatar: string) {
+function saveProfile(name: string) {
   localStorage.setItem(
     "oratio_profile",
-    JSON.stringify({ name, avatar, joinedAt: new Date().toISOString() })
+    JSON.stringify({ name, avatar: "🙏", joinedAt: new Date().toISOString() })
   );
 }
 
 export function Onboarding() {
   const navigate = useNavigate();
-  const [avatar, setAvatar] = useState("🙏");
   const [name, setName] = useState("");
 
   const handleBegin = () => {
-    saveProfile(name.trim() || "Anonymous", avatar);
+    saveProfile(name.trim() || "Anonymous");
     navigate("/");
   };
 
@@ -55,43 +52,7 @@ export function Onboarding() {
           </p>
         </motion.div>
 
-        {/* Avatar picker */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15 }}
-          className="mb-8"
-        >
-          <p className="text-[#6b7499] text-xs uppercase tracking-[0.15em] mb-3 text-center">
-            Choose your icon
-          </p>
-          <div className="flex gap-2.5 flex-wrap justify-center">
-            {AVATARS.map((emoji) => (
-              <button
-                key={emoji}
-                onClick={() => setAvatar(emoji)}
-                className="w-12 h-12 rounded-full flex items-center justify-center text-xl cursor-pointer transition-all duration-200"
-                style={{
-                  background:
-                    avatar === emoji
-                      ? "rgba(124,143,255,0.15)"
-                      : "rgba(17, 26, 58, 0.6)",
-                  border:
-                    avatar === emoji
-                      ? "1px solid rgba(124,143,255,0.35)"
-                      : "1px solid rgba(124,143,255,0.08)",
-                  transform: avatar === emoji ? "scale(1.12)" : "scale(1)",
-                  boxShadow:
-                    avatar === emoji
-                      ? "0 0 16px rgba(124,143,255,0.15)"
-                      : "none",
-                }}
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        </motion.div>
+
 
         {/* Name input */}
         <motion.div

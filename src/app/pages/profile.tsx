@@ -80,18 +80,7 @@ export function Profile() {
 
 
 
-  const toggleFollow = (name: string) => {
-    setFollowing((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) {
-        next.delete(name);
-      } else {
-        next.add(name);
-      }
-      localStorage.setItem("oratio_following", JSON.stringify([...next]));
-      return next;
-    });
-  };
+
 
   return (
     <div
@@ -326,7 +315,7 @@ export function Profile() {
 
             <button
               onClick={() => {
-                ['oratio_profile','oratio_submitted','oratio_submitted_prayers','oratio_prayed','oratio_removed','oratio_answered'].forEach(k => localStorage.removeItem(k));
+                ['oratio_profile','oratio_submitted','oratio_submitted_prayers','oratio_prayed'].forEach(k => localStorage.removeItem(k));
                 sessionStorage.removeItem('oratio_visited');
                 navigate("/splash");
               }}

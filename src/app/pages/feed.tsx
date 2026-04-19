@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Globe, Users, Flame, Share2, MapPin, User } from "lucide-react";
+import { Globe, Users, Flame, Share2, MapPin, X, Search } from "lucide-react";
 import { Drawer } from "vaul";
 import { useSearchParams } from "react-router";
 import { mockFeedPrayers, timeAgo } from "../data/prayer-data";
@@ -11,7 +11,7 @@ const TABS = [
   { id: "global", label: "Global", icon: Globe },
 ] as const;
 
-const CATEGORIES = ["All", "Health", "Family", "Career", "Guidance", "Peace", "Other"];
+
 
 const categoryColors: Record<string, string> = {
   Health: "#67e8f9",
@@ -64,13 +64,7 @@ export function Feed() {
 
 
 
-  // Avatar picker for people
-  const getAvatarForName = (name: string) => {
-    const avatars = ["🙏", "✝️", "🕊️", "💛", "🌿", "⭐", "🔥", "💜"];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
-    return avatars[hash % avatars.length];
-  };
+
 
   // Add to recent searches
 
@@ -525,33 +519,13 @@ export function Feed() {
                       </p>
 
                       {/* Name */}
-                      {selectedPrayer.name && (() => {
-                         const name = selectedPrayer.name;
-                        return (
+                      {selectedPrayer.name && (
                           <div className="flex items-center gap-2.5 mb-4">
                             <p className="text-[#6b7499] text-sm">
-                              &mdash; {name}
+                              &mdash; {selectedPrayer.name}
                             </p>
-                            <motion.button
-                              onClick={() => toggleFollow(name)}
-                              whileTap={{ scale: 0.95 }}
-                              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] transition-all duration-200 cursor-pointer ${following.has(name) ? 'bg-[rgba(110,231,183,0.1)] text-[#6ee7b7] border border-[rgba(110,231,183,0.2)]' : 'bg-[rgba(124,143,255,0.06)] text-[#6b7499] border border-[rgba(124,143,255,0.1)]'}`}
-                            >
-                              {following.has(name) ? (
-                                <>
-                                  <UserCheck size={10} />
-                                  Following
-                                </>
-                              ) : (
-                                <>
-                                  <UserPlus size={10} />
-                                  Follow
-                                </>
-                              )}
-                            </motion.button>
                           </div>
-                        );
-                      })()}
+                      )}
 
                       {/* Prayer count */}
                       <div className="flex items-center gap-1.5 text-[#6b7499] text-xs mb-8">
