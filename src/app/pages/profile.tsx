@@ -2,16 +2,12 @@ import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   User,
-  Users,
   Heart,
   Send,
   MapPin,
   ChevronRight,
-  ChevronDown,
   LogOut,
   MessageCircle,
-  UserPlus,
-  UserCheck,
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
@@ -76,52 +72,13 @@ export function Profile() {
     setActionView("options");
   };
 
-  const handleOpenEdit = () => {
-    if (!selectedPrayer) return;
-    setEditText(selectedPrayer.text);
-    setEditAuthorName(selectedPrayer.name || "");
-    setEditLocation(`${selectedPrayer.city}, ${selectedPrayer.country}`);
-    setEditCategory(selectedPrayer.category || "Other");
-    setShowLocDrop(false);
-    setShowCatDrop(false);
-    setActionView("edit");
-  };
 
-  const handleSavePrayer = () => {
-    if (!selectedPrayer || !editText.trim()) return;
-    const [cityName, countryName] = editLocation.split(", ");
-    const updated: PrayerRequest = {
-      ...selectedPrayer,
-      text: editText.trim(),
-      name: editAuthorName.trim() || undefined,
-      city: cityName || selectedPrayer.city,
-      country: countryName || selectedPrayer.country,
-      category: editCategory,
-    };
-    // Update in localStorage
-    try {
-      const stored: PrayerRequest[] = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]");
-      const next = stored.map((p) => (p.id === updated.id ? updated : p));
-      localStorage.setItem("oratio_submitted_prayers", JSON.stringify(next));
-    } catch {}
-    setSelectedPrayer(updated);
-    setActionView("options");
-  };
 
-  const handleMarkAnswered = () => {
-    if (!selectedPrayer) return;
-    addToList("oratio_answered", selectedPrayer.id);
-    setLocalAnswered((prev) => new Set(prev).add(selectedPrayer.id));
-    setAnsweredCount((c) => c + 1);
-    setActionView("answered");
-  };
 
-  const handleDelete = () => {
-    if (!selectedPrayer) return;
-    addToList("oratio_removed", selectedPrayer.id);
-    setLocalRemoved((prev) => new Set(prev).add(selectedPrayer.id));
-    setActionView("deleted");
-  };
+
+
+
+
 
   const toggleFollow = (name: string) => {
     setFollowing((prev) => {
@@ -368,23 +325,6 @@ export function Profile() {
             </a>
 
             <button
-              onClick={() => setEditOpen(true)}
-              className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"
-              style={{
-                background: "rgba(17, 26, 58, 0.4)",
-                border: "1px solid rgba(124,143,255,0.05)",
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <User size={16} className="text-[#7c8fff] opacity-60" />
-                <span className="text-[#c5cbe2] text-sm">
-                  Edit Profile
-                </span>
-              </div>
-              <ChevronRight size={14} className="text-[#3e4460]" />
-            </button>
-
-            <button
               onClick={() => {
                 ['oratio_profile','oratio_submitted','oratio_submitted_prayers','oratio_prayed','oratio_removed','oratio_answered'].forEach(k => localStorage.removeItem(k));
                 sessionStorage.removeItem('oratio_visited');
@@ -478,367 +418,16 @@ export function Profile() {
                         <span>{selectedPrayer.prayerCount} people prayed</span>
                       </div>
 
-                      {/* Action buttons */}
-                      <div className="space-y-2.5">
-                        {/* Edit */}
-                        <button
-                          onClick={handleOpenEdit}
-                          className="w-full flex items-center gap-3 px-5 py-4 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[rgba(124,143,255,0.08)]"
-                          style={{
-                            background: "rgba(124, 143, 255, 0.04)",
-                            border: "1px solid rgba(124, 143, 255, 0.12)",
-                          }}
-                        >
-                          <div
-                            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                            style={{ background: "rgba(124, 143, 255, 0.1)" }}
-                          >
-                            <Pencil size={16} className="text-[#7c8fff]" />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-[#e2e4f0] text-sm mb-0.5">Edit Prayer</p>
-                            <p className="text-[#5a6080] text-[11px]">Update your prayer request</p>
-                          </div>
-                        </button>
 
-                        <button
-                          onClick={handleMarkAnswered}
-                          className="w-full flex items-center gap-3 px-5 py-4 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[rgba(251,191,36,0.08)]"
-                          style={{
-                            background: "rgba(251, 191, 36, 0.04)",
-                            border: "1px solid rgba(251, 191, 36, 0.12)",
-                          }}
-                        >
-                          <div
-                            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                            style={{
-                              background: "rgba(251, 191, 36, 0.1)",
-                            }}
-                          >
-                            <Sparkles size={16} className="text-[#fbbf24]" />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-[#e2e4f0] text-sm mb-0.5">
-                              Mark as Answered
-                            </p>
-                            <p className="text-[#5a6080] text-[11px]">
-                              Celebrate God&apos;s faithfulness
-                            </p>
-                          </div>
-                        </button>
-
-                        <button
-                          onClick={() => setActionView("confirm-delete")}
-                          className="w-full flex items-center gap-3 px-5 py-4 rounded-xl cursor-pointer transition-all duration-200 hover:bg-[rgba(255,107,107,0.06)]"
-                          style={{
-                            background: "rgba(255, 107, 107, 0.02)",
-                            border: "1px solid rgba(255, 107, 107, 0.08)",
-                          }}
-                        >
-                          <div
-                            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                            style={{
-                              background: "rgba(255, 107, 107, 0.08)",
-                            }}
-                          >
-                            <Trash2 size={16} className="text-[#ff6b6b] opacity-70" />
-                          </div>
-                          <div className="text-left">
-                            <p className="text-[#c5cbe2] text-sm mb-0.5">
-                              Delete Prayer
-                            </p>
-                            <p className="text-[#5a6080] text-[11px]">
-                              Remove from the feed
-                            </p>
-                          </div>
-                        </button>
-                      </div>
                     </motion.div>
                   )}
 
-                  {/* ── Edit view ──────────────────────────────── */}
-                  {actionView === "edit" && (
-                    <motion.div
-                      key="edit"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.25 }}
-                    >
-                      <h3
-                        className="text-[#e2e4f0] font-heading text-center mb-5"
-                        style={{ fontSize: "1.1rem", fontWeight: 300 }}
-                      >
-                        Edit Prayer
-                      </h3>
 
-                      <div className="space-y-4">
-                        {/* Prayer text */}
-                        <div>
-                          <label className="text-[#6b7499] text-xs uppercase tracking-[0.12em] mb-2 block">
-                            Prayer message
-                          </label>
-                          <textarea
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            rows={4}
-                            className="w-full rounded-xl px-4 py-3 text-[#e8eaf6] placeholder-[#5a5f80] resize-none border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)] focus:outline-none transition-colors"
-                            style={{ background: "rgba(15, 20, 50, 0.6)", lineHeight: 1.7 }}
-                          />
-                        </div>
 
-                        {/* Name */}
-                        <div>
-                          <label className="text-[#6b7499] text-xs uppercase tracking-[0.12em] mb-2 block">
-                            Name <span className="text-[#4e5573] normal-case tracking-normal">(optional)</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={editAuthorName}
-                            onChange={(e) => setEditAuthorName(e.target.value)}
-                            placeholder="Anonymous"
-                            className="w-full rounded-xl px-4 py-3 text-[#e8eaf6] placeholder-[#5a5f80] border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)] focus:outline-none transition-colors"
-                            style={{ background: "rgba(15, 20, 50, 0.6)" }}
-                          />
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          {/* Location */}
-                          <div className="relative">
-                            <label className="text-[#6b7499] text-xs uppercase tracking-[0.12em] mb-2 block">Location</label>
-                            <button
-                              type="button"
-                              onClick={() => { setShowLocDrop(!showLocDrop); setShowCatDrop(false); }}
-                              className="w-full rounded-xl px-3 py-3 text-left flex items-center justify-between border border-[rgba(124,143,255,0.12)] focus:outline-none transition-colors cursor-pointer"
-                              style={{ background: "rgba(15, 20, 50, 0.6)" }}
-                            >
-                              <span className="text-[#e8eaf6] text-xs truncate">{editLocation.split(",")[0]}</span>
-                              <ChevronDown size={14} className="text-[#8890b5] flex-shrink-0" />
-                            </button>
-                            <AnimatePresence>
-                              {showLocDrop && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: -4 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -4 }}
-                                  className="absolute top-full mt-1 left-0 right-0 max-h-40 overflow-y-auto rounded-xl border border-[rgba(124,143,255,0.15)] z-30"
-                                  style={{ background: "rgba(15, 20, 55, 0.98)", backdropFilter: "blur(20px)" }}
-                                >
-                                  {cities.map((city) => (
-                                    <button
-                                      key={city}
-                                      type="button"
-                                      onClick={() => { setEditLocation(city); setShowLocDrop(false); }}
-                                      className="w-full text-left px-3 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.1)] transition-colors cursor-pointer truncate"
-                                    >
-                                      {city}
-                                    </button>
-                                  ))}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
 
-                          {/* Category */}
-                          <div className="relative">
-                            <label className="text-[#6b7499] text-xs uppercase tracking-[0.12em] mb-2 block">Category</label>
-                            <button
-                              type="button"
-                              onClick={() => { setShowCatDrop(!showCatDrop); setShowLocDrop(false); }}
-                              className="w-full rounded-xl px-3 py-3 text-left flex items-center justify-between border border-[rgba(124,143,255,0.12)] focus:outline-none transition-colors cursor-pointer"
-                              style={{ background: "rgba(15, 20, 50, 0.6)" }}
-                            >
-                              <span className="text-[#e8eaf6] text-xs truncate">{editCategory}</span>
-                              <ChevronDown size={14} className="text-[#8890b5] flex-shrink-0" />
-                            </button>
-                            <AnimatePresence>
-                              {showCatDrop && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: -4 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: -4 }}
-                                  className="absolute top-full mt-1 left-0 right-0 rounded-xl border border-[rgba(124,143,255,0.15)] z-30"
-                                  style={{ background: "rgba(15, 20, 55, 0.98)", backdropFilter: "blur(20px)" }}
-                                >
-                                  {CATEGORIES.map((cat) => (
-                                    <button
-                                      key={cat}
-                                      type="button"
-                                      onClick={() => { setEditCategory(cat); setShowCatDrop(false); }}
-                                      className="w-full text-left px-3 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.1)] transition-colors cursor-pointer"
-                                    >
-                                      {cat}
-                                    </button>
-                                  ))}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        </div>
 
-                        {/* Buttons */}
-                        <div className="flex gap-3 pt-1">
-                          <button
-                            onClick={() => setActionView("options")}
-                            className="flex-1 py-3 rounded-full text-sm text-[#8b96c0] bg-[rgba(124,143,255,0.06)] border border-[rgba(124,143,255,0.1)] hover:bg-[rgba(124,143,255,0.12)] transition-all cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleSavePrayer}
-                            disabled={!editText.trim()}
-                            className="flex-1 py-3 rounded-full text-sm flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40"
-                            style={{
-                              background: "linear-gradient(135deg, #7c8fff, #5a6fd6)",
-                              color: "#ffffff",
-                              boxShadow: "0 4px 20px rgba(124, 143, 255, 0.25)",
-                            }}
-                          >
-                            <Check size={15} />
-                            Save
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
 
-                  {/* ── Confirm delete view ────────────────────── */}
-                  {actionView === "confirm-delete" && (
-                    <motion.div
-                      key="confirm-delete"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, scale: 0.97 }}
-                      transition={{ duration: 0.25 }}
-                      className="text-center py-4"
-                    >
-                      <div
-                        className="w-14 h-14 mx-auto mb-5 rounded-full flex items-center justify-center"
-                        style={{
-                          background: "rgba(255, 107, 107, 0.08)",
-                          border: "1px solid rgba(255, 107, 107, 0.12)",
-                        }}
-                      >
-                        <Trash2 size={22} className="text-[#ff6b6b] opacity-70" />
-                      </div>
-
-                      <h3
-                        className="text-[#e2e4f0] font-heading mb-2"
-                        style={{ fontSize: "1.1rem", fontWeight: 300 }}
-                      >
-                        Delete this prayer?
-                      </h3>
-                      <p className="text-[#6b7499] text-sm mb-8 max-w-xs mx-auto">
-                        This will remove it from the global feed.
-                        Others will no longer be able to pray for it.
-                      </p>
-
-                      <div className="flex gap-3 justify-center">
-                        <button
-                          onClick={() => setActionView("options")}
-                          className="px-6 py-2.5 rounded-full text-sm text-[#8b96c0] bg-[rgba(124,143,255,0.06)] border border-[rgba(124,143,255,0.1)] hover:bg-[rgba(124,143,255,0.12)] transition-all cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleDelete}
-                          className="px-6 py-2.5 rounded-full text-sm text-[#ff6b6b] bg-[rgba(255,107,107,0.08)] border border-[rgba(255,107,107,0.15)] hover:bg-[rgba(255,107,107,0.15)] transition-all cursor-pointer"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* ── Answered confirmation ──────────────────── */}
-                  {actionView === "answered" && (
-                    <motion.div
-                      key="answered"
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.95, opacity: 0 }}
-                      transition={{ duration: 0.45, ease: "easeOut" }}
-                      className="text-center py-6 flex flex-col items-center"
-                    >
-                      {/* Golden glow orb */}
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.1, type: "spring", damping: 16, stiffness: 140 }}
-                        className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
-                        style={{
-                          background:
-                            "radial-gradient(circle, rgba(251, 191, 36, 0.15), rgba(251, 191, 36, 0.03))",
-                          boxShadow: "0 0 60px rgba(251, 191, 36, 0.1)",
-                        }}
-                      >
-                        <motion.div
-                          animate={{ opacity: [0.6, 1, 0.6], scale: [0.95, 1.05, 0.95] }}
-                          transition={{ duration: 3, repeat: Infinity }}
-                        >
-                          <Sparkles size={32} className="text-[#fbbf24]" />
-                        </motion.div>
-                      </motion.div>
-
-                      <h3
-                        className="text-[#e2e4f0] font-heading mb-2"
-                        style={{ fontSize: "1.25rem", fontWeight: 300 }}
-                      >
-                        Prayer Answered
-                      </h3>
-                      <p className="text-[#8890b5] text-sm mb-2 max-w-xs">
-                        Glory to God! Your prayer has been answered.
-                      </p>
-                      <p className="text-[#5a6080] text-xs mb-8">
-                        {selectedPrayer.prayerCount} people prayed with you
-                      </p>
-
-                      <button
-                        onClick={() => setSelectedPrayer(null)}
-                        className="px-8 py-2.5 rounded-full text-sm text-[#fbbf24] bg-[rgba(251,191,36,0.06)] border border-[rgba(251,191,36,0.15)] hover:bg-[rgba(251,191,36,0.12)] transition-all cursor-pointer"
-                      >
-                        Amen
-                      </button>
-                    </motion.div>
-                  )}
-
-                  {/* ── Deleted confirmation ───────────────────── */}
-                  {actionView === "deleted" && (
-                    <motion.div
-                      key="deleted"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="text-center py-8"
-                    >
-                      <div
-                        className="w-14 h-14 mx-auto mb-5 rounded-full flex items-center justify-center"
-                        style={{
-                          background:
-                            "radial-gradient(circle, rgba(124,143,255,0.08), transparent)",
-                        }}
-                      >
-                        <Check size={24} className="text-[#6b7499]" />
-                      </div>
-
-                      <h3
-                        className="text-[#e2e4f0] font-heading mb-2"
-                        style={{ fontSize: "1.1rem", fontWeight: 300 }}
-                      >
-                        Prayer Removed
-                      </h3>
-                      <p className="text-[#6b7499] text-sm mb-6">
-                        It has been removed from the feed.
-                      </p>
-
-                      <button
-                        onClick={() => setSelectedPrayer(null)}
-                        className="px-6 py-2.5 rounded-full text-sm text-[#8b96c0] bg-[rgba(124,143,255,0.06)] border border-[rgba(124,143,255,0.1)] hover:bg-[rgba(124,143,255,0.12)] transition-all cursor-pointer"
-                      >
-                        Done
-                      </button>
-                    </motion.div>
-                  )}
                 </AnimatePresence>
               )}
             </div>
