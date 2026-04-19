@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
-import { MapPin, Heart, UserCheck, MoreVertical } from "lucide-react";
+import { MapPin, Heart, MoreVertical } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo } from "../data/prayer-data";
 
@@ -9,8 +9,6 @@ interface FeedCardProps {
   index: number;
   onPrayed: (id: string) => void;
   onTap: (prayer: PrayerRequest) => void;
-  onFollow?: (name: string) => void;
-  following?: Set<string>;
 }
 
 const categoryColors: Record<string, string> = {
@@ -22,7 +20,7 @@ const categoryColors: Record<string, string> = {
   Other: "#8890b5",
 };
 
-export function FeedCard({ prayer, index, onPrayed, onTap, following }: FeedCardProps) {
+export function FeedCard({ prayer, index, onPrayed, onTap }: FeedCardProps) {
   const [prayed, setPrayed] = useState(false);
   const [count, setCount] = useState(prayer.prayerCount);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -47,7 +45,6 @@ export function FeedCard({ prayer, index, onPrayed, onTap, following }: FeedCard
   };
 
   const catColor = categoryColors[prayer.category || "Other"] || "#8890b5";
-  const isFollowed = prayer.name && following?.has(prayer.name);
 
   return (
     <motion.div
@@ -100,18 +97,8 @@ export function FeedCard({ prayer, index, onPrayed, onTap, following }: FeedCard
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           {prayer.name && (
-            <span className="text-[#6b7499] text-xs flex items-center gap-1">
+            <span className="text-[#6b7499] text-xs">
               &mdash; {prayer.name}
-              {isFollowed && (
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 500 }}
-                  className="inline-flex"
-                >
-                  <UserCheck size={10} className="text-[#6ee7b7] opacity-70" />
-                </motion.span>
-              )}
             </span>
           )}
           {prayer.category && (

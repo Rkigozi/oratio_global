@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Globe, Users, Flame, Search, X, Share2, MapPin, UserPlus, UserCheck, User, Tag, Clock } from "lucide-react";
+import { Globe, Users, Flame, Share2, MapPin, User } from "lucide-react";
 import { Drawer } from "vaul";
 import { useSearchParams } from "react-router";
 import { mockFeedPrayers, timeAgo } from "../data/prayer-data";
@@ -9,7 +9,6 @@ import { FeedCard } from "../components/feed-card";
 
 const TABS = [
   { id: "global", label: "Global", icon: Globe },
-  { id: "nearby", label: "Community", icon: Users },
 ] as const;
 
 const CATEGORIES = ["All", "Health", "Family", "Career", "Guidance", "Peace", "Other"];
@@ -41,11 +40,7 @@ export function Feed() {
     return () => clearTimeout(timer);
   }, [hasLocationFilter, setSearchParams]);
 
-  const [tab, setTab] = useState<"global" | "nearby">("global");
-  const [category, setCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchFilter, setSearchFilter] = useState<'all' | 'people' | 'locations' | 'categories'>('all');
+  const [tab, setTab] = useState<"global">("global");
    const [prayers, setPrayers] = useState<PrayerRequest[]>(() => {
     try {
       const submitted = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
@@ -66,29 +61,8 @@ export function Feed() {
   const [showWelcome, setShowWelcome] = useState(() => {
     return !localStorage.getItem("oratio_feed_visited");
   });
-   const [following, setFollowing] = useState<Set<string>>(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
-      return new Set(saved);
-    } catch {
-      return new Set();
-    }
-  });
 
-  // Search suggestions state
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Recent searches
-  const [recentSearches, setRecentSearches] = useState<Array<{type: 'location' | 'person' | 'category', name: string}>>(() => {
-    try {
-      const saved = localStorage.getItem('oratio_recent_searches');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
 
   // Avatar picker for people
   const getAvatarForName = (name: string) => {
@@ -99,219 +73,14 @@ export function Feed() {
   };
 
   // Add to recent searches
-  const addToRecentSearches = useCallback((item: {type: 'location' | 'person' | 'category', name: string}) => {
-    setRecentSearches(prev => {
-      const filtered = prev.filter(i => !(i.type === item.type && i.name === item.name));
-      const updated = [item, ...filtered].slice(0, 10);
-      localStorage.setItem('oratio_recent_searches', JSON.stringify(updated));
-      return updated;
-    });
-  }, []);
 
   const dismissWelcome = () => {
     setShowWelcome(false);
     localStorage.setItem("oratio_feed_visited", "true");
   };
 
-  const toggleFollow = (name: string) => {
-    setFollowing((prev) => {
-      const next = new Set(prev);
-      if (next.has(name)) {
-        next.delete(name);
-      } else {
-        next.add(name);
-      }
-      localStorage.setItem("oratio_following", JSON.stringify([...next]));
-      return next;
-    });
-  };
 
   // Build search index from prayers data (locations, people, categories)
-  const searchIndex = useMemo(() => {
-    const locations = new Map<string, { city: string; country: string; prayerCount: number }>();
-    const people = new Set<string>();
-    const categories = new Set<string>();
-    
-    prayers.forEach(p => {
-      // Locations: "City, Country"
-      const locationKey = `${p.city}, ${p.country}`;
-      const existing = locations.get(locationKey);
-      if (existing) {
-        existing.prayerCount += p.prayerCount;
-      } else {
-        locations.set(locationKey, { city: p.city, country: p.country, prayerCount: p.prayerCount });
-      }
-      
-      // People (non-anonymous)
-      if (p.name) people.add(p.name);
-      
-      // Categories
-      if (p.category) categories.add(p.category);
-    });
-    
-    return { 
-      locations: Array.from(locations.entries()).map(([name, data]) => ({ 
-        type: 'location' as const,
-        name,
-        ...data 
-      })),
-      people: Array.from(people).map(name => ({
-        type: 'person' as const,
-        name
-      })),
-      categories: Array.from(categories).map(name => ({
-        type: 'category' as const,
-        name
-      }))
-    };
-  }, [prayers]);
-
-  // Filter suggestions based on search query
-  const filteredSections = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    
-    // Filter by searchFilter type
-    const filterByType = <T extends { type: string }>(items: T[]): T[] => {
-      if (searchFilter === 'all') return items;
-      return items.filter(item => item.type === searchFilter.slice(0, -1)); // 'people' -> 'person', 'locations' -> 'location', 'categories' -> 'category'
-    };
-    
-    // When query is empty, show recent searches and top suggestions
-    if (!q) {
-      const sections = [];
-      
-      // Recent searches section (filtered by type)
-      const filteredRecent = filterByType(recentSearches);
-      if (filteredRecent.length > 0) {
-        sections.push({
-          type: 'recent' as const,
-          title: 'Recent',
-          data: filteredRecent.slice(0, 5),
-          icon: Clock
-        });
-      }
-      
-      // Top suggestions (3 of each type, filtered by searchFilter)
-      const topLocations = searchFilter === 'all' || searchFilter === 'locations' ? searchIndex.locations.slice(0, 3) : [];
-      const topPeople = searchFilter === 'all' || searchFilter === 'people' ? searchIndex.people.slice(0, 3) : [];
-      const topCategories = searchFilter === 'all' || searchFilter === 'categories' ? searchIndex.categories.slice(0, 3) : [];
-      
-      if (topLocations.length > 0) {
-        sections.push({ type: 'location' as const, title: 'Locations', data: topLocations, icon: MapPin });
-      }
-      if (topPeople.length > 0) {
-        sections.push({ type: 'person' as const, title: 'People', data: topPeople, icon: User });
-      }
-      if (topCategories.length > 0) {
-        sections.push({ type: 'category' as const, title: 'Categories', data: topCategories, icon: Tag });
-      }
-      
-      return sections;
-    }
-    
-    // When query exists, filter results by query and type
-    const filterByQuery = (items: Array<{ name: string }>) => 
-      items.filter(item => item.name.toLowerCase().includes(q)).slice(0, 5);
-
-    const sections = [];
-    if (searchFilter === 'all' || searchFilter === 'locations') {
-      const data = filterByQuery(searchIndex.locations);
-      if (data.length > 0) sections.push({ type: 'location' as const, title: 'Locations', data, icon: MapPin });
-    }
-    if (searchFilter === 'all' || searchFilter === 'people') {
-      const data = filterByQuery(searchIndex.people);
-      if (data.length > 0) sections.push({ type: 'person' as const, title: 'People', data, icon: User });
-    }
-    if (searchFilter === 'all' || searchFilter === 'categories') {
-      const data = filterByQuery(searchIndex.categories);
-      if (data.length > 0) sections.push({ type: 'category' as const, title: 'Categories', data, icon: Tag });
-    }
-
-    return sections;
-  }, [searchIndex, searchQuery, recentSearches, searchFilter]);
-
-  // Flatten suggestions for keyboard navigation
-  const allSuggestions = useMemo(() => {
-    return filteredSections.flatMap(section => section.data);
-  }, [filteredSections]);
-
-  // Reset highlighted index when search query changes
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHighlightedIndex(-1);
-  }, [searchQuery]);
-
-  // Click outside to close suggestions
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-        setHighlightedIndex(-1);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Handle suggestion selection
-  const handleSuggestionSelect = useCallback((suggestion: typeof allSuggestions[0]) => {
-    switch (suggestion.type) {
-      case 'location':
-        setSearchQuery(suggestion.name);
-        break;
-      case 'person':
-        setSearchQuery(suggestion.name);
-        break;
-      case 'category':
-        // Set category state to sync with category pills
-        setCategory(suggestion.name);
-        // Also set search query for visual feedback
-        setSearchQuery(suggestion.name);
-        break;
-    }
-    // Add to recent searches (excluding 'recent' section type)
-    if (suggestion.type !== 'recent') {
-      addToRecentSearches({ type: suggestion.type, name: suggestion.name });
-    }
-    setShowSuggestions(false);
-    setHighlightedIndex(-1);
-    // Keep search input focused for further typing
-    setTimeout(() => {
-      const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-      if (input) input.focus();
-    }, 10);
-  }, [setCategory, setSearchQuery, setShowSuggestions, setHighlightedIndex, addToRecentSearches]);
-
-  // Keyboard navigation for suggestions
-  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showSuggestions || allSuggestions.length === 0) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedIndex(prev => 
-          prev < allSuggestions.length - 1 ? prev + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedIndex(prev => 
-          prev > 0 ? prev - 1 : allSuggestions.length - 1
-        );
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (highlightedIndex >= 0 && highlightedIndex < allSuggestions.length) {
-          handleSuggestionSelect(allSuggestions[highlightedIndex]);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        setShowSuggestions(false);
-        setHighlightedIndex(-1);
-        break;
-    }
-  }, [showSuggestions, allSuggestions, highlightedIndex, handleSuggestionSelect]);
 
 
 
@@ -327,28 +96,8 @@ export function Feed() {
       );
     }
 
-    if (tab === "nearby") {
-      result = result.filter((p) => p.name && following.has(p.name));
-    }
-
-    if (category !== "All") {
-      result = result.filter((p) => p.category === category);
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.text.toLowerCase().includes(q) ||
-          p.city.toLowerCase().includes(q) ||
-          p.country.toLowerCase().includes(q) ||
-          (p.name && p.name.toLowerCase().includes(q)) ||
-          (p.category && p.category.toLowerCase().includes(q))
-      );
-    }
-
     return result;
-  }, [prayers, tab, category, searchQuery, following, hasLocationFilter, locationCity, locationCountry]);
+  }, [prayers, hasLocationFilter, locationCity, locationCountry]);
 
   // Trending: top 5 by prayer count
   const trending = useMemo(() => {
@@ -425,182 +174,15 @@ export function Feed() {
         }}
       >
         {/* Title row */}
-        <div className="flex items-center justify-between px-5 pt-12 mb-4">
+        <div className="px-5 pt-12 mb-4">
           <h2
             className="text-[#e2e4f0] font-heading tracking-wide"
             style={{ fontSize: "1.35rem", fontWeight: 300 }}
           >
             {hasLocationFilter ? locationCity : "Prayer Feed"}
           </h2>
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="w-9 h-9 rounded-full flex items-center justify-center cursor-pointer transition-colors"
-            style={{
-              background: searchOpen
-                ? "rgba(124,143,255,0.12)"
-                : "rgba(124,143,255,0.06)",
-              border: "1px solid rgba(124,143,255,0.1)",
-            }}
-          >
-            {searchOpen ? (
-              <X size={16} className="text-[#7c8fff]" />
-            ) : (
-              <Search size={16} className="text-[#8890b5]" />
-            )}
-          </button>
         </div>
 
-        {/* Search bar */}
-        <AnimatePresence>
-          {searchOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="px-5 overflow-hidden"
-            >
-              <div
-                className="flex items-center gap-2 rounded-xl px-3.5 py-2.5 mb-3 border border-[rgba(124,143,255,0.15)]"
-                style={{ background: "rgba(15, 20, 50, 0.6)" }}
-              >
-                <Search size={14} className="text-[#5a6080] flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Search prayers, cities, people..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setShowSuggestions(true);
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
-                  onKeyDown={handleSearchKeyDown}
-                  autoFocus
-                  className="flex-1 bg-transparent text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="text-[#5a6080] cursor-pointer"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-                </div>
-
-                {/* Search filter pills */}
-                <div className="flex gap-1.5 px-1 mb-3 overflow-x-auto no-scrollbar">
-                  {[
-                    { id: 'all', label: 'All', icon: Search },
-                    { id: 'people', label: 'People', icon: User },
-                    { id: 'locations', label: 'Locations', icon: MapPin },
-                    { id: 'categories', label: 'Categories', icon: Tag },
-                  ].map((filter) => {
-                    const Icon = filter.icon;
-                    const isActive = searchFilter === filter.id;
-                    return (
-                      <button
-                        key={filter.id}
-                        onClick={() => setSearchFilter(filter.id as 'all' | 'people' | 'locations' | 'categories')}
-                        className="flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] transition-all duration-200 cursor-pointer uppercase tracking-wider flex items-center gap-1"
-                        style={{
-                          background: isActive
-                            ? "rgba(124,143,255,0.1)"
-                            : "transparent",
-                          color: isActive ? "#c5cdff" : "#4e5573",
-                          border: isActive
-                            ? "1px solid rgba(124,143,255,0.15)"
-                            : "1px solid rgba(124,143,255,0.06)",
-                        }}
-                      >
-                        <Icon size={11} />
-                        {filter.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                 {/* Search suggestions dropdown */}
-                <AnimatePresence>
-                  {showSuggestions && (
-                    <motion.div
-                      ref={suggestionsRef}
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className="rounded-xl border border-border/20 overflow-hidden bg-popover/92 backdrop-blur-xl"
-                    >
-                      {allSuggestions.length > 0 ? (
-                        /* Grouped sections */
-                        filteredSections.map((section) => (
-                          <div key={section.type}>
-                            <div className="px-4 py-2 text-xs text-muted-foreground uppercase tracking-wider border-b border-border/20 flex items-center justify-between">
-                              <span>{section.title}</span>
-                              {section.type === 'recent' && recentSearches.length > 0 && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setRecentSearches([]);
-                                    localStorage.removeItem('oratio_recent_searches');
-                                  }}
-                                  className="text-muted-foreground hover:text-foreground text-[10px] normal-case tracking-normal cursor-pointer"
-                                >
-                                  Clear
-                                </button>
-                              )}
-                            </div>
-                            {section.data.map((item) => {
-                              const flatIndex = allSuggestions.findIndex(s => s.type === item.type && s.name === item.name);
-                              return (
-                                <button
-                                  key={`${item.type}-${item.name}`}
-                                  onClick={() => handleSuggestionSelect(item)}
-                                  className={`w-full text-left px-4 py-3 text-sm text-foreground hover:bg-accent transition-colors cursor-pointer flex items-center gap-3 ${highlightedIndex === flatIndex ? 'bg-accent' : ''}`}
-                                >
-                                  {section.type === 'recent' ? (
-                                    <Clock size={14} className="text-muted-foreground flex-shrink-0" />
-                                  ) : item.type === 'person' ? (
-                                    <span className="text-base flex-shrink-0">{getAvatarForName(item.name)}</span>
-                                  ) : (
-                                    <section.icon size={14} className="text-muted-foreground flex-shrink-0" />
-                                  )}
-                                  <span className="truncate flex-1">{item.name}</span>
-                                  {item.type === 'location' && 'prayerCount' in item && (
-                                    <span className="text-xs text-muted-foreground bg-secondary/30 px-1.5 py-0.5 rounded-full">
-                                      {item.prayerCount}
-                                    </span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ))
-                      ) : searchQuery.trim() ? (
-                        /* No results state */
-                        <div className="py-8 text-center">
-                          <Search size={20} className="text-muted-foreground mx-auto mb-2 opacity-50" />
-                          <p className="text-muted-foreground text-sm">No results for "{searchQuery}"</p>
-                          <p className="text-muted-foreground/70 text-xs mt-1">Try a different search term</p>
-                          <button
-                            onClick={() => setSearchQuery('')}
-                            className="mt-3 px-3 py-1.5 text-xs text-foreground/70 bg-secondary/30 rounded-full hover:bg-secondary/50 transition-colors cursor-pointer"
-                          >
-                            Clear search
-                          </button>
-                        </div>
-                      ) : (
-                        /* Empty query and no recent/top suggestions (should not happen) */
-                        <div className="py-8 text-center">
-                          <Clock size={20} className="text-muted-foreground mx-auto mb-2 opacity-50" />
-                          <p className="text-muted-foreground text-sm">Start typing to search</p>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-             </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Tab row */}
         <div className="flex gap-1 px-5 mb-3">
@@ -629,30 +211,6 @@ export function Feed() {
           })}
         </div>
 
-        {/* Category pills */}
-        <div className="flex gap-1.5 px-5 pb-4 overflow-x-auto no-scrollbar">
-          {CATEGORIES.map((cat) => {
-            const isActive = category === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className="flex-shrink-0 px-3 py-1 rounded-full text-[11px] transition-all duration-200 cursor-pointer uppercase tracking-wider"
-                style={{
-                  background: isActive
-                    ? "rgba(124,143,255,0.1)"
-                    : "transparent",
-                  color: isActive ? "#c5cdff" : "#4e5573",
-                  border: isActive
-                    ? "1px solid rgba(124,143,255,0.15)"
-                    : "1px solid rgba(124,143,255,0.06)",
-                }}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Scrollable content */}
@@ -826,8 +384,6 @@ export function Feed() {
                 index={i}
                 onPrayed={handlePrayed}
                 onTap={handleTap}
-                onFollow={toggleFollow}
-                following={following}
               />
             ))
           ) : (
