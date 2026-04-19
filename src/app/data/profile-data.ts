@@ -36,29 +36,7 @@ export function getPrayedIds(): string[] {
   return [];
 }
 
-export function getRemovedIds(): string[] {
-  try {
-    const raw = localStorage.getItem("oratio_removed");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
 
-export function getAnsweredIds(): string[] {
-  try {
-    const raw = localStorage.getItem("oratio_answered");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
-export function getFollowingIds(): string[] {
-  try {
-    const raw = localStorage.getItem("oratio_following");
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
 
 export function getStoredSubmittedPrayers(): PrayerRequest[] {
   try {
@@ -93,12 +71,9 @@ export const categoryColors: Record<string, string> = {
   Other: "#8890b5",
 };
 
-// Helper to get submitted prayers (excluding removed/answered)
+// Helper to get submitted prayers
 export function getSubmittedPrayers(): PrayerRequest[] {
-  const removed = new Set(getRemovedIds());
-  const answered = new Set(getAnsweredIds());
   return getStoredSubmittedPrayers()
-    .filter((p) => !removed.has(p.id) && !answered.has(p.id))
     .map((p) => ({ ...p, prayerCount: p.prayerCount || 0 }));
 }
 
@@ -116,17 +91,3 @@ export function getPrayedForPrayers(): PrayerRequest[] {
   return getAllPrayers().filter(p => prayedIds.has(p.id));
 }
 
-// Helper to get answered prayers
-export function getAnsweredPrayers(): PrayerRequest[] {
-  const answeredIds = new Set(getAnsweredIds());
-  const submitted = getStoredSubmittedPrayers();
-  return submitted.filter(p => answeredIds.has(p.id));
-}
-
-// Helper to get following list with search
-export function getFollowingList(searchQuery = ""): Array<{ name: string; avatar: string }> {
-  const following = getFollowingIds();
-  return following
-    .filter(name => name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .map(name => ({ name, avatar: getAvatarForName(name) }));
-}
