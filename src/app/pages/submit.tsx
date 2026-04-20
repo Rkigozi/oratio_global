@@ -37,6 +37,8 @@ export function Submit() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    alert('Submit button clicked - handleSubmit called'); // TEMP DEBUG
+    console.log('🔄 SUBMIT BUTTON CLICKED - handleSubmit called');
     console.log('=== SUBMISSION DEBUG ===');
     console.log('Form data:', { 
       textLength: text.length, 
@@ -174,7 +176,7 @@ export function Submit() {
                 </label>
                 <textarea
                   value={text}
-                  onChange={(e) => setText(e.target.value)}
+                  onChange={(e) => { console.log('Textarea change:', e.target.value.length); setText(e.target.value); }}
                   placeholder="Share what you'd like others to pray for..."
                   rows={4}
                   className={`w-full rounded-xl px-4 py-3 text-[#e8eaf6] placeholder-[#5a5f80] resize-none border ${errors.text ? 'border-red-500/50 focus:border-red-500/70' : 'border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)]'} focus:outline-none transition-colors text-sm`}
@@ -323,6 +325,7 @@ export function Submit() {
               <button
                 type="submit"
                 disabled={!text.trim() || !location || !category}
+                onMouseEnter={() => console.log('Button hover, disabled:', !text.trim() || !location || !category, {text: text.trim(), location, category})}
                 className="w-full py-3.5 mt-4 rounded-full text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   background:
