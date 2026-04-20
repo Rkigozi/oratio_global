@@ -19,7 +19,7 @@ export function Home() {
      const unique = combined.filter((p, index, self) => 
        index === self.findIndex((p2) => p2.id === p.id)
      );
-     console.log('Home initial prayers:', { submitted: submitted.length, mock: mockHotspots.length, unique: unique.length });
+
      return unique;
    });
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(
@@ -58,9 +58,8 @@ export function Home() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    (window as any).__oratio_addPrayer = (prayer: PrayerRequest) => {
-      console.log('Bridge called with prayer:', prayer);
+    (window as typeof window & { __oratio_addPrayer?: (prayer: PrayerRequest) => void }).__oratio_addPrayer = (prayer: PrayerRequest) => {
+
       if (!isMounted.current) {
         console.warn('Home component not mounted, ignoring bridge call');
         return;
@@ -76,7 +75,7 @@ export function Home() {
       // NOTE: We intentionally DO NOT delete the bridge so Submit page can still call it
       // The bridge will check isMounted and ignore calls when Home is unmounted
       // When Home remounts, this effect runs again and overwrites the bridge
-      console.log('Home unmounting, keeping bridge but marking as unmounted');
+
     };
   }, []);
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Send, Check, ChevronDown } from "lucide-react";
-import { cities, getApproximateCoordinates } from "../data/prayer-data";
+import { cities, getApproximateCoordinates, PrayerRequest } from "../data/prayer-data";
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
 
@@ -25,6 +25,8 @@ export function Submit() {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+
+
   // Get profile name from localStorage
   const profileName = (() => {
     try {
@@ -37,17 +39,6 @@ export function Submit() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Submit button clicked - handleSubmit called'); // TEMP DEBUG
-    console.log('🔄 SUBMIT BUTTON CLICKED - handleSubmit called');
-    console.log('=== SUBMISSION DEBUG ===');
-    console.log('Form data:', { 
-      textLength: text.length, 
-      textSample: text.slice(0, 50) + (text.length > 50 ? '...' : ''),
-      location, 
-      category,
-      anonymous 
-    });
-    
     // Clear previous errors
     setErrors({});
     
@@ -61,29 +52,28 @@ export function Submit() {
       anonymous,
     });
     
-    console.log('Validation result:', validation);
+
     
     if (!validation.success) {
       // Show validation errors to user
       setErrors(validation.errors || {});
-      console.log('Validation errors:', validation.errors);
-      console.log('=== END DEBUG (validation failed) ===');
+
       return;
     }
     
     // If validation passes, proceed with submission
 
     // Create a new prayer and push it to the map via the window bridge
-    console.log('Splitting location:', location);
+
     const [cityName, countryName = "Unknown"] = location.split(", ").map(s => s.trim());
     const coords = getApproximateCoordinates(cityName, countryName);
     const displayName = anonymous ? undefined : (profileName || undefined);
     
     // Sanitize text for extra safety
     const sanitizedText = sanitizePrayerText(text.trim());
-    console.log('Sanitized text:', sanitizedText);
+
     
-    const newPrayer = {
+    const newPrayer: PrayerRequest = {
       id: `new-${Date.now()}`,
       city: cityName || "Unknown",
       country: countryName || "Unknown",
@@ -96,33 +86,31 @@ export function Submit() {
       createdAt: new Date().toISOString(),
     };
 
-    console.log('New prayer created:', newPrayer);
-    console.log('Checking window bridge...');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    const hasBridge = typeof window !== "undefined" && (window as any).__oratio_addPrayer;
-    console.log('Window bridge exists:', hasBridge);
+
+
+    const hasBridge = typeof window !== "undefined" && (window as typeof window & { __oratio_addPrayer?: (prayer: PrayerRequest) => void }).__oratio_addPrayer;
+
     if (hasBridge) {
-      console.log('Calling window.__oratio_addPrayer');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-      (window as any).__oratio_addPrayer(newPrayer);
-      console.log('Window bridge called successfully');
+
+      (window as typeof window & { __oratio_addPrayer?: (prayer: PrayerRequest) => void }).__oratio_addPrayer!(newPrayer);
+
     } else {
       console.warn('Window bridge not found! Prayer will only be saved to localStorage.');
-      console.log('Possible reasons: Home component not mounted, or cross-page communication issue.');
+
     }
 
     // Track in localStorage for profile
     try {
-      const existingIds = JSON.parse(localStorage.getItem("oratio_submitted") || "[]");
-      console.log('Existing submitted IDs:', existingIds);
+      const existingIds = JSON.parse(localStorage.getItem("oratio_submitted") || "[]") as string[];
+
       localStorage.setItem("oratio_submitted", JSON.stringify([...existingIds, newPrayer.id]));
       // Also store the full prayer object so profile and feed can display it
-      const existingPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]");
-      console.log('Existing submitted prayers:', existingPrayers.length);
+      const existingPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
+
       localStorage.setItem("oratio_submitted_prayers", JSON.stringify([newPrayer, ...existingPrayers]));
       setSubmitted(true);
-      console.log('Prayer saved to localStorage');
+
     } catch (e) {
       console.error('localStorage error:', e);
     }
@@ -176,7 +164,7 @@ export function Submit() {
                 </label>
                 <textarea
                   value={text}
-                  onChange={(e) => { console.log('Textarea change:', e.target.value.length); setText(e.target.value); }}
+                  onChange={(e) => setText(e.target.value)}
                   placeholder="Share what you'd like others to pray for..."
                   rows={4}
                   className={`w-full rounded-xl px-4 py-3 text-[#e8eaf6] placeholder-[#5a5f80] resize-none border ${errors.text ? 'border-red-500/50 focus:border-red-500/70' : 'border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)]'} focus:outline-none transition-colors text-sm`}
@@ -185,9 +173,14 @@ export function Submit() {
                     lineHeight: 1.7,
                   }}
                 />
-                {errors.text && (
-                  <p className="text-red-400 text-xs mt-1 ml-1">{errors.text}</p>
-                )}
+                 <div className="flex justify-between mt-1">
+                   {errors.text && (
+                     <p className="text-red-400 text-xs ml-1">{errors.text}</p>
+                   )}
+                   <p className={`text-xs ml-auto ${text.length < 10 ? 'text-red-400' : 'text-[#5a5f80]'}`}>
+                     {text.length}/500
+                   </p>
+                 </div>
               </div>
 
               {/* Anonymous toggle */}
@@ -322,10 +315,9 @@ export function Submit() {
               </div>
 
               {/* Submit button */}
-              <button
+               <button
                 type="submit"
                 disabled={!text.trim() || !location || !category}
-                onMouseEnter={() => console.log('Button hover, disabled:', !text.trim() || !location || !category, {text: text.trim(), location, category})}
                 className="w-full py-3.5 mt-4 rounded-full text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   background:

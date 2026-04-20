@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Heart,
@@ -30,6 +30,7 @@ export function Profile() {
   const [profile] = useState(getProfile);
   const [activeTab, setActiveTab] = useState<'submitted' | 'prayed'>('submitted');
   const [submittedVersion, setSubmittedVersion] = useState(0);
+  const [prayedVersion, setPrayedVersion] = useState(0);
 
 
 
@@ -57,7 +58,7 @@ export function Profile() {
   const myPrayed = useMemo(() => {
     return getPrayedForPrayers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prayedIds, submittedIds]);
+  }, [prayedIds, prayedVersion]);
 
 
 
@@ -91,7 +92,32 @@ export function Profile() {
       }
     };
 
+    const togglePrayed = (id: string) => {
+      try {
+        const prayedIds = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
+        const isCurrentlyPrayed = prayedIds.includes(id);
+        const newPrayed = !isCurrentlyPrayed;
 
+        // Update prayed IDs in localStorage
+        if (newPrayed && !prayedIds.includes(id)) {
+          localStorage.setItem("oratio_prayed", JSON.stringify([...prayedIds, id]));
+        } else if (!newPrayed && prayedIds.includes(id)) {
+          localStorage.setItem("oratio_prayed", JSON.stringify(prayedIds.filter(pId => pId !== id)));
+        }
+
+        // Update prayer count in submitted prayers storage
+        const submittedPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
+        const updated = submittedPrayers.map(p => 
+          p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
+        );
+        localStorage.setItem("oratio_submitted_prayers", JSON.stringify(updated));
+
+        // Force re-render of prayed list
+        setPrayedVersion(v => v + 1);
+      } catch (error) {
+        console.error("Failed to toggle prayed:", error);
+      }
+    };
 
 
 
@@ -182,20 +208,21 @@ export function Profile() {
              ].map((stat, i) => {
               const Icon = stat.icon;
               return (
-                <motion.button
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 + i * 0.06, duration: 0.4 }}
-                  className="rounded-xl p-3.5 flex flex-col items-center text-center"
-                  style={{
-                    background:
-                      "linear-gradient(160deg, rgba(17, 26, 58, 0.8), rgba(12, 18, 48, 0.6))",
-                    border: "1px solid rgba(124,143,255,0.06)",
-                  }}
-                  whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                  whileTap={{ scale: 0.98 }}
-                >
+                 <motion.button
+                   key={stat.label}
+                   initial={{ opacity: 0, y: 16 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ delay: 0.15 + i * 0.06, duration: 0.4 }}
+                   className="rounded-xl p-3.5 flex flex-col items-center text-center"
+                   onClick={() => setActiveTab(stat.label === 'Submitted' ? 'submitted' : 'prayed')}
+                   style={{
+                     background:
+                       "linear-gradient(160deg, rgba(17, 26, 58, 0.8), rgba(12, 18, 48, 0.6))",
+                     border: "1px solid rgba(124,143,255,0.06)",
+                   }}
+                   whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+                   whileTap={{ scale: 0.98 }}
+                 >
                   <Icon
                     size={16}
                     style={{ color: stat.color }}
@@ -226,7 +253,7 @@ export function Profile() {
             className="mb-8"
           >
              <div className="flex items-center justify-between mb-4">
-               <h3 className="text-[#e2e4f0] font-heading text-sm">Recent Activity</h3>
+                <h3 className="text-[#e2e4f0] font-heading" style={{ fontSize: "1.35rem", fontWeight: 300 }}>My Prayers</h3>
              </div>
              
              {/* Tab toggle */}
@@ -266,15 +293,18 @@ export function Profile() {
              {(activeTab === 'submitted' ? mySubmitted : myPrayed).length > 0 ? (
                <div className="space-y-2.5">
                  {(activeTab === 'submitted' ? mySubmitted : myPrayed).map((prayer, i) => (
-                    <PrayerRow
-                      key={prayer.id}
-                      prayer={prayer}
-                      index={i}
-                      showCount={true}
-                      canManage={activeTab === 'submitted'}
-                      onTap={handleOpenPrayer}
-                      onDelete={activeTab === 'submitted' ? handleDeletePrayer : undefined}
-                    />
+                     <PrayerRow
+                       key={prayer.id}
+                       prayer={prayer}
+                       index={i}
+                       showCount={true}
+                       canManage={activeTab === 'submitted'}
+                       onTap={handleOpenPrayer}
+                       onDelete={activeTab === 'submitted' ? handleDeletePrayer : undefined}
+                       hasPrayed={prayedIds.includes(prayer.id)}
+                       onTogglePrayed={togglePrayed}
+                       showPrayedToggle={activeTab === 'prayed'}
+                     />
                  ))}
                </div>
              ) : (
@@ -508,6 +538,9 @@ export function PrayerRow({
   canManage,
   onTap,
   onDelete,
+  hasPrayed = false,
+  onTogglePrayed,
+  showPrayedToggle = false,
 }: {
   prayer: PrayerRequest;
   index: number;
@@ -515,9 +548,28 @@ export function PrayerRow({
   canManage: boolean;
   onTap: (prayer: PrayerRequest) => void;
   onDelete?: (prayerId: string) => void;
+  hasPrayed?: boolean;
+  onTogglePrayed?: (id: string) => void;
+  showPrayedToggle?: boolean;
 }) {
   const catColor =
     categoryColors[prayer.category || "Other"] || "#8890b5";
+
+  const [prayed, setPrayed] = useState(hasPrayed);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPrayed(hasPrayed);
+  }, [hasPrayed, prayer.id]);
+
+  const handlePray = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newPrayed = !prayed;
+    setPrayed(newPrayed);
+    if (onTogglePrayed) {
+      onTogglePrayed(prayer.id);
+    }
+  };
 
   return (
     <motion.div
@@ -565,28 +617,50 @@ export function PrayerRow({
           </div>
         </div>
 
-         <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
-           {showCount && (
-             <div className="flex items-center gap-1">
-               <Heart size={11} className="text-[#7c8fff] opacity-60" />
-               <span className="text-[#6b7499] text-[11px]">
-                 {prayer.prayerCount}
-               </span>
-             </div>
-           )}
-           {canManage && onDelete && (
-             <button
-               onClick={(e) => {
-                 e.stopPropagation();
-                 onDelete(prayer.id);
-               }}
-               className="text-[#5a6080] hover:text-[#8890b5] cursor-pointer"
-               title="Delete prayer"
-             >
-               <Trash2 size={12} />
-             </button>
-           )}
-         </div>
+          <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
+            {showCount && (
+              <div className="flex items-center gap-1">
+                <Heart size={11} className="text-[#7c8fff] opacity-60" />
+                <span className="text-[#6b7499] text-[11px]">
+                  {prayer.prayerCount}
+                </span>
+              </div>
+            )}
+            {showPrayedToggle && onTogglePrayed && (
+              <button
+                onClick={handlePray}
+                className="flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300 cursor-pointer"
+                style={{
+                  background: prayed
+                    ? "rgba(124, 143, 255, 0.1)"
+                    : "rgba(124, 143, 255, 0.06)",
+                  border: `1px solid ${
+                    prayed ? "rgba(124, 143, 255, 0.2)" : "rgba(124, 143, 255, 0.1)"
+                  }`,
+                }}
+                title={prayed ? "Unpray" : "Pray"}
+              >
+                <Heart
+                  size={11}
+                  className="transition-all duration-300"
+                  fill={prayed ? "#7c8fff" : "transparent"}
+                  color={prayed ? "#7c8fff" : "#6b7499"}
+                />
+              </button>
+            )}
+            {canManage && onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(prayer.id);
+                }}
+                className="text-[#5a6080] hover:text-[#8890b5] cursor-pointer"
+                title="Delete prayer"
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
+          </div>
       </div>
     </motion.div>
   );

@@ -1,0 +1,17 @@
+# Oratio Development Aliases
+# Add to your shell profile: source /Volumes/Samsung_T5/Oratio_Prototype_MVP/.oratio-aliases
+
+# Start development server with auto-cleanup
+alias oratio-dev='cd /Volumes/Samsung_T5/Oratio_Prototype_MVP && ./start-dev.sh'
+
+# Quick cleanup commands
+alias oratio-clean='pkill -f "vite" 2>/dev/null; pkill -f "esbuild.*Oratio_Prototype_MVP" 2>/dev/null; echo "Oratio servers cleaned"'
+
+# Check server status
+alias oratio-status='lsof -i :5173-5176 2>/dev/null | grep -E "(LISTEN|vite|node)" || echo "No Oratio servers running"'
+
+# Direct vite command (bypass npm bug)
+alias oratio-vite='cd /Volumes/Samsung_T5/Oratio_Prototype_MVP && node node_modules/vite/bin/vite.js'
+
+# NPM wrapper for external drive bug
+alias npm='node /opt/homebrew/lib/node_modules/npm/bin/npm-cli.js'

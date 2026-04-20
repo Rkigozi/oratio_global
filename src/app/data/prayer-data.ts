@@ -325,3 +325,5 @@ export function timeAgo(isoDate: string): string {
 export function getCityDatabase() {
   return cityDatabase;
 }
+
+export const countries = [...new Set(cityDatabase.map(c => c.country))].sort();

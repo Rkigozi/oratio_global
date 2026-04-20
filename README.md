@@ -10,6 +10,44 @@ Oratio is a global Christian prayer platform designed to connect people through 
 **Target Platform**: Progressive Web App (PWA) with mock data  
 **Git Repository**: Initialized ✅
 
+## Development Server Note
+
+**⚠️ External Drive Issue**: If you're running this project from an external drive (like a Samsung T5), npm may fail with "ENOENT: no such file or directory, uv_cwd". This is a known npm bug with external drives.
+
+**Workarounds**:
+1. **Direct Vite**: `node node_modules/vite/bin/vite.js`
+2. **NPM Wrapper**: `node /opt/homebrew/lib/node_modules/npm/bin/npm-cli.js run dev`
+3. **Script**: Use `./start-dev.sh` (created in project root) - **Recommended**
+   - Auto-cleans orphaned servers on ports 5173-5176
+   - Kills orphaned esbuild processes
+   - Shows clean startup with access URLs
+4. **Alias**: Add `alias npm='node /opt/homebrew/lib/node_modules/npm/bin/npm-cli.js'` to your shell profile.
+
+The enhanced `start-dev.sh` script automatically cleans up any orphaned dev servers and starts a fresh development server. It's the recommended approach.
+
+## Quick Start
+
+### Start Development Server
+```bash
+# Auto-cleanup & start (recommended)
+./start-dev.sh
+
+# Or direct vite command
+node node_modules/vite/bin/vite.js
+```
+
+### Additional Resources
+- **Quick Start Guide**: See [QUICK-START.md](QUICK-START.md) for detailed commands
+- **Development Aliases**: Source `.oratio-aliases` for convenient shortcuts
+- **Port**: Default 5173 (or next available)
+
+### Testing Prayer Submission
+1. Navigate to **Submit** page
+2. Enter prayer text (minimum 10 characters)
+3. Select location & category
+4. Click **Submit Prayer Request**
+5. Should see success screen with "View in Feed" button
+
 ## Key Features
 
 - **Interactive World Map**: Visual discovery of prayer hotspots (React Leaflet)

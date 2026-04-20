@@ -1,9 +1,9 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Globe, Flame, Share2, MapPin, X, Search } from "lucide-react";
+import { Globe, Flame, Share2, MapPin, X, Search, ChevronDown } from "lucide-react";
 import { Drawer } from "vaul";
 import { useSearchParams } from "react-router";
-import { mockFeedPrayers, timeAgo } from "../data/prayer-data";
+import { mockFeedPrayers, timeAgo, countries } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { getPrayedIds, categoryColors } from "../data/profile-data";
 import { FeedCard } from "../components/feed-card";
@@ -19,7 +19,7 @@ export function Feed() {
   const [searchParams, setSearchParams] = useSearchParams();
   const locationCity = searchParams.get("city");
   const locationCountry = searchParams.get("country");
-  const hasLocationFilter = !!locationCity;
+  const hasLocationFilter = !!locationCity || !!locationCountry;
   const category = "All";
   const searchQuery = "";
 
@@ -30,6 +30,8 @@ export function Feed() {
 
 
   const [tab, setTab] = useState<"global">("global");
+  const [showCountryFilter, setShowCountryFilter] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
    const [prayers, setPrayers] = useState<PrayerRequest[]>(() => {
     try {
       const submitted = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
@@ -61,6 +63,25 @@ export function Feed() {
     };
   }, []);
 
+  // Close country filter dropdown when location changes
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShowCountryFilter(false);
+  }, [locationCity, locationCountry]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCountryFilter(false);
+      }
+    };
+    if (showCountryFilter) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showCountryFilter]);
+
   // Add to recent searches
 
   const dismissWelcome = () => {
@@ -76,17 +97,23 @@ export function Feed() {
   const filteredPrayers = useMemo(() => {
     let result = prayers;
 
-    // Location filter from map hotspot
-    if (hasLocationFilter && locationCity) {
+    // Location filter from map hotspot or country filter
+    if (locationCity) {
+      // City filter (with optional country fallback)
       result = result.filter(
         (p) =>
           p.city.toLowerCase() === locationCity.toLowerCase() ||
           (locationCountry && p.country.toLowerCase() === locationCountry.toLowerCase())
       );
+    } else if (locationCountry) {
+      // Country-only filter
+      result = result.filter(
+        (p) => p.country.toLowerCase() === locationCountry.toLowerCase()
+      );
     }
 
     return result;
-  }, [prayers, hasLocationFilter, locationCity, locationCountry]);
+  }, [prayers, locationCity, locationCountry]);
 
   // Trending: top 5 by prayer count
   const trending = useMemo(() => {
@@ -94,32 +121,32 @@ export function Feed() {
   }, [prayers]);
 
   const togglePrayed = useCallback((id: string) => {
-    console.log('togglePrayed called', id);
+
     setPrayedIds((prev) => {
       const isCurrentlyPrayed = prev.includes(id);
       const newPrayed = !isCurrentlyPrayed;
-      console.log('prev prayedIds', prev, 'isCurrentlyPrayed', isCurrentlyPrayed, 'newPrayed', newPrayed);
+
       
       // Update prayer count in state
       setPrayers((prayersPrev) => {
-        console.log('Updating prayers state for id', id, 'newPrayed', newPrayed);
+
         const updated = prayersPrev.map((p) =>
           p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
         );
-        console.log('Updated prayers:', updated.find(p => p.id === id));
+
         return updated;
       });
       
       // Persist to localStorage for profile tracking
       try {
         const existing = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
-        console.log('Existing prayed localStorage:', existing);
+
         if (newPrayed && !existing.includes(id)) {
           localStorage.setItem("oratio_prayed", JSON.stringify([...existing, id]));
-          console.log('Added to localStorage prayed:', id);
+
         } else if (!newPrayed && existing.includes(id)) {
           localStorage.setItem("oratio_prayed", JSON.stringify(existing.filter(pId => pId !== id)));
-          console.log('Removed from localStorage prayed:', id);
+
         }
       } catch (e) {
         console.error('localStorage error:', e);
@@ -128,12 +155,12 @@ export function Feed() {
       // Update count in submitted prayers storage
       try {
         const submittedPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
-        console.log('Submitted prayers in localStorage:', submittedPrayers);
+
         const updated = submittedPrayers.map(p => 
           p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
         );
         localStorage.setItem("oratio_submitted_prayers", JSON.stringify(updated));
-        console.log('Updated submitted prayers localStorage');
+
       } catch (e) {
         console.error('localStorage submitted error:', e);
       }
@@ -141,14 +168,14 @@ export function Feed() {
       // Return updated prayed IDs
       if (newPrayed && !prev.includes(id)) {
         const newIds = [...prev, id];
-        console.log('Returning new prayedIds:', newIds);
+
         return newIds;
       } else if (!newPrayed && prev.includes(id)) {
         const newIds = prev.filter(pId => pId !== id);
-        console.log('Returning filtered prayedIds:', newIds);
+
         return newIds;
       }
-      console.log('Returning same prayedIds:', prev);
+
       return prev;
     });
   }, []); // No dependencies needed because using functional updates
@@ -222,13 +249,64 @@ export function Feed() {
         }}
       >
         {/* Title row */}
-        <div className="px-5 pt-12 mb-4">
+        <div className="px-5 pt-12 mb-4 flex items-center justify-between">
           <h2
             className="text-[#e2e4f0] font-heading tracking-wide"
             style={{ fontSize: "1.35rem", fontWeight: 300 }}
           >
-            {hasLocationFilter ? locationCity : "Prayer Feed"}
+             {hasLocationFilter ? (locationCity || locationCountry) : "Prayer Feed"}
           </h2>
+           <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowCountryFilter(!showCountryFilter)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
+               style={{
+                 background: hasLocationFilter ? "rgba(124,143,255,0.12)" : "rgba(124,143,255,0.06)",
+                 border: hasLocationFilter ? "1px solid rgba(124,143,255,0.2)" : "1px solid rgba(124,143,255,0.1)",
+                 color: "#7c8fff",
+               }}
+            >
+              <span>Filter</span>
+              <ChevronDown size={12} />
+            </button>
+            
+            <AnimatePresence>
+              {showCountryFilter && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="absolute top-full mt-2 right-0 w-48 max-h-60 overflow-y-auto rounded-xl border border-[rgba(124,143,255,0.15)] z-20"
+                    style={{
+                      background: "rgba(15, 20, 55, 0.98)",
+                      backdropFilter: "blur(20px)",
+                    }}
+                  >
+                  <button
+                    onClick={() => {
+                      setSearchParams({});
+                      setShowCountryFilter(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-[#c5cdff] hover:bg-[rgba(124,143,255,0.1)] transition-colors cursor-pointer truncate"
+                  >
+                    All Countries
+                  </button>
+                  {countries.map((country) => (
+                    <button
+                      key={country}
+                      onClick={() => {
+                        setSearchParams({ country });
+                        setShowCountryFilter(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-[#c5cdff] hover:bg-[rgba(124,143,255,0.1)] transition-colors cursor-pointer truncate"
+                    >
+                      {country}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
 
@@ -281,7 +359,7 @@ export function Feed() {
                   <p className="text-[#c5cbe2] text-sm">
                     Showing prayers from{" "}
                     <span className="text-primary">
-                      {locationCity}{locationCountry ? `, ${locationCountry}` : ""}
+                       {locationCity ? `${locationCity}${locationCountry ? `, ${locationCountry}` : ''}` : locationCountry}
                     </span>
                   </p>
                 </div>
@@ -405,7 +483,7 @@ export function Feed() {
         {/* Section label */}
         <div className="flex items-center justify-between px-1 mb-3">
           <span className="text-[#6b7499] text-[11px] uppercase tracking-[0.15em]">
-             {hasLocationFilter ? `Prayers from ${locationCity}` : "Recent Prayers"}
+              {hasLocationFilter ? `Prayers from ${locationCity || locationCountry}` : "Recent Prayers"}
           </span>
           <span className="text-[#3e4460] text-[10px]">
             {filteredPrayers.length} requests
@@ -446,7 +524,7 @@ export function Feed() {
               </div>
               <p className="text-[#6b7499] text-sm mb-1">
                  {hasLocationFilter
-                   ? `No prayers in ${locationCity}`
+                    ? `No prayers in ${locationCity || locationCountry}`
                    : "No prayers found"}
               </p>
               <p className="text-[#4e5573] text-xs">

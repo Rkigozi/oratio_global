@@ -11,7 +11,7 @@ export function Splash() {
         const profile = localStorage.getItem("oratio_profile");
         const parsed = profile ? JSON.parse(profile) as { name?: string } : null;
         const hasProfile = parsed?.name;
-        console.log('Splash: profile exists?', !!hasProfile);
+
         void navigate(hasProfile ? "/" : "/onboarding");
       } catch (error) {
         console.error('Splash: error parsing profile', error);

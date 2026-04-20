@@ -18,18 +18,18 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
   const [prayed, setPrayed] = useState(hasPrayed);
 
   useEffect(() => {
-    console.log('feed-card useEffect: hasPrayed changed', hasPrayed, 'prayer.id', prayer.id);
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPrayed(hasPrayed);
   }, [hasPrayed, prayer.id]);
 
 
   const handlePray = (e: React.MouseEvent) => {
-    console.log('feed-card handlePray: prayer.id', prayer.id, 'current prayed', prayed);
+
     e.stopPropagation();
     const newPrayed = !prayed;
     setPrayed(newPrayed);
-    console.log('Calling onPrayed with id', prayer.id);
+
     onPrayed(prayer.id);
   };
 
