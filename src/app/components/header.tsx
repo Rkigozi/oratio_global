@@ -1,13 +1,25 @@
 import { ChevronLeft } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 
 interface HeaderProps {
   showBack?: boolean;
   title?: string;
 }
 
-export function Header({ showBack = false, title }: HeaderProps) {
+export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Determine if we should show back button
+  const showBack = propShowBack || (location.pathname !== '/' && 
+    !['/feed', '/submit', '/profile'].includes(location.pathname));
+  
+  // Determine title based on route if not provided
+  const routeTitle = title || (() => {
+    if (location.pathname === '/profile/submitted') return 'Submitted Prayers';
+    if (location.pathname === '/profile/prayed') return 'Prayed For';
+    return undefined;
+  })();
   
   return (
     <header
@@ -31,9 +43,9 @@ export function Header({ showBack = false, title }: HeaderProps) {
       
       {/* Center: Title or ORATIO logo */}
       <div className="flex-1 flex justify-center">
-        {title ? (
+        {routeTitle ? (
           <h2 className="font-heading text-[#c5cbe2] text-sm font-medium truncate max-w-[200px]">
-            {title}
+            {routeTitle}
           </h2>
         ) : (
           <h1

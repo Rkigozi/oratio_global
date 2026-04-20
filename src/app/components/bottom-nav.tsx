@@ -22,7 +22,10 @@ export function BottomNav() {
     >
       <div className="max-w-lg mx-auto flex justify-around items-center py-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom))]">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          // Highlight active tab: exact match for home, prefix match for others
+          const isActive = item.path === '/' 
+            ? location.pathname === '/'
+            : location.pathname.startsWith(item.path);
           const Icon = item.icon;
           return (
             <button
