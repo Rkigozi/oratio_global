@@ -76,7 +76,7 @@ export function validatePrayerSubmission(data: unknown): {
   
   // Test regex on text if present
   if (data && typeof data === 'object' && 'text' in data && typeof data.text === 'string') {
-    const text = data.text as string;
+    const text = data.text;
     const regex = /^[\p{L}\p{N}\p{P}\p{Z}]+$/u;
     const matches = regex.test(text);
     console.log('Regex test:', { 
@@ -107,12 +107,13 @@ export function validatePrayerSubmission(data: unknown): {
     console.log('ZodError structure:', error instanceof ZodError ? error : 'not ZodError');
     if (error instanceof ZodError) {
       const errors: Record<string, string> = {};
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment */
       (error as any).errors?.forEach((err: any) => {
         const path = err.path?.join('.') || 'unknown';
         errors[path] = err.message || 'Unknown error';
         console.log('Zod error:', path, err.message);
       });
+      /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment */
       console.log('=== END VALIDATION DEBUG (failed) ===');
       return { success: false, errors };
     }

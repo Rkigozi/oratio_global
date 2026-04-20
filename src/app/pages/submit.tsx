@@ -379,7 +379,7 @@ export function Submit() {
             <button
               onClick={() => {
                 resetForm();
-                navigate("/feed");
+                void navigate("/feed");
               }}
               className="px-8 py-3 rounded-full text-sm text-[#7c8fff] border border-[rgba(124,143,255,0.25)] hover:border-[rgba(124,143,255,0.5)] transition-all cursor-pointer"
             >
