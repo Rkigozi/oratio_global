@@ -124,3 +124,7 @@ Temporary Items
 
 # Local test files
 *.test.local
+
+# Backup files
+*.backup
+*.bak
