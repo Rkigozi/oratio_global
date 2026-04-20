@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { WorldMapClean } from "../components/world-map-clean";
@@ -6,12 +6,22 @@ import { mockHotspots } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { Heart, ArrowRight } from "lucide-react";
 import { Drawer } from "vaul";
+import { getStoredSubmittedPrayers } from "../data/profile-data";
 
 
 export function Home() {
   
   const navigate = useNavigate();
-   const [prayers, setPrayers] = useState(mockHotspots);
+   const [prayers, setPrayers] = useState(() => {
+     const submitted = getStoredSubmittedPrayers();
+     const combined = [...submitted, ...mockHotspots];
+     // Remove duplicates by id (should not happen but safe)
+     const unique = combined.filter((p, index, self) => 
+       index === self.findIndex((p2) => p2.id === p.id)
+     );
+     console.log('Home initial prayers:', { submitted: submitted.length, mock: mockHotspots.length, unique: unique.length });
+     return unique;
+   });
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(
     null
   );
@@ -43,18 +53,30 @@ export function Home() {
    // Listen for new prayer submissions (via custom event from Submit page)
   // This is wired through the layout via a shared context or event
   // For now we expose a method on window for cross-page communication
+  const isMounted = useRef(true);
+  
   useEffect(() => {
     if (typeof window === "undefined") return;
+    
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     (window as any).__oratio_addPrayer = (prayer: PrayerRequest) => {
+      console.log('Bridge called with prayer:', prayer);
+      if (!isMounted.current) {
+        console.warn('Home component not mounted, ignoring bridge call');
+        return;
+      }
       setPrayers((prev) => [prayer, ...prev]);
       setNewPrayerId(prayer.id);
       setFlyTo({ lat: prayer.lat, lng: prayer.lng });
       setTimeout(() => setNewPrayerId(null), 2000);
     };
+    
     return () => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      delete (window as any).__oratio_addPrayer;
+      isMounted.current = false;
+      // NOTE: We intentionally DO NOT delete the bridge so Submit page can still call it
+      // The bridge will check isMounted and ignore calls when Home is unmounted
+      // When Home remounts, this effect runs again and overwrites the bridge
+      console.log('Home unmounting, keeping bridge but marking as unmounted');
     };
   }, []);
 

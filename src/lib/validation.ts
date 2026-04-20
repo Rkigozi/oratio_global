@@ -71,10 +71,36 @@ export function validatePrayerSubmission(data: unknown): {
   data?: PrayerFormData;
   errors?: Record<string, string>;
 } {
+  console.log('=== VALIDATION DEBUG ===');
   console.log('Validating data:', data);
+  
+  // Test regex on text if present
+  if (data && typeof data === 'object' && 'text' in data && typeof data.text === 'string') {
+    const text = data.text as string;
+    const regex = /^[\p{L}\p{N}\p{P}\p{Z}]+$/u;
+    const matches = regex.test(text);
+    console.log('Regex test:', { 
+      textLength: text.length,
+      first10Chars: text.slice(0, 10),
+      matches,
+      sampleChar: text.charAt(0),
+      charCode: text.charCodeAt(0)
+    });
+    
+    // Find first non-matching character
+    for (let i = 0; i < text.length; i++) {
+      const char = text.charAt(i);
+      if (!regex.test(char)) {
+        console.log(`First invalid character at position ${i}: '${char}' (char code: ${char.charCodeAt(0)})`);
+        break;
+      }
+    }
+  }
+  
   try {
     const validated = prayerSchema.parse(data);
     console.log('Validation passed');
+    console.log('=== END VALIDATION DEBUG ===');
     return { success: true, data: validated };
   } catch (error) {
     console.log('Validation error:', error);
@@ -87,8 +113,10 @@ export function validatePrayerSubmission(data: unknown): {
         errors[path] = err.message || 'Unknown error';
         console.log('Zod error:', path, err.message);
       });
+      console.log('=== END VALIDATION DEBUG (failed) ===');
       return { success: false, errors };
     }
+    console.log('=== END VALIDATION DEBUG (non-Zod error) ===');
     return { success: false, errors: { general: 'Validation failed' } };
   }
 }

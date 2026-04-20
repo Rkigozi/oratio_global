@@ -37,10 +37,19 @@ export function Submit() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Submit form: text length', text.length, 'location', location, 'category', category);
+    console.log('=== SUBMISSION DEBUG ===');
+    console.log('Form data:', { 
+      textLength: text.length, 
+      textSample: text.slice(0, 50) + (text.length > 50 ? '...' : ''),
+      location, 
+      category,
+      anonymous 
+    });
     
     // Clear previous errors
     setErrors({});
+    
+    try {
     
     // Validate form data using Zod schema
     const validation = validatePrayerSubmission({
@@ -56,11 +65,11 @@ export function Submit() {
       // Show validation errors to user
       setErrors(validation.errors || {});
       console.log('Validation errors:', validation.errors);
+      console.log('=== END DEBUG (validation failed) ===');
       return;
     }
     
     // If validation passes, proceed with submission
-    setSubmitted(true);
 
     // Create a new prayer and push it to the map via the window bridge
     const [cityName, countryName] = location.split(", ");
@@ -85,12 +94,19 @@ export function Submit() {
     };
 
     console.log('New prayer created:', newPrayer);
+    console.log('Checking window bridge...');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    if (typeof window !== "undefined" && (window as any).__oratio_addPrayer) {
+    const hasBridge = typeof window !== "undefined" && (window as any).__oratio_addPrayer;
+    console.log('Window bridge exists:', hasBridge);
+    if (hasBridge) {
       console.log('Calling window.__oratio_addPrayer');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
       (window as any).__oratio_addPrayer(newPrayer);
+      console.log('Window bridge called successfully');
+    } else {
+      console.warn('Window bridge not found! Prayer will only be saved to localStorage.');
+      console.log('Possible reasons: Home component not mounted, or cross-page communication issue.');
     }
 
     // Track in localStorage for profile
@@ -102,10 +118,15 @@ export function Submit() {
       const existingPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]");
       console.log('Existing submitted prayers:', existingPrayers.length);
       localStorage.setItem("oratio_submitted_prayers", JSON.stringify([newPrayer, ...existingPrayers]));
+      setSubmitted(true);
       console.log('Prayer saved to localStorage');
     } catch (e) {
       console.error('localStorage error:', e);
     }
+  } catch (error) {
+    console.error('Submission error:', error);
+    return;
+  }
   };
 
   const resetForm = () => {
