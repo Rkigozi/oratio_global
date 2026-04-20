@@ -72,7 +72,8 @@ export function Submit() {
     // If validation passes, proceed with submission
 
     // Create a new prayer and push it to the map via the window bridge
-    const [cityName, countryName] = location.split(", ");
+    console.log('Splitting location:', location);
+    const [cityName, countryName = "Unknown"] = location.split(", ").map(s => s.trim());
     const coords = getApproximateCoordinates(cityName, countryName);
     const displayName = anonymous ? undefined : (profileName || undefined);
     
