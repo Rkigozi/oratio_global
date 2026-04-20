@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Send, Check, ChevronDown } from "lucide-react";
 import { cities, getApproximateCoordinates, PrayerRequest } from "../data/prayer-data";
@@ -25,7 +25,25 @@ export function Submit() {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target as Node)) {
+        setShowLocationDropdown(false);
+      }
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setShowCategoryDropdown(false);
+      }
+    };
+
+    if (showLocationDropdown || showCategoryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showLocationDropdown, showCategoryDropdown]);
 
   // Get profile name from localStorage
   const profileName = (() => {
@@ -51,9 +69,8 @@ export function Submit() {
       category,
       anonymous,
     });
-    
 
-    
+
     if (!validation.success) {
       // Show validation errors to user
       setErrors(validation.errors || {});
@@ -218,7 +235,7 @@ export function Submit() {
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Location */}
-                <div className="relative">
+                <div className="relative" ref={locationDropdownRef}>
                   <label className="text-[#8890b5] text-sm mb-2 block">Location</label>
                   <button
                     type="button"
@@ -266,7 +283,7 @@ export function Submit() {
                 </div>
 
                 {/* Category */}
-                <div className="relative">
+                <div className="relative" ref={categoryDropdownRef}>
                   <label className="text-[#8890b5] text-sm mb-2 block">Category</label>
                   <button
                     type="button"
