@@ -311,31 +311,33 @@ export function Feed() {
 
 
         {/* Tab row */}
-        <div className="flex gap-1 px-5 mb-3">
-          {TABS.map((t) => {
-            const isActive = tab === t.id;
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs transition-all duration-300 cursor-pointer"
-                style={{
-                  background: isActive
-                    ? "rgba(124,143,255,0.12)"
-                    : "transparent",
-                  color: isActive ? "#7c8fff" : "#6b7499",
-                  border: isActive
-                    ? "1px solid rgba(124,143,255,0.2)"
-                    : "1px solid transparent",
-                }}
-              >
-                <Icon size={13} strokeWidth={isActive ? 2.2 : 1.8} />
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
+        {!hasLocationFilter && (
+          <div className="flex gap-1 px-5 mb-3">
+            {TABS.map((t) => {
+              const isActive = tab === t.id;
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs transition-all duration-300 cursor-pointer"
+                  style={{
+                    background: isActive
+                      ? "rgba(124,143,255,0.12)"
+                      : "transparent",
+                    color: isActive ? "#7c8fff" : "#6b7499",
+                    border: isActive
+                      ? "1px solid rgba(124,143,255,0.2)"
+                      : "1px solid transparent",
+                  }}
+                >
+                  <Icon size={13} strokeWidth={isActive ? 2.2 : 1.8} />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
       </div>
 
