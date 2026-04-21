@@ -27,16 +27,25 @@ export const prayerSchema = z.object({
   anonymous: z.boolean().default(false),
 });
 
-// User profile schema (for future use)
+// User profile schema
 export const profileSchema = z.object({
-  name: z.string()
-    .min(1, { message: "Name is required" })
-    .max(50, { message: "Name cannot exceed 50 characters" })
-    .regex(/^[a-zA-Z\s\u00C0-\u017F]+$/, { 
-      message: "Name can only contain letters and spaces"
+  username: z.string()
+    .min(3, { message: "Username must be at least 3 characters" })
+    .max(30, { message: "Username cannot exceed 30 characters" })
+    .regex(/^[a-z0-9_]+$/, { 
+      message: "Username can only contain lowercase letters, numbers, and underscores" 
+    })
+    .transform(val => val.toLowerCase())
+    .refine(val => val !== "anonymous", { 
+      message: "Username 'anonymous' is reserved" 
+    }),
+  displayName: z.string()
+    .max(50, { message: "Display name cannot exceed 50 characters" })
+    .regex(/^[a-zA-Z\s\u00C0-\u017F]*$/, { 
+      message: "Display name can only contain letters and spaces"
     })
     .optional()
-    .or(z.literal('')),
+    .default(''),
   icon: z.string()
     .max(20, { message: "Icon selection invalid" })
     .optional(),
@@ -83,6 +92,31 @@ export function validatePrayerSubmission(data: unknown): {
         const path = issue.path.join('.') || 'unknown';
         errors[path] = issue.message || 'Unknown error';
 
+      });
+
+      return { success: false, errors };
+    }
+
+    return { success: false, errors: { general: 'Validation failed' } };
+  }
+}
+
+// Profile validation helper function
+export function validateProfile(data: unknown): {
+  success: boolean;
+  data?: ProfileFormData;
+  errors?: Record<string, string>;
+} {
+  try {
+    const validated = profileSchema.parse(data);
+
+    return { success: true, data: validated };
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const errors: Record<string, string> = {};
+      error.issues.forEach((issue) => {
+        const path = issue.path.join('.') || 'unknown';
+        errors[path] = issue.message || 'Unknown error';
       });
 
       return { success: false, errors };

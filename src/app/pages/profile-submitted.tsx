@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Send, Heart, MapPin, Trash2 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
-import { timeAgo } from "../data/prayer-data";
+import { timeAgo, getAttributionText } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import {
   getSubmittedIds,
@@ -17,6 +17,8 @@ export function ProfileSubmitted() {
   
   // Prayer detail / action drawer
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
+  // Delete confirmation
+  const [prayerToDelete, setPrayerToDelete] = useState<PrayerRequest | null>(null);
   
   const submittedIds = getSubmittedIds();
   const mySubmitted = useMemo(() => {
@@ -30,7 +32,7 @@ export function ProfileSubmitted() {
     setSelectedPrayer(prayer);
   };
 
-  const handleDeletePrayer = (prayerId: string) => {
+  const performDeletePrayer = (prayerId: string) => {
     try {
       // Remove from submitted prayers list
       const submitted = JSON.parse(localStorage.getItem("oratio_submitted") || "[]") as string[];
@@ -44,10 +46,26 @@ export function ProfileSubmitted() {
       const prayed = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
       localStorage.setItem("oratio_prayed", JSON.stringify(prayed.filter(id => id !== prayerId)));
       
+      // Call bridge to update other components
+      if (typeof window !== "undefined" && (window as any).__oratio_removePrayer) {
+        (window as any).__oratio_removePrayer(prayerId);
+      }
+
       // Force re-render
       setVersion(v => v + 1);
+      console.log('Prayer deleted successfully:', prayerId);
     } catch (error) {
       console.error("Failed to delete prayer:", error);
+    }
+  };
+
+  const handleDeleteClick = (prayerId: string) => {
+    const prayer = mySubmitted.find(p => p.id === prayerId);
+    if (prayer) {
+      // Close any open prayer detail drawer
+      setSelectedPrayer(null);
+      // Open delete confirmation drawer
+      setPrayerToDelete(prayer);
     }
   };
 
@@ -68,7 +86,7 @@ export function ProfileSubmitted() {
                 showCount={true}
                 canManage={true}
                 onTap={handleOpenPrayer}
-                onDelete={handleDeletePrayer}
+                 onDelete={handleDeleteClick}
               />
             ))}
           </div>
@@ -155,15 +173,96 @@ export function ProfileSubmitted() {
                       &ldquo;{selectedPrayer.text}&rdquo;
                     </p>
 
-                    {selectedPrayer.name && (
                       <p className="text-[#5a6080] text-xs text-center mb-2">
-                        &mdash; {selectedPrayer.name}
+                        &mdash; {getAttributionText(selectedPrayer)}
                       </p>
-                    )}
 
                     <div className="flex items-center gap-1.5 justify-center text-[#5a6080] text-xs mb-8">
                       <Heart size={11} className="text-[#7c8fff] opacity-60" />
                       <span>{selectedPrayer.prayerCount} people prayed</span>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              )}
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
+
+      {/* Delete Confirmation Drawer */}
+      <Drawer.Root
+        open={!!prayerToDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPrayerToDelete(null);
+          }
+        }}
+      >
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[700]" />
+          <Drawer.Content
+            className="flex flex-col rounded-t-[1.5rem] fixed bottom-0 left-0 right-0 z-[700] max-h-[60vh] focus:outline-none"
+            style={{
+              background: "linear-gradient(180deg, #111a3a, #0c1230)",
+              borderTop: "1px solid rgba(124, 143, 255, 0.1)",
+            }}
+          >
+            <Drawer.Title className="sr-only">Delete Confirmation</Drawer.Title>
+            <Drawer.Description className="sr-only">
+              Confirm deletion of prayer request
+            </Drawer.Description>
+
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-[rgba(124,143,255,0.2)]" />
+            </div>
+
+            <div className="max-w-md w-full mx-auto p-6 pt-2 flex-1 overflow-auto">
+              {prayerToDelete && (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key="delete-confirmation"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <div className="text-center mb-6">
+                      <p className="text-[#d0d4e8] text-lg mb-2">Delete prayer?</p>
+                      <p className="text-[#6b7499] text-sm">
+                        This prayer will be removed from your submitted prayers and the global feed.
+                      </p>
+                      <p className="text-[#6b7499] text-sm mt-2">
+                        &ldquo;{prayerToDelete.text.slice(0, 100)}...
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                       <button
+                        type="button"
+                        autoFocus
+                        onClick={() => {
+                          if (prayerToDelete) {
+                            performDeletePrayer(prayerToDelete.id);
+                            setPrayerToDelete(null);
+                          }
+                        }}
+                        className="w-full py-3.5 rounded-full text-sm font-medium cursor-pointer"
+                        style={{
+                          background: "linear-gradient(135deg, #ff7c7c, #d65a5a)",
+                          color: "#ffffff",
+                          boxShadow: "0 4px 25px rgba(255, 124, 124, 0.3)",
+                        }}
+                      >
+                        Delete Prayer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPrayerToDelete(null)}
+                        className="w-full py-3.5 rounded-full text-sm text-[#7c8fff] border border-[rgba(124,143,255,0.25)] hover:border-[rgba(124,143,255,0.5)] transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </motion.div>
                 </AnimatePresence>
@@ -201,7 +300,7 @@ function PrayerRow({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.5), duration: 0.35 }}
       onClick={canManage ? () => onTap(prayer) : undefined}
-      className={`rounded-xl px-4 py-3.5 relative overflow-hidden ${canManage ? "cursor-pointer active:scale-[0.98] transition-transform duration-150" : ""}`}
+      className={`rounded-xl px-4 py-3.5 relative overflow-hidden ${canManage ? "cursor-pointer active:bg-[rgba(124,143,255,0.05)] transition-colors duration-150" : ""}`}
       style={{
         background:
           "linear-gradient(160deg, rgba(17, 26, 58, 0.6), rgba(12, 18, 48, 0.4))",
@@ -210,12 +309,15 @@ function PrayerRow({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p
-            className="text-[#d0d4e8] line-clamp-2 mb-2"
-            style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
-          >
-            &ldquo;{prayer.text}&rdquo;
-          </p>
+           <p
+             className="text-[#d0d4e8] line-clamp-2 mb-1"
+             style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
+           >
+             &ldquo;{prayer.text}&rdquo;
+           </p>
+           <span className="text-[#6b7499] text-[11px] mb-1 block">
+             &mdash; {getAttributionText(prayer)}
+           </span>
           <div className="flex items-center gap-2">
             <MapPin size={10} className="text-[#5a6080] flex-shrink-0" />
             <span className="text-[#5a6080] text-[11px]">
@@ -250,18 +352,31 @@ function PrayerRow({
               </span>
             </div>
           )}
-          {canManage && onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(prayer.id);
-              }}
-              className="text-[#5a6080] hover:text-[#8890b5] cursor-pointer"
-              title="Delete prayer"
-            >
-              <Trash2 size={12} />
-            </button>
-          )}
+           {canManage && onDelete && (
+              <button
+                 type="button"
+                 tabIndex={-1}
+                 onMouseDown={(e) => {
+                   // Prevent focus on the button (desktop)
+                   e.preventDefault();
+                 }}
+                 onTouchStart={(e) => {
+                   // Prevent focus on the button (mobile)
+                   e.preventDefault();
+                 }}
+                 onClick={(e) => {
+                   // Completely stop the event from propagating
+                   e.stopPropagation();
+                   e.preventDefault();
+                   console.log('Delete button clicked for prayer:', prayer.id);
+                   onDelete(prayer.id);
+                 }}
+                className="text-[#5a6080] hover:text-[#8890b5] cursor-pointer"
+                title="Delete prayer"
+              >
+               <Trash2 size={12} />
+             </button>
+           )}
         </div>
       </div>
     </motion.div>

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Globe, Flame, Share2, MapPin, X, Search, ChevronDown } from "lucide-react";
 import { Drawer } from "vaul";
 import { useSearchParams } from "react-router";
-import { mockFeedPrayers, timeAgo, countries } from "../data/prayer-data";
+import { mockFeedPrayers, timeAgo, countries, getAttributionText } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { getPrayedIds, categoryColors } from "../data/profile-data";
 import { FeedCard } from "../components/feed-card";
@@ -60,6 +60,44 @@ export function Feed() {
     return () => {
       timeoutRefs.current.forEach(id => clearTimeout(id));
       timeoutRefs.current = [];
+    };
+  }, []);
+
+  // Listen for prayer addition/deletion bridges
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    (window as typeof window & {
+      __oratio_addPrayer?: (prayer: PrayerRequest) => void;
+      __oratio_removePrayer?: (prayerId: string) => void;
+    }).__oratio_addPrayer = (prayer: PrayerRequest) => {
+      setPrayers((prev) => {
+        // Check if prayer already exists (by id)
+        if (prev.some(p => p.id === prayer.id)) {
+          return prev;
+        }
+        // Add new prayer to the top (consistent with submit.tsx)
+        return [prayer, ...prev];
+      });
+    };
+
+    (window as typeof window & {
+      __oratio_addPrayer?: (prayer: PrayerRequest) => void;
+      __oratio_removePrayer?: (prayerId: string) => void;
+    }).__oratio_removePrayer = (prayerId: string) => {
+      setPrayers((prev) => prev.filter(p => p.id !== prayerId));
+    };
+
+    return () => {
+      // Clean up bridges when component unmounts
+      (window as typeof window & {
+        __oratio_addPrayer?: (prayer: PrayerRequest) => void;
+        __oratio_removePrayer?: (prayerId: string) => void;
+      }).__oratio_addPrayer = undefined;
+      (window as typeof window & {
+        __oratio_addPrayer?: (prayer: PrayerRequest) => void;
+        __oratio_removePrayer?: (prayerId: string) => void;
+      }).__oratio_removePrayer = undefined;
     };
   }, []);
 
@@ -216,7 +254,8 @@ export function Feed() {
   const selectedCatColor = categoryColors[selectedPrayer?.category || "Other"] || "#8890b5";
 
   const handleShare = async (prayer: PrayerRequest) => {
-    const shareText = `🙏 Prayer request${prayer.name ? ` from ${prayer.name}` : ""} (${prayer.city}):\n\n"${prayer.text}"\n\n${prayer.prayerCount} people have prayed. Join them on Oratio.`;
+    const attribution = getAttributionText(prayer);
+    const shareText = `🙏 Prayer request${attribution ? ` from ${attribution}` : ""} (${prayer.city}):\n\n"${prayer.text}"\n\n${prayer.prayerCount} people have prayed. Join them on Oratio.`;
     
     if (navigator.share) {
        try {
@@ -620,14 +659,12 @@ export function Feed() {
                         &ldquo;{selectedPrayer.text}&rdquo;
                       </p>
 
-                      {/* Name */}
-                      {selectedPrayer.name && (
-                          <div className="flex items-center gap-2.5 mb-4">
-                            <p className="text-[#6b7499] text-sm">
-                              &mdash; {selectedPrayer.name}
-                            </p>
-                          </div>
-                      )}
+                        {/* Attribution */}
+                        <div className="flex items-center gap-2.5 mb-4">
+                          <p className="text-[#6b7499] text-sm">
+                            &mdash; {getAttributionText(selectedPrayer)}
+                          </p>
+                        </div>
 
                       {/* Prayer count */}
                       <div className="flex items-center gap-1.5 text-[#6b7499] text-xs mb-8">

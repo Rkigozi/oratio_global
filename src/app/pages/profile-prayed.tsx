@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Heart, MapPin } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
-import { timeAgo } from "../data/prayer-data";
+import { timeAgo, getAttributionText } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import {
   getPrayedIds,
@@ -161,11 +161,9 @@ export function ProfilePrayed() {
                       &ldquo;{selectedPrayer.text}&rdquo;
                     </p>
 
-                    {selectedPrayer.name && (
                       <p className="text-[#5a6080] text-xs text-center mb-2">
-                        &mdash; {selectedPrayer.name}
+                        &mdash; {getAttributionText(selectedPrayer)}
                       </p>
-                    )}
 
                     <div className="flex items-center gap-1.5 justify-center text-[#5a6080] text-xs mb-8">
                       <Heart size={11} className="text-[#7c8fff] opacity-60" />
@@ -227,7 +225,7 @@ function PrayerRow({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.5), duration: 0.35 }}
       onClick={canManage ? () => onTap(prayer) : undefined}
-      className={`rounded-xl px-4 py-3.5 relative overflow-hidden ${canManage ? "cursor-pointer active:scale-[0.98] transition-transform duration-150" : ""}`}
+      className={`rounded-xl px-4 py-3.5 relative overflow-hidden ${canManage ? "cursor-pointer active:bg-[rgba(124,143,255,0.05)] transition-colors duration-150" : ""}`}
       style={{
         background:
           "linear-gradient(160deg, rgba(17, 26, 58, 0.6), rgba(12, 18, 48, 0.4))",
@@ -236,12 +234,15 @@ function PrayerRow({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p
-            className="text-[#d0d4e8] line-clamp-2 mb-2"
-            style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
-          >
-            &ldquo;{prayer.text}&rdquo;
-          </p>
+           <p
+             className="text-[#d0d4e8] line-clamp-2 mb-1"
+             style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
+           >
+             &ldquo;{prayer.text}&rdquo;
+           </p>
+           <span className="text-[#6b7499] text-[11px] mb-1 block">
+             &mdash; {getAttributionText(prayer)}
+           </span>
           <div className="flex items-center gap-2">
             <MapPin size={10} className="text-[#5a6080] flex-shrink-0" />
             <span className="text-[#5a6080] text-[11px]">

@@ -58,7 +58,10 @@ export function Home() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     
-    (window as typeof window & { __oratio_addPrayer?: (prayer: PrayerRequest) => void }).__oratio_addPrayer = (prayer: PrayerRequest) => {
+    (window as typeof window & { 
+      __oratio_addPrayer?: (prayer: PrayerRequest) => void;
+      __oratio_removePrayer?: (prayerId: string) => void;
+    }).__oratio_addPrayer = (prayer: PrayerRequest) => {
 
       if (!isMounted.current) {
         console.warn('Home component not mounted, ignoring bridge call');
@@ -68,6 +71,17 @@ export function Home() {
       setNewPrayerId(prayer.id);
       setFlyTo({ lat: prayer.lat, lng: prayer.lng });
       setTimeout(() => setNewPrayerId(null), 2000);
+    };
+
+    (window as typeof window & {
+      __oratio_addPrayer?: (prayer: PrayerRequest) => void;
+      __oratio_removePrayer?: (prayerId: string) => void;
+    }).__oratio_removePrayer = (prayerId: string) => {
+      if (!isMounted.current) {
+        console.warn('Home component not mounted, ignoring bridge call');
+        return;
+      }
+      setPrayers((prev) => prev.filter(p => p.id !== prayerId));
     };
     
     return () => {

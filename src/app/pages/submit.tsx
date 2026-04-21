@@ -4,11 +4,9 @@ import { Send, Check, ChevronDown } from "lucide-react";
 import { cities, getApproximateCoordinates, PrayerRequest } from "../data/prayer-data";
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
+import { getProfile } from "../data/profile-data";
 
-interface OratioProfile {
-  name?: string;
-  icon?: string;
-}
+
 
 const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
 
@@ -45,15 +43,8 @@ export function Submit() {
     }
   }, [showLocationDropdown, showCategoryDropdown]);
 
-  // Get profile name from localStorage
-  const profileName = (() => {
-    try {
-      const profile: OratioProfile = JSON.parse(localStorage.getItem("oratio_profile") || "{}") as OratioProfile;
-      return profile.name || "";
-    } catch {
-      return "";
-    }
-  })();
+  // Get user profile (includes displayName and username)
+  const profile = getProfile();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +75,8 @@ export function Submit() {
 
     const [cityName, countryName = "Unknown"] = location.split(", ").map(s => s.trim());
     const coords = getApproximateCoordinates(cityName, countryName);
-    const displayName = anonymous ? undefined : (profileName || undefined);
+    const displayName = anonymous ? undefined : profile.displayName || undefined;
+    const username = anonymous ? undefined : profile.username || undefined;
     
     // Sanitize text for extra safety
     const sanitizedText = sanitizePrayerText(text.trim());
@@ -95,7 +87,9 @@ export function Submit() {
       city: cityName || "Unknown",
       country: countryName || "Unknown",
       text: sanitizedText,
-      name: displayName,
+      name: displayName, // legacy field
+      displayName,
+      username,
       prayerCount: 0,
       lat: coords.lat,
       lng: coords.lng,
@@ -207,7 +201,7 @@ export function Submit() {
               >
                 <div>
                   <p className="text-[#e8eaf6] text-sm">
-                    {anonymous ? "Submitting anonymously" : `Submitting as ${profileName || "yourself"}`}
+                     {anonymous ? "Submitting anonymously" : `Submitting as ${profile.displayName || "yourself"}`}
                   </p>
                   <p className="text-[#5a5f80] text-xs mt-0.5">
                     {anonymous ? "Your name won't be shown" : "Your profile name will be shown"}

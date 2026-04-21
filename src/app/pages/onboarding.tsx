@@ -1,21 +1,92 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router";
 import { motion } from "motion/react";
 import { Check } from "lucide-react";
+import { saveProfile, clearUsedUsernames } from "../data/profile-data";
+import { validateProfile } from "../../lib/validation";
 
-function saveProfile(name: string) {
-  localStorage.setItem(
-    "oratio_profile",
-    JSON.stringify({ name, avatar: "🙏", joinedAt: new Date().toISOString() })
-  );
-}
+
 
 export function Onboarding() {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
+  const location = useLocation();
+  const [username, setUsername] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Clear used usernames if query param present (for testing)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('clearUsernames') === 'true') {
+      clearUsedUsernames();
+      console.log('Cleared used usernames');
+    }
+  }, [location.search]);
+
+  // Check if username is available (local storage only)
+  const isUsernameAvailable = (testUsername: string): boolean => {
+    try {
+      const used = JSON.parse(localStorage.getItem('oratio_usernames') || '[]') as string[];
+      return !used.includes(testUsername.toLowerCase());
+    } catch {
+      return true;
+    }
+  };
+
+  // Mark username as used (local storage only)
+  const markUsernameUsed = (username: string) => {
+    try {
+      const used = JSON.parse(localStorage.getItem('oratio_usernames') || '[]') as string[];
+      const lower = username.toLowerCase();
+      if (!used.includes(lower)) {
+        used.push(lower);
+        localStorage.setItem('oratio_usernames', JSON.stringify(used));
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const sanitizeUsernameInput = (input: string) => {
+    let sanitized = input.toLowerCase();
+    sanitized = sanitized.replace(/[^a-z0-9_]/g, '_');
+    sanitized = sanitized.replace(/_+/g, '_');
+    sanitized = sanitized.replace(/^_+|_+$/g, '');
+    if (sanitized.length < 3) sanitized = sanitized.padEnd(3, '_');
+    return sanitized.slice(0, 30);
+  };
 
   const handleBegin = () => {
-    saveProfile(name.trim() || "Anonymous");
+    setErrors({});
+    
+    const sanitizedUsername = sanitizeUsernameInput(username.trim());
+    
+    // Validate with schema (displayName empty initially)
+    const validation = validateProfile({
+      username: sanitizedUsername,
+      displayName: '',
+    });
+    
+    if (!validation.success) {
+      setErrors(validation.errors || {});
+      return;
+    }
+    
+    // Check username uniqueness (local storage only)
+    if (!isUsernameAvailable(sanitizedUsername)) {
+      setErrors({ username: 'This username is already taken' });
+      return;
+    }
+    
+    // Save profile
+    const profile = {
+      username: sanitizedUsername,
+      displayName: '',
+      avatar: "🙏",
+      joinedAt: new Date().toISOString(),
+    };
+    
+    saveProfile(profile);
+    markUsernameUsed(sanitizedUsername);
     void navigate("/");
   };
 
@@ -54,7 +125,7 @@ export function Onboarding() {
 
 
 
-        {/* Name input */}
+        {/* Username input (required) */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -62,25 +133,44 @@ export function Onboarding() {
           className="mb-8"
         >
           <p className="text-[#6b7499] text-xs uppercase tracking-[0.15em] mb-2.5 text-center">
-            Your name
+            Choose a username
           </p>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleBegin()}
-            placeholder="How should others see you?"
-            autoFocus
-            className="w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.3)] transition-colors text-center"
-            style={{ background: "rgba(15, 20, 50, 0.6)" }}
-          />
+           <input
+             type="text"
+             value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+              }}
+             onBlur={() => {
+               const sanitized = sanitizeUsernameInput(username);
+               setUsername(sanitized);
+             }}
+             onKeyDown={(e) => e.key === "Enter" && handleBegin()}
+              placeholder="e.g., prayer_warrior"
+             autoFocus
+             className="w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.3)] transition-colors text-center"
+             style={{ 
+               background: "rgba(15, 20, 50, 0.6)",
+               borderColor: errors.username ? '#ff6b6b' : 'rgba(124,143,255,0.12)'
+             }}
+           />
+           {errors.username && (
+             <p className="text-[#ff6b6b] text-xs text-center mt-2">
+               {errors.username}
+             </p>
+           )}
+           <p className="text-[#4e5573] text-xs text-center mt-2">
+             Your unique handle.
+           </p>
         </motion.div>
+
+
 
         {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.4 }}
+          transition={{ duration: 0.7, delay: 0.5 }}
         >
           <button
             onClick={handleBegin}

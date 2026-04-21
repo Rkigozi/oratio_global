@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { MapPin, Heart } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
-import { timeAgo } from "../data/prayer-data";
+import { timeAgo, getAttributionText } from "../data/prayer-data";
 import { categoryColors } from "../data/profile-data";
 
 interface FeedCardProps {
@@ -71,14 +71,12 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
         &ldquo;{prayer.text}&rdquo;
       </p>
 
-      {/* Bottom row: name + category + pray button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          {prayer.name && (
+       {/* Bottom row: name + category + pray button */}
+       <div className="flex items-center justify-between">
+         <div className="flex items-center gap-2.5">
             <span className="text-[#6b7499] text-xs">
-              &mdash; {prayer.name}
+              &mdash; {getAttributionText(prayer)}
             </span>
-          )}
           {prayer.category && (
             <span
               className="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider"

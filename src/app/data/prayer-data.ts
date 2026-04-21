@@ -3,12 +3,40 @@ export interface PrayerRequest {
   city: string;
   country: string;
   text: string;
-  name?: string;
+  name?: string;        // Legacy field - use displayName instead
+  displayName?: string; // User's public display name
+  username?: string;    // Unique handle (without @) e.g., "prayer_warrior"
   prayerCount: number;
   lat: number;
   lng: number;
   category?: string;
   createdAt?: string; // ISO timestamp
+}
+
+// Helper to generate username from display name (consistent with profile-data.ts)
+function generateUsernameFromDisplayName(displayName: string): string {
+  // Convert to lowercase
+  let username = displayName.toLowerCase();
+  // Remove any non-alphanumeric/underscore characters
+  username = username.replace(/[^a-z0-9_]/g, '_');
+  // Collapse multiple underscores
+  username = username.replace(/_+/g, '_');
+  // Remove leading/trailing underscores
+  username = username.replace(/^_+|_+$/g, '');
+  // Ensure minimum length
+  if (username.length < 3) {
+    username = username.padEnd(3, '_');
+  }
+  // Truncate to max 30 characters
+  return username.slice(0, 30);
+}
+
+// Get attribution text for a prayer (username > displayName > legacy name > Anonymous)
+export function getAttributionText(prayer: PrayerRequest): string {
+  if (prayer.username) return prayer.username;
+  if (prayer.displayName) return prayer.displayName;
+  if (prayer.name) return prayer.name;
+  return "Anonymous";
 }
 
 // ── City database ────────────────────────────────────────────────────
@@ -234,12 +262,18 @@ const generateHotspotData = (): PrayerRequest[] => {
     const activityLevel = city.weight * 30 + Math.floor(rand() * city.weight * 40);
 
     const coords = getApproximateCoordinates(city.name, city.country);
+    const nameValue = shuffledNames[i % shuffledNames.length];
+    const displayNameValue = nameValue;
+    const usernameValue = nameValue ? generateUsernameFromDisplayName(nameValue) : undefined;
+    
     prayers.push({
       id: `hotspot-${id}`,
       city: city.name,
       country: city.country,
       text: prayerTexts[Math.floor(rand() * prayerTexts.length)],
-      name: shuffledNames[i % shuffledNames.length],
+      name: nameValue, // Legacy field
+      displayName: displayNameValue,
+      username: usernameValue,
       prayerCount: activityLevel,
       lat: coords.lat,
       lng: coords.lng,
@@ -276,12 +310,18 @@ const generateFeedData = (): PrayerRequest[] => {
       const minutesAgo = Math.floor(rand() * 2880); // 0 - 48 hours
       const createdAt = new Date(now.getTime() - minutesAgo * 60 * 1000);
 
+      const nameValue = shuffledNames[nameIdx % shuffledNames.length];
+      const displayNameValue = nameValue;
+      const usernameValue = nameValue ? generateUsernameFromDisplayName(nameValue) : undefined;
+      
       prayers.push({
         id: `feed-${id}`,
         city: city.name,
         country: city.country,
         text: shuffledTexts[textIdx % shuffledTexts.length],
-        name: shuffledNames[nameIdx % shuffledNames.length],
+        name: nameValue, // Legacy field
+        displayName: displayNameValue,
+        username: usernameValue,
         prayerCount: Math.floor(rand() * 80) + 1,
         lat: coords.lat,
         lng: coords.lng,

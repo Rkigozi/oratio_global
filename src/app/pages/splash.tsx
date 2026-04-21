@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
+import { getProfile } from "../data/profile-data";
 
 export function Splash() {
   const navigate = useNavigate();
@@ -8,13 +9,12 @@ export function Splash() {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        const profile = localStorage.getItem("oratio_profile");
-        const parsed = profile ? JSON.parse(profile) as { name?: string } : null;
-        const hasProfile = parsed?.name;
-
+        const profile = getProfile();
+        // Check if user has a real profile (not the default anonymous)
+        const hasProfile = profile.username !== "anonymous";
         void navigate(hasProfile ? "/" : "/onboarding");
       } catch (error) {
-        console.error('Splash: error parsing profile', error);
+        console.error('Splash: error getting profile', error);
         void navigate("/onboarding");
       }
     }, 2500);

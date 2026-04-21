@@ -1,25 +1,62 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "motion/react";
 import {
   Heart,
   Send,
   LogOut,
   ChevronDown,
+  Edit,
 } from "lucide-react";
+import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
 import {
   getProfile,
+  saveProfile,
   getSubmittedIds,
   getPrayedIds,
   getStoredSubmittedPrayers,
   getPrayedForPrayers,
 } from "../data/profile-data";
+import { validateProfile } from "../../lib/validation";
 import { Header } from "../components/header";
 
 export function Profile() {
   const navigate = useNavigate();
-  const [profile] = useState(getProfile);
+  const [profile, setProfile] = useState(getProfile);
+  const [editOpen, setEditOpen] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [editError, setEditError] = useState<string>("");
   
+  const handleSaveDisplayName = () => {
+    setEditError("");
+    const trimmed = newDisplayName.trim();
+    // Validate display name
+    const validation = validateProfile({
+      username: profile.username,
+      displayName: trimmed,
+    });
+    if (!validation.success) {
+      // Show first error
+      const firstError = Object.values(validation.errors || {})[0];
+      setEditError(firstError || "Invalid display name");
+      return;
+    }
+    const updatedProfile = {
+      ...profile,
+      displayName: trimmed,
+    };
+    saveProfile(updatedProfile);
+    setProfile(updatedProfile);
+    setEditOpen(false);
+  };
+
+  useEffect(() => {
+    if (editOpen) {
+      setNewDisplayName(profile.displayName);
+      setEditError('');
+    }
+  }, [editOpen, profile.displayName]);
+
   const submittedIds = getSubmittedIds();
   const prayedIds = getPrayedIds();
 
@@ -88,12 +125,25 @@ export function Profile() {
               )}
             </div>
 
-            <h2
-              className="text-[#e2e4f0] font-heading mb-1"
-              style={{ fontSize: "1.35rem", fontWeight: 300 }}
-            >
-              {profile.name || "Set up your profile"}
-            </h2>
+            <div className="flex items-center justify-center gap-2">
+              <h2
+                className="text-[#e2e4f0] font-heading mb-1"
+                style={{ fontSize: "1.35rem", fontWeight: 300 }}
+              >
+                {profile.displayName || profile.username || "Set up your profile"}
+              </h2>
+              <button
+                onClick={() => setEditOpen(true)}
+                className="text-[#5a6080] hover:text-[#7c8fff] transition-colors"
+              >
+                <Edit size={14} />
+              </button>
+            </div>
+            {profile.username && (
+              <p className="text-[#5a6080] text-xs mb-0.5">
+                @{profile.username}
+              </p>
+            )}
             <p className="text-[#4e5573] text-xs">
               Member since{" "}
               {new Date(profile.joinedAt).toLocaleDateString("en-US", {
@@ -172,9 +222,9 @@ export function Profile() {
                 transition={{ delay: 0.2 }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[#e2e4f0] font-heading text-sm">
-                    Recently Submitted
-                  </h3>
+                   <h3 className="text-[#e2e4f0] font-heading text-sm font-light">
+                     Recently Submitted
+                   </h3>
                   <button
                     onClick={() => void navigate('/profile/submitted')}
                     className="text-[#5a6080] hover:text-[#7c8fff] text-xs flex items-center gap-1 cursor-pointer"
@@ -217,9 +267,9 @@ export function Profile() {
                 transition={{ delay: 0.25 }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-[#e2e4f0] font-heading text-sm">
-                    Recently Prayed For
-                  </h3>
+                   <h3 className="text-[#e2e4f0] font-heading text-sm font-light">
+                     Recently Prayed For
+                   </h3>
                   <button
                     onClick={() => void navigate('/profile/prayed')}
                     className="text-[#5a6080] hover:text-[#7c8fff] text-xs flex items-center gap-1 cursor-pointer"
@@ -313,6 +363,70 @@ export function Profile() {
             </button>
           </motion.div>
         </div>
+
+        {/* Edit Display Name Drawer */}
+        <Drawer.Root open={editOpen} onOpenChange={setEditOpen}>
+          <Drawer.Portal>
+            <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[600]" />
+            <Drawer.Content
+              className="fixed bottom-0 left-0 right-0 z-[600] bg-[#0A1A3A] rounded-t-2xl p-6 outline-none"
+              style={{
+                borderTop: "1px solid rgba(124,143,255,0.1)",
+                boxShadow: "0 -20px 60px rgba(0, 0, 0, 0.3)",
+              }}
+            >
+              <div className="mx-auto w-12 h-1.5 bg-[rgba(124,143,255,0.2)] rounded-full mb-6" />
+              <Drawer.Title className="sr-only">Edit Display Name</Drawer.Title>
+              <Drawer.Description className="sr-only">
+                Update your public display name
+              </Drawer.Description>
+              
+              <div className="max-w-md mx-auto">
+                <h3 className="text-[#e2e4f0] text-center mb-2 font-heading text-lg">
+                  Edit Display Name
+                </h3>
+                <p className="text-[#5a6080] text-sm text-center mb-6">
+                  Your username <span className="text-[#7c8fff]">@{profile.username}</span> cannot be changed.
+                </p>
+                
+                <div className="mb-6">
+                  <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2.5 text-center">
+                    Display Name
+                  </p>
+                  <input
+                    type="text"
+                    value={newDisplayName}
+                    onChange={(e) => { setNewDisplayName(e.target.value); setEditError(''); }}
+                    onKeyDown={(e) => e.key === "Enter" && handleSaveDisplayName()}
+                    placeholder="Leave empty to use username"
+                     className={`w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-[#ff6b6b]' : 'border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.3)]'}`}
+                    style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                  />
+                  {editError && (
+                    <p className="text-[#ff6b6b] text-xs text-center mt-2">
+                      {editError}
+                    </p>
+                  )}
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setEditOpen(false)}
+                    className="flex-1 py-3.5 rounded-full text-sm text-[#8b96c0] bg-[rgba(124,143,255,0.06)] border border-[rgba(124,143,255,0.1)] hover:bg-[rgba(124,143,255,0.12)] transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveDisplayName}
+                    className="flex-1 py-3.5 rounded-full text-sm text-white bg-[linear-gradient(135deg,#7c8fff,#5a6fd6)] hover:opacity-90 transition-all cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </Drawer.Content>
+          </Drawer.Portal>
+        </Drawer.Root>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import type { PrayerRequest } from "../data/prayer-data";
+import { getAttributionText } from "../data/prayer-data";
 
 interface PrayerCardProps {
   prayer: PrayerRequest;
@@ -43,10 +44,8 @@ export function PrayerCard({ prayer, onClose, onPrayed }: PrayerCardProps) {
               &ldquo;{prayer.text}&rdquo;
             </p>
 
-            {/* Name */}
-            {prayer.name && (
-              <p className="text-[#6b7499] text-sm mb-4">&mdash; {prayer.name}</p>
-            )}
+            {/* Attribution */}
+            <p className="text-[#6b7499] text-sm mb-4">&mdash; {getAttributionText(prayer)}</p>
 
             {/* Prayer count */}
             <div className="flex items-center gap-1.5 text-[#6b7499] text-xs mb-8">
