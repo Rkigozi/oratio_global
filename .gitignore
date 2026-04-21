@@ -34,6 +34,7 @@ Desktop.ini
 # Logs
 logs/
 *.log
+*.out
 
 # Coverage
 coverage/
@@ -121,6 +122,7 @@ Temporary Items
 
 # Local development files
 *.local
+test_server.sh
 
 # Local test files
 *.test.local
