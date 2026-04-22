@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Globe, Flame, Share2, MapPin, X, Search, ChevronDown } from "lucide-react";
 import { Drawer } from "vaul";
 import { useSearchParams } from "react-router";
-import { mockFeedPrayers, timeAgo, countries, getAttributionText } from "../data/prayer-data";
+import { mockFeedPrayers, timeAgo, countries, getAttributionText, CATEGORIES } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { getPrayedIds, categoryColors } from "../data/profile-data";
 import { FeedCard } from "../components/feed-card";
@@ -20,8 +20,7 @@ export function Feed() {
   const locationCity = searchParams.get("city");
   const locationCountry = searchParams.get("country");
   const hasLocationFilter = !!locationCity || !!locationCountry;
-  const category = "All";
-  const searchQuery = "";
+  const [category, setCategory] = useState("All");
 
   const clearLocationFilter = () => {
     setSearchParams({});
@@ -135,6 +134,11 @@ export function Feed() {
   const filteredPrayers = useMemo(() => {
     let result = prayers;
 
+    // Category filter
+    if (category !== "All") {
+      result = result.filter((p) => p.category === category);
+    }
+
     // Location filter from map hotspot or country filter
     if (locationCity) {
       // City filter (with optional country fallback)
@@ -151,7 +155,7 @@ export function Feed() {
     }
 
     return result;
-  }, [prayers, locationCity, locationCountry]);
+  }, [prayers, category, locationCity, locationCountry]);
 
   // Trending: top 5 by prayer count
   const trending = useMemo(() => {
@@ -378,6 +382,46 @@ export function Feed() {
           </div>
         )}
 
+        {/* Category filter pills */}
+        <div className="flex gap-1.5 px-5 mb-3 overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => setCategory("All")}
+            className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
+            style={{
+              background: category === "All"
+                ? "rgba(124,143,255,0.12)"
+                : "rgba(124,143,255,0.04)",
+              color: category === "All" ? "#7c8fff" : "#6b7499",
+              border: category === "All"
+                ? "1px solid rgba(124,143,255,0.2)"
+                : "1px solid rgba(124,143,255,0.06)",
+            }}
+          >
+            All
+          </button>
+          {CATEGORIES.map((cat) => {
+            const catColor = categoryColors[cat] || "#8890b5";
+            return (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
+                style={{
+                  background: category === cat
+                    ? `${catColor}20`
+                    : "rgba(124,143,255,0.04)",
+                  color: category === cat ? catColor : "#6b7499",
+                  border: category === cat
+                    ? `1px solid ${catColor}40`
+                    : "1px solid rgba(124,143,255,0.06)",
+                }}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+
       </div>
 
       {/* Scrollable content */}
@@ -452,7 +496,7 @@ export function Feed() {
         </AnimatePresence>
 
         {/* Trending section (only on Global tab, no category filter) */}
-        {tab === "global" && category === "All" && !searchQuery && !hasLocationFilter && (
+        {tab === "global" && category === "All" && !hasLocationFilter && (
           <div className="mb-5">
             <div className="flex items-center gap-1.5 px-1 mb-3">
               <Flame size={13} className="text-[#fbbf24]" />
@@ -559,6 +603,8 @@ export function Feed() {
               >
                  {hasLocationFilter ? (
                    <MapPin size={20} className="text-[#4e5573]" />
+                 ) : category !== "All" ? (
+                   <Search size={20} className="text-[#4e5573]" />
                  ) : (
                    <Search size={20} className="text-[#4e5573]" />
                  )}
@@ -566,7 +612,9 @@ export function Feed() {
               <p className="text-[#6b7499] text-sm mb-1">
                  {hasLocationFilter
                     ? `No prayers in ${locationCity || locationCountry}`
-                   : "No prayers found"}
+                    : category !== "All"
+                    ? `No prayers in ${category}`
+                    : "No prayers found"}
               </p>
               <p className="text-[#4e5573] text-xs">
                  View all prayers

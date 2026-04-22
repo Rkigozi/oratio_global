@@ -63,16 +63,8 @@ export function sanitizePrayerText(text: string): string {
   return safeText.trim().slice(0, 500);
 }
 
-// Location validation helper
-export function isValidLocation(location: string): boolean {
-  // Check if location matches "City, Country" format
-  const locationRegex = /^[a-zA-Z\s\u00C0-\u017F]+,\s*[a-zA-Z\s\u00C0-\u017F]+$/;
-  return locationRegex.test(location) && location.length <= 100;
-}
-
-// Validation result type
-export type PrayerFormData = z.infer<typeof prayerSchema>;
-export type ProfileFormData = z.infer<typeof profileSchema>;
+type PrayerFormData = z.infer<typeof prayerSchema>;
+type ProfileFormData = z.infer<typeof profileSchema>;
 
 // Validation helper function
 export function validatePrayerSubmission(data: unknown): {

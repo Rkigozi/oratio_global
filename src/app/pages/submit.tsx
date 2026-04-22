@@ -1,14 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Send, Check, ChevronDown } from "lucide-react";
-import { cities, getApproximateCoordinates, PrayerRequest } from "../data/prayer-data";
+import { cities, getApproximateCoordinates, PrayerRequest, CATEGORIES } from "../data/prayer-data";
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
 import { getProfile } from "../data/profile-data";
 
 
-
-const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
 
 // Coordinates are now generated via getApproximateCoordinates with privacy jitter
 

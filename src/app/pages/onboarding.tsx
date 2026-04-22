@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { motion } from "motion/react";
 import { Check } from "lucide-react";
-import { saveProfile, clearUsedUsernames } from "../data/profile-data";
+import { saveProfile, clearUsedUsernames, markUsernameUsed } from "../data/profile-data";
 import { validateProfile } from "../../lib/validation";
 
 
@@ -29,20 +29,6 @@ export function Onboarding() {
       return !used.includes(testUsername.toLowerCase());
     } catch {
       return true;
-    }
-  };
-
-  // Mark username as used (local storage only)
-  const markUsernameUsed = (username: string) => {
-    try {
-      const used = JSON.parse(localStorage.getItem('oratio_usernames') || '[]') as string[];
-      const lower = username.toLowerCase();
-      if (!used.includes(lower)) {
-        used.push(lower);
-        localStorage.setItem('oratio_usernames', JSON.stringify(used));
-      }
-    } catch {
-      // ignore
     }
   };
 

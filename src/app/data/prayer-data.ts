@@ -13,24 +13,6 @@ export interface PrayerRequest {
   createdAt?: string; // ISO timestamp
 }
 
-// Helper to generate username from display name (consistent with profile-data.ts)
-function generateUsernameFromDisplayName(displayName: string): string {
-  // Convert to lowercase
-  let username = displayName.toLowerCase();
-  // Remove any non-alphanumeric/underscore characters
-  username = username.replace(/[^a-z0-9_]/g, '_');
-  // Collapse multiple underscores
-  username = username.replace(/_+/g, '_');
-  // Remove leading/trailing underscores
-  username = username.replace(/^_+|_+$/g, '');
-  // Ensure minimum length
-  if (username.length < 3) {
-    username = username.padEnd(3, '_');
-  }
-  // Truncate to max 30 characters
-  return username.slice(0, 30);
-}
-
 // Get attribution text for a prayer (username > displayName > legacy name > Anonymous)
 export function getAttributionText(prayer: PrayerRequest): string {
   if (prayer.username) return prayer.username;
@@ -122,6 +104,8 @@ export function getApproximateCoordinates(cityName: string, country: string): { 
   seed = seed % 1000000;
   return addJitter(city.lat, city.lng, seed);
 }
+
+import { generateUsernameFromDisplayName } from "./profile-data";
 
 // ── Prayer texts & names ─────────────────────────────────────────────
 const prayerTexts = [
@@ -227,7 +211,7 @@ const hotspotNames: (string | undefined)[] = [
   "O. Brown", "U. Sato",
 ];
 
-const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
+export const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
 
 // ── Seeded random ────────────────────────────────────────────────────
 function seededRandom(seed: number) {
@@ -345,9 +329,6 @@ const generateFeedData = (): PrayerRequest[] => {
 export const mockHotspots: PrayerRequest[] = generateHotspotData();
 export const mockFeedPrayers: PrayerRequest[] = generateFeedData();
 
-// Backwards compat — old map code still uses this
-export const mockPrayerRequests = mockHotspots;
-
 export const cities = [...new Set(cityDatabase.map((c) => `${c.name}, ${c.country}`))];
 
 // ── Utilities ────────────────────────────────────────────────────────
@@ -360,10 +341,6 @@ export function timeAgo(isoDate: string): string {
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
   return `${days}d ago`;
-}
-
-export function getCityDatabase() {
-  return cityDatabase;
 }
 
 export const countries = [...new Set(cityDatabase.map(c => c.country))].sort();

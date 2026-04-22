@@ -134,13 +134,6 @@ export function getStoredSubmittedPrayers(): PrayerRequest[] {
 
 
 
-export function getAvatarForName(name: string) {
-  const avatars = ["🙏", "✝️", "🕊️", "💛", "🌿", "⭐", "🔥", "💜"];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
-  return avatars[hash % avatars.length];
-}
-
 export const categoryColors: Record<string, string> = {
   Health: "#67e8f9",
   Family: "#a78bfa",
@@ -149,12 +142,6 @@ export const categoryColors: Record<string, string> = {
   Peace: "#6ee7b7",
   Other: "#8890b5",
 };
-
-// Helper to get submitted prayers
-export function getSubmittedPrayers(): PrayerRequest[] {
-  return getStoredSubmittedPrayers()
-    .map((p) => ({ ...p, prayerCount: p.prayerCount || 0 }));
-}
 
 // Get all prayers (mock feed + user submitted)
 export function getAllPrayers(): PrayerRequest[] {

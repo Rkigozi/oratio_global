@@ -25,10 +25,6 @@ export function Home() {
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(
     null
   );
-   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-   const [centerTrigger, _setCenterTrigger] = useState(0);
-   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-   const [prayedId, _setPrayedId] = useState<string | null>(null);
    const [newPrayerId, setNewPrayerId] = useState<string | null>(null);
    const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -114,13 +110,11 @@ export function Home() {
       {/* Map area */}
       <div className="absolute inset-0 z-0">
          <WorldMapClean
-           prayers={prayers}
-           onPrayerTap={handlePrayerTap}
-           centerTrigger={centerTrigger}
-           prayedId={prayedId}
-           newPrayerId={newPrayerId}
-           flyTo={flyTo}
-         />
+            prayers={prayers}
+            onPrayerTap={handlePrayerTap}
+            newPrayerId={newPrayerId}
+            flyTo={flyTo}
+          />
       </div>
 
 

@@ -348,7 +348,6 @@ export function Profile() {
             <button
               onClick={() => {
                 ['oratio_profile','oratio_submitted','oratio_submitted_prayers','oratio_prayed'].forEach(k => localStorage.removeItem(k));
-                sessionStorage.removeItem('oratio_visited');
                 void navigate("/splash");
               }}
               className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"

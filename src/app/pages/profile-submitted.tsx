@@ -47,8 +47,8 @@ export function ProfileSubmitted() {
       localStorage.setItem("oratio_prayed", JSON.stringify(prayed.filter(id => id !== prayerId)));
       
       // Call bridge to update other components
-      if (typeof window !== "undefined" && (window as any).__oratio_removePrayer) {
-        (window as any).__oratio_removePrayer(prayerId);
+      if (typeof window !== "undefined") {
+        (window as typeof window & { __oratio_removePrayer?: (id: string) => void }).__oratio_removePrayer?.(prayerId);
       }
 
       // Force re-render
