@@ -16,6 +16,8 @@ import {
   getPrayedIds,
   getStoredSubmittedPrayers,
   getPrayedForPrayers,
+  isUsernameAvailable,
+  changeUsername,
 } from "../data/profile-data";
 import { validateProfile } from "../../lib/validation";
 import { Header } from "../components/header";
@@ -25,25 +27,40 @@ export function Profile() {
   const [profile, setProfile] = useState(getProfile);
   const [editOpen, setEditOpen] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState("");
+  const [newUsername, setNewUsername] = useState("");
   const [editError, setEditError] = useState<string>("");
   
-  const handleSaveDisplayName = () => {
+  const handleSaveProfile = () => {
     setEditError("");
-    const trimmed = newDisplayName.trim();
-    // Validate display name
+    const trimmedDisplayName = newDisplayName.trim();
+    const trimmedUsername = newUsername.trim().toLowerCase();
+    
+    // Validate both fields
     const validation = validateProfile({
-      username: profile.username,
-      displayName: trimmed,
+      username: trimmedUsername,
+      displayName: trimmedDisplayName,
     });
     if (!validation.success) {
       // Show first error
       const firstError = Object.values(validation.errors || {})[0];
-      setEditError(firstError || "Invalid display name");
+      setEditError(firstError || "Invalid input");
       return;
     }
+    
+    // Check username uniqueness if changed
+    if (trimmedUsername !== profile.username) {
+      if (!isUsernameAvailable(trimmedUsername, profile.username)) {
+        setEditError("This username is already taken");
+        return;
+      }
+      // Update username in prayers and used list
+      changeUsername(profile.username, trimmedUsername);
+    }
+    
     const updatedProfile = {
       ...profile,
-      displayName: trimmed,
+      username: trimmedUsername,
+      displayName: trimmedDisplayName,
     };
     saveProfile(updatedProfile);
     setProfile(updatedProfile);
@@ -53,9 +70,10 @@ export function Profile() {
   useEffect(() => {
     if (editOpen) {
       setNewDisplayName(profile.displayName);
+      setNewUsername(profile.username);
       setEditError('');
     }
-  }, [editOpen, profile.displayName]);
+  }, [editOpen, profile.displayName, profile.username]);
 
   const submittedIds = getSubmittedIds();
   const prayedIds = getPrayedIds();
@@ -375,38 +393,50 @@ export function Profile() {
               }}
             >
               <div className="mx-auto w-12 h-1.5 bg-[rgba(124,143,255,0.2)] rounded-full mb-6" />
-              <Drawer.Title className="sr-only">Edit Display Name</Drawer.Title>
-              <Drawer.Description className="sr-only">
-                Update your public display name
-              </Drawer.Description>
+               <Drawer.Title className="sr-only">Edit Profile</Drawer.Title>
+               <Drawer.Description className="sr-only">
+                 Update your username and display name
+               </Drawer.Description>
               
               <div className="max-w-md mx-auto">
-                <h3 className="text-[#e2e4f0] text-center mb-2 font-heading text-lg">
-                  Edit Display Name
-                </h3>
-                <p className="text-[#5a6080] text-sm text-center mb-6">
-                  Your username <span className="text-[#7c8fff]">@{profile.username}</span> cannot be changed.
-                </p>
-                
-                <div className="mb-6">
-                  <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2.5 text-center">
-                    Display Name
-                  </p>
-                  <input
-                    type="text"
-                    value={newDisplayName}
-                    onChange={(e) => { setNewDisplayName(e.target.value); setEditError(''); }}
-                    onKeyDown={(e) => e.key === "Enter" && handleSaveDisplayName()}
-                    placeholder="Leave empty to use username"
+                 <h3 className="text-[#e2e4f0] text-center mb-2 font-heading text-lg">
+                   Edit Profile
+                 </h3>
+                 
+                 <div className="mb-6">
+                   <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2.5 text-center">
+                     Username
+                   </p>
+                   <input
+                     type="text"
+                     value={newUsername}
+                     onChange={(e) => { setNewUsername(e.target.value); setEditError(''); }}
+                     onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
+                     placeholder="username"
                      className={`w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-[#ff6b6b]' : 'border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.3)]'}`}
-                    style={{ background: "rgba(15, 20, 50, 0.6)" }}
-                  />
-                  {editError && (
-                    <p className="text-[#ff6b6b] text-xs text-center mt-2">
-                      {editError}
-                    </p>
-                  )}
-                </div>
+                     style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                   />
+                 </div>
+                 
+                 <div className="mb-6">
+                   <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2.5 text-center">
+                     Display Name
+                   </p>
+                   <input
+                     type="text"
+                     value={newDisplayName}
+                     onChange={(e) => { setNewDisplayName(e.target.value); setEditError(''); }}
+                     onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
+                     placeholder="Leave empty to use username"
+                     className={`w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-[#ff6b6b]' : 'border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.3)]'}`}
+                     style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                   />
+                   {editError && (
+                     <p className="text-[#ff6b6b] text-xs text-center mt-2">
+                       {editError}
+                     </p>
+                   )}
+                 </div>
                 
                 <div className="flex gap-3">
                   <button
@@ -416,7 +446,7 @@ export function Profile() {
                     Cancel
                   </button>
                   <button
-                    onClick={handleSaveDisplayName}
+                     onClick={handleSaveProfile}
                     className="flex-1 py-3.5 rounded-full text-sm text-white bg-[linear-gradient(135deg,#7c8fff,#5a6fd6)] hover:opacity-90 transition-all cursor-pointer"
                   >
                     Save Changes

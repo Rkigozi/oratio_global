@@ -19,8 +19,8 @@ export function generateUsernameFromDisplayName(displayName: string): string {
   username = username.replace(/_+/g, '_');
   // Remove leading/trailing underscores
   username = username.replace(/^_+|_+$/g, '');
-  // Ensure minimum length
-  if (username.length < 3) {
+  // Ensure minimum length (only if we have at least one character)
+  if (username.length > 0 && username.length < 3) {
     username = username.padEnd(3, '_');
   }
   // Truncate to max 30 characters
@@ -155,5 +155,50 @@ export function getAllPrayers(): PrayerRequest[] {
 export function getPrayedForPrayers(): PrayerRequest[] {
   const prayedIds = new Set(getPrayedIds());
   return getAllPrayers().filter(p => prayedIds.has(p.id));
+}
+
+// Check if username is available (optionally exclude current username)
+export function isUsernameAvailable(username: string, excludeUsername?: string): boolean {
+  try {
+    const used = JSON.parse(localStorage.getItem('oratio_usernames') || '[]') as string[];
+    const lower = username.toLowerCase();
+    const filtered = excludeUsername ? used.filter(u => u !== excludeUsername.toLowerCase()) : used;
+    return !filtered.includes(lower);
+  } catch {
+    return true;
+  }
+}
+
+// Update username in all submitted prayers
+export function updateUsernameInPrayers(oldUsername: string, newUsername: string): void {
+  try {
+    const raw = localStorage.getItem('oratio_submitted_prayers');
+    if (!raw) return;
+    const prayers = JSON.parse(raw) as PrayerRequest[];
+    const updated = prayers.map(p => 
+      p.username === oldUsername ? { ...p, username: newUsername } : p
+    );
+    localStorage.setItem('oratio_submitted_prayers', JSON.stringify(updated));
+  } catch {
+    // ignore
+  }
+}
+
+// Change username and update all related data
+export function changeUsername(oldUsername: string, newUsername: string): void {
+  // Update used usernames list
+  try {
+    const used = JSON.parse(localStorage.getItem('oratio_usernames') || '[]') as string[];
+    const filtered = used.filter(u => u !== oldUsername.toLowerCase());
+    if (!filtered.includes(newUsername.toLowerCase())) {
+      filtered.push(newUsername.toLowerCase());
+      localStorage.setItem('oratio_usernames', JSON.stringify(filtered));
+    }
+  } catch {
+    // ignore
+  }
+  
+  // Update username in submitted prayers
+  updateUsernameInPrayers(oldUsername, newUsername);
 }
 
