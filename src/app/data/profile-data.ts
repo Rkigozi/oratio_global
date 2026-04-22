@@ -19,10 +19,7 @@ export function generateUsernameFromDisplayName(displayName: string): string {
   username = username.replace(/_+/g, '_');
   // Remove leading/trailing underscores
   username = username.replace(/^_+|_+$/g, '');
-  // Ensure minimum length (only if we have at least one character)
-  if (username.length > 0 && username.length < 3) {
-    username = username.padEnd(3, '_');
-  }
+  // Minimum length enforced by validation, not here
   // Truncate to max 30 characters
   return username.slice(0, 30);
 }
