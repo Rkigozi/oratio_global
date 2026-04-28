@@ -177,27 +177,39 @@ const prayerTexts = [
 
 // Pool of unique, distinct names — each person appears only once
 const feedNames: (string | undefined)[] = [
-  // ~15% anonymous
+  // ~13% anonymous
   undefined, undefined, undefined, undefined, undefined,
   undefined, undefined, undefined, undefined, undefined,
   undefined, undefined,
-  // Real, diverse, modern names — no repeats
+  // Traditional names → "marcus_t" style underscore usernames
   "Marcus T.", "Jess W.", "David Kim", "Tolu A.", "Sarah Chen",
   "Andre M.", "Priya S.", "Rachel O.", "Kwame B.", "Lina F.",
   "Chris D.", "Nia J.", "Mateo R.", "Hannah P.", "Yusuf K.",
-  "Becca L.", "Elijah N.", "Sofia V.", "Caleb H.", "Amara O.",
   "Jordan T.", "Mei Lin", "Isaac G.", "Fatou D.", "Tyler B.",
   "Ruth M.", "Dani C.", "Emmanuel A.", "Grace K.", "Aiden W.",
-  "Kenji T.", "Lydia R.", "Samuel O.", "Abby F.", "Omar H.",
-  "Esther N.", "Jake P.", "Chloe M.", "Ravi S.", "Naomi B.",
-  "Marcus L.", "Joy A.", "Daniel W.", "Aaliyah K.", "Micah R.",
-  "Leah T.", "Ben J.", "Miriam C.", "Josiah D.", "Camille P.",
-  "Eliana S.", "Kofi M.", "Jasmine H.", "Peter O.", "Rebekah L.",
-  "Nate F.", "Zara W.", "Tobias K.", "Mia G.", "Paul N.",
-  "Sienna B.", "Ezra T.", "Adele M.", "Gabriel R.", "Hope C.",
-  "Ian D.", "Carmen V.", "Malachi J.", "Thandi S.", "Luke A.",
-  "Stella K.", "Noah P.", "Imani W.", "Gideon F.", "Elena H.",
-  "Declan O.", "Ananya R.", "Bethany L.", "Finn M.", "Zuri T.",
+  // Full names → "marcus_thompson" style usernames
+  "Marcus Thompson", "Jessica Williams", "Andre Martinez",
+  "Priya Sharma", "Rachel Okafor", "Kwame Boateng",
+  "Mateo Rodriguez", "Hannah Park", "Yusuf Khan",
+  // Single-word spiritual → "selah" style (no separator)
+  "Selah", "Maranatha", "Koinonia", "Shalom",
+  "Jubilee", "Hosanna", "Agape", "Redeemed",
+  // Numbers → "grace2024" style (modern social media)
+  "Grace2024", "John316", "Psalm23", "Faith22",
+  "David877", "Hope121", "Pray4Peace", "Love1Cor13",
+  // Initials → "m_j" style compact usernames
+  "M.J.", "J.C.", "A.R.", "K.O.",
+  "S.N.", "R.F.", "E.S.", "P.K.", "T.W.",
+  // Creative compounds → "prayerwarrior" style (no separator)
+  "PrayerWarrior", "FaithJourney", "LoveAlive", "HopeRises",
+  // Multi-word phrases → "light_bearer" style
+  "Light Bearer", "Peace Keeper", "Grace Seeker",
+  "Hope Bearer", "Joy Unspeakable", "Love Divine",
+  // Spiritual compounds → "jehovahjireh" style
+  "JehovahJireh", "ElShaddai", "PrincePeace",
+  "AlphaOmega", "Wonderful",
+  // Dots/creative → "a_m_e_n" style
+  "A.M.E.N.",
 ];
 
 // Separate smaller pool for hotspot names (one per city, 26 cities)

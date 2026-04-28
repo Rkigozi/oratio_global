@@ -199,7 +199,7 @@ export function Submit() {
               >
                 <div>
                   <p className="text-[#e8eaf6] text-sm">
-                     {anonymous ? "Submitting anonymously" : `Submitting as ${profile.displayName || "yourself"}`}
+                     {anonymous ? "Submitting anonymously" : `Submitting as ${profile.username || "yourself"}`}
                   </p>
                   <p className="text-[#5a5f80] text-xs mt-0.5">
                     {anonymous ? "Your name won't be shown" : "Your profile name will be shown"}
