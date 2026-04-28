@@ -41,8 +41,8 @@ export const profileSchema = z.object({
     }),
   displayName: z.string()
     .max(50, { message: "Display name cannot exceed 50 characters" })
-    .regex(/^[a-zA-Z\s\u00C0-\u017F]*$/, { 
-      message: "Display name can only contain letters and spaces"
+    .regex(/^[a-zA-Z0-9\s\u00C0-\u017F]*$/, { 
+      message: "Display name can only contain letters, numbers, and spaces"
     })
     .optional()
     .default(''),
