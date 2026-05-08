@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Send, Check, ChevronDown } from "lucide-react";
+import { Send, Check, ChevronDown, X } from "lucide-react";
 import { cities, getApproximateCoordinates, PrayerRequest, CATEGORIES } from "../data/prayer-data";
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
@@ -24,15 +24,45 @@ export function Submit() {
 
   const locationDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const [useFixedSheet, setUseFixedSheet] = useState(false);
+
+  const closeDropdowns = useCallback(() => {
+    setShowLocationDropdown(false);
+    setShowCategoryDropdown(false);
+  }, []);
+
+  const openDropdown = useCallback((dropdown: 'location' | 'category') => {
+    const isLocation = dropdown === 'location';
+    const currentlyOpen = isLocation ? showLocationDropdown : showCategoryDropdown;
+    if (currentlyOpen) {
+      closeDropdowns();
+      return;
+    }
+    // Check available space below the grid
+    const gridEl = document.querySelector('.dropdown-grid');
+    if (gridEl) {
+      const rect = gridEl.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom - 100;
+      setUseFixedSheet(spaceBelow < 280);
+    }
+    if (isLocation) {
+      setShowLocationDropdown(true);
+      setShowCategoryDropdown(false);
+    } else {
+      setShowCategoryDropdown(true);
+      setShowLocationDropdown(false);
+    }
+  }, [showLocationDropdown, showCategoryDropdown, closeDropdowns]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (useFixedSheet) return; // sheet has its own overlay
       if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target as Node)) {
-        setShowLocationDropdown(false);
+        closeDropdowns();
       }
       if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
-        setShowCategoryDropdown(false);
+        closeDropdowns();
       }
     };
 
@@ -40,7 +70,7 @@ export function Submit() {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showLocationDropdown, showCategoryDropdown]);
+  }, [showLocationDropdown, showCategoryDropdown, useFixedSheet, closeDropdowns]);
 
   // Get user profile (includes displayName and username)
   const profile = getProfile();
@@ -247,15 +277,14 @@ export function Submit() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 dropdown-grid">
                 {/* Location */}
                 <div className="relative" ref={locationDropdownRef}>
                   <label className="text-[#8890b5] text-sm mb-2 block">Location</label>
                   <button
                     type="button"
                     onClick={() => {
-                      setShowLocationDropdown(!showLocationDropdown);
-                      setShowCategoryDropdown(false);
+                      openDropdown('location');
                     }}
                     className="w-full rounded-xl px-4 py-3 text-left flex items-center justify-between border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)] focus:outline-none transition-colors text-sm cursor-pointer"
                     style={{ background: "rgba(15, 20, 50, 0.6)" }}
@@ -267,7 +296,7 @@ export function Submit() {
                   </button>
 
                   <AnimatePresence>
-                    {showLocationDropdown && (
+                    {showLocationDropdown && !useFixedSheet && (
                       <motion.div
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -284,7 +313,7 @@ export function Submit() {
                             type="button"
                             onClick={() => {
                               setLocation(city);
-                              setShowLocationDropdown(false);
+                              closeDropdowns();
                             }}
                             className="w-full text-left px-4 py-2.5 text-sm text-[#c5cdff] hover:bg-[rgba(124,143,255,0.1)] transition-colors cursor-pointer truncate"
                           >
@@ -292,6 +321,49 @@ export function Submit() {
                           </button>
                         ))}
                       </motion.div>
+                    )}
+                    {showLocationDropdown && useFixedSheet && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={closeDropdowns}
+                        />
+                        <motion.div
+                          initial={{ y: "100%" }}
+                          animate={{ y: 0 }}
+                          exit={{ y: "100%" }}
+                          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                          className="fixed bottom-0 left-0 right-0 z-50 max-h-[60vh] overflow-y-auto rounded-t-2xl border-t border-[rgba(124,143,255,0.15)]"
+                          style={{
+                            background: "rgba(15, 20, 55, 0.98)",
+                            backdropFilter: "blur(20px)",
+                          }}
+                        >
+                          <div className="flex items-center justify-between px-5 pt-4 pb-2 sticky top-0 z-10"
+                            style={{ background: "rgba(15, 20, 55, 0.98)" }}
+                          >
+                            <span className="text-[#8890b5] text-xs uppercase tracking-[0.15em]">Select Location</span>
+                            <button type="button" onClick={closeDropdowns} className="text-[#5a6080] hover:text-[#8890b5] cursor-pointer">
+                              <X size={16} />
+                            </button>
+                          </div>
+                          <div className="px-2 pb-4">
+                            {cities.map((city) => (
+                              <button
+                                key={city}
+                                type="button"
+                                onClick={() => {
+                                  setLocation(city);
+                                  closeDropdowns();
+                                }}
+                                className="w-full text-left px-4 py-3 text-sm text-[#c5cdff] hover:bg-[rgba(124,143,255,0.1)] transition-colors cursor-pointer rounded-xl"
+                              >
+                                {city}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      </>
                     )}
                   </AnimatePresence>
                 </div>
@@ -302,8 +374,7 @@ export function Submit() {
                   <button
                     type="button"
                     onClick={() => {
-                      setShowCategoryDropdown(!showCategoryDropdown);
-                      setShowLocationDropdown(false);
+                      openDropdown('category');
                     }}
                     className="w-full rounded-xl px-4 py-3 text-left flex items-center justify-between border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)] focus:outline-none transition-colors text-sm cursor-pointer"
                     style={{ background: "rgba(15, 20, 50, 0.6)" }}
@@ -315,7 +386,7 @@ export function Submit() {
                   </button>
 
                   <AnimatePresence>
-                    {showCategoryDropdown && (
+                    {showCategoryDropdown && !useFixedSheet && (
                       <motion.div
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -333,7 +404,7 @@ export function Submit() {
                             type="button"
                             onClick={() => {
                               setCategory(cat);
-                              setShowCategoryDropdown(false);
+                              closeDropdowns();
                             }}
                             className="w-full text-left px-4 py-2.5 text-sm text-[#c5cdff] hover:bg-[rgba(124,143,255,0.1)] transition-colors cursor-pointer"
                           >
@@ -341,6 +412,49 @@ export function Submit() {
                           </button>
                         ))}
                       </motion.div>
+                    )}
+                    {showCategoryDropdown && useFixedSheet && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={closeDropdowns}
+                        />
+                        <motion.div
+                          initial={{ y: "100%" }}
+                          animate={{ y: 0 }}
+                          exit={{ y: "100%" }}
+                          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                          className="fixed bottom-0 left-0 right-0 z-50 max-h-[60vh] overflow-y-auto rounded-t-2xl border-t border-[rgba(124,143,255,0.15)]"
+                          style={{
+                            background: "rgba(15, 20, 55, 0.98)",
+                            backdropFilter: "blur(20px)",
+                          }}
+                        >
+                          <div className="flex items-center justify-between px-5 pt-4 pb-2 sticky top-0 z-10"
+                            style={{ background: "rgba(15, 20, 55, 0.98)" }}
+                          >
+                            <span className="text-[#8890b5] text-xs uppercase tracking-[0.15em]">Select Category</span>
+                            <button type="button" onClick={closeDropdowns} className="text-[#5a6080] hover:text-[#8890b5] cursor-pointer">
+                              <X size={16} />
+                            </button>
+                          </div>
+                          <div className="px-2 pb-4">
+                            {CATEGORIES.map((cat) => (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={() => {
+                                  setCategory(cat);
+                                  closeDropdowns();
+                                }}
+                                className="w-full text-left px-4 py-3 text-sm text-[#c5cdff] hover:bg-[rgba(124,143,255,0.1)] transition-colors cursor-pointer rounded-xl"
+                              >
+                                {cat}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      </>
                     )}
                   </AnimatePresence>
                 </div>
