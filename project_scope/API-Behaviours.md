@@ -1,5 +1,8 @@
 # API Behaviours
 
+> **⚠️ FUTURE TARGET — Not yet implemented.**
+> The app currently uses mock data + localStorage with no backend. This document defines the REST API endpoints to be built during backend integration (planned for v0.3). See `src/app/data/` for the current mock data layer.
+
 ## 1. Purpose
 
 This document defines the API endpoints, behaviours, and interaction patterns for the MVP.

@@ -1,5 +1,8 @@
 # Data Model
 
+> **⚠️ FUTURE TARGET — Not yet implemented.**
+> The app currently uses localStorage with an implicit schema. This document describes the Supabase/PostgreSQL schema to be built during backend integration (planned for v0.3). See `src/app/data/prayer-data.ts` and `src/app/data/profile-data.ts` for the current implementation.
+
 ## 1. Purpose
 
 This document defines the core data structures required to support the MVP.

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Globe, Flame, Share2, MapPin, X, Search, ChevronDown } from "lucide-react";
+import { Flame, Share2, MapPin, X, Search, ChevronDown } from "lucide-react";
 import { Drawer } from "vaul";
 import { useSearchParams } from "react-router";
 import { mockFeedPrayers, timeAgo, countries, getAttributionText, CATEGORIES } from "../data/prayer-data";
@@ -8,9 +8,7 @@ import type { PrayerRequest } from "../data/prayer-data";
 import { getPrayedIds, categoryColors } from "../data/profile-data";
 import { FeedCard } from "../components/feed-card";
 
-const TABS = [
-  { id: "global", label: "Global", icon: Globe },
-] as const;
+
 
 
 
@@ -28,7 +26,7 @@ export function Feed() {
 
 
 
-  const [tab, setTab] = useState<"global">("global");
+
   const [showCountryFilter, setShowCountryFilter] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
    const [prayers, setPrayers] = useState<PrayerRequest[]>(() => {
@@ -353,35 +351,6 @@ export function Feed() {
         </div>
 
 
-        {/* Tab row */}
-        {!hasLocationFilter && (
-          <div className="flex gap-1 px-5 mb-3">
-            {TABS.map((t) => {
-              const isActive = tab === t.id;
-              const Icon = t.icon;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(t.id)}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs transition-all duration-300 cursor-pointer"
-                  style={{
-                    background: isActive
-                      ? "rgba(124,143,255,0.12)"
-                      : "transparent",
-                    color: isActive ? "#7c8fff" : "#6b7499",
-                    border: isActive
-                      ? "1px solid rgba(124,143,255,0.2)"
-                      : "1px solid transparent",
-                  }}
-                >
-                  <Icon size={13} strokeWidth={isActive ? 2.2 : 1.8} />
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
         {/* Category filter pills */}
         <div className="flex gap-1.5 px-5 mb-3 overflow-x-auto no-scrollbar">
           <button
@@ -495,8 +464,8 @@ export function Feed() {
           )}
         </AnimatePresence>
 
-        {/* Trending section (only on Global tab, no category filter) */}
-        {tab === "global" && category === "All" && !hasLocationFilter && (
+        {/* Trending section (no category filter) */}
+        {category === "All" && !hasLocationFilter && (
           <div className="mb-5">
             <div className="flex items-center gap-1.5 px-1 mb-3">
               <Flame size={13} className="text-[#fbbf24]" />

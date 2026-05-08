@@ -1,4 +1,4 @@
-# Performance Checklist - Phase 1 Priority
+# Performance Checklist — v1.0 Priority (Public Launch)
 
 ## Critical Performance Issues That Must Be Fixed Before Production
 

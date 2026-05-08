@@ -111,7 +111,7 @@ Requires adding the `gh-pages` package and modifying `vite.config.ts`.
 See [Vite GitHub Pages guide](https://vitejs.dev/guide/static-deploy.html#github-pages).
 
 ## Prototype URL & Notes
-- **Deployed URL:** [TODO: add after deployment]
+- **Deployed URL:** https://oratio-global.netlify.app
 - **Branch:** `focus-group-simplification`
 - **Key enhancements tested:**
   - Splash screen (appears every launch)
@@ -120,4 +120,4 @@ See [Vite GitHub Pages guide](https://vitejs.dev/guide/static-deploy.html#github
   - Gentle pray/un‑pray toggle (heart button)
 
 ## Contact & Support
-For technical issues during testing, contact: [TODO: add contact]
+For technical issues during testing, contact: project maintainer (via GitHub issues or Slack)

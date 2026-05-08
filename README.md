@@ -5,8 +5,8 @@ Oratio is a global Christian prayer platform designed to connect people through 
 
 ## Project Status
 
-**Status**: Pre-Production Analysis Complete  
-**Phase**: Developer Audit Preparation  
+**Status**: Beta — deployed & collecting user feedback  
+**Phase**: v0.1 — Initial Beta (feedback collection)  
 **Target Platform**: Progressive Web App (PWA) with mock data  
 **Git Repository**: Initialized ✅
 
@@ -127,26 +127,28 @@ Oratio_Prototype_MVP/
 ## Development Workflow
 
 ### Current State
-- ✅ Project analysis complete
-- ✅ Memory Bank documentation established
-- ✅ Dependencies installed and project runs
-- ✅ Git repository initialized with initial commit
-- ✅ Scrolling issues fixed (Feed & Profile pages)
-- ✅ Basic error handling implemented
-- ✅ Development tools configured (ESLint, Prettier, TypeScript)
+- ✅ Core features built (map, feed, submit, pray, profile)
+- ✅ Deployed on Netlify for beta testing
+- ✅ ESLint, Prettier, TypeScript configured
+- ✅ Privacy fix (approximate coordinates only)
+- ✅ Input validation (Zod for prayer submission)
+- ✅ Fonts loaded (DM Sans + Sora)
 
-### Next Steps (Phase 2: Foundation Cleanup)
-1. **Dependency Cleanup**: Remove unused packages (40+ can be removed)
-2. **Design Tokens**: Implement CSS variables for consistent theming
-3. **Component Architecture**: Restructure for atomic design pattern
-4. **Performance Improvements**: Add pagination, code splitting
-5. **Testing Setup**: Add Jest + React Testing Library
+### v0.2 — Feedback Iteration (Next)
+1. **Feedback Triage**: Process Google Sheet entries into JIRA backlog
+2. **P1 Fixes**: Feed UX clarity, accessibility/readability improvements
+3. **Backend Setup**: Begin Supabase project and schema
 
-### Phase 3: Backend Integration
-1. **Supabase Setup**: PostgreSQL database, authentication, storage
-2. **API Layer**: Migrate from mock data to real API calls
-3. **State Management**: Implement Zustand + React Query
-4. **PWA Configuration**: Web manifest, service worker, offline support
+### v0.3 — In-Person Test Release
+1. **Backend Integration**: Supabase, auth, API layer
+2. **In-Person Testing**: Structured testing sessions with recruited users
+3. **Safety & Moderation**: Report flow, disclaimers
+
+### v1.0 — Public Launch
+1. **PWA**: Service worker, manifest, offline support
+2. **CI/CD**: Automated deployment pipeline
+3. **Monitoring**: Sentry, analytics
+4. **Performance**: Pagination, code splitting, Lighthouse > 90
 
 ## Key Documentation
 
@@ -165,22 +167,20 @@ Oratio_Prototype_MVP/
 
 ## Known Issues & Technical Debt
 
-### Critical (Fix Before Production)
-- **Privacy Violation**: Exact coordinates stored in mock data (contradicts documentation)
-- **Security**: No input validation, XSS vulnerabilities
+### Known Issues
 - **Performance**: No pagination, loads all data at once
-- **Dependencies**: 69 packages, many unused; React 2 versions behind
+- **No Backend**: All data is localStorage-based (mock data)
+- **No Tests**: Zero unit/integration tests
+- **No PWA**: Not installable, no offline support
+- **No Moderation**: No report flow or content filtering
+- **Accessibility**: Needs ARIA labels and contrast audit
 
-### Medium Priority
-- **Code Quality**: Inline styles, mixed UI libraries, no separation of concerns
-- **State Management**: Fragmented, localStorage as database
-- **Error Handling**: Empty catch blocks, no error boundaries
-- **Testing**: No unit/integration tests
-
-### Low Priority
-- **Accessibility**: Missing ARIA labels, contrast issues
-- **UI Consistency**: Minor visual inconsistencies
-- **Documentation**: Missing component documentation
+### Already Fixed
+- ✅ **Privacy**: Exact coordinates removed from mock data
+- ✅ **Input Validation**: Zod schemas for forms
+- ✅ **Dependencies**: Unused packages removed (~20 kept)
+- ✅ **Fonts**: DM Sans + Sora now loading properly
+- ✅ **Scrolling**: Feed & Profile scroll issues resolved
 
 ## Contributing
 

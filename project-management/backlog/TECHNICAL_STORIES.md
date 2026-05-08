@@ -62,13 +62,13 @@ Unlike user stories ("As a user, I want..."), technical stories focus on system 
 ---
 
 ### Story T2: Update Critical Dependencies
-⏳ **P1** 🔴 - **As a system, we need to update React and other critical packages to fix security vulnerabilities and enable modern features.**
+✅ **P1** 🟢 - **As a system, we need to update React and other critical packages to fix security vulnerabilities and enable modern features.**
 
-**Problem:** Key packages are 2+ major versions behind:
-- React 18.3.1 → 19.2.4 (2 major versions)
-- React Leaflet 4.2.1 → 5.0.0 (breaking changes)
-- Lucide React 0.487.0 → 1.7.0 (API changes)
-- Date-fns 3.6.0 → 4.1.0
+**Problem:** Key packages were 2+ major versions behind:
+- React 18.3.1 → 19.0.0 (major version) ✅ Updated
+- React Leaflet 4.2.1 → 4.2.1 (not updated, replaced with raw Leaflet)
+- Lucide React 0.487.0 → 0.487.0 (not updated)
+- date-fns removed (not used)
 
 **Linked to:** `techContext.md` (Outdated Packages), `SECURITY_FIXES.md`
 
@@ -88,7 +88,7 @@ Unlike user stories ("As a user, I want..."), technical stories focus on system 
 ---
 
 ### Story T3: Fix Privacy Violation
-⏳ **P1** 🟢 - **As a system, we must never store exact user coordinates to comply with our privacy policy and protect users.**
+✅ **P1** 🟢 - **As a system, we must never store exact user coordinates to comply with our privacy policy and protect users.**
 
 **Problem:** Current mock data stores exact latitude/longitude, but our documentation says we won't do this. This is a critical privacy violation.
 
@@ -110,7 +110,7 @@ Unlike user stories ("As a user, I want..."), technical stories focus on system 
 ---
 
 ### Story T4: Input Validation & XSS Protection
-⏳ **P1** 🟢 - **As a system, we must validate all user input and sanitize content to prevent security vulnerabilities.**
+🔄 **P1** 🟢 - **As a system, we must validate all user input and sanitize content to prevent security vulnerabilities.**
 
 **Problem:** Currently, user content is accepted without validation and displayed raw, creating XSS (cross-site scripting) vulnerabilities.
 
@@ -339,25 +339,20 @@ src/components/
 
 ---
 
-## Technical Stories by Phase
+## Technical Stories by Version
 
-### Phase 1 (Weeks 1-3) - Foundation
-- T1: Dependency Cleanup (P1)
-- T2: Update Critical Dependencies (P1)
-- T3: Fix Privacy Violation (P1)
-- T4: Input Validation & XSS Protection (P1)
+### v0.2 — Feedback Iteration
 - T5: Implement Design Tokens (P2)
 - T8: Testing Framework Setup (P2)
-- T11: PWA Setup (P2)
+- T10: Error Handling & Monitoring (P3)
 
-### Phase 2 (Weeks 4-6) - Architecture
+### v0.3 — In-Person Test Release
 - T6: Component Architecture Restructure (P2)
 - T7: State Management Implementation (P2)
 - T9: Performance Optimization (P2)
-- T10: Error Handling & Monitoring (P3)
-- T13: Instagram-style Profile Navigation Architecture (P2)
+- T11: PWA Setup (P2)
 
-### Phase 3 (Weeks 7-9) - Production
+### v1.0 — Public Launch
 - T12: CI/CD Pipeline (P3)
 - Remaining P3/P4 technical debt
 - Monitoring and analytics setup
@@ -417,5 +412,5 @@ A: We can defer some, but skipping critical ones (security, privacy) creates ser
 
 ---
 
-*Last Updated: 2026-04-18*  
-*Next Review: Weekly tech team meeting*
+*Last Updated: 2026-05-08*  
+*Next Review: After v0.2 planning session*

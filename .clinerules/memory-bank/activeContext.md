@@ -1,232 +1,78 @@
 # Active Context - Oratio Prayer Platform
 
-## Current Work Focus
+## Current Phase: v0.1 — Initial Beta
 
-**Phase**: Focus Group Simplification & Enhancements
-**Goal**: Strip back to minimal prototype for in-person church community testing, validate whether digital global prayer visualization enhances existing prayer practice
-**Role**: Brutal mentor - prioritize speed and core concept validation over perfection, test everything, challenge assumptions
-**Status**: All focus group enhancements completed and ready for testing
+**Status**: Deployed on Netlify, collecting user feedback via Google Sheet
+**Goal**: Gather enough signal to build a prioritized v1 backlog
+**Next Phase**: v0.2 — Feedback Iteration (implement P1/P2 changes)
 
-## Recent Changes & Discoveries
+## What's Deployed
 
-### Critical Findings (2026-04-04):
+- Splash screen → onboarding (username) → home map → feed → submit → profile
+- Interactive world map with prayer hotspots
+- Prayer feed (trending + recent, category + location filtering)
+- Prayer submission (text, location, category, anonymous toggle)
+- "I Prayed" interaction (pray/unpray with confirmation)
+- User profile (submitted prayers, prayed-for prayers, edit profile)
+- All client-side with mock data + localStorage
 
-1. **Architecture Mismatch**: Documentation says React Native, but implementation is React web app
-2. **No Backend**: Only mock data exists, no Supabase integration
-3. **Dependency Issues**: 69 packages, many unused or outdated
- 4. **Privacy Violation**: ✅ Fixed - exact coordinates removed, approximate coordinates used
- 5. **No node_modules**: ✅ Fixed - dependencies installed, project builds and runs
+## Recent Cleanup (May 8)
 
-### Recent Accomplishments (2026-04-04):
+- Fonts fixed — DM Sans was never loading, switched to Inter + Sora via <link>
+- Unused dependencies removed (8 packages deleted from package.json)
+- Type packages moved to devDependencies
+- Debug console.logs removed from production code
+- Stale configs deleted (eslint.config.js.v9, postcss.config.mjs)
+- Feed tab system simplified (removed vestigial single-tab code)
+- Design docs moved from src/imports/ to project_scope/design-imports/
+- Architecture-Notes.md archived (described non-existent React Native + Supabase)
+- All documentation statuses updated to reflect current reality
 
-1. **Git Repository Established**: Initialized git repo with comprehensive .gitignore and initial commit
-2. **Scrolling Issues Fixed**: Feed and Profile pages now properly scroll with height/overflow fixes
-3. **Project Documentation Updated**: README completely rewritten with proper setup instructions
-4. **Development Server Running**: Project builds and runs successfully on localhost
-5. **GitHub Repository Synchronized**: All code pushed to https://github.com/Rkigozi/oratio_global.git
-6. **Production Roadmap Created**: Comprehensive 9-week roadmap with 3 phases defined
-7. **Project Management System Ready**: Complete project-management/ directory with guides, templates, and phase documentation
+## Feedback So Far (First Wave)
 
-### Project Configuration (2026-04-18):
+**P1 (Launch Blockers):**
+- Feed UX unclear — users don't understand the flow
+- Readability concerns — dark background + small font
 
-- **Project Path**: `/Volumes/Samsung_T5/Oratio_Prototype_MVP` (correct working directory for all operations)
+**P2 (v1 Candidates):**
+- Prayer Map is the emotional centerpiece — keep central
+- Prayer guidance suggestions for new users
+- Real prayer behavior happening — validate repeat engagement
 
-### UI Foundation Improvements (2026-04-19):
+**P3 / Deferred:**
+- Community/fellowship features (post-v1)
+- Emotional atmosphere signals (strategic note, not a task)
 
-1. **Enhanced Map Visualization**: Updated map tiles to ESRI Dark Gray Canvas (Story 20)
-2. **Intelligent Search**: Instagram-style search suggestions with recent searches, avatars, filters (Story 21)
-3. **Follow System Enhancement**: Clickable following count with drawer, avatar system (Story 24)
-4. **Instagram-style Profile Navigation**: Implemented separate pages for stats (Submitted, Prayed For, Answered, Following) with nested routing, DetailLayout, searchable following list, and updated profile stats navigation (Story 25)
-5. **Edit Profile in Quick Actions**: Added Edit Profile option to quick actions menu for easy profile updates (Story 23)
-6. **City Label Display**: Added toggle button to show city names on map at higher zoom levels (≥7), with subtle labels that respect privacy (approximate coordinates)
- 7. **Location Model Enhancement**: Designed inclusive location system with minor cities, zoom-based filtering, and special locations (Global, Online) for rural users and non-geographic prayers
+## Active Decisions
 
-### Focus Group Enhancements (2026-04-19):
-1. **Splash Screen Always Show**: Modified to appear every app open (like PlayStation startup), removed sessionStorage limitation, fixed infinite redirect loop
-2. **Profile Tab Toggle**: Added UI toggle between "Submitted Prayers" and "Prayed For" lists in profile page
-3. **Delete Submitted Prayers**: Implemented delete functionality for user-submitted prayers with trash icon
-4. **Pray/Unpray Toggle**: Heart button in feed toggles prayed state (filled/empty), prayer count updates (+1/-1), detail drawer "I Prayed" button toggles
-5. **Runtime Error Fixes**: Fixed missing flyTo state in home.tsx, removed searchOpen conditional, cleaned up feed category/searchQuery references
-6. **All Enhancements Completed**: Splash screen always shows, profile tab toggle, delete prayers, pray/unpray toggle, lint fixes
+### Backend Timing
+Decision: Delay backend until after v0.2 feedback iteration. No point building Supabase until P1 UX issues are resolved.
 
-### Code Quality Issues Identified:
+### PWA Timing
+Decision: Delay PWA until v0.3. Core UX polish comes first.
 
-- Inline styles instead of design tokens
-- Mixed UI libraries (Radix UI + MUI)
-- No proper state management
-- Missing error handling
-- Performance concerns (no pagination)
-
-## Next Immediate Steps (Focus Group Testing) - Completed ✅
-
-### Priority 1: Implement Focus Group Enhancements ✅
-1. ✅ Splash screen always show (remove sessionStorage limitation, fixed infinite loop)
-2. ✅ Profile tab toggle (Submitted / Prayed For)
-3. ✅ Delete submitted prayers functionality
-4. ✅ Pray/Unpray toggle in feed and detail drawer
-5. ✅ Fix runtime errors (flyTo state, searchOpen, category/searchQuery)
-
-### Priority 2: Validate Core Concept with Church Community ✅
-1. ✅ Deploy prototype to accessible URL (ready for testing)
-2. ✅ Prepare testing script & questions for focus group (user-ready)
-3. ✅ Gather feedback on digital prayer visualization enhancement (awaiting session)
-4. ✅ Observe if app distracts from or enriches existing prayer practice (awaiting session)
-5. ✅ Collect insights for next iteration (awaiting session)
-
-### Priority 3: Polish & Bug Fixes ✅
-1. ✅ Ensure all toggle states persist correctly (prayed IDs, counts)
-2. ✅ Test delete functionality edge cases
-3. ✅ Verify splash screen timer works (2.5 seconds)
-4. ✅ Check profile tab switching UX
-5. ✅ Run lint, type-check, format to ensure code quality
-
-## Active Decisions & Considerations
-
-### Platform Decision:
-
-- **Option A**: Continue as React web app, add PWA capabilities
-- **Option B**: Convert to React Native as originally documented
-- **Recommended**: Option A (PWA) - faster time-to-market, leverages existing code
-
-### Backend Integration:
-
-- **Timing**: Should backend be implemented before or after cleanup?
-- **Approach**: Incremental integration vs. big bang
-- **Recommended**: Cleanup first, then incremental integration
-
-### Dependency Cleanup:
-
-- **Radix UI vs. MUI**: Need to choose one (recommend Radix UI)
-- **Package updates**: Which to update immediately vs. later?
-- **Removal list**: 40+ packages can likely be removed
-
-## Important Patterns & Preferences
-
-### Code Patterns to Establish:
-
-1. **Design Tokens**: CSS variables for colors, spacing, typography
-2. **Component Architecture**: Atomic design pattern (atoms, molecules, organisms)
-3. **State Management**: Zustand for global state, React Query for server state
-4. **API Layer**: Centralized API client with TypeScript types
-
-### Project Preferences:
-
-- **TypeScript Strict**: Enable strict mode for better type safety
-- **ESLint/Prettier**: Standardize code formatting
-- **Component Documentation**: Storybook or similar for UI components
-- **Testing**: Jest + React Testing Library for critical paths
-
-## Learnings & Project Insights
-
-### What Works Well:
-
-1. **UI Design**: Good visual foundation from Figma
-2. **User Flows**: Well-thought-out navigation structure
-3. **Core Features**: Map, feed, submission flows are implemented
-4. **TypeScript Usage**: Good type definitions in place
-
-### What Needs Improvement:
-
-1. **Architecture**: No separation of concerns
-2. **Performance**: Large datasets loaded entirely
-3. **Security**: ✅ Input validation implemented with Zod, XSS protection added
-4. **Accessibility**: Missing ARIA labels and keyboard navigation
-
-### Technical Debt Inventory:
-
-1. **High Priority**:
-   - Dependency bloat (69 packages)
-   - Outdated React version (2 major versions behind)
-   - No error boundaries
-   - Privacy violation (exact coordinates)
-
-2. **Medium Priority**:
-   - Inline styles
-   - Mixed UI libraries
-   - No pagination
-   - Missing tests
-
-3. **Low Priority**:
-   - Code organization
-   - Documentation gaps
-   - Minor accessibility issues
-
-## Current Blockers & Risks
-
-### Blockers:
-
-1. **Project cannot run**: Dependencies not installed
-2. **Architecture uncertainty**: Need to decide PWA vs. native
-3. **Backend readiness**: No Supabase project set up
-
-### Risks:
-
-1. **Security**: Vulnerable dependencies, no input validation
-2. **Performance**: Will not scale with real user data
-3. **Maintainability**: Complex state, no tests
-4. **Privacy**: Current implementation violates documented privacy policy
+### Testing
+Decision: No test framework yet. Will add in v0.2 as part of quality foundation.
 
 ## Upcoming Milestones
 
-### Week 1 (Security & Privacy):
+### v0.2 — Feedback Iteration
+- Triage all feedback from Google Sheet
+- Fix P1 items (feed clarity, readability/accessibility)
+- Implement P2 candidates from triage
+- Begin design tokens and component structure
 
-- ✅ Complete Memory Bank and documentation
-- ✅ Fix privacy violation (remove exact coordinates)
-- 🔄 Add input validation with Zod schemas (partial - prayer submission)
-- 🔄 Implement XSS protection with DOMPurify
-- 🔄 Update critical dependencies (React updated, others pending)
-- 🔄 Remove unused packages (some removed, ~40 remaining)
+### v0.3 — In-Person Test Release
+- Recruit 5-10 in-person testers
+- Conduct structured testing sessions
+- Backend setup (Supabase schema, API, auth)
+- PWA implementation
 
-### Week 2 (Performance & Optimization):
-
-- Implement pagination for prayer feed
-- Optimize bundle size and dependencies
-- Add map marker clustering
-- Implement image optimization
-- Set up performance monitoring
-
-### Week 3 (PWA & Production Readiness):
-
-- Create web app manifest and icons
-- Implement service worker for offline capability
-- Update index.html with PWA meta tags
-- Test installability on Android/iOS
-- Run Lighthouse audit for PWA compliance
-
-## Questions Requiring Answers
-
-### Business Questions:
-
-1. What is the target launch timeline?
-2. What is the development budget for cleanup + backend?
-3. Who will maintain the app post-launch?
-4. What are the success metrics for MVP?
-
-### Technical Decisions Needed:
-
-1. Confirm PWA approach vs. native mobile
-2. Approve dependency cleanup plan
-3. Set priorities for technical debt fixes
-4. Decide on testing strategy
-
-## Notes for Developer Handoff
-
-### What Developer Needs to Know:
-
-1. **Current State**: React web app with mock data, not production-ready
-2. **Desired State**: PWA with Supabase backend, production-quality code
-3. **Critical Issues**: Privacy violation, security vulnerabilities, performance problems
-4. **Business Context**: MVP validation phase, focus on user engagement metrics
-
-### Recommended Audit Focus Areas:
-
-1. Security assessment (dependencies, input validation)
-2. Performance analysis (bundle size, load times)
-3. Code quality review (architecture, maintainability)
-4. Scalability evaluation (database design, API structure)
+### v1.0 — Public Launch
+- All launch blockers resolved
+- CI/CD, monitoring, analytics live
+- Performance targets met
+- Moderation/reporting in place
 
 ---
-
-_Last Updated: 2026-04-19_
-_Status: Phase 1 Foundation Cleanup In Progress (UI improvements complete)_
-_Next Session: Continue with security fixes (input validation, dependency cleanup)_
+*Last Updated: 2026-05-08*

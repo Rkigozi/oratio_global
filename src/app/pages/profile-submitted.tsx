@@ -53,7 +53,7 @@ export function ProfileSubmitted() {
 
       // Force re-render
       setVersion(v => v + 1);
-      console.log('Prayer deleted successfully:', prayerId);
+
     } catch (error) {
       console.error("Failed to delete prayer:", error);
     }
@@ -368,7 +368,6 @@ function PrayerRow({
                    // Completely stop the event from propagating
                    e.stopPropagation();
                    e.preventDefault();
-                   console.log('Delete button clicked for prayer:', prayer.id);
                    onDelete(prayer.id);
                  }}
                 className="text-[#5a6080] hover:text-[#8890b5] cursor-pointer"

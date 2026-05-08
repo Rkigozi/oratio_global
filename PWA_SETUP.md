@@ -1,4 +1,4 @@
-# PWA Setup - Phase 1 Priority
+# PWA Setup — v0.3 Priority (In-Person Test Release)
 
 ## Progressive Web App Configuration for Mobile Installation
 

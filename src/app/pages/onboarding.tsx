@@ -18,7 +18,6 @@ export function Onboarding() {
     const params = new URLSearchParams(location.search);
     if (params.get('clearUsernames') === 'true') {
       clearUsedUsernames();
-      console.log('Cleared used usernames');
     }
   }, [location.search]);
 

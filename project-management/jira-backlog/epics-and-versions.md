@@ -1,0 +1,187 @@
+# Oratio JIRA Backlog — Epics, Versions & Stories
+
+---
+
+## Fix Versions (Timeline / Phases)
+
+| Version | Name | Status |
+|---------|------|--------|
+| v0.1 | Initial Beta | Deployed |
+| v0.2 | Feedback Iteration | In Progress |
+| v0.3 | In-Person Test Release | Planned |
+| v1.0 | Public Launch | Planned |
+
+### v0.1 — Initial Beta
+Deploy prototype with mock data to validate concept and surface critical issues.
+**Status:** Deployed
+
+### v0.2 — Feedback Iteration
+Address P1 and P2 feedback from initial user testing. Bug fixes, UX improvements, and high-priority enhancements before wider testing.
+**Status:** In Progress
+
+### v0.3 — In-Person Test Release
+Structured, observed testing sessions with recruited users. Fixes and improvements based on direct observation.
+**Status:** Planned
+
+### v1.0 — Public Launch
+Production-ready release. Backend, auth, moderation, PWA, monitoring all live. Launch blockers resolved.
+**Status:** Planned
+
+---
+
+## Epics
+
+### Epic 1: Backend & Data Layer
+**Goal:** Replace mock data with a real backend so user data persists across sessions and devices.
+**What it covers:** Supabase setup, database schema (users, prayers, interactions), REST API layer, authentication, real-time updates, data migration from localStorage.
+**Launch gate:** Must be live before v1.
+
+---
+
+### Epic 2: Authentication & Onboarding
+**Goal:** Let users create accounts and return to their data while keeping the friction-free start.
+**What it covers:** Anonymous opt-in vs lightweight sign-up (email/OAuth), session persistence, onboarding polish, account recovery.
+**Launch gate:** Required for v1.
+
+---
+
+### Epic 3: Core Prayer Loop
+**Goal:** Polish the submit -> feed -> pray flow so it's fast, reliable, and handles real-world usage.
+**What it covers:** Feed pagination/infinite scroll, submit form edge cases, "I Prayed" rate limiting, answered prayer marking, search, share improvements.
+**Launch gate:** Polish before v1.
+
+---
+
+### Epic 4: Safety & Moderation
+**Goal:** Keep Oratio a safe, respectful space with clear guardrails against harmful content.
+**What it covers:** Report inappropriate content flow, content moderation queue, safety disclaimers, crisis resource links, content filtering.
+**Launch gate:** Non-negotiable for public launch.
+
+---
+
+### Epic 5: User Profile & Community
+**Goal:** Give users a meaningful sense of their prayer journey and connection to others.
+**What it covers:** Profile persistence with backend, follow/unfollow, profile sharing, prayer history/stats with real data, activity feed.
+**Launch gate:** v1 candidate.
+
+---
+
+### Epic 6: Performance & PWA
+**Goal:** Deliver fast, installable mobile experience that works reliably on slow networks.
+**What it covers:** Service worker, Web App Manifest, offline fallback, bundle optimization, Lighthouse > 90, load time < 3s on 3G.
+**Launch gate:** High priority for v1.
+
+---
+
+### Epic 7: Testing & Quality
+**Goal:** Ship with confidence by catching regressions before they reach users.
+**What it covers:** Jest + RTL setup, critical path tests (submit, pray, feed), a11y audit, cross-browser testing, QA checklist.
+**Launch gate:** Release gate for v1.
+
+---
+
+### Epic 8: Release & Launch
+**Goal:** The mechanical work to actually ship v1 and know how it's performing.
+**What it covers:** CI/CD pipeline (GitHub Actions -> Netlify), error monitoring (Sentry), analytics (PostHog or similar), landing/marketing page, SEO meta, launch checklist.
+**Launch gate:** Required for v1.
+
+---
+
+### Epic 9: Beta Testing & Validation
+**Goal:** Recruit, coordinate, and synthesize feedback from real users to validate the app before public launch.
+**What it covers:** Recruiting testers, test session scripts, observation logistics, compiling findings into prioritized changes, tracking which feedback gets actioned, communicating updates to testers.
+**Launch gate:** Produces the change list that feeds v0.3 and ultimately v1.0.
+
+---
+
+## Example Stories — Epic 1: Backend & Data Layer
+
+### B-001: Set up Supabase project and database schema
+**Epic:** Backend & Data Layer
+**Fix Version:** v0.3
+**Acceptance Criteria:**
+- Supabase project created with production-ready config
+- Database tables: users, prayer_requests, prayer_interactions, reports
+- Row-level security policies defined for all tables
+- Migration scripts versioned in the repo
+
+### B-002: Create REST API for prayer CRUD
+**Epic:** Backend & Data Layer
+**Fix Version:** v0.3
+**Acceptance Criteria:**
+- Endpoints: POST /prayers, GET /prayers, GET /prayers/:id, DELETE /prayers/:id
+- Pagination and filtering (by category, location) supported
+- Rate limiting on POST endpoint
+- Error responses follow consistent format
+
+### B-003: Migrate prayer data from localStorage to Supabase
+**Epic:** Backend & Data Layer
+**Fix Version:** v1.0
+**Acceptance Criteria:**
+- Existing localStorage prayers are uploaded on first login
+- No data loss during migration
+- Old localStorage data is cleared after successful migration
+- User sees their prayer history uninterrupted
+
+### B-004: Implement real-time prayer feed updates
+**Epic:** Backend & Data Layer
+**Fix Version:** v1.0
+**Acceptance Criteria:**
+- New prayers appear in feed without manual refresh
+- Prayer count updates in real-time when someone prays
+- Subscription cleanup on component unmount
+- Graceful fallback if real-time connection fails
+
+### B-005: Set up environment variable management
+**Epic:** Backend & Data Layer
+**Fix Version:** v0.2
+**Acceptance Criteria:**
+- Supabase URL and anon key stored in .env files
+- Variables accessible in both dev and production
+- .env.example checked into repo (no secrets)
+- Vite env prefix (VITE_) configured correctly
+
+---
+
+## Example Stories — Epic 3: Core Prayer Loop (v0.2 feedback items)
+
+### C-001: Add infinite scroll to prayer feed
+**Epic:** Core Prayer Loop
+**Fix Version:** v0.2
+**Acceptance Criteria:**
+- Feed loads initial 20 prayers, then loads more on scroll
+- Loading spinner shown during fetch
+- No duplicate prayers on pagination boundary
+- Works on mobile touch scroll
+
+### C-002: Add character countdown to submit form
+**Epic:** Core Prayer Loop
+**Fix Version:** v0.2
+**Acceptance Criteria:**
+- Shows "X/500" below textarea, updating on each keystroke
+- Turns red when approaching limit (e.g., > 450)
+- Input is blocked at 500 characters
+- Counter is visible and accessible
+
+### C-003: Add "I Prayed" confirmation animation
+**Epic:** Core Prayer Loop
+**Fix Version:** v0.2
+**Acceptance Criteria:**
+- Tap "I Prayed" button shows visual confirmation (checkmark, color change)
+- Count increments immediately
+- Double-tap within 1 second is debounced
+- Haptic or subtle animation feedback
+
+---
+
+## Story Format (use for all future stories)
+
+```
+### [ID]: [Short title]
+**Epic:** [Epic Name]
+**Fix Version:** [v0.x]
+**Acceptance Criteria:**
+- [Criterion 1]
+- [Criterion 2]
+- [Criterion 3]
+```

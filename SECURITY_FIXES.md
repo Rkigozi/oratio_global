@@ -1,4 +1,4 @@
-# Security Fixes - Phase 1 Priority
+# Security Fixes — Ongoing (v0.1 through v1.0)
 
 ## Critical Security Issues That Must Be Fixed Before Production
 

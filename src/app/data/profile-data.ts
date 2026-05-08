@@ -42,7 +42,6 @@ export function markUsernameUsed(username: string): void {
 export function clearUsedUsernames(): void {
   try {
     localStorage.removeItem('oratio_usernames');
-    console.log('[Oratio] Cleared used usernames list');
   } catch {
     // ignore
   }
