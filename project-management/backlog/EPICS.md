@@ -1,5 +1,7 @@
 # Oratio Backlog - Epics
 
+> **⚠️ DEPRECATED:** This document has been superseded by JIRA epics. See `project-management/jira-backlog/epics-and-versions.md` for the current epic structure. This file is kept for reference only.
+
 ## What Are Epics?
 Epics are big themes of work that deliver meaningful value to users. Think of them as chapters in a book—each epic tells part of Oratio's story. They help us organize work into logical groups.
 

@@ -102,7 +102,7 @@ export function Home() {
            transition={{ delay: 0.5, duration: 0.8 }}
            className="text-[#7a84a8] text-xs tracking-widest uppercase bg-[#0A1A3A]/50 backdrop-blur-md px-4 py-1.5 md:px-3 md:py-1 rounded-full border border-[rgba(124,143,255,0.08)] max-w-xs mx-auto"
          >
-           Tap a light to explore
+           Tap a location to pray
          </motion.p>
        </div>
 
@@ -177,7 +177,7 @@ export function Home() {
                     className="text-[#e2e4f0] text-center font-heading mb-2"
                     style={{ fontSize: "1.15rem", fontWeight: 300 }}
                   >
-                    {selectedPrayer.prayerCount} active prayers
+                    {selectedPrayer.prayerCount} people praying in {selectedPrayer.city}
                   </p>
                   <p className="text-[#6b7499] text-sm text-center mb-6 max-w-[260px]">
                     People around {selectedPrayer.city} are lifting up prayers right now

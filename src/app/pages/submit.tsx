@@ -20,6 +20,7 @@ export function Submit() {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showHint, setShowHint] = useState(() => !localStorage.getItem("oratio_seen_submit_hint"));
 
   const locationDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -44,10 +45,17 @@ export function Submit() {
   // Get user profile (includes displayName and username)
   const profile = getProfile();
 
+  const dismissHint = () => {
+    setShowHint(false);
+    localStorage.setItem("oratio_seen_submit_hint", "true");
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Clear previous errors
     setErrors({});
+    
+    dismissHint();
     
     try {
     
@@ -189,8 +197,22 @@ export function Submit() {
                    <p className={`text-xs ml-auto ${text.length < 10 ? 'text-red-400' : 'text-[#5a5f80]'}`}>
                      {text.length}/500
                    </p>
-                 </div>
-              </div>
+                  </div>
+               </div>
+
+              {showHint && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-xl px-4 py-3 border border-[rgba(124,143,255,0.1)] cursor-pointer"
+                  style={{ background: "rgba(124, 143, 255, 0.04)" }}
+                  onClick={dismissHint}
+                >
+                  <p className="text-[#8890b5] text-xs leading-relaxed">
+                    Not sure what to write? Share what you&apos;d like prayer for — a need, a hope, someone you care about.
+                  </p>
+                </motion.div>
+              )}
 
               {/* Anonymous toggle */}
               <div
@@ -298,10 +320,11 @@ export function Submit() {
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -5 }}
-                        className="absolute top-full mt-2 left-0 right-0 max-h-48 overflow-y-auto rounded-xl border border-[rgba(124,143,255,0.15)] z-20"
+                        className="absolute top-full mt-2 left-0 right-0 overflow-y-auto rounded-xl border border-[rgba(124,143,255,0.15)] z-20"
                         style={{
                           background: "rgba(15, 20, 55, 0.98)",
                           backdropFilter: "blur(20px)",
+                          maxHeight: "256px",
                         }}
                       >
                         {CATEGORIES.map((cat) => (
@@ -374,10 +397,10 @@ export function Submit() {
               Prayer Request Submitted
             </h2>
             <p className="text-[#8890b5] text-sm mb-2">
-              Your prayer is now visible in the global feed
+              Your prayer is on the map and in the feed.
             </p>
             <p className="text-[#8890b5] text-sm mb-8">
-              Believers around the world will be able to pray for you
+              People around the world will see it and pray.
             </p>
 
             <button

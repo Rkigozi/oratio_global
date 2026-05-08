@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Heart, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
@@ -88,7 +88,7 @@ export function ProfilePrayed() {
               border: "1px solid rgba(124,143,255,0.05)",
             }}
           >
-            <Heart size={20} className="text-[#4e5573] mx-auto mb-2" />
+            <span className="text-xl opacity-50 block mb-2">🙏</span>
             <p className="text-[#6b7499] text-sm mb-1">No prayers yet</p>
             <p className="text-[#4e5573] text-xs">
               Pray for someone to see them here
@@ -158,7 +158,7 @@ export function ProfilePrayed() {
                       className="text-[#d0d4e8] text-center mb-3 max-w-xs mx-auto"
                       style={{ fontSize: "0.95rem", lineHeight: 1.7 }}
                     >
-                      &ldquo;{selectedPrayer.text}&rdquo;
+                      {selectedPrayer.text}
                     </p>
 
                       <p className="text-[#5a6080] text-xs text-center mb-2">
@@ -166,7 +166,7 @@ export function ProfilePrayed() {
                       </p>
 
                     <div className="flex items-center gap-1.5 justify-center text-[#5a6080] text-xs mb-8">
-                      <Heart size={11} className="text-[#7c8fff] opacity-60" />
+                      <span className="text-xs opacity-60">🙏</span>
                       <span>{selectedPrayer.prayerCount} people prayed</span>
                     </div>
                   </motion.div>
@@ -238,7 +238,7 @@ function PrayerRow({
              className="text-[#d0d4e8] line-clamp-2 mb-1"
              style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
            >
-             &ldquo;{prayer.text}&rdquo;
+             {prayer.text}
            </p>
            <span className="text-[#6b7499] text-[11px] mb-1 block">
              &mdash; {getAttributionText(prayer)}
@@ -271,7 +271,7 @@ function PrayerRow({
         <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
           {showCount && (
             <div className="flex items-center gap-1">
-              <Heart size={11} className="text-[#7c8fff] opacity-60" />
+              <span className="text-xs opacity-60">🙏</span>
               <span className="text-[#6b7499] text-[11px]">
                 {prayer.prayerCount}
               </span>
@@ -291,12 +291,9 @@ function PrayerRow({
               }}
               title={prayed ? "Unpray" : "Pray"}
             >
-              <Heart
-                size={11}
-                className="transition-all duration-300"
-                fill={prayed ? "#7c8fff" : "transparent"}
-                color={prayed ? "#7c8fff" : "#6b7499"}
-              />
+              <span className={`text-sm transition-all duration-300 ${prayed ? "opacity-100" : "opacity-60"}`}>
+                🙏
+              </span>
             </button>
           )}
         </div>

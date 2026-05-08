@@ -174,6 +174,51 @@ Production-ready release. Backend, auth, moderation, PWA, monitoring all live. L
 
 ---
 
+## Sprint 1 — The Clarity Sprint (v0.2)
+
+### KAN-001: Fix readability (font size + card contrast)
+**Epic:** Core Prayer Loop
+**Fix Version:** v0.2
+**Acceptance Criteria:**
+- Base font size increased from 16px to 17px
+- Prayer card backgrounds slightly lightened for better text contrast
+- All text remains readable on mobile viewport
+
+---
+
+### KAN-002: Fix category picker scroll on submit
+**Epic:** Core Prayer Loop
+**Fix Version:** v0.2
+**Acceptance Criteria:**
+- All 6 categories visible in dropdown without clipping
+- Dropdown scrolls properly on mobile when keyboard is open
+- No layout shift when dropdown opens
+
+---
+
+### KAN-003: Add clarifying microcopy across key touchpoints
+**Epic:** Core Prayer Loop
+**Fix Version:** v0.2
+**Acceptance Criteria:**
+- Onboarding screen includes purpose statement: "Oratio connects people around the world through prayer. Share your needs. Pray for others. You're not alone."
+- "I Prayed" button text changed to "Pray for this" / "Prayed for this"
+- Submit success copy updated to: "Your prayer is on the map and in the feed. People around the world will see it and pray."
+- Prayer guidance hint shown on first submit visit
+- All microcopy changes visible across desktop and mobile
+
+---
+
+### KAN-004: Replace like/react with praying hands
+**Epic:** Core Prayer Loop
+**Fix Version:** v0.2
+**Acceptance Criteria:**
+- All prayer reaction buttons use 🙏 instead of Heart icon
+- Pray toggle visual state (prayed/unprayed) still distinguishable via opacity
+- Navigation Heart icons (bottom nav, stats, etc.) remain unchanged
+- No regressions in any profile page prayer interaction
+
+---
+
 ## Story Format (use for all future stories)
 
 ```

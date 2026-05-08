@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { MapPin, Heart } from "lucide-react";
+import { MapPin } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import { categoryColors } from "../data/profile-data";
@@ -66,9 +66,9 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
       {/* Prayer text — clamped to 3 lines */}
       <p
         className="text-[#d0d4e8] mb-3 line-clamp-3"
-        style={{ fontSize: "0.9rem", lineHeight: 1.65 }}
+        style={{ fontSize: "0.95rem", lineHeight: 1.7 }}
       >
-        &ldquo;{prayer.text}&rdquo;
+        {prayer.text}
       </p>
 
        {/* Bottom row: name + category + pray button */}
@@ -103,12 +103,9 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
             }`,
           }}
         >
-          <Heart
-            size={13}
-            className="transition-all duration-300"
-            fill={prayed ? "#7c8fff" : "transparent"}
-            color={prayed ? "#7c8fff" : "#6b7499"}
-          />
+          <span className={`text-sm transition-all duration-300 ${prayed ? "opacity-100" : "opacity-60"}`}>
+            🙏
+          </span>
           <span
             className="text-xs transition-colors duration-300"
             style={{ color: prayed ? "#7c8fff" : "#6b7499" }}

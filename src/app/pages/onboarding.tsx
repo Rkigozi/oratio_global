@@ -116,6 +116,9 @@ export function Onboarding() {
           transition={{ duration: 0.7, delay: 0.28 }}
           className="mb-8"
         >
+          <p className="text-[#8890b5] text-sm text-center mb-6 leading-relaxed">
+            Oratio connects people around the world through prayer. Share your needs. Pray for others. You&apos;re not alone.
+          </p>
           <p className="text-[#6b7499] text-xs uppercase tracking-[0.15em] mb-2.5 text-center">
             Choose a username
           </p>

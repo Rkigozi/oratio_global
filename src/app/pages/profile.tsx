@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "motion/react";
 import {
-  Heart,
   Send,
   LogOut,
   ChevronDown,
@@ -187,7 +186,7 @@ export function Profile() {
                 path: "/profile/submitted",
               },
               {
-                icon: Heart,
+                icon: ({ className }: { className?: string }) => <span className={`text-base ${className ?? ""}`}>🙏</span>,
                 label: "Prayed For",
                 value: myPrayed.length,
                 color: "#a78bfa",
@@ -262,12 +261,12 @@ export function Profile() {
                       }}
                     >
                       <p className="text-[#d0d4e8] text-sm line-clamp-2 mb-1">
-                        &ldquo;{prayer.text}&rdquo;
+                        {prayer.text}
                       </p>
                       <div className="flex items-center justify-between text-[#5a6080] text-xs">
                         <span>{prayer.city}</span>
                         <div className="flex items-center gap-1">
-                          <Heart size={10} className="text-[#7c8fff] opacity-60" />
+                          <span className="text-xs opacity-60">🙏</span>
                           <span>{prayer.prayerCount}</span>
                         </div>
                       </div>
@@ -307,12 +306,12 @@ export function Profile() {
                       }}
                     >
                       <p className="text-[#d0d4e8] text-sm line-clamp-2 mb-1">
-                        &ldquo;{prayer.text}&rdquo;
+                        {prayer.text}
                       </p>
                       <div className="flex items-center justify-between text-[#5a6080] text-xs">
                         <span>{prayer.city}</span>
                         <div className="flex items-center gap-1">
-                          <Heart size={10} className="text-[#7c8fff] opacity-60" />
+                          <span className="text-xs opacity-60">🙏</span>
                           <span>{prayer.prayerCount}</span>
                         </div>
                       </div>

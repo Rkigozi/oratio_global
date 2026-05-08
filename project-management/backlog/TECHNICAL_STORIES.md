@@ -342,9 +342,8 @@ src/components/
 ## Technical Stories by Version
 
 ### v0.2 — Feedback Iteration
-- T5: Implement Design Tokens (P2)
-- T8: Testing Framework Setup (P2)
-- T10: Error Handling & Monitoring (P3)
+- Feedback-driven UX fixes (KAN-001 through KAN-004 in JIRA)
+- (T5, T8, T10 deferred to v0.3 — feedback iteration takes priority over tech debt)
 
 ### v0.3 — In-Person Test Release
 - T6: Component Architecture Restructure (P2)

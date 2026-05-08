@@ -450,7 +450,7 @@ export function Feed() {
                 <div className="flex-1 min-w-0">
                   <p className="text-[#c5cbe2] text-sm mb-0.5">Welcome to the Prayer Feed</p>
                   <p className="text-[#6b7499] text-xs">
-                    Tap any prayer to read the full request and pray for them. Tap the heart to pray right from the list.
+                    People around the world are sharing prayer needs and praying for each other. Tap any prayer to read it and pray. Tap 🙏 to pray right from the list.
                   </p>
                 </div>
                 <button
@@ -464,13 +464,18 @@ export function Feed() {
           )}
         </AnimatePresence>
 
+        {/* Subtle CTA */}
+        <p className="text-[#5a6080] text-xs text-center mb-4">
+          Tap any prayer to pray for someone today
+        </p>
+
         {/* Trending section (no category filter) */}
         {category === "All" && !hasLocationFilter && (
           <div className="mb-5">
             <div className="flex items-center gap-1.5 px-1 mb-3">
               <Flame size={13} className="text-[#fbbf24]" />
               <span className="text-[#8890b5] text-[11px] uppercase tracking-[0.15em]">
-                Trending Prayers
+                Most Prayed For Right Now
               </span>
             </div>
 
@@ -512,7 +517,7 @@ export function Feed() {
                     className="text-[#c5cbe2] mb-2.5 line-clamp-2"
                     style={{ fontSize: "0.8rem", lineHeight: 1.55 }}
                   >
-                    &ldquo;{prayer.text}&rdquo;
+                    {prayer.text}
                   </p>
                   <div className="flex items-center gap-1">
                     <div
@@ -523,7 +528,7 @@ export function Feed() {
                       }}
                     />
                     <span className="text-[#5a6080] text-[10px]">
-                      {prayer.prayerCount} prayers
+                      {prayer.prayerCount} people prayed
                     </span>
                </div>
 
@@ -537,7 +542,7 @@ export function Feed() {
         {/* Section label */}
         <div className="flex items-center justify-between px-1 mb-3">
           <span className="text-[#6b7499] text-[11px] uppercase tracking-[0.15em]">
-              {hasLocationFilter ? `Prayers from ${locationCity || locationCountry}` : "Recent Prayers"}
+              {hasLocationFilter ? `Prayers from ${locationCity || locationCountry}` : "Latest Prayer Needs"}
           </span>
           <span className="text-[#3e4460] text-[10px]">
             {filteredPrayers.length} requests
@@ -673,7 +678,7 @@ export function Feed() {
                         className="text-[#e2e4f0] text-center font-heading max-w-xs mb-6"
                         style={{ fontSize: "1.1rem", lineHeight: 1.75, fontWeight: 300 }}
                       >
-                        &ldquo;{selectedPrayer.text}&rdquo;
+                        {selectedPrayer.text}
                       </p>
 
                         {/* Attribution */}
@@ -712,7 +717,7 @@ export function Feed() {
                          }}
                        >
                          <span className="text-base">🙏</span>
-                         {prayedIds.includes(selectedPrayer.id) ? "Prayed" : "I Prayed"}
+                          {prayedIds.includes(selectedPrayer.id) ? "Prayed for this" : "Pray for this"}
                        </motion.button>
 
                       {/* Share button */}

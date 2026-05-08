@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Send, Heart, MapPin, Trash2 } from "lucide-react";
+import { Send, MapPin, Trash2 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
@@ -170,7 +170,7 @@ export function ProfileSubmitted() {
                       className="text-[#d0d4e8] text-center mb-3 max-w-xs mx-auto"
                       style={{ fontSize: "0.95rem", lineHeight: 1.7 }}
                     >
-                      &ldquo;{selectedPrayer.text}&rdquo;
+                      {selectedPrayer.text}
                     </p>
 
                       <p className="text-[#5a6080] text-xs text-center mb-2">
@@ -178,7 +178,7 @@ export function ProfileSubmitted() {
                       </p>
 
                     <div className="flex items-center gap-1.5 justify-center text-[#5a6080] text-xs mb-8">
-                      <Heart size={11} className="text-[#7c8fff] opacity-60" />
+                      <span className="text-xs opacity-60">🙏</span>
                       <span>{selectedPrayer.prayerCount} people prayed</span>
                     </div>
                   </motion.div>
@@ -233,7 +233,7 @@ export function ProfileSubmitted() {
                         This prayer will be removed from your submitted prayers and the global feed.
                       </p>
                       <p className="text-[#6b7499] text-sm mt-2">
-                        &ldquo;{prayerToDelete.text.slice(0, 100)}...
+                        {prayerToDelete.text.slice(0, 100)}...
                       </p>
                     </div>
 
@@ -313,7 +313,7 @@ function PrayerRow({
              className="text-[#d0d4e8] line-clamp-2 mb-1"
              style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
            >
-             &ldquo;{prayer.text}&rdquo;
+             {prayer.text}
            </p>
            <span className="text-[#6b7499] text-[11px] mb-1 block">
              &mdash; {getAttributionText(prayer)}
@@ -346,7 +346,7 @@ function PrayerRow({
         <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
           {showCount && (
             <div className="flex items-center gap-1">
-              <Heart size={11} className="text-[#7c8fff] opacity-60" />
+              <span className="text-xs opacity-60">🙏</span>
               <span className="text-[#6b7499] text-[11px]">
                 {prayer.prayerCount}
               </span>

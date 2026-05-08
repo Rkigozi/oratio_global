@@ -1,8 +1,8 @@
 # Progress - Oratio Prayer Platform
 
 ## Current Status
-**Phase**: v0.1 — Initial Beta (feedback collection)
-**Next**: v0.2 — Feedback Iteration
+**Phase**: v0.2 — Feedback Iteration (Sprint 1: "The Clarity Sprint")
+**Next**: In-person testing
 **Deployed**: Yes (Netlify)
 **Repo**: github.com/Rkigozi/oratio_global.git
 
@@ -34,13 +34,16 @@
 
 ## What's Left
 
-### v0.2 — Feedback Iteration
-- [ ] Process all Google Sheet feedback into JIRA backlog
-- [ ] Fix P1: Feed UX clarity
-- [ ] Fix P1: Readability/accessibility (contrast, font sizing)
-- [ ] Implement P2 feedback items
-- [ ] Design tokens (CSS variables for all colors/spacing)
-- [ ] Error handling improvements (boundaries, toasts)
+### v0.2 — Feedback Iteration (Sprint 1: "The Clarity Sprint")
+- [x] Feedback processed and synthesized from Google Form responses
+- [x] JIRA backlog updated with KAN-001 through KAN-004
+- [x] KAN-001: Fix readability (font size + card contrast) — **Done**
+- [x] KAN-002: Fix category picker scroll on submit — **Done**
+- [x] KAN-003: Add clarifying microcopy across key touchpoints — **Done**
+- [x] KAN-004: Replace like/react with 🙏 praying hands — **Done**
+- [ ] Deploy Sprint 1 to Netlify for tester access
+- [ ] Conduct in-person testing sessions with church members
+- [ ] Compile testing observations into v0.3 plan
 
 ### v0.3 — In-Person Test Release
 - [ ] Recruit and schedule testers

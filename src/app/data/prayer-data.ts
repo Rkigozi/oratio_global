@@ -144,7 +144,7 @@ const prayerTexts = [
   "Trying to decide if I should go back to school at 38. It would mean sacrificing income for two years. Need wisdom and confirmation.",
 
   // Peace & mental health — vulnerable
-  "I've been having dark thoughts and I finally told someone. Starting counseling next week. Please pray for healing in my mind.",
+  "I've been struggling with my mental health and finally reached out for help. Starting counseling next week. Praying for courage and healing.",
   "Lost my best friend in a car accident three weeks ago. I can't process it. Some mornings I can't get out of bed. Need prayer just to keep going.",
   "I'm a college student far from home and I've never felt this lonely. I don't have community here yet. Please pray I find my people.",
   "Dealing with guilt over past mistakes that I know God has forgiven, but I can't seem to forgive myself. Praying for freedom.",
@@ -153,9 +153,9 @@ const prayerTexts = [
   // Community & others
   "Our church is going through a painful split. People I love are on both sides. Praying for unity and that no one loses faith over this.",
   "There's a family in our small group who just lost their home in a fire. They have nothing. Please pray for provision and community support.",
-  "Praying for my coworker who just found out her husband is having an affair. She's devastated. I don't know what to say — just holding space for her.",
+  "Praying for my coworker who's going through a really tough time with her marriage. God knows the details. Please pray for wisdom and healing for their family.",
   "My neighbor is a single mom of four and she's been skipping meals so her kids can eat. We've been helping but she needs more. Pray for provision.",
-  "A kid in my youth group attempted suicide this week. He's okay physically but the road ahead is long. Please pray for him and his family.",
+  "A kid in my youth group is really struggling with his mental health. He's getting help now. Please pray for his healing and for the right support around him.",
   "Our pastor is stepping down due to burnout. He gave everything for 15 years. Pray for his rest and for our church to handle the transition well.",
   "Praying for the persecuted church — a friend doing missions in a closed country asked for prayer and I can't share details. God knows.",
   "My friend's husband was deported last month. She's here with two little kids trying to hold it together. Please pray for their family.",
