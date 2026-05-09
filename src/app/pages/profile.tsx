@@ -5,6 +5,7 @@ import {
   LogOut,
   ChevronDown,
   Edit,
+  Bookmark,
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
@@ -198,7 +199,7 @@ export function Profile() {
                 path: "/profile/prayed",
               },
               {
-                icon: ({ className }: { className?: string }) => <span className={`text-base ${className ?? ""}`}>🔖</span>,
+                icon: Bookmark,
                 label: "Saved",
                 value: mySavedCount,
                 color: "#5a6080",
