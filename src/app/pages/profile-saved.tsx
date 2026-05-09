@@ -9,6 +9,7 @@ import { categoryColors } from "../data/profile-data";
 
 export function ProfileSaved() {
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
+  const [version, setVersion] = useState(0);
 
   const savedPrayers = useMemo(() => {
     let savedIds: string[] = [];
@@ -21,7 +22,19 @@ export function ProfileSaved() {
 
     const allPrayers = [...submitted, ...mockFeedPrayers];
     return allPrayers.filter((p) => savedIds.includes(p.id));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
+
+  const removeSaved = (prayerId: string) => {
+    try {
+      const savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
+      const idx = savedIds.indexOf(prayerId);
+      if (idx > -1) savedIds.splice(idx, 1);
+      localStorage.setItem("oratio_saved", JSON.stringify(savedIds));
+    } catch { /* ignore */ }
+    setSelectedPrayer(null);
+    setVersion(v => v + 1);
+  };
 
   return (
     <div
@@ -155,17 +168,24 @@ export function ProfileSaved() {
                       className="text-[#d0d4e8] text-center mb-4"
                       style={{ fontSize: "0.95rem", lineHeight: 1.7 }}
                     >
-                      &ldquo;{selectedPrayer.text}&rdquo;
+                      {selectedPrayer.text}
                     </p>
 
                     <p className="text-[#5a6080] text-xs text-center mb-2">
-                      &mdash; {getAttributionText(selectedPrayer)}
+                      {getAttributionText(selectedPrayer)}
                     </p>
 
                     <div className="flex items-center gap-1.5 justify-center text-[#5a6080] text-xs mb-6">
                       <span className="text-xs opacity-60">🙏</span>
                       <span>{selectedPrayer.prayerCount} people prayed</span>
                     </div>
+
+                    <button
+                      onClick={() => removeSaved(selectedPrayer.id)}
+                      className="w-full py-3 rounded-full text-sm text-[#6b7499] border border-[rgba(124,143,255,0.15)] hover:text-[#ff6b6b] hover:border-[rgba(255,107,107,0.3)] transition-all cursor-pointer"
+                    >
+                      Remove from saved
+                    </button>
                   </motion.div>
                 </AnimatePresence>
               )}
