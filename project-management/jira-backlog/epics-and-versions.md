@@ -19,12 +19,12 @@ Deploy prototype with mock data to validate concept and surface critical issues.
 Address P1 and P2 feedback from initial user testing. Bug fixes, UX improvements, and high-priority enhancements before wider testing.
 **Status:** In Progress
 
-### v0.3 — In-Person Test Release
-Structured, observed testing sessions with recruited users. Fixes and improvements based on direct observation.
+### v0.3 — Safety Foundations + In-Person Testing
+Guided submission, report UI, safety disclaimers. Structured in-person testing sessions with church members. Fixes and improvements based on direct observation.
 **Status:** Planned
 
 ### v1.0 — Public Launch
-Production-ready release. Backend, auth, moderation, PWA, monitoring all live. Launch blockers resolved.
+Full moderation queue + dashboard. Backend, auth, PWA, monitoring all live. Launch blockers resolved.
 **Status:** Planned
 
 ---
@@ -54,8 +54,8 @@ Production-ready release. Backend, auth, moderation, PWA, monitoring all live. L
 
 ### Epic 4: Safety & Moderation
 **Goal:** Keep Oratio a safe, respectful space with clear guardrails against harmful content.
-**What it covers:** Report inappropriate content flow, content moderation queue, safety disclaimers, crisis resource links, content filtering.
-**Launch gate:** Non-negotiable for public launch.
+**What it covers:** Guided submission form, safety disclaimers, crisis resource links, report inappropriate content flow, content moderation queue, content filtering.
+**Launch gate:** Frontend work begins v0.3 (guided submission, report UI, safety disclaimers). Full moderation infrastructure (queue, dashboard, auto-filtering) targets v1.0.
 
 ---
 
@@ -216,6 +216,59 @@ Production-ready release. Backend, auth, moderation, PWA, monitoring all live. L
 - Pray toggle visual state (prayed/unprayed) still distinguishable via opacity
 - Navigation Heart icons (bottom nav, stats, etc.) remain unchanged
 - No regressions in any profile page prayer interaction
+
+---
+
+## Epic 4: Safety & Moderation (v0.3)
+
+### S-001: Guided submission form (prompted fields + gentle guidelines)
+**Type:** Story
+**Epic:** Safety & Moderation
+**Fix Version:** v0.3
+**Acceptance Criteria:**
+- Submit page textarea has prompted placeholder: "What would you like prayer for?"
+- Optional second field: "How are you feeling right now?" (emotional tag)
+- Gentle guidance shown subtly above or below the form: "You're welcome to share what's on your heart. You may want to avoid sharing specific addresses or phone numbers so you can receive prayer freely and safely."
+- Existing category picker remains unchanged
+- Anonymous toggle remains unchanged
+- No regressions to existing submit flow
+
+---
+
+### S-002: Add care-focused disclaimer + crisis resource links
+**Type:** Story
+**Epic:** Safety & Moderation
+**Fix Version:** v0.3
+**Acceptance Criteria:**
+- Care-focused message displayed on submit page: "If you're going through something really difficult — like thoughts of harming yourself or immediate danger — please reach out to the resources below. They're trained to help. We're praying with you."
+- Links to crisis hotlines: suicide prevention, domestic violence, mental health support
+- Message is visible but unobtrusive, framed with warmth not warning
+- Links open in new tab with rel="noopener noreferrer"
+
+---
+
+### S-003: Add report button to prayer cards
+**Type:** Story
+**Epic:** Safety & Moderation
+**Fix Version:** v0.3
+**Acceptance Criteria:**
+- Three-dot menu icon on each prayer card (feed + profile)
+- Menu includes "Report" option
+- Report dialog with reason picker: Spam, Upsetting content, Harmful or unsafe, Other
+- Confirmation shown after report: "Thanks for looking out for this community. We'll review this prayer."
+- Report data stored to localStorage (non-functional until v1.0 backend)
+- Report button is visually subtle, not prominent
+
+---
+
+### T-001: Research crisis hotline numbers for deployment regions
+**Type:** Task
+**Epic:** Safety & Moderation
+**Fix Version:** v0.3
+**Acceptance Criteria:**
+- Compile list of crisis hotline numbers (suicide prevention, domestic violence, mental health)
+- Source from verified official organizations
+- Document for inclusion in S-002 disclaimer
 
 ---
 
