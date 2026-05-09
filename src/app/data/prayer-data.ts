@@ -294,7 +294,7 @@ const generateFeedData = (): PrayerRequest[] => {
   let textIdx = 0;
 
   // Reference date: "now"
-  const now = new Date("2026-03-10T14:30:00Z");
+  const now = new Date("2026-05-09T12:00:00Z");
 
   for (const city of cityDatabase) {
     // More prayers from higher-weight cities

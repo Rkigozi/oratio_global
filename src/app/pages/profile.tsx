@@ -5,7 +5,6 @@ import {
   LogOut,
   ChevronDown,
   Edit,
-  Bookmark,
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
@@ -20,7 +19,6 @@ import {
   changeUsername,
 } from "../data/profile-data";
 import { validateProfile } from "../../lib/validation";
-import { Header } from "../components/header";
 
 export function Profile() {
   const navigate = useNavigate();
@@ -111,8 +109,6 @@ export function Profile() {
       className="w-full h-full flex flex-col overflow-hidden"
       style={{ background: "#0A1A3A" }}
     >
-      <Header />
-
       {/* Decorative background elements */}
       <div
         className="absolute top-0 left-0 w-full h-40 z-0 opacity-30"

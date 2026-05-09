@@ -2,12 +2,14 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Bookmark, MapPin } from "lucide-react";
 import { Drawer } from "vaul";
+import { useNavigate } from "react-router";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import { mockFeedPrayers } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { categoryColors } from "../data/profile-data";
 
 export function ProfileSaved() {
+  const navigate = useNavigate();
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
   const [version, setVersion] = useState(0);
 
@@ -54,7 +56,7 @@ export function ProfileSaved() {
               Tap &#8942; on a prayer in the feed and select Save
             </p>
             <button
-              onClick={() => window.location.href = "/feed"}
+              onClick={() => void navigate('/feed')}
               className="px-5 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer hover:bg-[rgba(124,143,255,0.12)] transition-all"
             >
               Browse Feed

@@ -131,12 +131,7 @@ export function Submit() {
     const hasBridge = typeof window !== "undefined" && (window as typeof window & { __oratio_addPrayer?: (prayer: PrayerRequest) => void }).__oratio_addPrayer;
 
     if (hasBridge) {
-
       (window as typeof window & { __oratio_addPrayer?: (prayer: PrayerRequest) => void }).__oratio_addPrayer!(newPrayer);
-
-    } else {
-      console.warn('Window bridge not found! Prayer will only be saved to localStorage.');
-
     }
 
     // Track in localStorage for profile

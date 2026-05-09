@@ -58,11 +58,7 @@ export function Home() {
       __oratio_addPrayer?: (prayer: PrayerRequest) => void;
       __oratio_removePrayer?: (prayerId: string) => void;
     }).__oratio_addPrayer = (prayer: PrayerRequest) => {
-
-      if (!isMounted.current) {
-        console.warn('Home component not mounted, ignoring bridge call');
-        return;
-      }
+      if (!isMounted.current) return;
       setPrayers((prev) => [prayer, ...prev]);
       setNewPrayerId(prayer.id);
       setFlyTo({ lat: prayer.lat, lng: prayer.lng });
@@ -73,10 +69,7 @@ export function Home() {
       __oratio_addPrayer?: (prayer: PrayerRequest) => void;
       __oratio_removePrayer?: (prayerId: string) => void;
     }).__oratio_removePrayer = (prayerId: string) => {
-      if (!isMounted.current) {
-        console.warn('Home component not mounted, ignoring bridge call');
-        return;
-      }
+      if (!isMounted.current) return;
       setPrayers((prev) => prev.filter(p => p.id !== prayerId));
     };
     
