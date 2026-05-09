@@ -225,13 +225,15 @@ Full moderation queue + dashboard. Backend, auth, PWA, monitoring all live. Laun
 **Type:** Story
 **Epic:** Safety & Moderation
 **Fix Version:** v0.3
-**Acceptance Criteria:**
-- Submit page textarea has prompted placeholder: "What would you like prayer for?"
-- Optional second field: "How are you feeling right now?" (emotional tag)
-- Gentle guidance shown subtly above or below the form: "You're welcome to share what's on your heart. You may want to avoid sharing specific addresses or phone numbers so you can receive prayer freely and safely."
-- Existing category picker remains unchanged
-- Anonymous toggle remains unchanged
-- No regressions to existing submit flow
+**Description:**
+Currently the submit form has a blank textarea which invites anything — including content that could be unsafe or too personal for a public prayer feed. This story adds gentle structure: a prompted placeholder, an optional emotional tag, and warm submission guidance. The goal is to nudge toward healthier sharing without making people feel policed.
+
+**Subtasks (in description):**
+- [ ] Change textarea placeholder to "What would you like prayer for?"
+- [ ] Add optional second field: "How are you feeling right now?" with icon/emoji picker
+- [ ] Add gentle guidance text subtly near the form: "You're welcome to share what's on your heart. You may want to avoid sharing specific addresses or phone numbers so you can receive prayer freely and safely."
+- [ ] Ensure existing category picker and anonymous toggle still work
+- [ ] Test on mobile with keyboard open
 
 ---
 
@@ -239,11 +241,15 @@ Full moderation queue + dashboard. Backend, auth, PWA, monitoring all live. Laun
 **Type:** Story
 **Epic:** Safety & Moderation
 **Fix Version:** v0.3
-**Acceptance Criteria:**
-- Care-focused message displayed on submit page: "If you're going through something really difficult — like thoughts of harming yourself or immediate danger — please reach out to the resources below. They're trained to help. We're praying with you."
-- Links to crisis hotlines: suicide prevention, domestic violence, mental health support
-- Message is visible but unobtrusive, framed with warmth not warning
-- Links open in new tab with rel="noopener noreferrer"
+**Description:**
+Oratio needs to acknowledge that some users may be in crisis without sounding like a cold legal disclaimer. This story adds a warm, caring message on the submit page that redirects people in crisis to professional help while making it clear Oratio is a prayer community, not a crisis service. The tone should feel like care, not a liability shield.
+
+**Subtasks (in description):**
+- [ ] Add care-focused message near the submit form: "If you're going through something really difficult — like thoughts of harming yourself or immediate danger — please reach out to the resources below. They're trained to help. We're praying with you."
+- [ ] Add crisis hotline links (suicide prevention, domestic violence, mental health) sourced from T-001
+- [ ] Ensure links open in new tab with rel="noopener noreferrer"
+- [ ] Style to be visible but unobtrusive (subtle background, small text)
+- [ ] Test on mobile viewport
 
 ---
 
@@ -251,13 +257,17 @@ Full moderation queue + dashboard. Backend, auth, PWA, monitoring all live. Laun
 **Type:** Story
 **Epic:** Safety & Moderation
 **Fix Version:** v0.3
-**Acceptance Criteria:**
-- Three-dot menu icon on each prayer card (feed + profile)
-- Menu includes "Report" option
-- Report dialog with reason picker: Spam, Upsetting content, Harmful or unsafe, Other
-- Confirmation shown after report: "Thanks for looking out for this community. We'll review this prayer."
-- Report data stored to localStorage (non-functional until v1.0 backend)
-- Report button is visually subtle, not prominent
+**Description:**
+Users need a way to flag content that feels unsafe or inappropriate. This story adds a simple report flow: three-dot menu on each prayer card, a reason picker, and a warm confirmation. Reports are stored to localStorage for now — full backend processing comes in v1.0.
+
+**Subtasks (in description):**
+- [ ] Add three-dot menu icon (MoreVertical from lucide) to prayer cards in feed
+- [ ] Menu includes "Report" option
+- [ ] Report dialog with reason picker: Spam, Upsetting content, Harmful or unsafe, Other
+- [ ] Show confirmation on submit: "Thanks for looking out for this community. We'll review this prayer."
+- [ ] Store report data in localStorage (format: prayerId, reason, timestamp)
+- [ ] Ensure report button is visually subtle, not prominent
+- [ ] Also add to prayer cards in profile pages (submitted + prayed)
 
 ---
 
@@ -265,10 +275,16 @@ Full moderation queue + dashboard. Backend, auth, PWA, monitoring all live. Laun
 **Type:** Task
 **Epic:** Safety & Moderation
 **Fix Version:** v0.3
-**Acceptance Criteria:**
-- Compile list of crisis hotline numbers (suicide prevention, domestic violence, mental health)
-- Source from verified official organizations
-- Document for inclusion in S-002 disclaimer
+**Description:**
+Before implementing the crisis resource links (S-002), we need accurate, verified hotline numbers. This task covers research and documentation only — no code changes.
+
+**Subtasks (in description):**
+- [ ] Research suicide prevention hotline for UK (Samaritans: 116 123)
+- [ ] Research suicide prevention hotline for US (988 Suicide & Crisis Lifeline)
+- [ ] Research domestic violence helpline (UK: 0808 2000 247, US: 800-799-7233)
+- [ ] Research mental health support (UK: Mind, US: NAMI)
+- [ ] Add international crisis support where available (International Association for Suicide Prevention)
+- [ ] Document all numbers with source verification notes for inclusion in S-002
 
 ---
 
