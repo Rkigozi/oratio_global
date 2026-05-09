@@ -70,7 +70,7 @@ export function ProfilePrayed() {
                 prayer={prayer}
                 index={i}
                 showCount={true}
-                canManage={false}
+                canManage={true}
                 onTap={handleOpenPrayer}
                 hasPrayed={prayedIds.includes(prayer.id)}
                 onTogglePrayed={togglePrayed}
