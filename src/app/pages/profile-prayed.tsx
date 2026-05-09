@@ -162,7 +162,7 @@ export function ProfilePrayed() {
                     </p>
 
                       <p className="text-[#5a6080] text-xs text-center mb-2">
-                        &mdash; {getAttributionText(selectedPrayer)}
+                        {getAttributionText(selectedPrayer)}
                       </p>
 
                     <div className="flex items-center gap-1.5 justify-center text-[#5a6080] text-xs mb-8">
@@ -241,7 +241,7 @@ function PrayerRow({
              {prayer.text}
            </p>
            <span className="text-[#6b7499] text-[11px] mb-1 block">
-             &mdash; {getAttributionText(prayer)}
+             {getAttributionText(prayer)}
            </span>
           <div className="flex items-center gap-2">
             <MapPin size={10} className="text-[#5a6080] flex-shrink-0" />

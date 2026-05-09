@@ -84,7 +84,7 @@ export function ProfileSaved() {
                       {prayer.text}
                     </p>
                     <span className="text-[#6b7499] text-[11px] mb-1 block">
-                      &mdash; {getAttributionText(prayer)}
+                      {getAttributionText(prayer)}
                     </span>
                     <div className="flex items-center gap-2">
                       <MapPin size={10} className="text-[#5a6080]" />

@@ -20,7 +20,6 @@ export function Submit() {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showHint, setShowHint] = useState(() => !localStorage.getItem("oratio_seen_submit_hint"));
 
   const locationDropdownRef = useRef<HTMLDivElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
@@ -75,17 +74,10 @@ export function Submit() {
   // Get user profile (includes displayName and username)
   const profile = getProfile();
 
-  const dismissHint = () => {
-    setShowHint(false);
-    localStorage.setItem("oratio_seen_submit_hint", "true");
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Clear previous errors
     setErrors({});
-    
-    dismissHint();
     
     try {
     
@@ -200,7 +192,7 @@ export function Submit() {
               Submit a Prayer Request
             </h2>
             <p className="text-[#8890b5] text-sm text-center mb-8">
-              Share your need with believers around the world
+              What&apos;s on your heart today?
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -212,7 +204,7 @@ export function Submit() {
                 <textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="Share what you'd like others to pray for..."
+                  placeholder="What would you like prayer for?"
                   rows={4}
                   className={`w-full rounded-xl px-4 py-3 text-[#e8eaf6] placeholder-[#5a5f80] resize-none border ${errors.text ? 'border-red-500/50 focus:border-red-500/70' : 'border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)]'} focus:outline-none transition-colors text-sm`}
                   style={{
@@ -230,19 +222,10 @@ export function Submit() {
                   </div>
                </div>
 
-              {showHint && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="rounded-xl px-4 py-3 border border-[rgba(124,143,255,0.1)] cursor-pointer"
-                  style={{ background: "rgba(124, 143, 255, 0.04)" }}
-                  onClick={dismissHint}
-                >
-                  <p className="text-[#8890b5] text-xs leading-relaxed">
-                    Not sure what to write? Share what you&apos;d like prayer for — a need, a hope, someone you care about.
-                  </p>
-                </motion.div>
-              )}
+              {/* Guidance text */}
+              <p className="text-[#4e5573] text-xs leading-relaxed text-center">
+                You&apos;re welcome to share what&apos;s on your heart. You may want to avoid sharing personal information so you can receive prayer freely and safely.
+              </p>
 
               {/* Anonymous toggle */}
               <div

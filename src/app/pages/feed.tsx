@@ -710,7 +710,7 @@ export function Feed() {
                         {/* Attribution */}
                         <div className="flex items-center gap-2.5 mb-4">
                           <p className="text-[#6b7499] text-sm">
-                            &mdash; {getAttributionText(selectedPrayer)}
+                            {getAttributionText(selectedPrayer)}
                           </p>
                         </div>
 

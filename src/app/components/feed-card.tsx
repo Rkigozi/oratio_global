@@ -171,7 +171,7 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
        <div className="flex items-center justify-between">
          <div className="flex items-center gap-2.5">
             <span className="text-[#6b7499] text-xs">
-              &mdash; {getAttributionText(prayer)}
+              {getAttributionText(prayer)}
             </span>
           {prayer.category && (
             <span
