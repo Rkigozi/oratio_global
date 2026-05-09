@@ -22,7 +22,10 @@ export function Layout() {
   if (!checked) return null;
 
   return (
-    <div className="w-full h-full relative font-sans">
+    <div
+      className="w-full relative font-sans"
+      style={{ height: "100dvh" }}
+    >
       <Header />
       <main className="w-full h-full">
         <Outlet />
