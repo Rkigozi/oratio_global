@@ -57,6 +57,20 @@ export function BottomNav() {
           );
         })}
       </div>
+      <div className="flex items-center justify-center gap-3 pb-[max(0.4rem,env(safe-area-inset-bottom))] px-4">
+        <span className="text-[#3e4460] text-[9px]">
+          &copy; 2026 Oratio
+        </span>
+        <span className="text-[#3e4460] text-[9px]">&middot;</span>
+        <a
+          href="https://www.instagram.com/oratio_global/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#4e5573] text-[9px] hover:text-[#7c8fff] transition-colors"
+        >
+          @oratio_global
+        </a>
+      </div>
     </nav>
   );
 }
