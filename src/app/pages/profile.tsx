@@ -5,6 +5,7 @@ import {
   LogOut,
   ChevronDown,
   Edit,
+  Bookmark,
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
@@ -88,6 +89,13 @@ export function Profile() {
     return getPrayedForPrayers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prayedIds]);
+
+  const mySavedCount = useMemo(() => {
+    try {
+      const savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
+      return savedIds.length;
+    } catch { return 0; }
+  }, []);
 
   // Get recent items for preview (max 3 each)
   const recentSubmitted = useMemo(() => 
@@ -175,7 +183,7 @@ export function Profile() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
-            className="grid grid-cols-2 gap-2 mb-8"
+            className="grid grid-cols-3 gap-2 mb-8"
           >
             {[
               {
@@ -191,6 +199,13 @@ export function Profile() {
                 value: myPrayed.length,
                 color: "#a78bfa",
                 path: "/profile/prayed",
+              },
+              {
+                icon: ({ className }: { className?: string }) => <span className={`text-base ${className ?? ""}`}>🔖</span>,
+                label: "Saved",
+                value: mySavedCount,
+                color: "#5a6080",
+                path: "/profile/saved",
               },
             ].map((stat, i) => {
               const Icon = stat.icon;

@@ -8,6 +8,7 @@ import { Submit } from "./pages/submit";
 import { Profile } from "./pages/profile";
 import { ProfileSubmitted } from "./pages/profile-submitted";
 import { ProfilePrayed } from "./pages/profile-prayed";
+import { ProfileSaved } from "./pages/profile-saved";
 
 import { Splash } from "./pages/splash";
 import { Onboarding } from "./pages/onboarding";
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { path: "profile", Component: Profile },
       { path: "profile/submitted", Component: ProfileSubmitted },
       { path: "profile/prayed", Component: ProfilePrayed },
+      { path: "profile/saved", Component: ProfileSaved },
     ],
   },
   

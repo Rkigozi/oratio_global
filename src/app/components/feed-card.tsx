@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { MapPin, MoreHorizontal } from "lucide-react";
+import { MapPin, MoreHorizontal, X, Bookmark, Flag } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import { categoryColors } from "../data/profile-data";
@@ -20,7 +20,12 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
   const [prayed, setPrayed] = useState(hasPrayed);
   const [showMenu, setShowMenu] = useState(false);
   const [showReport, setShowReport] = useState(false);
-  const [reported, setReported] = useState(false);
+  const [reported, setReported] = useState(() => {
+    try {
+      const reports = JSON.parse(localStorage.getItem("oratio_reports") || "[]") as Array<{prayerId: string}>;
+      return reports.some(r => r.prayerId === prayer.id);
+    } catch { return false; }
+  });
   const [saved, setSaved] = useState(() => {
     try {
       const savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
@@ -77,13 +82,13 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
   };
 
   const submitReport = (reason: string) => {
-    setShowReport(false);
     setReported(true);
     try {
       const reports = JSON.parse(localStorage.getItem("oratio_reports") || "[]") as Array<{prayerId: string; reason: string; timestamp: number}>;
       reports.push({ prayerId: prayer.id, reason, timestamp: Date.now() });
       localStorage.setItem("oratio_reports", JSON.stringify(reports));
     } catch { /* ignore */ }
+    setTimeout(() => { setShowReport(false); setReported(false); }, 2000);
   };
 
   const catColor = categoryColors[prayer.category || "Other"] || "#8890b5";
@@ -110,6 +115,7 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
           </span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          {reported && <Flag size={10} className="text-[#ff6b6b] opacity-50" />}
           <span className="text-[#3e4460] text-xs">
             {prayer.createdAt ? timeAgo(prayer.createdAt) : ""}
           </span>
@@ -136,7 +142,7 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
                     onClick={toggleSave}
                     className="w-full text-left px-4 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer"
                   >
-                    {saved ? "Unsave prayer" : "Save to pray later"}
+                    {saved ? "Saved" : "Save"}
                   </button>
                   <button
                     onClick={openReport}
@@ -179,6 +185,9 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
               {prayer.category}
             </span>
           )}
+          {saved && (
+            <Bookmark size={11} className="text-[#5a6080]" fill="#5a6080" />
+          )}
         </div>
 
         <button
@@ -205,15 +214,6 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
         </button>
       </div>
 
-      {/* Saved indicator */}
-      {saved && (
-        <div className="absolute top-2.5 left-2.5">
-          <span className="text-[9px] text-[#5a6080] uppercase tracking-wider bg-[rgba(10,26,58,0.7)] px-1.5 py-0.5 rounded-full border border-[rgba(124,143,255,0.06)]">
-            Saved
-          </span>
-        </div>
-      )}
-
       {/* Report dialog overlay */}
       <AnimatePresence>
         {showReport && (
@@ -228,7 +228,15 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
             <div className="w-full" onClick={(e) => e.stopPropagation()}>
               {!reported ? (
                 <>
-                  <p className="text-[#c5cdff] text-sm text-center mb-3">Why are you reporting this?</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[#c5cdff] text-sm">Why are you reporting this?</p>
+                    <button
+                      onClick={() => setShowReport(false)}
+                      className="text-[#3e4460] hover:text-[#6b7499] transition-colors cursor-pointer"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
                   <div className="flex flex-col gap-2">
                     {reportReasons.map((reason) => (
                       <button
@@ -240,15 +248,9 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
                       </button>
                     ))}
                   </div>
-                  <button
-                    onClick={() => setShowReport(false)}
-                    className="w-full text-center mt-3 text-[#3e4460] text-xs hover:text-[#6b7499] transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
                 </>
               ) : (
-                <p className="text-[#8890b5] text-sm text-center">
+                <p className="text-[#8890b5] text-sm text-center py-4">
                   Thanks for looking out for this community.
                 </p>
               )}
