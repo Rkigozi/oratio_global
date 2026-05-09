@@ -142,7 +142,7 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
                     onClick={toggleSave}
                     className="w-full text-left px-4 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer"
                   >
-                    {saved ? "Saved" : "Save"}
+                    {saved ? "Remove from saved" : "Save"}
                   </button>
                   <button
                     onClick={openReport}
@@ -221,14 +221,21 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 rounded-2xl z-20 flex items-center justify-center p-4"
-            style={{ background: "rgba(10, 20, 50, 0.96)" }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6"
+            style={{ background: "rgba(0, 0, 0, 0.7)", backdropFilter: "blur(4px)" }}
             onClick={() => setShowReport(false)}
           >
-            <div className="w-full" onClick={(e) => e.stopPropagation()}>
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              className="w-full max-w-sm rounded-2xl p-5 border border-[rgba(124,143,255,0.1)]"
+              style={{ background: "rgba(15, 22, 55, 0.98)" }}
+              onClick={(e) => e.stopPropagation()}
+            >
               {!reported ? (
                 <>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-4">
                     <p className="text-[#c5cdff] text-sm">Why are you reporting this?</p>
                     <button
                       onClick={() => setShowReport(false)}
@@ -242,7 +249,7 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
                       <button
                         key={reason}
                         onClick={() => submitReport(reason)}
-                        className="w-full text-left px-4 py-2.5 rounded-xl text-xs text-[#8890b5] hover:text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.06)] transition-all cursor-pointer"
+                        className="w-full text-left px-4 py-3 rounded-xl text-xs text-[#8890b5] hover:text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.06)] transition-all cursor-pointer"
                       >
                         {reason}
                       </button>
@@ -250,11 +257,11 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
                   </div>
                 </>
               ) : (
-                <p className="text-[#8890b5] text-sm text-center py-4">
+                <p className="text-[#8890b5] text-sm text-center py-6">
                   Thanks for looking out for this community.
                 </p>
               )}
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
