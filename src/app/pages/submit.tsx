@@ -169,7 +169,8 @@ export function Submit() {
 
   return (
     <div
-      className="w-full h-full flex flex-col bg-background"
+      className="w-full flex flex-col bg-background"
+      style={{ height: "100dvh" }}
     >
       {/* Ambient glow */}
       <div
@@ -179,7 +180,7 @@ export function Submit() {
         }}
       />
 
-      <div className="flex-1 overflow-y-auto px-6 pt-24 pb-28 flex flex-col items-center">
+      <div className="flex-1 overflow-y-auto px-6 pt-24 pb-28 flex flex-col items-center" style={{ WebkitOverflowScrolling: "touch" }}>
       <AnimatePresence mode="wait">
         {!submitted ? (
           <motion.div
