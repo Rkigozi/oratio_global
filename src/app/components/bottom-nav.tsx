@@ -57,32 +57,6 @@ export function BottomNav() {
           );
         })}
       </div>
-      <div className="flex items-center justify-center gap-3 pb-[max(0.4rem,env(safe-area-inset-bottom))] px-4">
-        <span className="text-[#3e4460] text-[9px]">
-          &copy; 2026 Oratio
-        </span>
-        <span className="text-[#3e4460] text-[9px]">&middot;</span>
-        <a
-          href="https://www.instagram.com/oratio_global/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[#4e5573] hover:text-[#7c8fff] transition-colors inline-flex items-center"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="w-3.5 h-3.5"
-          >
-            <rect x="3" y="3" width="18" height="18" rx="4" ry="4" />
-            <circle cx="12" cy="12" r="4" />
-            <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
-          </svg>
-        </a>
-      </div>
     </nav>
   );
 }
