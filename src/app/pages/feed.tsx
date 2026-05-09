@@ -24,6 +24,8 @@ export function Feed() {
     setSearchParams({});
   };
 
+  const [showSaved, setShowSaved] = useState(false);
+
 
 
 
@@ -152,8 +154,16 @@ export function Feed() {
       );
     }
 
+    // Saved filter
+    if (showSaved) {
+      let savedIds: string[] = [];
+      try { savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[]; }
+      catch { savedIds = []; }
+      result = result.filter((p) => savedIds.includes(p.id));
+    }
+
     return result;
-  }, [prayers, category, locationCity, locationCountry]);
+  }, [prayers, category, locationCity, locationCountry, showSaved]);
 
   // Trending: top 5 by prayer count
   const trending = useMemo(() => {
@@ -389,6 +399,18 @@ export function Feed() {
               </button>
             );
           })}
+          {/* Saved filter */}
+          <div className="w-px h-5 bg-[rgba(124,143,255,0.08)] flex-shrink-0 self-center mx-0.5" />
+          <button
+            onClick={() => setShowSaved(!showSaved)}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer ${
+              showSaved
+                ? "text-[#7c8fff] bg-[rgba(124,143,255,0.12)] border border-[rgba(124,143,255,0.2)]"
+                : "text-[#6b7499] bg-[rgba(124,143,255,0.04)] border border-[rgba(124,143,255,0.06)]"
+            }`}
+          >
+            Saved
+          </button>
         </div>
 
       </div>
@@ -465,12 +487,14 @@ export function Feed() {
         </AnimatePresence>
 
         {/* Subtle CTA */}
-        <p className="text-[#5a6080] text-xs text-center mb-4">
-          Tap any prayer to pray for someone today
-        </p>
+        {!showSaved && (
+          <p className="text-[#5a6080] text-xs text-center mb-4">
+            Tap any prayer to pray for someone today
+          </p>
+        )}
 
         {/* Trending section (no category filter) */}
-        {category === "All" && !hasLocationFilter && (
+        {category === "All" && !hasLocationFilter && !showSaved && (
           <div className="mb-5">
             <div className="flex items-center gap-1.5 px-1 mb-3">
               <Flame size={13} className="text-[#fbbf24]" />
@@ -542,7 +566,7 @@ export function Feed() {
         {/* Section label */}
         <div className="flex items-center justify-between px-1 mb-3">
           <span className="text-[#6b7499] text-[11px] uppercase tracking-[0.15em]">
-              {hasLocationFilter ? `Prayers from ${locationCity || locationCountry}` : "Latest Prayer Needs"}
+              {showSaved ? "Saved Prayers" : hasLocationFilter ? `Prayers from ${locationCity || locationCountry}` : "Latest Prayer Needs"}
           </span>
           <span className="text-[#3e4460] text-[10px]">
             {filteredPrayers.length} requests
@@ -575,23 +599,25 @@ export function Feed() {
                     "radial-gradient(circle, rgba(124,143,255,0.08), transparent)",
                 }}
               >
-                 {hasLocationFilter ? (
-                   <MapPin size={20} className="text-[#4e5573]" />
-                 ) : category !== "All" ? (
-                   <Search size={20} className="text-[#4e5573]" />
-                 ) : (
-                   <Search size={20} className="text-[#4e5573]" />
-                 )}
+                  {showSaved ? (
+                    <span className="text-xl text-[#4e5573]">📖</span>
+                  ) : hasLocationFilter ? (
+                    <MapPin size={20} className="text-[#4e5573]" />
+                  ) : (
+                    <Search size={20} className="text-[#4e5573]" />
+                  )}
               </div>
               <p className="text-[#6b7499] text-sm mb-1">
-                 {hasLocationFilter
-                    ? `No prayers in ${locationCity || locationCountry}`
-                    : category !== "All"
-                    ? `No prayers in ${category}`
-                    : "No prayers found"}
+                  {showSaved
+                     ? "No saved prayers yet"
+                     : hasLocationFilter
+                     ? `No prayers in ${locationCity || locationCountry}`
+                     : category !== "All"
+                     ? `No prayers in ${category}`
+                     : "No prayers found"}
               </p>
               <p className="text-[#4e5573] text-xs">
-                 View all prayers
+                 {showSaved ? "Tap ⋮ on a prayer and select Save to pray later" : "View all prayers"}
               </p>
                {hasLocationFilter ? (
                  <div className="flex flex-col items-center gap-2 mt-4">
@@ -720,7 +746,7 @@ export function Feed() {
                           {prayedIds.includes(selectedPrayer.id) ? "Prayed for this" : "Pray for this"}
                        </motion.button>
 
-                      {/* Share button */}
+                       {/* Share button */}
                       <button
                         onClick={() => { void handleShare(selectedPrayer); }}
                         className="flex items-center gap-1.5 mt-4 px-4 py-1.5 rounded-full text-xs text-[#6b7499] hover:text-[#8b96c0] hover:bg-[rgba(124,143,255,0.06)] transition-all cursor-pointer"
@@ -728,6 +754,8 @@ export function Feed() {
                         <Share2 size={12} />
                         Share this prayer
                       </button>
+
+                      {/* Report button — subtle, only in detail drawer */}
                     </motion.div>
                   ) : (
                     <motion.div
