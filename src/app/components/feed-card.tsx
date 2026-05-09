@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { MapPin, MoreHorizontal, X, Bookmark, Flag } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
@@ -88,7 +89,6 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
       reports.push({ prayerId: prayer.id, reason, timestamp: Date.now() });
       localStorage.setItem("oratio_reports", JSON.stringify(reports));
     } catch { /* ignore */ }
-    setTimeout(() => { setShowReport(false); setReported(false); }, 2000);
   };
 
   const catColor = categoryColors[prayer.category || "Other"] || "#8890b5";
@@ -214,57 +214,60 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
         </button>
       </div>
 
-      {/* Report dialog overlay */}
-      <AnimatePresence>
-        {showReport && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-6"
-            style={{ background: "rgba(0, 0, 0, 0.7)", backdropFilter: "blur(4px)" }}
-            onClick={() => setShowReport(false)}
-          >
+      {/* Report dialog — rendered at document body level */}
+      {createPortal(
+        <AnimatePresence>
+          {showReport && (
             <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              className="w-full max-w-sm rounded-2xl p-5 border border-[rgba(124,143,255,0.1)]"
-              style={{ background: "rgba(15, 22, 55, 0.98)" }}
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-6"
+              style={{ background: "rgba(0, 0, 0, 0.7)", backdropFilter: "blur(4px)" }}
+              onClick={() => setShowReport(false)}
             >
-              {!reported ? (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-[#c5cdff] text-sm">Why are you reporting this?</p>
-                    <button
-                      onClick={() => setShowReport(false)}
-                      className="text-[#3e4460] hover:text-[#6b7499] transition-colors cursor-pointer"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {reportReasons.map((reason) => (
+              <motion.div
+                initial={{ scale: 0.92, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.92, opacity: 0 }}
+                className="w-full max-w-sm rounded-2xl p-5 border border-[rgba(124,143,255,0.1)]"
+                style={{ background: "rgba(15, 22, 55, 0.98)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {!reported ? (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-[#c5cdff] text-sm">Why are you reporting this?</p>
                       <button
-                        key={reason}
-                        onClick={() => submitReport(reason)}
-                        className="w-full text-left px-4 py-3 rounded-xl text-xs text-[#8890b5] hover:text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.06)] transition-all cursor-pointer"
+                        onClick={() => setShowReport(false)}
+                        className="text-[#3e4460] hover:text-[#6b7499] transition-colors cursor-pointer"
                       >
-                        {reason}
+                        <X size={16} />
                       </button>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <p className="text-[#8890b5] text-sm text-center py-6">
-                  Thanks for looking out for this community.
-                </p>
-              )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {reportReasons.map((reason) => (
+                        <button
+                          key={reason}
+                          onClick={() => submitReport(reason)}
+                          className="w-full text-left px-4 py-3 rounded-xl text-xs text-[#8890b5] hover:text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.06)] transition-all cursor-pointer"
+                        >
+                          {reason}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-[#8890b5] text-sm text-center py-6">
+                    Thanks for looking out for this community.
+                  </p>
+                )}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   );
 }
