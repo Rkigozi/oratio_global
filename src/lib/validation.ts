@@ -32,8 +32,8 @@ export const profileSchema = z.object({
   username: z.string()
     .min(3, { message: "Username must be at least 3 characters" })
     .max(30, { message: "Username cannot exceed 30 characters" })
-    .regex(/^[a-z0-9_]+$/, { 
-      message: "Username can only contain lowercase letters, numbers, and underscores" 
+    .regex(/^[a-z0-9_.]+$/, { 
+      message: "Username can only contain lowercase letters, numbers, underscores, and dots" 
     })
     .transform(val => val.toLowerCase())
     .refine(val => val !== "anonymous", { 

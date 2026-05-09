@@ -13,12 +13,13 @@ export interface UserProfile {
 export function generateUsernameFromDisplayName(displayName: string): string {
   // Convert to lowercase
   let username = displayName.toLowerCase();
-  // Remove any non-alphanumeric/underscore characters
-  username = username.replace(/[^a-z0-9_]/g, '_');
-  // Collapse multiple underscores
-  username = username.replace(/_+/g, '_');
-  // Remove leading/trailing underscores
-  username = username.replace(/^_+|_+$/g, '');
+  // Remove any non-alphanumeric/underscore/dot characters
+  username = username.replace(/[^a-z0-9_.]/g, '_');
+  // Collapse multiple underscores/dots
+  username = username.replace(/[_]+/g, '_');
+  username = username.replace(/[.]+/g, '.');
+  // Remove leading/trailing underscores/dots
+  username = username.replace(/^[_\.]+|[_\.]+$/g, '');
   // Minimum length enforced by validation, not here
   // Truncate to max 30 characters
   return username.slice(0, 30);
