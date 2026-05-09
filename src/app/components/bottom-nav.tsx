@@ -66,9 +66,21 @@ export function BottomNav() {
           href="https://www.instagram.com/oratio_global/"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#4e5573] text-[9px] hover:text-[#7c8fff] transition-colors"
+          className="text-[#4e5573] hover:text-[#7c8fff] transition-colors inline-flex items-center"
         >
-          @oratio_global
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-3.5 h-3.5"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="4" ry="4" />
+            <circle cx="12" cy="12" r="4" />
+            <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
+          </svg>
         </a>
       </div>
     </nav>
