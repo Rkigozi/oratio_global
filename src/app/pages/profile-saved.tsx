@@ -1,14 +1,12 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { motion } from "motion/react";
 import { Bookmark, MapPin } from "lucide-react";
-import { useNavigate } from "react-router";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import { mockFeedPrayers } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { categoryColors } from "../data/profile-data";
 
 export function ProfileSaved() {
-  const navigate = useNavigate();
 
   const savedPrayers = useMemo(() => {
     let savedIds: string[] = [];
@@ -29,17 +27,13 @@ export function ProfileSaved() {
       className="w-full min-h-full flex flex-col px-6 pt-6 pb-28"
       style={{ background: "#0A1A3A" }}
     >
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => void navigate("/profile")}
-          className="text-[#8890b5] hover:text-[#c5cdff] transition-colors cursor-pointer text-sm"
-        >
-          &larr; Back
-        </button>
-        <h2 className="text-[#e2e4f0] font-heading text-xl font-light">
-          Saved Prayers
-        </h2>
-      </div>
+      {/* Back link */}
+      <button
+        onClick={() => window.history.back()}
+        className="text-[#5a6080] hover:text-[#7c8fff] text-xs mb-4 inline-flex items-center gap-1 cursor-pointer transition-colors"
+      >
+        &larr; Back to Profile
+      </button>
 
       {savedPrayers.length === 0 ? (
         <motion.div
@@ -53,7 +47,7 @@ export function ProfileSaved() {
             Tap &#8942; on a prayer in the feed and select Save
           </p>
           <button
-            onClick={() => void navigate("/feed")}
+            onClick={() => window.location.href = "/feed"}
             className="px-5 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer hover:bg-[rgba(124,143,255,0.12)] transition-all"
           >
             Browse Feed

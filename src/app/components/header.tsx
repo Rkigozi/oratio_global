@@ -18,6 +18,7 @@ export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
   const routeTitle = title || (() => {
     if (location.pathname === '/profile/submitted') return 'Submitted Prayers';
     if (location.pathname === '/profile/prayed') return 'Prayed For';
+    if (location.pathname === '/profile/saved') return 'Saved Prayers';
     return undefined;
   })();
   

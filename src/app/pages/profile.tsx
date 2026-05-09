@@ -28,6 +28,7 @@ export function Profile() {
   const [editOpen, setEditOpen] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState("");
   const [newUsername, setNewUsername] = useState("");
+  const [expandedPreviewId, setExpandedPreviewId] = useState<string | null>(null);
   const [editError, setEditError] = useState<string>("");
   
   const handleSaveProfile = () => {
@@ -269,13 +270,14 @@ export function Profile() {
                   {recentSubmitted.map((prayer) => (
                     <div
                       key={prayer.id}
-                      className="rounded-xl px-3 py-2.5"
+                      onClick={() => setExpandedPreviewId(expandedPreviewId === prayer.id ? null : prayer.id)}
+                      className="rounded-xl px-3 py-2.5 cursor-pointer active:scale-[0.99] transition-transform duration-150"
                       style={{
                         background: "rgba(17, 26, 58, 0.4)",
                         border: "1px solid rgba(124,143,255,0.05)",
                       }}
                     >
-                      <p className="text-[#d0d4e8] text-sm line-clamp-2 mb-1">
+                      <p className={`text-[#d0d4e8] text-sm ${expandedPreviewId === prayer.id ? "" : "line-clamp-2"} mb-1`}>
                         {prayer.text}
                       </p>
                       <div className="flex items-center justify-between text-[#5a6080] text-xs">
@@ -314,13 +316,14 @@ export function Profile() {
                   {recentPrayed.map((prayer) => (
                     <div
                       key={prayer.id}
-                      className="rounded-xl px-3 py-2.5"
+                      onClick={() => setExpandedPreviewId(expandedPreviewId === prayer.id ? null : prayer.id)}
+                      className="rounded-xl px-3 py-2.5 cursor-pointer active:scale-[0.99] transition-transform duration-150"
                       style={{
                         background: "rgba(17, 26, 58, 0.4)",
                         border: "1px solid rgba(124,143,255,0.05)",
                       }}
                     >
-                      <p className="text-[#d0d4e8] text-sm line-clamp-2 mb-1">
+                      <p className={`text-[#d0d4e8] text-sm ${expandedPreviewId === prayer.id ? "" : "line-clamp-2"} mb-1`}>
                         {prayer.text}
                       </p>
                       <div className="flex items-center justify-between text-[#5a6080] text-xs">
