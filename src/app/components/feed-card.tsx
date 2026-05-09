@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
-import { motion } from "motion/react";
-import { MapPin } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { MapPin, MoreHorizontal } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import { categoryColors } from "../data/profile-data";
+
+const reportReasons = ["Spam or fake", "Upsetting or graphic", "Harmful or unsafe", "Something else"];
 
 interface FeedCardProps {
   prayer: PrayerRequest;
@@ -16,21 +18,72 @@ interface FeedCardProps {
 
 export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCardProps) {
   const [prayed, setPrayed] = useState(hasPrayed);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reported, setReported] = useState(false);
+  const [saved, setSaved] = useState(() => {
+    try {
+      const savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
+      return savedIds.includes(prayer.id);
+    } catch { return false; }
+  });
+
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPrayed(hasPrayed);
   }, [hasPrayed, prayer.id]);
 
+  // Close menu on outside click
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showMenu]);
 
   const handlePray = (e: React.MouseEvent) => {
-
     e.stopPropagation();
     const newPrayed = !prayed;
     setPrayed(newPrayed);
-
     onPrayed(prayer.id);
+  };
+
+  const toggleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    const newSaved = !saved;
+    setSaved(newSaved);
+    try {
+      const savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
+      if (newSaved) {
+        savedIds.push(prayer.id);
+      } else {
+        const idx = savedIds.indexOf(prayer.id);
+        if (idx > -1) savedIds.splice(idx, 1);
+      }
+      localStorage.setItem("oratio_saved", JSON.stringify(savedIds));
+    } catch { /* ignore */ }
+  };
+
+  const openReport = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    setShowReport(true);
+  };
+
+  const submitReport = (reason: string) => {
+    setShowReport(false);
+    setReported(true);
+    try {
+      const reports = JSON.parse(localStorage.getItem("oratio_reports") || "[]") as Array<{prayerId: string; reason: string; timestamp: number}>;
+      reports.push({ prayerId: prayer.id, reason, timestamp: Date.now() });
+      localStorage.setItem("oratio_reports", JSON.stringify(reports));
+    } catch { /* ignore */ }
   };
 
   const catColor = categoryColors[prayer.category || "Other"] || "#8890b5";
@@ -48,17 +101,54 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
         border: "1px solid rgba(124,143,255,0.07)",
       }}
     >
-      {/* Top row: location + time */}
+      {/* Top row: location + time + menu */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
-          <MapPin size={12} className="text-[#5a6080]" />
-          <span className="text-[#8890b5] text-xs">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <MapPin size={12} className="text-[#5a6080] flex-shrink-0" />
+          <span className="text-[#8890b5] text-xs truncate">
             {prayer.city}, {prayer.country}
           </span>
         </div>
-        <span className="text-[#3e4460] text-xs">
-          {prayer.createdAt ? timeAgo(prayer.createdAt) : ""}
-        </span>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <span className="text-[#3e4460] text-xs">
+            {prayer.createdAt ? timeAgo(prayer.createdAt) : ""}
+          </span>
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              className="text-[#3e4460] hover:text-[#6b7499] transition-colors cursor-pointer p-0.5"
+            >
+              <MoreHorizontal size={14} />
+            </button>
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-[rgba(124,143,255,0.1)] overflow-hidden z-30"
+                  style={{
+                    background: "rgba(12, 20, 48, 0.98)",
+                    backdropFilter: "blur(16px)",
+                  }}
+                >
+                  <button
+                    onClick={toggleSave}
+                    className="w-full text-left px-4 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer"
+                  >
+                    {saved ? "Unsave prayer" : "Save to pray later"}
+                  </button>
+                  <button
+                    onClick={openReport}
+                    className="w-full text-left px-4 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer"
+                  >
+                    Report
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
 
 
@@ -114,6 +204,58 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
           </span>
         </button>
       </div>
+
+      {/* Saved indicator */}
+      {saved && (
+        <div className="absolute top-2.5 left-2.5">
+          <span className="text-[9px] text-[#5a6080] uppercase tracking-wider bg-[rgba(10,26,58,0.7)] px-1.5 py-0.5 rounded-full border border-[rgba(124,143,255,0.06)]">
+            Saved
+          </span>
+        </div>
+      )}
+
+      {/* Report dialog overlay */}
+      <AnimatePresence>
+        {showReport && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 rounded-2xl z-20 flex items-center justify-center p-4"
+            style={{ background: "rgba(10, 20, 50, 0.96)" }}
+            onClick={() => setShowReport(false)}
+          >
+            <div className="w-full" onClick={(e) => e.stopPropagation()}>
+              {!reported ? (
+                <>
+                  <p className="text-[#c5cdff] text-sm text-center mb-3">Why are you reporting this?</p>
+                  <div className="flex flex-col gap-2">
+                    {reportReasons.map((reason) => (
+                      <button
+                        key={reason}
+                        onClick={() => submitReport(reason)}
+                        className="w-full text-left px-4 py-2.5 rounded-xl text-xs text-[#8890b5] hover:text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.06)] transition-all cursor-pointer"
+                      >
+                        {reason}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setShowReport(false)}
+                    className="w-full text-center mt-3 text-[#3e4460] text-xs hover:text-[#6b7499] transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <p className="text-[#8890b5] text-sm text-center">
+                  Thanks for looking out for this community.
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
