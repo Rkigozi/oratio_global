@@ -169,7 +169,8 @@ export function Submit() {
 
   return (
     <div
-      className="w-full h-full flex flex-col bg-background"
+      className="w-full overflow-y-auto flex flex-col items-center px-6 pt-24 pb-28 bg-background"
+      style={{ height: "100dvh" }}
     >
       {/* Ambient glow */}
       <div
@@ -179,7 +180,6 @@ export function Submit() {
         }}
       />
 
-      <div className="flex-1 overflow-y-auto px-6 pt-24 pb-28 flex flex-col items-center">
       <AnimatePresence mode="wait">
         {!submitted ? (
           <motion.div
@@ -520,7 +520,6 @@ export function Submit() {
           </motion.div>
         )}
       </AnimatePresence>
-      </div>
     </div>
   );
 }
