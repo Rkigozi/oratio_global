@@ -105,7 +105,7 @@ export function getApproximateCoordinates(cityName: string, country: string): { 
   return addJitter(city.lat, city.lng, seed);
 }
 
-import { generateUsernameFromDisplayName } from "./profile-data";
+import { generateUsernameFromDisplayName } from "../../lib/username";
 
 // ── Prayer texts & names ─────────────────────────────────────────────
 const prayerTexts = [

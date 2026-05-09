@@ -9,21 +9,7 @@ export interface UserProfile {
   joinedAt: string;
 }
 
-// Helper to generate username from display name (lowercase, underscores, alphanumeric only)
-export function generateUsernameFromDisplayName(displayName: string): string {
-  // Convert to lowercase
-  let username = displayName.toLowerCase();
-  // Remove any non-alphanumeric/underscore/dot characters
-  username = username.replace(/[^a-z0-9_.]/g, '_');
-  // Collapse multiple underscores/dots
-  username = username.replace(/[_]+/g, '_');
-  username = username.replace(/[.]+/g, '.');
-  // Remove leading/trailing underscores/dots
-  username = username.replace(/^[_\.]+|[_\.]+$/g, '');
-  // Minimum length enforced by validation, not here
-  // Truncate to max 30 characters
-  return username.slice(0, 30);
-}
+import { generateUsernameFromDisplayName } from "../../lib/username";
 
 // Mark username as used (local storage only)
 export function markUsernameUsed(username: string): void {

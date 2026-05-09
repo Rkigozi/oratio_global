@@ -62,41 +62,29 @@ export function Feed() {
     };
   }, []);
 
-  // Listen for prayer addition/deletion bridges
+  // Listen for prayer addition/deletion via custom events
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
-    (window as typeof window & {
-      __oratio_addPrayer?: (prayer: PrayerRequest) => void;
-      __oratio_removePrayer?: (prayerId: string) => void;
-    }).__oratio_addPrayer = (prayer: PrayerRequest) => {
+
+    const handleAdd = (e: Event) => {
+      const prayer = (e as CustomEvent).detail as PrayerRequest;
       setPrayers((prev) => {
-        // Check if prayer already exists (by id)
-        if (prev.some(p => p.id === prayer.id)) {
-          return prev;
-        }
-        // Add new prayer to the top (consistent with submit.tsx)
+        if (prev.some(p => p.id === prayer.id)) return prev;
         return [prayer, ...prev];
       });
     };
 
-    (window as typeof window & {
-      __oratio_addPrayer?: (prayer: PrayerRequest) => void;
-      __oratio_removePrayer?: (prayerId: string) => void;
-    }).__oratio_removePrayer = (prayerId: string) => {
+    const handleRemove = (e: Event) => {
+      const prayerId = (e as CustomEvent).detail as string;
       setPrayers((prev) => prev.filter(p => p.id !== prayerId));
     };
 
+    window.addEventListener("oratio-prayer-added", handleAdd);
+    window.addEventListener("oratio-prayer-removed", handleRemove);
+
     return () => {
-      // Clean up bridges when component unmounts
-      (window as typeof window & {
-        __oratio_addPrayer?: (prayer: PrayerRequest) => void;
-        __oratio_removePrayer?: (prayerId: string) => void;
-      }).__oratio_addPrayer = undefined;
-      (window as typeof window & {
-        __oratio_addPrayer?: (prayer: PrayerRequest) => void;
-        __oratio_removePrayer?: (prayerId: string) => void;
-      }).__oratio_removePrayer = undefined;
+      window.removeEventListener("oratio-prayer-added", handleAdd);
+      window.removeEventListener("oratio-prayer-removed", handleRemove);
     };
   }, []);
 

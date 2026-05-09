@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { WorldMapClean } from "../components/world-map-clean";
@@ -47,38 +47,28 @@ export function Home() {
    }, [prayers, selectedPrayer]);
 
    // Listen for new prayer submissions (via custom event from Submit page)
-  // This is wired through the layout via a shared context or event
-  // For now we expose a method on window for cross-page communication
-  const isMounted = useRef(true);
-  
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
-    (window as typeof window & { 
-      __oratio_addPrayer?: (prayer: PrayerRequest) => void;
-      __oratio_removePrayer?: (prayerId: string) => void;
-    }).__oratio_addPrayer = (prayer: PrayerRequest) => {
-      if (!isMounted.current) return;
+
+    const handleAdd = (e: Event) => {
+      const prayer = (e as CustomEvent).detail as PrayerRequest;
       setPrayers((prev) => [prayer, ...prev]);
       setNewPrayerId(prayer.id);
       setFlyTo({ lat: prayer.lat, lng: prayer.lng });
       setTimeout(() => setNewPrayerId(null), 2000);
     };
 
-    (window as typeof window & {
-      __oratio_addPrayer?: (prayer: PrayerRequest) => void;
-      __oratio_removePrayer?: (prayerId: string) => void;
-    }).__oratio_removePrayer = (prayerId: string) => {
-      if (!isMounted.current) return;
+    const handleRemove = (e: Event) => {
+      const prayerId = (e as CustomEvent).detail as string;
       setPrayers((prev) => prev.filter(p => p.id !== prayerId));
     };
-    
-    return () => {
-      isMounted.current = false;
-      // NOTE: We intentionally DO NOT delete the bridge so Submit page can still call it
-      // The bridge will check isMounted and ignore calls when Home is unmounted
-      // When Home remounts, this effect runs again and overwrites the bridge
 
+    window.addEventListener("oratio-prayer-added", handleAdd);
+    window.addEventListener("oratio-prayer-removed", handleRemove);
+
+    return () => {
+      window.removeEventListener("oratio-prayer-added", handleAdd);
+      window.removeEventListener("oratio-prayer-removed", handleRemove);
     };
   }, []);
 
