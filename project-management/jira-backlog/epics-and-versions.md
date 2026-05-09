@@ -231,7 +231,7 @@ Currently the submit form has a blank textarea which invites anything — includ
 **Subtasks (in description):**
 - [ ] Change textarea placeholder to "What would you like prayer for?"
 - [ ] Add optional second field: "How are you feeling right now?" with icon/emoji picker
-- [ ] Add gentle guidance text subtly near the form: "You're welcome to share what's on your heart. You may want to avoid sharing specific addresses or phone numbers so you can receive prayer freely and safely."
+- [ ] Add gentle guidance text subtly near the form: "You're welcome to share what's on your heart. You may want to avoid sharing specific personal information so you can receive prayer freely and safely."
 - [ ] Ensure existing category picker and anonymous toggle still work
 - [ ] Test on mobile with keyboard open
 
