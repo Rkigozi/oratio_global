@@ -53,6 +53,8 @@ export function Feed() {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
   const [prayedIds, setPrayedIds] = useState<string[]>(() => getPrayedIds());
   const timeoutRefs = useRef<number[]>([]); // Store timeout IDs for cleanup
+  const [visibleCount, setVisibleCount] = useState(20);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Clean up timeouts on component unmount
   useEffect(() => {
@@ -72,6 +74,7 @@ export function Feed() {
         if (prev.some(p => p.id === prayer.id)) return prev;
         return [prayer, ...prev];
       });
+      setVisibleCount(20);
     };
 
     const handleRemove = (e: Event) => {
@@ -152,6 +155,34 @@ export function Feed() {
 
     return result;
   }, [prayers, category, locationCity, locationCountry, showSaved]);
+
+  // Only render visible batch for infinite scroll
+  const visiblePrayers = useMemo(() => {
+    return filteredPrayers.slice(0, visibleCount);
+  }, [filteredPrayers, visibleCount]);
+
+  // Infinite scroll - load more when sentinel enters viewport
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + 20, filteredPrayers.length));
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [filteredPrayers.length]);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [category, locationCity, locationCountry, showSaved]);
 
   // Trending: top 5 by prayer count
   const trending = useMemo(() => {
@@ -564,16 +595,25 @@ export function Feed() {
         {/* Prayer cards */}
         <div className="space-y-2.5">
           {filteredPrayers.length > 0 ? (
-            filteredPrayers.map((prayer, i) => (
-               <FeedCard
-                 key={prayer.id}
-                 prayer={prayer}
-                 index={i}
-                 hasPrayed={prayedIds.includes(prayer.id)}
-                 onPrayed={togglePrayed}
-                 onTap={handleTap}
-               />
-            ))
+            <>
+              {visiblePrayers.map((prayer, i) => (
+                 <FeedCard
+                   key={prayer.id}
+                   prayer={prayer}
+                   index={i}
+                   hasPrayed={prayedIds.includes(prayer.id)}
+                   onPrayed={togglePrayed}
+                   onTap={handleTap}
+                 />
+              ))}
+              {visibleCount < filteredPrayers.length ? (
+                <div ref={sentinelRef} className="h-4" />
+              ) : (
+                <p className="text-center text-[#3e4460] text-[10px] pt-2 pb-1">
+                  All {filteredPrayers.length} prayers loaded
+                </p>
+              )}
+            </>
           ) : (
             <motion.div
               initial={{ opacity: 0 }}

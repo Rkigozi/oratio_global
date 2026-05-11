@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Edit,
   Bookmark,
+  Info,
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
@@ -18,6 +19,7 @@ import {
   getPrayedForPrayers,
   isUsernameAvailable,
   changeUsername,
+  logoutProfile,
 } from "../data/profile-data";
 import { validateProfile } from "../../lib/validation";
 
@@ -378,8 +380,20 @@ export function Profile() {
             className="space-y-2"
           >
             <button
+              onClick={() => void navigate('/info')}
+              className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"
+              style={{
+                background: "transparent",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <Info size={16} className="text-[#5a6080] opacity-60" />
+                <span className="text-[#5a6080] text-sm">Info</span>
+              </div>
+            </button>
+            <button
               onClick={() => {
-                ['oratio_profile','oratio_submitted','oratio_submitted_prayers','oratio_prayed'].forEach(k => localStorage.removeItem(k));
+                logoutProfile();
                 void navigate("/splash");
               }}
               className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"

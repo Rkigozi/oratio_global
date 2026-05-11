@@ -49,16 +49,27 @@ export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
             {routeTitle}
           </h2>
         ) : (
-          <h1
-            className="font-heading tracking-[0.25em] text-[#c5cbe2]"
-            style={{
-              fontSize: "0.95rem",
-              fontWeight: 300,
-              textShadow: "0 0 30px rgba(124, 143, 255, 0.2)",
-            }}
-          >
-            ORATIO
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1
+              className="font-heading tracking-[0.25em] text-[#c5cbe2]"
+              style={{
+                fontSize: "0.95rem",
+                fontWeight: 300,
+                textShadow: "0 0 30px rgba(124, 143, 255, 0.2)",
+              }}
+            >
+              ORATIO
+            </h1>
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded-full"
+              style={{
+                background: "rgba(124,143,255,0.1)",
+                color: "#7c8fff",
+              }}
+            >
+              Beta
+            </span>
+          </div>
         )}
       </div>
       

@@ -152,6 +152,74 @@ export function isUsernameAvailable(username: string, excludeUsername?: string):
   }
 }
 
+// ── Session management ─────────────────────────────────────────────
+
+export type UserSession = "no-profile" | "active" | "signed-out";
+
+export function getSessionState(): UserSession {
+  try {
+    const profile = localStorage.getItem("oratio_profile");
+    if (!profile) return "no-profile";
+    const parsed = JSON.parse(profile) as { username?: string };
+    if (!parsed.username || parsed.username === "anonymous") return "no-profile";
+    const session = localStorage.getItem("oratio_session");
+    return session === "signed-out" ? "signed-out" : "active";
+  } catch {
+    return "no-profile";
+  }
+}
+
+export function logoutProfile(): void {
+  try {
+    // Remember who signed out so login page can hint
+    const profile = localStorage.getItem("oratio_profile");
+    if (profile) {
+      const parsed = JSON.parse(profile) as { username?: string };
+      if (parsed.username && parsed.username !== "anonymous") {
+        localStorage.setItem("oratio_last_user", parsed.username);
+      }
+    }
+    localStorage.setItem("oratio_session", "signed-out");
+  } catch {
+    // ignore
+  }
+}
+
+export function loginProfile(username: string): boolean {
+  try {
+    const raw = localStorage.getItem("oratio_profile");
+    if (!raw) return false;
+    const profile = JSON.parse(raw) as { username?: string };
+    if (profile.username?.toLowerCase() === username.toLowerCase()) {
+      localStorage.removeItem("oratio_session");
+      localStorage.removeItem("oratio_last_user");
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export function clearAllData(): void {
+  try {
+    const keys = [
+      "oratio_profile",
+      "oratio_session",
+      "oratio_last_user",
+      "oratio_submitted",
+      "oratio_submitted_prayers",
+      "oratio_prayed",
+      "oratio_saved",
+      "oratio_reports",
+      "oratio_usernames",
+    ];
+    keys.forEach(k => localStorage.removeItem(k));
+  } catch {
+    // ignore
+  }
+}
+
 // Update username in all submitted prayers
 export function updateUsernameInPrayers(oldUsername: string, newUsername: string): void {
   try {

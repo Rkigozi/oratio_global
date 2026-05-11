@@ -5,6 +5,7 @@ import { cities, getApproximateCoordinates, PrayerRequest, CATEGORIES } from "..
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
 import { getProfile } from "../data/profile-data";
+import { CrisisResources } from "../components/crisis-resources";
 
 
 
@@ -459,6 +460,8 @@ export function Submit() {
                 <Send size={16} />
                 Submit Prayer Request
               </button>
+
+              <CrisisResources />
             </form>
           </motion.div>
         ) : (

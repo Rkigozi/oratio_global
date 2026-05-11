@@ -12,12 +12,15 @@ import { ProfileSaved } from "./pages/profile-saved";
 
 import { Splash } from "./pages/splash";
 import { Onboarding } from "./pages/onboarding";
+import { Login } from "./pages/login";
+import { Info } from "./pages/info";
 
 
 
 export const router = createBrowserRouter([
   { path: "/splash", Component: Splash },
   { path: "/onboarding", Component: Onboarding },
+  { path: "/login", Component: Login },
 
   {
     path: "/",
@@ -30,6 +33,7 @@ export const router = createBrowserRouter([
       { path: "profile/submitted", Component: ProfileSubmitted },
       { path: "profile/prayed", Component: ProfilePrayed },
       { path: "profile/saved", Component: ProfileSaved },
+      { path: "info", Component: Info },
     ],
   },
   

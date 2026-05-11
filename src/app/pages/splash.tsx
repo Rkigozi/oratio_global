@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { getProfile } from "../data/profile-data";
+import { getSessionState } from "../data/profile-data";
 
 export function Splash() {
   const navigate = useNavigate();
@@ -9,12 +9,16 @@ export function Splash() {
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
-        const profile = getProfile();
-        // Check if user has a real profile (not the default anonymous)
-        const hasProfile = profile.username !== "anonymous";
-        void navigate(hasProfile ? "/" : "/onboarding");
+        const session = getSessionState();
+        if (session === "active") {
+          void navigate("/");
+        } else if (session === "signed-out") {
+          void navigate("/login");
+        } else {
+          void navigate("/onboarding");
+        }
       } catch (error) {
-        console.error('Splash: error getting profile', error);
+        console.error('Splash: error getting session', error);
         void navigate("/onboarding");
       }
     }, 2500);
