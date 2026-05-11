@@ -14,7 +14,7 @@ const RESOURCES = [
     description: "Emotional support in many countries around the world",
   },
   {
-    name: "International Association for Suicide Prevention",
+    name: "IASP",
     url: "https://www.iasp.info/resources/Crisis_Centres/",
     description: "Directory of crisis centres worldwide",
   },

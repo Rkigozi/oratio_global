@@ -283,7 +283,7 @@ Before implementing the crisis resource links (S-002), we need accurate, verifie
 - [ ] Research suicide prevention hotline for US (988 Suicide & Crisis Lifeline)
 - [ ] Research domestic violence helpline (UK: 0808 2000 247, US: 800-799-7233)
 - [ ] Research mental health support (UK: Mind, US: NAMI)
-- [ ] Add international crisis support where available (International Association for Suicide Prevention)
+- [ ] Add international crisis support where available (IASP)
 - [ ] Document all numbers with source verification notes for inclusion in S-002
 
 ---
