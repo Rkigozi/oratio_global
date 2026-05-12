@@ -32,32 +32,23 @@
 - [x] Sign-in/sign-out flow (login page, splash routing, profile logout)
 - [x] Deployed to Netlify
 
-## What's Left
+## JIRA + GitHub Integration (May 12)
 
-### In-Person Testing (Next)
-- [ ] Recruit and schedule 6 volunteers
-- [ ] Conduct structured 15-20 min sessions
-- [ ] Observe without guiding
-- [ ] Compile observations into prioritized changes
+Backlog managed in JIRA. Source of truth: **KAN** project (Team Oratio).
 
-### v0.3 — Post-Testing
-- [ ] Act on in-person testing feedback
-- [ ] Supabase project + database schema
-- [ ] REST API layer
-- [ ] Authentication
-- [ ] PWA setup (manifest, service worker)
-- [ ] Component architecture restructure
-- [ ] Feed filtering by proximity + interests (feedback item)
+**GitHub for JIRA app** installed — branches/commits/PRs with `KAN-` in the name auto-link to JIRA issues.
 
-### v1.0 — Public Launch
-- [ ] All v0.2 + v0.3 blockers resolved
-- [ ] CI/CD pipeline (GitHub Actions → Netlify)
-- [ ] Error monitoring (Sentry)
-- [ ] Analytics
-- [ ] Safety/moderation infrastructure (queue, dashboard, auto-filtering)
-- [ ] Performance (code splitting, Lighthouse > 90)
-- [ ] Testing framework + critical path tests
-- [ ] Performance targets: < 3s load on 3G, bundle < 500KB
+**JIRA CLI** for terminal management:
+- `jira ls -p KAN` — list issues
+- `jira sprint -r "KAN board" -s "Sprint 1"` — view sprint
+- `jira jql "project=KAN"` — run JQL
+- `jira start/stop/done KAN-N` — transition statuses
+
+### Cleanup
+- Smart commit git hook removed (replaced by GitHub app)
+- `.githooks/` directory deleted
+- Test branch `KAN-34-recruit-testers` deleted
+- `core.hooksPath` git config unset
 
 ---
-*Last Updated: 2026-05-11*
+*Last Updated: 2026-05-12*

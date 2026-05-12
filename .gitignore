@@ -124,6 +124,9 @@ Temporary Items
 *.local
 test_server.sh
 
+# JIRA CLI config (contains API tokens)
+.jira-cli/
+
 # Local test files
 *.test.local
 
