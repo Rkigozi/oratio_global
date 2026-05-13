@@ -50,5 +50,16 @@ Backlog managed in JIRA. Source of truth: **KAN** project (Team Oratio).
 - Test branch `KAN-34-recruit-testers` deleted
 - `core.hooksPath` git config unset
 
+## Sprint 1 — Beta Landing Page + Mobile Polish (May 13)
+- [x] Created beta landing page (`/landing`) replacing `/splash`
+- [x] Adaptive CTAs based on session state (signed-out vs new user)
+- [x] Session-aware routing: active users skip landing
+- [x] Fixed double safe-area padding on notched iPhones
+- [x] Auth pages: `px-8` → `px-6` for more content width
+- [x] Submit page: single-column grid on small screens
+- [x] Feed cards: removed `overflow-hidden` clipping dropdown
+- [x] World map: reduced `minHeight` 400px → 250px for landscape
+- [x] Landing page: responsive logo, fixed scroll on iPhone, safe-area padding
+
 ---
 *Last Updated: 2026-05-12*

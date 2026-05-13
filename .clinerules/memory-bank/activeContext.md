@@ -134,6 +134,37 @@ Decision: Keep original concentric circle markers (gold inner + blue outer). Glo
 - v1.0 (Jun 16 → Jul 21): Safety, Profile, PWA, Testing, Release
 - Minor gaps noted (search, error boundaries, loading states) — deferred
 
+## Session Summary (May 13) — Beta Landing Page + Mobile Audit
+
+### What Got Built
+- **Beta Landing Page** (`/landing`) — replaced auto-redirecting splash page
+  - Animated "O" + cross hero entrance
+  - Tagline: "Pray together. Anywhere."
+  - Mission statement + 3 feature cards (Map, Submit, Pray)
+  - Beta/prototype transparency notice
+  - Adaptive CTAs: "Start Praying" (first visit), "Sign In"/"Create Profile" (returning)
+  - Session-aware routing: active users skip landing, signed-out/first-time users see it
+
+### Routing Changes
+- `/splash` → `/landing` route rename
+- Layout.tsx: only redirect `/` → `/landing` if session is NOT active
+- All `navigate("/splash")` calls updated to `navigate("/landing")`
+- `splash.tsx` deleted
+
+### Mobile UI Audit Fixes (all pages checked)
+| Fix | Impact |
+|---|---|
+| **Double safe-area padding** | Removed `env(safe-area-inset-*)` from `#root` in `index.html` — Header and BottomNav now handle it exclusively |
+| **Auth pages too cramped** | `onboarding.tsx` & `login.tsx`: `px-8` → `px-6` (content width 256px → 272px on 320px screens) |
+| **Submit grid too narrow** | `submit.tsx`: `grid-cols-2` → `grid-cols-1 sm:grid-cols-2` (stacks on small screens) |
+| **Feed dropdown clipped** | `feed-card.tsx`: removed `overflow-hidden` from card wrapper so the three-dot menu isn't cut off |
+| **Map overflow in landscape** | `world-map-clean.tsx`: `minHeight` reduced from 400px to 250px |
+| **Landing logo too large** | `landing.tsx`: `6rem` → `clamp(4.5rem, 15vw, 6rem)` for responsive sizing |
+| **Landing scroll broken on iPhone** | Outer container: `min-h-screen` → `h-dvh` so `overflow-y-auto` actually triggers; added `pb-[max(2rem,env(safe-area-inset-bottom))]` for home indicator |
+
+### Next
+- In-person testing sessions — confirm venue with Vicar Ben, recruit volunteers
+
 ---
-*Last Updated: 2026-05-12*
+*Last Updated: 2026-05-13*
 *Next: In-person testing sessions — confirm venue with Vicar Ben, recruit volunteers*
