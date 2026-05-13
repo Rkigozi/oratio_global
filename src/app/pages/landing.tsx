@@ -69,7 +69,7 @@ export function Landing() {
 
   return (
     <div
-      className="flex flex-col min-h-screen w-full text-[#e8eaf6] overflow-y-auto relative"
+      className="flex flex-col h-dvh w-full text-[#e8eaf6] overflow-y-auto relative"
       style={{ background: "#0A1A3A" }}
     >
       <div
@@ -77,7 +77,7 @@ export function Landing() {
         style={{ background: "radial-gradient(circle, rgba(124, 143, 255, 0.3), transparent 70%)" }}
       />
 
-      <div className="relative z-10 flex flex-col items-center w-full max-w-lg mx-auto px-6 pt-20 pb-8">
+      <div className="relative z-10 flex flex-col items-center w-full max-w-lg mx-auto px-6 pt-20 pb-[max(2rem,env(safe-area-inset-bottom))]">
         {/* Hero */}
         <div className="flex flex-col items-center w-full mb-14">
           <motion.div
@@ -256,7 +256,7 @@ export function Landing() {
         </motion.div>
 
         {/* Footer */}
-        <p className="text-center text-[#3e4460] text-[10px] pb-8">
+        <p className="text-center text-[#3e4460] text-[10px] pb-2">
           Prototype · Your data stays on this device
         </p>
       </div>
