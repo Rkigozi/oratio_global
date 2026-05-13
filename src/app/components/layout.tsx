@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation } from "react-router";
 import { useEffect, useState } from "react";
 import { Header } from "./header";
 import { BottomNav } from "./bottom-nav";
+import { getSessionState } from "../data/profile-data";
 import type { PrayerRequest } from "../data/prayer-data";
 
 let globalHasRedirected = false;
@@ -14,7 +15,16 @@ export function Layout() {
   useEffect(() => {
     if (location.pathname === "/" && !globalHasRedirected) {
       globalHasRedirected = true;
-      void navigate("/splash");
+      try {
+        const session = getSessionState();
+        if (session !== "active") {
+          void navigate("/landing");
+          return;
+        }
+      } catch {
+        void navigate("/landing");
+        return;
+      }
     }
     setTimeout(() => setChecked(true), 0);
   }, [navigate, location]);

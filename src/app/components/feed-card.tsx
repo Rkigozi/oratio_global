@@ -99,7 +99,7 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap }: FeedCard
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.6), duration: 0.4 }}
       onClick={() => onTap(prayer)}
-      className="rounded-2xl p-4 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform duration-150"
+      className="rounded-2xl p-4 relative cursor-pointer active:scale-[0.98] transition-transform duration-150"
       style={{
         background:
           "linear-gradient(160deg, rgba(17, 26, 58, 0.7), rgba(12, 18, 48, 0.5))",

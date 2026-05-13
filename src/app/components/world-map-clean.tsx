@@ -276,7 +276,7 @@ export function WorldMapClean({
       className="world-map-clean h-full w-full rounded-2xl overflow-hidden"
       style={{
         background: "#0A1A3A",
-        minHeight: "400px",
+        minHeight: "250px",
       }}
     />
   );

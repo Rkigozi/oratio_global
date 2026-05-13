@@ -89,7 +89,7 @@ export function Onboarding() {
         }}
       />
 
-      <div className="relative z-10 flex flex-col flex-1 justify-center px-8 max-w-sm mx-auto w-full">
+      <div className="relative z-10 flex flex-col flex-1 justify-center px-6 max-w-sm mx-auto w-full">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}

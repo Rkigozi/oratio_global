@@ -33,7 +33,7 @@ export function Login() {
 
   const handleStartFresh = () => {
     clearAllData();
-    void navigate("/splash");
+    void navigate("/landing");
   };
 
   return (
@@ -50,7 +50,7 @@ export function Login() {
         }}
       />
 
-      <div className="relative z-10 flex flex-col flex-1 justify-center px-8 max-w-sm mx-auto w-full">
+      <div className="relative z-10 flex flex-col flex-1 justify-center px-6 max-w-sm mx-auto w-full">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}

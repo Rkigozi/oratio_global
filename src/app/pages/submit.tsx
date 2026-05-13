@@ -257,7 +257,7 @@ export function Submit() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 dropdown-grid">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 dropdown-grid">
                 {/* Location */}
                 <div className="relative" ref={locationDropdownRef}>
                   <label className="text-[#8890b5] text-sm mb-2 block">Location</label>
