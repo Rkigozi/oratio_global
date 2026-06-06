@@ -94,10 +94,10 @@ Currently the prayer reaction uses a generic "like" icon (Jemima: "instead of ju
 Prepare structured materials for observed testing sessions to get high-quality signal from each tester. Deliverables are documents, not code.
 
 **Session format:**
-- 5-10 minutes per tester
-- Hand phone to tester, do not explain anything
-- Observe silently for first 30 seconds
-- Then guide through tasks
+- ~30 min group session (6-7 testers in one room)
+- Everyone uses their own phone
+- Link delivered via QR code on printed sheet
+- Group arrives → briefed → silent session → group debrief
 
 **Task cards (3-4 per session):**
 1. "Find a prayer about healing and pray for it"
@@ -119,8 +119,9 @@ Prepare structured materials for observed testing sessions to get high-quality s
 - "Would you use this? Why or why not?"
 
 **Subtasks (in description):**
-- [ ] Write session script with timing
-- [ ] Create task cards (one per index card or printed sheet)
-- [ ] Build observation framework checklist
+- [ ] Tester availability poll — confirm date (Tues 2nd, Fri 5th, or Sat 6th June) + evening time
+- [ ] Write facilitator session script with timing
+- [ ] Create tester task card (QR code + 4 tasks, one A4 page)
+- [ ] Build observation checklist (one page per tester)
 - [ ] Write debrief questions
-- [ ] Create one-page note-taking template per tester
+- [ ] Print all materials

@@ -92,25 +92,25 @@ Decision: Keep original concentric circle markers (gold inner + blue outer). Glo
 **KAN** project fully populated:
 
 ### Active Sprint
-**Sprint 1 — In-Person Testing** (May 12–26)
-- KAN-34: Recruit testing volunteers
-- KAN-35: Compile findings into v0.3 plan
-- KAN-36: Create in-person testing session kit
-- KAN-37: Schedule and conduct testing sessions
+**Sprint 1 — In-Person Testing** (May 12–Jun 13)
+- KAN-34: Recruit testing volunteers ✅
+- KAN-35: Compile findings into v0.3 plan (due Jun 10)
+- KAN-36: Create in-person testing session kit ✅
+- KAN-37: Schedule and conduct testing sessions (Jun 7)
 
 ### Epic Backlog (v0.3 → v1.0)
 | Epic | Key | Timeline |
 |------|-----|----------|
 | Sprint 0 — Foundation (✅ Done) | KAN-63 | Apr 20 → May 11 |
-| Beta Testing & Validation | KAN-24 | May 12 → May 26 |
-| Backend & Data Layer | KAN-25 | May 27 → Jun 16 |
-| Core Prayer Loop (v0.3 Polish) | KAN-27 | May 27 → Jun 9 |
-| Authentication & Onboarding | KAN-26 | Jun 2 → Jun 16 |
-| Safety & Moderation (v1.0) | KAN-28 | Jun 16 → Jul 7 |
-| User Profile & Community | KAN-29 | Jun 16 → Jul 7 |
-| Performance & PWA | KAN-30 | Jun 23 → Jul 14 |
-| Testing & Quality | KAN-31 | Jun 23 → Jul 14 |
-| Release & Launch | KAN-32 | Jul 7 → Jul 21 |
+| Beta Testing & Validation | KAN-24 | Jun 6 → Jun 13 |
+| Backend & Data Layer | KAN-25 | Jun 16 → Jul 7 |
+| Core Prayer Loop (v0.3 Polish) | KAN-27 | Jun 16 → Jun 30 |
+| Authentication & Onboarding | KAN-26 | Jun 23 → Jul 7 |
+| Safety & Moderation (v1.0) | KAN-28 | Jul 7 → Jul 28 |
+| User Profile & Community | KAN-29 | Jul 7 → Jul 28 |
+| Performance & PWA | KAN-30 | Jul 14 → Aug 4 |
+| Testing & Quality | KAN-31 | Jul 14 → Aug 4 |
+| Release & Launch | KAN-32 | Jul 28 → Aug 11 |
 
 29 stories + 1 subtask across 9 future epics. Sprint 0 closed with 11 items done.
 
@@ -120,7 +120,7 @@ Decision: Keep original concentric circle markers (gold inner + blue outer). Glo
 - **JIRA CLI connected** to KAN (Team Oratio) project at oratioglobal.atlassian.net
 - **Full backlog populated** — 10 epics, 39 stories, 1 subtask (50 total issues)
 - **Sprint 0 — Foundation** created & closed (11 items, all Done)
-- **Sprint 1 — In-Person Testing** created & active (4 tasks)
+- **Sprint 1 — In-Person Testing** created & active (4 tasks, later extended to Jun 13)
 - **GitHub for JIRA app** integration tested and working — branches with `KAN-` auto-link
 - **Timeline dates** set on all 9 future epics (May 12 → Jul 21)
 - **Issue types corrected** — ops/infra items set to Task, features set to Story
@@ -130,8 +130,8 @@ Decision: Keep original concentric circle markers (gold inner + blue outer). Glo
 - **KAN-75** added: Landing, About, and marketing pages (under KAN-32)
 
 ### Backlog Health
-- v0.3 (May 27 → Jun 16): Backend, Auth, Core Prayer Loop Polish
-- v1.0 (Jun 16 → Jul 21): Safety, Profile, PWA, Testing, Release
+- v0.3 (Jun 16 → Jul 7): Backend, Auth, Core Prayer Loop Polish
+- v1.0 (Jul 7 → Aug 11): Safety, Profile, PWA, Testing, Release
 - Minor gaps noted (search, error boundaries, loading states) — deferred
 
 ## Session Summary (May 13) — Beta Landing Page + Mobile Audit

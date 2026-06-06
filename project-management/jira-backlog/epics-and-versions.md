@@ -92,6 +92,8 @@ Full moderation queue + dashboard. Backend, auth, PWA, monitoring all live. Laun
 **What it covers:** Recruiting testers, test session scripts, observation logistics, compiling findings into prioritized changes, tracking which feedback gets actioned, communicating updates to testers.
 **Launch gate:** Produces the change list that feeds v0.3 and ultimately v1.0.
 
+**KAN-005 (v0.2):** Create in-person testing session kit. Subtasks include tester availability poll (dates: Tues 2nd, Fri 5th, Sat 6th June), facilitator script, task card with QR, observation checklist, debrief questions.
+
 ---
 
 ## Example Stories — Epic 1: Backend & Data Layer
