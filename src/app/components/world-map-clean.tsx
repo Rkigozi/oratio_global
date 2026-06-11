@@ -268,7 +268,7 @@ export function WorldMapClean({
   return (
     <div
       ref={containerRef}
-      className="world-map-clean h-full w-full rounded-2xl overflow-hidden"
+      className="world-map-clean h-full w-full overflow-hidden"
       style={{
         background: "#0A1A3A",
         minHeight: "250px",
