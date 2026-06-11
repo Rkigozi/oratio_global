@@ -1,16 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { Globe, Heart, PenLine, LogIn, User } from "lucide-react";
-import { getSessionState } from "../data/profile-data";
-
-function getLastUser(): string {
-  try {
-    return localStorage.getItem("oratio_last_user") || "";
-  } catch {
-    return "";
-  }
-}
+import { Globe, Heart, PenLine } from "lucide-react";
+import { supabase } from "../../lib/supabase";
 
 const features = [
   {
@@ -32,44 +24,31 @@ const features = [
 
 export function Landing() {
   const navigate = useNavigate();
-  const [session, setSession] = useState<"active" | "signed-out" | "no-profile">("no-profile");
-  const [lastUser, setLastUser] = useState("");
-
   useEffect(() => {
-    try {
-      const state = getSessionState();
-      if (state === "active") {
-        void navigate("/", { replace: true });
-        return;
+    const check = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) {
+          void navigate("/", { replace: true });
+        }
+      } catch {
+        // Supabase not configured
       }
-      setSession(state);
-      if (state === "signed-out") {
-        setLastUser(getLastUser());
-      }
-    } catch {
-      // fall through to "no-profile"
-    }
+    };
+    void check();
   }, [navigate]);
 
   const handleSignIn = () => {
     void navigate("/login");
   };
 
-  const handleNewProfile = () => {
-    void navigate("/onboarding");
-  };
-
   const handleStart = () => {
-    if (session === "signed-out") {
-      void navigate("/login");
-    } else {
-      void navigate("/onboarding");
-    }
+    void navigate("/onboarding");
   };
 
   return (
     <div
-      className="flex flex-col h-dvh w-full text-[#e8eaf6] overflow-y-auto relative"
+      className="flex flex-col h-dvh w-full text-[#e8eaf6] relative overflow-hidden"
       style={{ background: "#0A1A3A" }}
     >
       <div
@@ -77,7 +56,8 @@ export function Landing() {
         style={{ background: "radial-gradient(circle, rgba(124, 143, 255, 0.3), transparent 70%)" }}
       />
 
-      <div className="relative z-10 flex flex-col items-center w-full max-w-lg mx-auto px-6 pt-20 pb-[max(2rem,env(safe-area-inset-bottom))]">
+      <div className="relative z-10 flex-1 overflow-y-auto">
+        <div className="flex flex-col items-center w-full max-w-lg mx-auto px-6 pt-20 pb-[max(2rem,env(safe-area-inset-bottom))]">
         {/* Hero */}
         <div className="flex flex-col items-center w-full mb-14">
           <motion.div
@@ -157,51 +137,28 @@ export function Landing() {
             transition={{ duration: 0.8, delay: 1.2 }}
             className="mt-10 w-full max-w-xs space-y-3"
           >
-            {session === "signed-out" ? (
-              <>
-                {lastUser && (
-                  <p className="text-[#5a6080] text-xs text-center flex items-center justify-center gap-1.5 mb-2">
-                    <User size={12} />
-                    Last seen as <span className="text-[#8890b5]">@{lastUser}</span>
-                  </p>
-                )}
-                <button
-                  onClick={handleSignIn}
-                  className="w-full py-4 rounded-full text-sm flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 active:scale-95"
-                  style={{
-                    background: "linear-gradient(135deg, #7c8fff, #5a6fd6)",
-                    color: "#ffffff",
-                    boxShadow: "0 4px 28px rgba(124, 143, 255, 0.3), 0 0 0 1px rgba(124,143,255,0.1)",
-                  }}
-                >
-                  <LogIn size={15} />
-                  Sign In
-                </button>
-                <button
-                  onClick={handleNewProfile}
-                  className="w-full py-3.5 rounded-full text-sm cursor-pointer transition-all duration-300 active:scale-95"
-                  style={{
-                    background: "rgba(124, 143, 255, 0.06)",
-                    color: "#6b7499",
-                    border: "1px solid rgba(124,143,255,0.1)",
-                  }}
-                >
-                  New here? Create your profile
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={handleStart}
-                className="w-full py-4 rounded-full text-sm flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 active:scale-95"
-                style={{
-                  background: "linear-gradient(135deg, #7c8fff, #5a6fd6)",
-                  color: "#ffffff",
-                  boxShadow: "0 4px 28px rgba(124, 143, 255, 0.3), 0 0 0 1px rgba(124,143,255,0.1)",
-                }}
-              >
-                Start Praying
-              </button>
-            )}
+            <button
+              onClick={handleStart}
+              className="w-full py-4 rounded-full text-sm flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 active:scale-95"
+              style={{
+                background: "linear-gradient(135deg, #7c8fff, #5a6fd6)",
+                color: "#ffffff",
+                boxShadow: "0 4px 28px rgba(124, 143, 255, 0.3), 0 0 0 1px rgba(124,143,255,0.1)",
+              }}
+            >
+              Start Praying
+            </button>
+            <button
+              onClick={handleSignIn}
+              className="w-full py-3.5 rounded-full text-sm cursor-pointer transition-all duration-300 active:scale-95"
+              style={{
+                background: "rgba(124, 143, 255, 0.06)",
+                color: "#6b7499",
+                border: "1px solid rgba(124,143,255,0.1)",
+              }}
+            >
+              I already have an account
+            </button>
           </motion.div>
         </div>
 
@@ -259,6 +216,7 @@ export function Landing() {
         <p className="text-center text-[#3e4460] text-[10px] pb-2">
           Prototype · Your data stays on this device
         </p>
+        </div>
       </div>
     </div>
   );

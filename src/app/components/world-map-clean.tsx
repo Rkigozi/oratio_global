@@ -56,19 +56,28 @@ export function WorldMapClean({
         maxBoundsViscosity: 0.8,
       });
 
-      // ESRI Dark Gray Canvas - Dark grey ocean, light grey continents, matches app theme
+      // ESRI Light Gray — minimal, clean, light land/ocean, clear borders
       L.tileLayer(
-        "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+        "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
         {
-          attribution: '&copy; <a href="https://www.esri.com/">Esri</a>, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, and the GIS user community',
+          attribution: '&copy; Esri',
           maxZoom: 10,
           crossOrigin: true,
         }
       ).addTo(map);
 
-        // Canvas renderer — most reliable (created in updateMarkers)
-        layerGroupRef.current = L.layerGroup().addTo(map);
-        labelLayerRef.current = L.layerGroup().addTo(map);
+      // Reference layer — country outlines, city labels
+      L.tileLayer(
+        "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
+        {
+          maxZoom: 10,
+          crossOrigin: true,
+        }
+      ).addTo(map);
+
+      // Canvas renderer
+      layerGroupRef.current = L.layerGroup().addTo(map);
+      labelLayerRef.current = L.layerGroup().addTo(map);
         mapRef.current = map;
         map.on('zoomend', () => {
           setZoom(map.getZoom());
@@ -134,51 +143,39 @@ export function WorldMapClean({
         outerRadius = 28 + intensity * 14;
       }
 
-      // ── Angelic Color Scheme ──
-      // Inner core: White-gold (pure light from prayers)
-      const innerHue = 60; // Gold/Yellow tone
-      const innerSaturation = 80;
-      const innerLightness = 85 + intensity * 10; // 85-95% (very bright)
-      const innerColor = `hsl(${innerHue}, ${innerSaturation}%, ${innerLightness}%)`;
-      
-      // Outer glow: Heavenly blue halo (God's grace)
-      const outerHue = 220; // Heavenly blue
-      const outerSaturation = 50;
-      const outerLightness = 70 + intensity * 10; // 70-80%
-      // Outer glow has transparency for ethereal appearance
-      const outerColor = `hsla(${outerHue}, ${outerSaturation}%, ${outerLightness}%, ${0.3 + intensity * 0.2})`;
+      // ── Clean single circle marker ──
+      // Inner core: warm gold
+      const innerColor = `hsl(42, 85%, ${55 + intensity * 15}%)`;
+      // Outer border: white for contrast
+      const markerColor = "rgba(255,255,255,0.4)";
 
-      // ── Create Outer Glow (Halo) ──
-      const outerGlow = L.circleMarker(
-        [prayer.lat, prayer.lng],
-        {
+      // Outer glow only visible at higher zoom levels
+      if (zoom >= 6) {
+        L.circleMarker([prayer.lat, prayer.lng], {
           renderer,
-          radius: outerRadius,
-          color: outerColor,
-          fillColor: outerColor,
+          radius: innerRadius + 6,
+          color: "rgba(255,255,255,0.08)",
+          fillColor: "rgba(255,255,255,0.04)",
           fillOpacity: 1,
           weight: 0,
-          interactive: false, // Not clickable - just visual
-          bubblingMouseEvents: false,
-        }
-      );
+          interactive: false,
+        }).addTo(group);
+      }
 
-      // ── Create Inner Core (Prayer Light) ──
       const innerCore = L.circleMarker(
         [prayer.lat, prayer.lng],
         {
           renderer,
           radius: innerRadius,
-          color: innerColor,
+          color: markerColor,
           fillColor: innerColor,
           fillOpacity: 1,
-          weight: 0,
+          weight: outerRadius > 20 ? 2.5 : 2,
           interactive: true,
           bubblingMouseEvents: false,
         }
       );
 
-       // Make inner core clickable
        innerCore.on("click", () => onPrayerTapRef.current(prayer));
        
        // Add city label tooltip when enabled and zoomed in
@@ -192,9 +189,7 @@ export function WorldMapClean({
          }).openTooltip();
        }
        
-       // Add to map - outer first (background), inner on top
-       outerGlow.addTo(group);
-       innerCore.addTo(group);
+        innerCore.addTo(group);
     }
    }, [prayers, showCityLabels]);
 
@@ -230,9 +225,9 @@ export function WorldMapClean({
         // Create a simple pulse effect
         const pulse = L.circleMarker([prayer.lat, prayer.lng], {
           radius: 20,
-          color: '#FFF5E0',
-          fillColor: '#FFF5E0',
-          fillOpacity: 0.7,
+          color: '#7c8fff',
+          fillColor: '#7c8fff',
+          fillOpacity: 0.5,
           weight: 0,
           interactive: false,
         }).addTo(layerGroupRef.current);
@@ -277,6 +272,7 @@ export function WorldMapClean({
       style={{
         background: "#0A1A3A",
         minHeight: "250px",
+        border: "1px solid rgba(124,143,255,0.1)",
       }}
     />
   );

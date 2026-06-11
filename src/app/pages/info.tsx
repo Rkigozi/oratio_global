@@ -8,6 +8,7 @@ import {
   Bell,
   Users,
   LogIn,
+  Smartphone,
 } from "lucide-react";
 
 const roadmapItems = [
@@ -68,6 +69,9 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function Info() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+
   return (
     <div
       className="w-full h-full flex flex-col"
@@ -159,6 +163,75 @@ export function Info() {
               ))}
             </div>
           </motion.div>
+
+          {/* ── Install Oratio ── */}
+          {!isStandalone && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Smartphone size={16} className="text-[#7c8fff]" />
+                <h2 className="text-[#e2e4f0] font-heading text-sm font-light">
+                  Install Oratio
+                </h2>
+              </div>
+              <div
+                className="rounded-xl p-4 border"
+                style={{
+                  background: "rgba(124,143,255,0.04)",
+                  borderColor: "rgba(124,143,255,0.08)",
+                }}
+              >
+                {isIOS ? (
+                  <>
+                    <p className="text-[#d0d4e8] text-sm mb-3">
+                      Get the full Oratio experience — install it on your home screen like any other app.
+                    </p>
+                    <ol className="space-y-2 text-[#6b7499] text-xs">
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#7c8fff] mt-0.5 font-medium">1.</span>
+                        <span>Tap the <strong className="text-[#8890b5]">Share</strong> button <span className="inline-flex items-center gap-0.5">(<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5a6080" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>)</span> at the bottom of Safari</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#7c8fff] mt-0.5 font-medium">2.</span>
+                        <span>Scroll down and tap <strong className="text-[#8890b5]">Add to Home Screen</strong></span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#7c8fff] mt-0.5 font-medium">3.</span>
+                        <span>Tap <strong className="text-[#8890b5]">Add</strong> in the top-right corner</span>
+                      </li>
+                    </ol>
+                    <p className="text-[#4e5573] text-[10px] mt-3">Oratio will open full-screen, just like a native app.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[#d0d4e8] text-sm mb-3">
+                      Install Oratio on your device for quick access and a full-screen experience.
+                    </p>
+                    <ol className="space-y-2 text-[#6b7499] text-xs">
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#7c8fff] mt-0.5 font-medium">1.</span>
+                        <span>Open Chrome and navigate to Oratio</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#7c8fff] mt-0.5 font-medium">2.</span>
+                        <span>Tap the Chrome menu <strong className="text-[#8890b5]">⋮</strong> (three dots)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-[#7c8fff] mt-0.5 font-medium">3.</span>
+                        <span>Tap <strong className="text-[#8890b5]">Install Oratio</strong> or <strong className="text-[#8890b5]">Add to Home Screen</strong></span>
+                      </li>
+                    </ol>
+                  </>
+                )}
+                <div className="mt-3 pt-3 border-t border-[rgba(124,143,255,0.06)]">
+                  <p className="text-[#4e5573] text-[10px]">Takes 30 seconds</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* ── Changelog ── */}
           <motion.div

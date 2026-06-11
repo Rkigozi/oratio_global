@@ -19,8 +19,9 @@ export const prayerSchema = z.object({
     })
     .trim(),
   location: z.string()
-    .min(2, { message: "Please select a location" })
-    .max(100, { message: "Location name too long" }),
+    .max(100, { message: "Location name too long" })
+    .optional()
+    .default(""),
   category: z.string()
     .min(1, { message: "Please select a category" })
     .max(50, { message: "Category name too long" }),

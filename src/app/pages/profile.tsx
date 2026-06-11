@@ -19,18 +19,34 @@ import {
   getPrayedForPrayers,
   isUsernameAvailable,
   changeUsername,
-  logoutProfile,
 } from "../data/profile-data";
 import { validateProfile } from "../../lib/validation";
+import { useAuth } from "../../lib/auth-context";
+import { uploadAvatar, getInitialAvatarUrl } from "../../lib/upload";
 
 export function Profile() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [profile, setProfile] = useState(getProfile);
   const [editOpen, setEditOpen] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [expandedPreviewId, setExpandedPreviewId] = useState<string | null>(null);
   const [editError, setEditError] = useState<string>("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPhoto(true);
+    const url = await uploadAvatar(file);
+    if (url) {
+      const updated = { ...profile, photo: url };
+      saveProfile(updated);
+      setProfile(updated);
+    }
+    setUploadingPhoto(false);
+  };
   
   const handleSaveProfile = () => {
     setEditError("");
@@ -146,7 +162,11 @@ export function Profile() {
                   className="w-full h-full object-cover rounded-full"
                 />
               ) : (
-                <span className="text-3xl">{profile.avatar}</span>
+                <img
+                  src={getInitialAvatarUrl(profile.username)}
+                  alt="Profile"
+                  className="w-full h-full object-cover rounded-full"
+                />
               )}
             </div>
 
@@ -393,7 +413,7 @@ export function Profile() {
             </button>
             <button
               onClick={() => {
-                logoutProfile();
+                void signOut();
                 void navigate("/landing");
               }}
               className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"
@@ -466,20 +486,33 @@ export function Profile() {
                    )}
                  </div>
                 
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setEditOpen(false)}
-                    className="flex-1 py-3.5 rounded-full text-sm text-[#8b96c0] bg-[rgba(124,143,255,0.06)] border border-[rgba(124,143,255,0.1)] hover:bg-[rgba(124,143,255,0.12)] transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                     onClick={handleSaveProfile}
-                    className="flex-1 py-3.5 rounded-full text-sm text-white bg-[linear-gradient(135deg,#7c8fff,#5a6fd6)] hover:opacity-90 transition-all cursor-pointer"
-                  >
-                    Save Changes
-                  </button>
-                </div>
+                 <div className="mb-6 text-center">
+                   <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.06)] border border-[rgba(124,143,255,0.1)] hover:bg-[rgba(124,143,255,0.12)] transition-all cursor-pointer">
+                     {uploadingPhoto ? "Uploading..." : "Change Photo"}
+                     <input
+                       type="file"
+                       accept="image/*"
+                       onChange={handlePhotoUpload}
+                       className="hidden"
+                       disabled={uploadingPhoto}
+                     />
+                   </label>
+                 </div>
+
+                 <div className="flex gap-3">
+                   <button
+                     onClick={() => setEditOpen(false)}
+                     className="flex-1 py-3.5 rounded-full text-sm text-[#8b96c0] bg-[rgba(124,143,255,0.06)] border border-[rgba(124,143,255,0.1)] hover:bg-[rgba(124,143,255,0.12)] transition-all cursor-pointer"
+                   >
+                     Cancel
+                   </button>
+                   <button
+                      onClick={handleSaveProfile}
+                     className="flex-1 py-3.5 rounded-full text-sm text-white bg-[linear-gradient(135deg,#7c8fff,#5a6fd6)] hover:opacity-90 transition-all cursor-pointer"
+                   >
+                     Save Changes
+                   </button>
+                 </div>
               </div>
             </Drawer.Content>
           </Drawer.Portal>

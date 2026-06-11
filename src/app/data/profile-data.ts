@@ -169,6 +169,16 @@ export function getSessionState(): UserSession {
   }
 }
 
+// Check if Supabase session is active (used by auth context and layout)
+export function hasSupabaseSession(): boolean {
+  try {
+    const raw = localStorage.getItem("sb-" + import.meta.env.VITE_SUPABASE_URL?.split("//")[1]?.split(".")[0] + "-auth-token");
+    return !!raw;
+  } catch {
+    return false;
+  }
+}
+
 export function logoutProfile(): void {
   try {
     // Remember who signed out so login page can hint

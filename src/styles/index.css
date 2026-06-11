@@ -9,7 +9,7 @@ input, textarea, select {
 
 /* ── Leaflet dark theme overrides ──────────────────────────────────── */
 .leaflet-container {
-  background: #0A1A3A !important;
+  background: #e8ecf0 !important;
 }
 
 /* CartoDB Dark Matter - dark map tested without brightness filter */
@@ -21,9 +21,9 @@ input, textarea, select {
   display: none !important;
 }
 
-/* Label layer — readable but not competing with lights */
+/* Ensure map markers are fully visible */
 .leaflet-overlay-pane {
-  opacity: 0.35;
+  opacity: 1;
 }
 
 /* ── Burst / star markers (temporary overlays — no Leaflet defaults) */

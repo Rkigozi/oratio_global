@@ -2,7 +2,7 @@ import { Outlet, useNavigate, useLocation } from "react-router";
 import { useEffect, useState } from "react";
 import { Header } from "./header";
 import { BottomNav } from "./bottom-nav";
-import { getSessionState } from "../data/profile-data";
+import { supabase } from "../../lib/supabase";
 import type { PrayerRequest } from "../data/prayer-data";
 
 let globalHasRedirected = false;
@@ -10,23 +10,25 @@ let globalHasRedirected = false;
 export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [checked, setChecked] = useState(false);
+  const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
     if (location.pathname === "/" && !globalHasRedirected) {
       globalHasRedirected = true;
-      try {
-        const session = getSessionState();
-        if (session !== "active") {
-          void navigate("/landing");
-          return;
+      const check = async () => {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (data?.session) { setShowContent(true); return; }
+        } catch {
+          // supabase not available
         }
-      } catch {
         void navigate("/landing");
         return;
-      }
+      };
+      void check();
+    } else {
+      setShowContent(true);
     }
-    setTimeout(() => setChecked(true), 0);
   }, [navigate, location]);
 
   // Register window bridges once (shared across all routes)
@@ -59,7 +61,7 @@ export function Layout() {
     };
   }, []);
 
-  if (!checked) return null;
+  if (!showContent) return null;
 
   return (
     <div

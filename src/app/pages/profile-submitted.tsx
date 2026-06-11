@@ -158,7 +158,7 @@ export function ProfileSubmitted() {
                       </p>
                     </div>
                     {selectedPrayer.createdAt && (
-                      <p className="text-[#3e4460] text-[11px] mb-5 text-center">
+                      <p className="text-[#6b7499] text-[11px] mb-5 text-center">
                         {timeAgo(selectedPrayer.createdAt)}
                       </p>
                     )}

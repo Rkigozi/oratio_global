@@ -26,7 +26,7 @@ export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
     <header
       className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between py-4 px-4 pt-[max(1rem,env(safe-area-inset-top))]"
       style={{
-        background: "linear-gradient(to bottom, rgba(10, 26, 58, 0.95) 20%, rgba(10, 26, 58, 0))",
+        background: "linear-gradient(to bottom, rgba(10, 26, 58, 0.97) 40%, rgba(10, 26, 58, 0))",
       }}
     >
       {/* Left side: Back button or empty spacer */}

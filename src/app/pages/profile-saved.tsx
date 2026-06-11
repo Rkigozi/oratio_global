@@ -106,7 +106,7 @@ export function ProfileSaved() {
                           </span>
                         )}
                         {prayer.createdAt && (
-                          <span className="text-[#3e4460] text-[10px] ml-auto">
+                          <span className="text-[#6b7499] text-[10px] ml-auto">
                             {timeAgo(prayer.createdAt)}
                           </span>
                         )}
@@ -161,7 +161,7 @@ export function ProfileSaved() {
                       </p>
                     </div>
                     {selectedPrayer.createdAt && (
-                      <p className="text-[#3e4460] text-[11px] mb-5 text-center">
+                      <p className="text-[#6b7499] text-[11px] mb-5 text-center">
                         {timeAgo(selectedPrayer.createdAt)}
                       </p>
                     )}

@@ -85,7 +85,7 @@ export function PrayerRow({
               </span>
             )}
             {prayer.createdAt && (
-              <span className="text-[#3e4460] text-[10px] ml-auto">
+              <span className="text-[#6b7499] text-[10px] ml-auto">
                 {timeAgo(prayer.createdAt)}
               </span>
             )}

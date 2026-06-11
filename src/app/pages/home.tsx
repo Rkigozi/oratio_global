@@ -1,33 +1,41 @@
 import { useState, useCallback, useEffect } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router";
 import { WorldMapClean } from "../components/world-map-clean";
 import { mockHotspots } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
-import { Heart, ArrowRight } from "lucide-react";
+import { Heart, ArrowRight, MapPin, Locate } from "lucide-react";
 import { Drawer } from "vaul";
 import { getStoredSubmittedPrayers } from "../data/profile-data";
+import { useGeolocation } from "../../lib/use-geolocation";
 
 
 export function Home() {
   
   const navigate = useNavigate();
+  const { location: geoLocation, loading: geoLoading, denied: geoDenied, requestLocation } = useGeolocation();
    const [prayers, setPrayers] = useState(() => {
      const submitted = getStoredSubmittedPrayers();
      const combined = [...submitted, ...mockHotspots];
-     // Remove duplicates by id (should not happen but safe)
      const unique = combined.filter((p, index, self) => 
        index === self.findIndex((p2) => p2.id === p.id)
      );
-
      return unique;
    });
-  const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(
-    null
-  );
+  const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
    const [newPrayerId, setNewPrayerId] = useState<string | null>(null);
    const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null);
+   const [showGeoPrompt, setShowGeoPrompt] = useState(true);
+  const [hintDone] = useState(() => {
+    try { return !!localStorage.getItem("oratio_hint_shown"); } catch { return false; }
+  });
 
+  // Fly to user location when it's resolved
+  useEffect(() => {
+    if (geoLocation) {
+      setFlyTo({ lat: geoLocation.lat, lng: geoLocation.lng });
+    }
+  }, [geoLocation]);
 
   const handlePrayerTap = useCallback((prayer: PrayerRequest) => {
     setSelectedPrayer(prayer);
@@ -77,17 +85,30 @@ export function Home() {
       className="relative w-full h-full overflow-hidden"
       style={{ background: "#0A1A3A" }}
     >
-       {/* Header hint - Mobile optimized with desktop adjustments */}
-       <div className="absolute top-16 md:top-12 left-0 right-0 z-[500] text-center pointer-events-none flex flex-col items-center">
-         <motion.p
-           initial={{ opacity: 0, y: -10 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.5, duration: 0.8 }}
-           className="text-[#7a84a8] text-xs tracking-widest uppercase bg-[#0A1A3A]/50 backdrop-blur-md px-4 py-1.5 md:px-3 md:py-1 rounded-full border border-[rgba(124,143,255,0.08)] max-w-xs mx-auto"
+       {/* Header hint — shows once */}
+       {!hintDone && (
+         <motion.div
+           initial={{ opacity: 1 }}
+           animate={{ opacity: 1 }}
+           className="absolute top-16 left-0 right-0 z-[500] text-center pointer-events-none flex flex-col items-center"
          >
-           Tap a location to pray
-         </motion.p>
-       </div>
+           <motion.p
+             initial={{ opacity: 0, y: -10 }}
+             animate={{ opacity: [1, 1, 0] }}
+             transition={{ duration: 0.6, times: [0, 0.5, 1] }}
+             onAnimationComplete={() => {
+               try { localStorage.setItem("oratio_hint_shown", "1"); } catch {}
+             }}
+             className="text-[#e8eaf6] text-xs tracking-widest uppercase px-4 py-1.5 rounded-full max-w-xs mx-auto"
+             style={{
+               background: "rgba(10, 26, 58, 0.85)",
+               border: "1px solid rgba(124, 143, 255, 0.15)",
+             }}
+           >
+             Tap a location to pray
+           </motion.p>
+         </motion.div>
+       )}
 
 
       {/* Map area */}
@@ -100,6 +121,64 @@ export function Home() {
           />
       </div>
 
+      {/* Back to my location button */}
+      {geoLocation && (
+        <button
+          onClick={() => setFlyTo({ lat: geoLocation.lat, lng: geoLocation.lng })}
+          className="absolute bottom-28 right-4 z-[500] w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+          style={{
+            background: "rgba(10, 26, 58, 0.8)",
+            border: "1px solid rgba(124, 143, 255, 0.12)",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <Locate size={15} className="text-[#7c8fff]" />
+        </button>
+      )}
+
+      {/* Geolocation prompt */}
+      <AnimatePresence>
+        {showGeoPrompt && !geoLocation && !geoDenied && !geoLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute bottom-24 left-4 right-4 z-[500] max-w-sm mx-auto"
+          >
+            <div
+              className="rounded-xl px-4 py-3 flex items-center gap-3"
+              style={{
+                background: "rgba(10, 26, 58, 0.92)",
+                border: "1px solid rgba(124, 143, 255, 0.12)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <MapPin size={16} className="text-[#7c8fff] flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[#e2e4f0] text-sm font-medium mb-0.5">See prayers near you?</p>
+                <p className="text-[#6b7499] text-xs">Find prayers from your area</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => setShowGeoPrompt(false)}
+                  className="text-[#4e5573] hover:text-[#6b7499] text-xs transition-colors cursor-pointer"
+                >
+                  Not now
+                </button>
+                <button
+                  onClick={() => { void requestLocation(); }}
+                  className="px-3 py-1.5 rounded-full text-xs text-white cursor-pointer"
+                  style={{
+                    background: "linear-gradient(135deg, #7c8fff, #5a6fd6)",
+                  }}
+                >
+                  Allow
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Prayer Card Drawer */}
       <Drawer.Root

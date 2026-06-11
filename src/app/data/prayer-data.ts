@@ -10,6 +10,7 @@ export interface PrayerRequest {
   lat: number;
   lng: number;
   category?: string;
+  tags?: string[];
   createdAt?: string; // ISO timestamp
 }
 
@@ -38,13 +39,17 @@ const cityDatabase: Array<{
 
   // ── South America ──
   { name: "São Paulo", country: "Brazil", lat: -23.6, lng: -46.6, weight: 5 },
-  { name: "Bogotá", country: "Colombia", lat: 4.7, lng: -74.1, weight: 2 },
+  { name: "Bogotá", country: "Colombia", lat: 4.7, lng: -74.1, weight: 3 },
   { name: "Lima", country: "Peru", lat: -12.0, lng: -77.0, weight: 2 },
-  { name: "Buenos Aires", country: "Argentina", lat: -34.6, lng: -58.4, weight: 2 },
+  { name: "Buenos Aires", country: "Argentina", lat: -34.6, lng: -58.4, weight: 3 },
+  { name: "Santiago", country: "Chile", lat: -33.5, lng: -70.7, weight: 2 },
+  { name: "Medellín", country: "Colombia", lat: 6.2, lng: -75.6, weight: 2 },
 
   // ── Europe ──
   { name: "London", country: "United Kingdom", lat: 51.5, lng: -0.1, weight: 5 },
   { name: "Paris", country: "France", lat: 48.9, lng: 2.4, weight: 3 },
+  { name: "Madrid", country: "Spain", lat: 40.4, lng: -3.7, weight: 4 },
+  { name: "Barcelona", country: "Spain", lat: 41.4, lng: 2.2, weight: 2 },
   { name: "Berlin", country: "Germany", lat: 52.5, lng: 13.4, weight: 2 },
   { name: "Rome", country: "Italy", lat: 41.9, lng: 12.5, weight: 2 },
 
@@ -106,6 +111,7 @@ export function getApproximateCoordinates(cityName: string, country: string): { 
 }
 
 import { generateUsernameFromDisplayName } from "../../lib/username";
+import { addHashtagsToMockData } from "../../lib/hashtags";
 
 // ── Prayer texts & names ─────────────────────────────────────────────
 const prayerTexts = [
@@ -167,6 +173,37 @@ const prayerTexts = [
   "I've been a Christian my whole life but lately I'm questioning everything. Not my faith exactly, just... all the noise around it. Pray for clarity.",
   "Fasting this week and praying for direction. Would love others to agree with me in prayer for breakthrough.",
 
+  // ── Spanish prayers (to test translation) ──
+  "Señor, te pido por la salud de mi madre que está en el hospital. Dame fuerza para cuidarla y fe para confiar en tu voluntad. Amén.",
+  "Dios mío, estoy pasando por un momento difícil en mi matrimonio. Ayúdanos a encontrar la paz y el amor que una vez tuvimos. Te lo ruego.",
+  "Padre celestial, bendice a mis hijos y protégelos de todo mal. Guíalos por el camino correcto y que siempre te tengan en sus corazones.",
+  "Señor, necesito tu sabiduría para tomar una decisión importante sobre mi trabajo. No sé qué camino elegir. Ilumíname con tu Espíritu Santo.",
+  "Dios, tengo tanta ansiedad que no puedo dormir. Te pido que me des tu paz que sobrepasa todo entendimiento. Calma mi corazón.",
+  "Padre, te agradezco por las bendiciones de cada día. Perdóname por mis pecados y ayúdame a ser mejor persona. Te amo Señor.",
+  "Señor Jesús, intercede por mi familia que está pasando por una crisis económica. Abre puertas de oportunidad y provee para nuestras necesidades.",
+  "Dios todo poderoso, te pido por los enfermos y los que sufren. Trae sanidad y consuelo a sus vidas. Usa mis manos para bendecir a otros.",
+  "Padre amado, estoy confundido sobre mi propósito en la vida. ¿Para qué me creaste? Muéstrame el camino que debo seguir.",
+  "Señor, te entrego mis miedos y mis dudas. Ayúdame a confiar en ti aunque no entienda tus planes. Aumenta mi fe.",
+  "Dios de misericordia, te pido por la paz en nuestro país. Hay tanta violencia y división. Intercede y trae sanidad a nuestra nación.",
+  "Gracias Señor por un día más de vida. Ayúdame a vivir este día con gratitud y amor hacia los demás. Que mi vida sea un reflejo de tu amor.",
+
+  // ── French prayers ──
+  "Seigneur, je te prie pour la paix dans le monde. Protège ceux qui souffrent et donne-nous ta force pour traverser les moments difficiles.",
+  "Père céleste, bénis ma famille et mes amis. Que ton amour nous guide chaque jour et nous garde unis dans la foi.",
+  "Je traverse une période difficile avec ma santé. Seigneur, donne-moi la force de guérir et la sagesse aux médecins qui s'occupent de moi.",
+  "Mon Dieu, je te confie mes enfants. Protège-les de tout danger et guide-les sur le chemin de la vérité et de l'amour.",
+
+  // ── Portuguese prayers ──
+  "Senhor, abençoa o meu trabalho e abre portas de oportunidades. Que eu possa ser uma bênção na vida das pessoas ao meu redor.",
+  "Pai amado, cura as feridas do meu coração. Estou passando por uma dor que só Tu conheces. Restaura minha paz e minha alegria.",
+  "Deus, te agradeço por mais um dia de vida. Ajuda-me a ser grato em todas as circunstâncias e a confiar nos Teus planos para mim.",
+
+  // ── German prayer ──
+  "Herr, ich bitte um Heilung für meine Mutter, die im Krankenhaus liegt. Gib den Ärzten Weisheit und schenke uns Frieden in dieser schweren Zeit.",
+
+  // ── Italian prayer ──
+  "Signore, ti prego per la mia famiglia. Aiutaci a rimanere uniti nell'amore e nella fede.",
+
   // Gratitude-laced requests
   "God provided rent money through a stranger this week. I'm in tears. Still need next month covered but I'm choosing to trust. Pray it continues.",
   "My scan came back clean after a year of treatment. I'm so grateful. Praying it stays that way — six-month follow up is coming.",
@@ -224,6 +261,17 @@ const hotspotNames: (string | undefined)[] = [
 ];
 
 export const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
+
+export const TAGS_BY_CATEGORY: Record<string, string[]> = {
+  Health: ["Physical Health", "Mental Health", "Healing", "Chronic Illness", "Surgery", "Recovery", "Emotional"],
+  Family: ["Marriage", "Parenting", "Children", "Relationships", "Loss", "Pregnancy", "Reconciliation"],
+  Career: ["Work", "School", "Finances", "Purpose", "Provision", "New Opportunity"],
+  Guidance: ["Decision", "Direction", "Wisdom", "Faith", "Discernment", "Patience"],
+  Peace: ["Anxiety", "Fear", "Hope", "Strength", "Rest", "Comfort", "Loneliness"],
+  Other: ["Gratitude", "Testimony", "Community", "Church", "Persecution", "Nation"],
+};
+
+export const ALL_TAGS = Object.values(TAGS_BY_CATEGORY).flat();
 
 // ── Seeded random ────────────────────────────────────────────────────
 function seededRandom(seed: number) {
@@ -287,41 +335,42 @@ const generateFeedData = (): PrayerRequest[] => {
   const prayers: PrayerRequest[] = [];
   let id = 1;
 
-  // Shuffle names and texts so each prayer gets a unique person
   const shuffledNames = seededShuffle(feedNames, rand);
   const shuffledTexts = seededShuffle(prayerTexts, rand);
   let nameIdx = 0;
   let textIdx = 0;
 
-  // Reference date: "now"
   const now = new Date("2026-05-09T12:00:00Z");
 
   for (const city of cityDatabase) {
-    // More prayers from higher-weight cities
     const count = city.weight + Math.floor(rand() * 2);
     const coords = getApproximateCoordinates(city.name, city.country);
 
     for (let j = 0; j < count; j++) {
-      // Spread timestamps across the last 48 hours
-      const minutesAgo = Math.floor(rand() * 2880); // 0 - 48 hours
+      const minutesAgo = Math.floor(rand() * 2880);
       const createdAt = new Date(now.getTime() - minutesAgo * 60 * 1000);
 
       const nameValue = shuffledNames[nameIdx % shuffledNames.length];
       const displayNameValue = nameValue;
       const usernameValue = nameValue ? generateUsernameFromDisplayName(nameValue) : undefined;
       
+      const cat = CATEGORIES[Math.floor(rand() * CATEGORIES.length)];
+      const availableTags = TAGS_BY_CATEGORY[cat];
+      const tags = availableTags ? availableTags.slice(0, Math.floor(rand() * 2) + 1) : undefined;
+      
       prayers.push({
         id: `feed-${id}`,
         city: city.name,
         country: city.country,
-        text: shuffledTexts[textIdx % shuffledTexts.length],
-        name: nameValue, // Legacy field
+        text: addHashtagsToMockData(shuffledTexts[textIdx % shuffledTexts.length]),
+        name: nameValue,
         displayName: displayNameValue,
         username: usernameValue,
         prayerCount: Math.floor(rand() * 80) + 1,
         lat: coords.lat,
         lng: coords.lng,
-        category: CATEGORIES[Math.floor(rand() * CATEGORIES.length)],
+        category: cat,
+        tags,
         createdAt: createdAt.toISOString(),
       });
       nameIdx++;
