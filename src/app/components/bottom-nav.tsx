@@ -20,7 +20,7 @@ export function BottomNav() {
         backdropFilter: "blur(20px)",
       }}
     >
-      <div className="max-w-lg mx-auto flex justify-around items-center py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="max-w-lg mx-auto flex justify-around items-center pt-1.5 pb-[calc(0.25rem+env(safe-area-inset-bottom))]">
         {navItems.map((item) => {
           // Highlight active tab: exact match for home, prefix match for others
           const isActive = item.path === '/' 
