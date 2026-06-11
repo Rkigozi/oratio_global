@@ -89,7 +89,7 @@ export function Submit() {
 
   return (
     <div
-      className="w-full overflow-y-auto flex flex-col items-center px-6 pt-24 pb-28 bg-background"
+      className="flex flex-col w-full bg-background relative overflow-hidden"
       style={{ height: "100dvh" }}
     >
       <div
@@ -98,6 +98,7 @@ export function Submit() {
           background: "radial-gradient(ellipse, rgba(124, 143, 255, 0.04), transparent 70%)",
         }}
       />
+      <div className="flex-1 overflow-y-auto px-6 pt-24 pb-28 flex flex-col items-center">
 
       <AnimatePresence mode="wait">
         {!submitted ? (
@@ -271,6 +272,7 @@ export function Submit() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }
