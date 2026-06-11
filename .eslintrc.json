@@ -28,7 +28,8 @@
     "vitest.config.ts",
     "supabase/functions/**",
     "dist/**",
-    "node_modules/**"
+    "node_modules/**",
+    "oratio-app/**"
   ],
   "rules": {
     "react/react-in-jsx-scope": "off",
