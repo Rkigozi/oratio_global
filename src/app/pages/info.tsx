@@ -80,7 +80,7 @@ export function Info() {
       <div className="flex-1 px-4 pb-28 overflow-y-auto pt-24">
         <div className="max-w-md mx-auto space-y-8">
 
-          {/* ── Prototype notice ── */}
+          {/* ── Beta notice ── */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -89,7 +89,7 @@ export function Info() {
             <div className="flex items-center gap-2 mb-4">
               <InfoIcon size={16} className="text-[#7c8fff]" />
               <h2 className="text-[#e2e4f0] font-heading text-sm font-light">
-                Prototype Notice
+                Beta Notice
               </h2>
             </div>
             <div
@@ -100,20 +100,20 @@ export function Info() {
               }}
             >
               <p className="text-[#d0d4e8] text-sm leading-relaxed mb-3">
-                You&apos;re testing an early version of Oratio. Everything you see here is a prototype.
+                You&apos;re using the Oratio beta — a working version of the app built for real use. We&apos;re still improving, so things may evolve.
               </p>
               <ul className="space-y-2 text-[#6b7499] text-xs">
                 <li className="flex items-start gap-2">
                   <span className="text-[#7c8fff] mt-0.5">•</span>
-                  <span>Data is stored in <strong className="text-[#8890b5]">this browser only</strong>. Switching browsers or clearing your data will reset your experience.</span>
+                  <span>Data is stored in <strong className="text-[#8890b5]">this browser only</strong>. Sign in with email or Google to keep your prayers across devices.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#7c8fff] mt-0.5">•</span>
-                  <span>Prayers shown in the feed are mock data for demonstration purposes.</span>
+                  <span>Prayers shown in the feed include sample data alongside real user submissions.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#7c8fff] mt-0.5">•</span>
-                  <span>Your feedback is invaluable — it shapes what comes next.</span>
+                  <span>Your feedback shapes what comes next — share it with us.</span>
                 </li>
               </ul>
             </div>
@@ -274,7 +274,7 @@ export function Info() {
 
           {/* ── Footer credit ── */}
           <p className="text-center text-[#3e4460] text-[10px] pb-4">
-            Oratio Prototype · Built with care
+            Oratio Beta · Built with care
           </p>
         </div>
       </div>

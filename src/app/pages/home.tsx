@@ -125,7 +125,7 @@ export function Home() {
       {geoLocation && (
         <button
           onClick={() => setFlyTo({ lat: geoLocation.lat, lng: geoLocation.lng })}
-          className="absolute bottom-20 right-4 z-[500] w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+          className="absolute bottom-16 right-4 z-[500] w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
           style={{
             background: "rgba(10, 26, 58, 0.8)",
             border: "1px solid rgba(124, 143, 255, 0.12)",

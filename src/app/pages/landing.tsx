@@ -207,14 +207,14 @@ export function Landing() {
             }}
           >
             <p className="text-[#6b7499] text-xs leading-relaxed">
-              This is an early prototype. Your prayers and activity stay on this device — nothing is shared or stored anywhere else.
+              Oratio is in beta. Your prayers and activity stay on this device — nothing is shared or stored anywhere else.
             </p>
           </div>
         </motion.div>
 
         {/* Footer */}
         <p className="text-center text-[#3e4460] text-[10px] pb-2">
-          Prototype · Your data stays on this device
+           Beta · Your data stays on this device
         </p>
         </div>
       </div>

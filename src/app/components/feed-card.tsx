@@ -12,10 +12,11 @@ interface FeedCardProps {
   onPrayed: (id: string) => void;
   onTap: (prayer: PrayerRequest) => void;
   onTagClick?: (tag: string) => void;
+  onUserClick?: (username: string) => void;
 }
 
 
-export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick }: FeedCardProps) {
+export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick, onUserClick }: FeedCardProps) {
   const [prayed, setPrayed] = useState(hasPrayed);
 
   useEffect(() => {
@@ -48,11 +49,15 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick
           <img
             src={`https://ui-avatars.com/api/?name=${(getAttributionText(prayer)[0] || "?").toUpperCase()}&background=7c8fff&color=fff&size=24&font-size=0.35`}
             alt=""
-            className="w-5 h-5 rounded-full flex-shrink-0 object-cover"
+            className="w-5 h-5 rounded-full flex-shrink-0 object-cover cursor-pointer"
+            onClick={(e) => { e.stopPropagation(); const u = prayer.username; if (u && onUserClick) onUserClick(u); }}
           />
-          <span className="text-[#6b7499] text-xs truncate">
+          <button
+            onClick={(e) => { e.stopPropagation(); const u = prayer.username; if (u && onUserClick) onUserClick(u); }}
+            className="text-[#6b7499] text-xs truncate hover:text-[#8890b5] transition-colors cursor-pointer"
+          >
             {getAttributionText(prayer)}
-          </span>
+          </button>
         </div>
         <span className="text-[#4e5573] text-[10px] flex-shrink-0">
           {prayer.createdAt ? timeAgo(prayer.createdAt) : ""}

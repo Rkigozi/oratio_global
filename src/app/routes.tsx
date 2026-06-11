@@ -16,6 +16,9 @@ const Login = lazy(() => import("./pages/login").then(m => ({ default: m.Login }
 const Info = lazy(() => import("./pages/info").then(m => ({ default: m.Info })));
 const PrayerDetail = lazy(() => import("./pages/prayer-detail").then(m => ({ default: m.PrayerDetail })));
 const Moderate = lazy(() => import("./pages/moderate").then(m => ({ default: m.Moderate })));
+const UserProfile = lazy(() => import("./pages/user-profile").then(m => ({ default: m.UserProfile })));
+const UserFollowing = lazy(() => import("./pages/user-list").then(m => ({ default: m.UserFollowing })));
+const UserFollowers = lazy(() => import("./pages/user-list").then(m => ({ default: m.UserFollowers })));
 
 function SuspenseWrapper({ Component }: { Component: React.LazyExoticComponent<() => React.ReactNode> }) {
   return (
@@ -35,6 +38,9 @@ export const router = createBrowserRouter([
   { path: "/login", element: <SuspenseWrapper Component={Login} /> },
   { path: "/prayer/:id", element: <SuspenseWrapper Component={PrayerDetail} /> },
   { path: "/moderate", element: <SuspenseWrapper Component={Moderate} /> },
+  { path: "/user/:name", element: <SuspenseWrapper Component={UserProfile} /> },
+  { path: "/user/:name/following", element: <SuspenseWrapper Component={UserFollowing} /> },
+  { path: "/user/:name/followers", element: <SuspenseWrapper Component={UserFollowers} /> },
 
   {
     path: "/",

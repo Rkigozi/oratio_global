@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { MapPin, X, Search, ChevronDown } from "lucide-react";
+import { MapPin, X, Search, ChevronDown, Users } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router";
 import { mockFeedPrayers, countries } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
@@ -8,7 +8,7 @@ import { getPrayedIds } from "../data/profile-data";
 import { FeedCard } from "../components/feed-card";
 import { getHashtagCounts } from "../../lib/hashtags";
 import { useGeolocation } from "../../lib/use-geolocation";
-import { getFollowingUserIds } from "../../lib/api";
+
 
 
 
@@ -112,15 +112,14 @@ export function Feed() {
 
   const trendingHashtags = useMemo(() => getHashtagCounts(prayers), [prayers]);
 
-  // Load following list
+  // Load following list from localStorage
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      const ids = await getFollowingUserIds();
-      if (!cancelled) setFollowingIds(ids);
-    };
-    void load();
-    return () => { cancelled = true; };
+    try {
+      const ids = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
+      setFollowingIds(ids);
+    } catch {
+      setFollowingIds([]);
+    }
   }, []);
 
   // Listen for prayer addition/deletion via custom events
@@ -391,19 +390,18 @@ export function Feed() {
           )}
 
           {/* Following */}
-          {followingIds.length > 0 && (
-            <button
-              onClick={() => setShowFollowing(!showFollowing)}
-              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
-              style={{
-                background: showFollowing ? "rgba(124,143,255,0.12)" : "rgba(124,143,255,0.04)",
-                border: showFollowing ? "1px solid rgba(124,143,255,0.2)" : "1px solid rgba(124,143,255,0.06)",
-                color: showFollowing ? "#7c8fff" : "#6b7499",
-              }}
-            >
-              Following
-            </button>
-          )}
+          <button
+            onClick={() => setShowFollowing(!showFollowing)}
+            className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
+            style={{
+              background: showFollowing ? "rgba(124,143,255,0.12)" : "rgba(124,143,255,0.04)",
+              border: showFollowing ? "1px solid rgba(124,143,255,0.2)" : "1px solid rgba(124,143,255,0.06)",
+              color: showFollowing ? "#7c8fff" : "#6b7499",
+              opacity: followingIds.length === 0 ? 0.5 : 1,
+            }}
+          >
+            Following
+          </button>
 
           {/* Saved */}
           <button
@@ -677,20 +675,59 @@ export function Feed() {
           </span>
         </div>
 
+        {/* User search results */}
+        {activeSearch && filteredPrayers.length === 0 && (
+          <div className="mb-4">
+            <div className="flex items-center gap-2 px-1 mb-3">
+              <Users size={12} className="text-[#5a6080]" />
+              <span className="text-[#8890b5] text-[10px] uppercase tracking-[0.15em]">Users</span>
+            </div>
+            <div className="space-y-1.5">
+              {(() => {
+                const q = activeSearch.toLowerCase();
+                const unique = [...new Set(mockFeedPrayers.map(p => p.username).filter(Boolean) as string[])];
+                const matched = unique.filter(u => u.toLowerCase().includes(q));
+                return matched.length > 0 ? matched.map((u) => (
+                  <div
+                    key={u}
+                    onClick={() => void navigate(`/user/${encodeURIComponent(u)}`)}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-[rgba(124,143,255,0.04)] transition-colors"
+                  >
+                    <img
+                      src={`https://ui-avatars.com/api/?name=${u[0].toUpperCase()}&background=7c8fff&color=fff&size=32&font-size=0.5`}
+                      alt=""
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="text-[#c5cbe2] text-sm">@{u}</p>
+                      <p className="text-[#4e5573] text-[10px]">
+                        {mockFeedPrayers.filter(p => p.username === u).length} prayers
+                      </p>
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-[#4e5573] text-xs px-1">No users found</p>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
         {/* Prayer cards */}
         <div className="space-y-2.5">
           {filteredPrayers.length > 0 ? (
             <>
               {visiblePrayers.map((prayer, i) => (
-                 <FeedCard
-                    key={prayer.id}
-                    prayer={prayer}
-                    index={i}
-                    hasPrayed={prayedIds.includes(prayer.id)}
-                    onPrayed={togglePrayed}
-                    onTap={handleTap}
-                    onTagClick={handleTagClick}
-                  />
+                  <FeedCard
+                     key={prayer.id}
+                     prayer={prayer}
+                     index={i}
+                     hasPrayed={prayedIds.includes(prayer.id)}
+                     onPrayed={togglePrayed}
+                     onTap={handleTap}
+                     onTagClick={handleTagClick}
+                     onUserClick={(u) => void navigate(`/user/${encodeURIComponent(u)}`)}
+                   />
               ))}
               {visibleCount < filteredPrayers.length ? (
                 <div ref={sentinelRef} className="h-4" />

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
@@ -10,7 +10,7 @@ import { CommentSection } from "../components/comment-section";
 import { getInitialAvatarUrl } from "../../lib/upload";
 import { reportContent } from "../../lib/api";
 import { renderHashtags } from "../../lib/hashtags";
-import { translateText } from "../../lib/translate";
+import { translateText, needsTranslation, detectLanguage } from "../../lib/translate";
 
 function findPrayer(id: string): PrayerRequest | undefined {
   try {
@@ -38,17 +38,60 @@ export function PrayerDetail() {
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [showReport, setShowReport] = useState(false);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMenu]);
   const [reported, setReported] = useState(false);
+  const [following, setFollowing] = useState(false);
+
+  const username = prayer?.username;
+  const handleFollowToggle = () => {
+    if (!username) return;
+    const newState = !following;
+    setFollowing(newState);
+    try {
+      const ids = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
+      if (newState) {
+        if (!ids.includes(username)) ids.push(username);
+      } else {
+        const idx = ids.indexOf(username);
+        if (idx > -1) ids.splice(idx, 1);
+      }
+      localStorage.setItem("oratio_following", JSON.stringify(ids));
+    } catch { /* ignore */ }
+  };
+
+  useEffect(() => {
+    if (!username) return;
+    try {
+      const ids = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
+      setFollowing(ids.includes(username));
+    } catch { setFollowing(false); }
+  }, [username]);
 
   const handleTranslate = async () => {
     if (!prayer || translating) return;
     if (translatedText) { setTranslatedText(null); return; }
     setTranslating(true);
-    const result = await translateText(prayer.text);
+    const result = await translateText(prayer.text, userLang);
     if (result) setTranslatedText(result);
     setTranslating(false);
   };
+
+  const userLang = navigator.language.split("-")[0] || "en";
+  const showTranslate = prayer ? needsTranslation(prayer.text, userLang) : false;
+  const sourceLang = prayer && translatedText ? detectLanguage(prayer.text) : "";
+  const langName: Record<string, string> = { es: "Spanish", fr: "French", pt: "Portuguese", de: "German", it: "Italian", en: "English" };
 
   const toggleSave = () => {
     const newSaved = !saved;
@@ -140,7 +183,7 @@ export function PrayerDetail() {
             <ArrowLeft size={16} />
             <span className="text-xs">Back</span>
           </button>
-          <div className="relative">
+          <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
               className="w-8 h-8 flex items-center justify-center rounded-full text-[#4e5573] hover:text-[#6b7499] hover:bg-[rgba(124,143,255,0.06)] transition-all cursor-pointer"
@@ -173,13 +216,15 @@ export function PrayerDetail() {
                     <Bookmark size={12} fill={saved ? "#c5cdff" : "none"} />
                     {saved ? "Saved" : "Save"}
                   </button>
-                  <button
-                    onClick={() => { setShowMenu(false); void handleTranslate(); }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer flex items-center gap-2"
-                  >
-                    <span className="text-[10px]">🌐</span>
-                    {translating ? "Translating..." : translatedText ? "Original" : "Translate"}
-                  </button>
+                  {showTranslate && (
+                    <button
+                      onClick={() => { setShowMenu(false); void handleTranslate(); }}
+                      className="w-full text-left px-4 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer flex items-center gap-2"
+                    >
+                      <span className="text-[10px]">🌐</span>
+                      {translating ? "Translating..." : translatedText ? "Original" : "Translate"}
+                    </button>
+                  )}
                   {!reported && (
                     <button
                       onClick={() => { setShowMenu(false); setShowReport(true); }}
@@ -224,8 +269,10 @@ export function PrayerDetail() {
               void navigate(`/feed?search=%23${tag}`);
             })}
           </motion.p>
-          {translatedText && (
-            <p className="text-[#4e5573] text-[10px] mb-6">Translated from English</p>
+          {translatedText && sourceLang && (
+            <p className="text-[#4e5573] text-[10px] mb-6">
+              Translated from {langName[sourceLang] || sourceLang}
+            </p>
           )}
 
           {/* Attribution */}
@@ -233,11 +280,28 @@ export function PrayerDetail() {
             <img
               src={getInitialAvatarUrl(getAttributionText(prayer))}
               alt=""
-              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+              className="w-6 h-6 rounded-full object-cover flex-shrink-0 cursor-pointer"
+              onClick={() => username && void navigate(`/user/${encodeURIComponent(username)}`)}
             />
-            <p className="text-[#6b7499] text-sm">
+            <button
+              onClick={() => username && void navigate(`/user/${encodeURIComponent(username)}`)}
+              className="text-[#6b7499] text-sm hover:text-[#8890b5] transition-colors cursor-pointer"
+            >
               {getAttributionText(prayer)}
-            </p>
+            </button>
+            {username && (
+              <button
+                onClick={handleFollowToggle}
+                className="text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer"
+                style={{
+                  background: following ? "rgba(124,143,255,0.1)" : "rgba(124,143,255,0.04)",
+                  border: `1px solid ${following ? "rgba(124,143,255,0.2)" : "rgba(124,143,255,0.08)"}`,
+                  color: following ? "#7c8fff" : "#5a6080",
+                }}
+              >
+                {following ? "Following" : "Follow"}
+              </button>
+            )}
           </div>
 
           {/* Prayer count */}

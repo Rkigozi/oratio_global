@@ -1,12 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
-import { motion } from "motion/react";
+import { useState, useMemo } from "react";
 import {
   Send,
   LogOut,
-  ChevronDown,
   Edit,
   Bookmark,
   Info,
+  Camera,
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
@@ -31,9 +30,35 @@ export function Profile() {
   const [editOpen, setEditOpen] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState("");
   const [newUsername, setNewUsername] = useState("");
-  const [expandedPreviewId, setExpandedPreviewId] = useState<string | null>(null);
   const [editError, setEditError] = useState<string>("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showSection, setShowSection] = useState<"prayers" | "saved">("prayers");
+
+  const username = profile.username || "anonymous";
+  const displayName = profile.displayName || username;
+
+  const submittedIds = getSubmittedIds();
+  const prayedIds = getPrayedIds();
+
+  const myPrayers = useMemo(() => {
+    return getStoredSubmittedPrayers();
+  }, [submittedIds]);
+
+  const myPrayedFor = useMemo(() => {
+    return getPrayedForPrayers();
+  }, [prayedIds]);
+
+  const savedCount = useMemo(() => {
+    try {
+      return (JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[]).length;
+    } catch { return 0; }
+  }, []);
+
+  const followingCount = useMemo(() => {
+    try {
+      return (JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[]).length;
+    } catch { return 0; }
+  }, []);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -47,34 +72,30 @@ export function Profile() {
     }
     setUploadingPhoto(false);
   };
-  
+
   const handleSaveProfile = () => {
     setEditError("");
     const trimmedDisplayName = newDisplayName.trim();
     const trimmedUsername = newUsername.trim().toLowerCase();
-    
-    // Validate both fields
+
     const validation = validateProfile({
       username: trimmedUsername,
       displayName: trimmedDisplayName,
     });
     if (!validation.success) {
-      // Show first error
       const firstError = Object.values(validation.errors || {})[0];
       setEditError(firstError || "Invalid input");
       return;
     }
-    
-    // Check username uniqueness if changed
+
     if (trimmedUsername !== profile.username) {
       if (!isUsernameAvailable(trimmedUsername, profile.username)) {
         setEditError("This username is already taken");
         return;
       }
-      // Update username in prayers and used list
       changeUsername(profile.username, trimmedUsername);
     }
-    
+
     const updatedProfile = {
       ...profile,
       username: trimmedUsername,
@@ -85,438 +106,252 @@ export function Profile() {
     setEditOpen(false);
   };
 
-  useEffect(() => {
-    if (editOpen) {
-      setNewDisplayName(profile.displayName);
-      setNewUsername(profile.username);
-      setEditError('');
-    }
-  }, [editOpen, profile.displayName, profile.username]);
-
-  const submittedIds = getSubmittedIds();
-  const prayedIds = getPrayedIds();
-
-  const mySubmitted = useMemo(() => {
-    const storedPrayers = getStoredSubmittedPrayers()
-      .map((p) => ({ ...p, prayerCount: 0 }));
-    return storedPrayers;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submittedIds]);
-
-  const myPrayed = useMemo(() => {
-    return getPrayedForPrayers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prayedIds]);
-
-  const mySavedCount = useMemo(() => {
-    try {
-      const savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
-      return savedIds.length;
-    } catch { return 0; }
-  }, []);
-
-  // Get recent items for preview (max 3 each)
-  const recentSubmitted = useMemo(() => 
-    mySubmitted.slice(0, 3), [mySubmitted]
-  );
-  const recentPrayed = useMemo(() => 
-    myPrayed.slice(0, 3), [myPrayed]
-  );
-
   return (
-    <div
-      className="w-full h-full flex flex-col overflow-hidden"
-      style={{ background: "#0A1A3A" }}
-    >
-      {/* Decorative background elements */}
-      <div
-        className="absolute top-0 left-0 w-full h-40 z-0 opacity-30"
-        style={{
-          background:
-            "radial-gradient(ellipse, rgba(124, 143, 255, 0.04), transparent 70%)",
-        }}
-      />
-
-      <div className="relative z-10 px-5 pt-24 pb-28 overflow-y-auto flex-1 h-full">
+    <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "#0A1A3A" }}>
+      <div className="relative z-10 px-5 pb-28 overflow-y-auto flex-1 h-full pt-24">
         <div className="max-w-md mx-auto">
-          {/* Avatar + Name */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col items-center mb-8"
-          >
-            <div
-              className="relative w-20 h-20 rounded-full flex items-center justify-center mb-4 overflow-hidden"
-              style={{
-                background:
-                  "linear-gradient(145deg, rgba(25, 32, 65, 0.9), rgba(15, 20, 50, 0.7))",
-                border: "1px solid rgba(124,143,255,0.12)",
-                boxShadow: "0 0 40px rgba(124, 143, 255, 0.06)",
-              }}
-            >
-              {profile.photo ? (
-                <img
-                  src={profile.photo}
-                  alt="Profile"
-                  className="w-full h-full object-cover rounded-full"
-                />
-              ) : (
-                <img
-                  src={getInitialAvatarUrl(profile.username)}
-                  alt="Profile"
-                  className="w-full h-full object-cover rounded-full"
-                />
-              )}
-            </div>
-
-            <div className="flex items-center justify-center gap-2">
-              <h2
-                className="text-[#e2e4f0] font-heading mb-1"
-                style={{ fontSize: "1.35rem", fontWeight: 300 }}
-              >
-                {profile.displayName || profile.username || "Set up your profile"}
-              </h2>
+          {/* Profile header — Instagram style */}
+          <div className="flex items-start gap-4 mb-6">
+            <div className="relative flex-shrink-0">
+              <img
+                src={profile.photo || getInitialAvatarUrl(username)}
+                alt=""
+                className="w-20 h-20 rounded-full object-cover"
+              />
               <button
                 onClick={() => setEditOpen(true)}
-                className="text-[#5a6080] hover:text-[#7c8fff] transition-colors"
+                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer"
+                style={{ background: "#0A1A3A", border: "2px solid rgba(124,143,255,0.15)" }}
               >
-                <Edit size={14} />
+                <Camera size={10} className="text-[#7c8fff]" />
               </button>
             </div>
-            {profile.username && (
-              <p className="text-[#5a6080] text-xs mb-0.5">
-                @{profile.username}
-              </p>
-            )}
-            <p className="text-[#4e5573] text-xs">
-              Member since{" "}
-              {new Date(profile.joinedAt).toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-          </motion.div>
+            <div className="flex-1 min-w-0 pt-1">
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-[#e2e4f0] font-heading text-base font-medium truncate">
+                  {displayName}
+                </h1>
+                <button onClick={() => setEditOpen(true)} className="text-[#5a6080] hover:text-[#7c8fff] transition-colors cursor-pointer">
+                  <Edit size={12} />
+                </button>
+              </div>
+              <p className="text-[#5a6080] text-xs mb-3">@{username}</p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => void signOut().then(() => navigate("/landing"))}
+                  className="flex items-center gap-1.5 px-4 py-1 rounded-full text-xs cursor-pointer"
+                  style={{
+                    background: "rgba(124,143,255,0.06)",
+                    border: "1px solid rgba(124,143,255,0.1)",
+                    color: "#6b7499",
+                  }}
+                >
+                  <LogOut size={11} />
+                  Sign Out
+                </button>
+                <button
+                  onClick={() => void navigate("/info")}
+                  className="flex items-center gap-1.5 px-4 py-1 rounded-full text-xs cursor-pointer"
+                  style={{
+                    background: "rgba(124,143,255,0.06)",
+                    border: "1px solid rgba(124,143,255,0.1)",
+                    color: "#6b7499",
+                  }}
+                >
+                  <Info size={11} />
+                  Info
+                </button>
+              </div>
+            </div>
+          </div>
 
           {/* Stats row */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="grid grid-cols-3 gap-2 mb-8"
+          <div className="flex justify-around mb-6 py-3 rounded-xl"
+            style={{ background: "rgba(17, 26, 58, 0.4)", border: "1px solid rgba(124,143,255,0.06)" }}
           >
-            {[
-              {
-                icon: Send,
-                label: "Submitted",
-                value: mySubmitted.length,
-                color: "#7c8fff",
-                path: "/profile/submitted",
-              },
-              {
-                icon: ({ className }: { className?: string }) => <span className={`text-base ${className ?? ""}`}>🙏</span>,
-                label: "Prayed For",
-                value: myPrayed.length,
-                color: "#a78bfa",
-                path: "/profile/prayed",
-              },
-              {
-                icon: Bookmark,
-                label: "Saved",
-                value: mySavedCount,
-                color: "#5a6080",
-                path: "/profile/saved",
-              },
-            ].map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <motion.button
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 + i * 0.06, duration: 0.4 }}
-                  className="rounded-xl p-3.5 flex flex-col items-center text-center"
-                  onClick={() => void navigate(stat.path)}
+            <button onClick={() => setShowSection("prayers")} className="text-center cursor-pointer">
+              <p className="text-[#e2e4f0] text-sm font-medium">{myPrayers.length}</p>
+              <p className="text-[#5a6080] text-[10px]">Prayers</p>
+            </button>
+            <button onClick={() => void navigate("/profile/prayed")} className="text-center cursor-pointer">
+              <p className="text-[#e2e4f0] text-sm font-medium">{myPrayedFor.length}</p>
+              <p className="text-[#5a6080] text-[10px]">Prayed For</p>
+            </button>
+            <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/followers`)} className="text-center cursor-pointer">
+              <p className="text-[#e2e4f0] text-sm font-medium">0</p>
+              <p className="text-[#5a6080] text-[10px]">Followers</p>
+            </button>
+            <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/following`)} className="text-center cursor-pointer">
+              <p className="text-[#e2e4f0] text-sm font-medium">{followingCount}</p>
+              <p className="text-[#5a6080] text-[10px]">Following</p>
+            </button>
+            <button onClick={() => setShowSection("saved")} className="text-center cursor-pointer">
+              <p className="text-[#e2e4f0] text-sm font-medium">{savedCount}</p>
+              <p className="text-[#5a6080] text-[10px]">Saved</p>
+            </button>
+          </div>
+
+          {/* Section toggle */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setShowSection("prayers")}
+              className="px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer"
+              style={{
+                background: showSection === "prayers" ? "rgba(124,143,255,0.12)" : "rgba(124,143,255,0.04)",
+                border: `1px solid ${showSection === "prayers" ? "rgba(124,143,255,0.2)" : "rgba(124,143,255,0.06)"}`,
+                color: showSection === "prayers" ? "#7c8fff" : "#6b7499",
+              }}
+            >
+              <Send size={11} className="inline mr-1" />
+              My Prayers
+            </button>
+            <button
+              onClick={() => void navigate("/profile/prayed")}
+              className="px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer"
+              style={{
+                background: "rgba(124,143,255,0.04)",
+                border: "1px solid rgba(124,143,255,0.06)",
+                color: "#6b7499",
+              }}
+            >
+              🙏 Prayed For
+            </button>
+            <button
+              onClick={() => setShowSection("saved")}
+              className="px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer"
+              style={{
+                background: showSection === "saved" ? "rgba(124,143,255,0.12)" : "rgba(124,143,255,0.04)",
+                border: `1px solid ${showSection === "saved" ? "rgba(124,143,255,0.2)" : "rgba(124,143,255,0.06)"}`,
+                color: showSection === "saved" ? "#7c8fff" : "#6b7499",
+              }}
+            >
+              <Bookmark size={11} className="inline mr-1" />
+              Saved
+            </button>
+          </div>
+
+          {/* Prayer list */}
+          <div className="space-y-2">
+            {showSection === "prayers" && (
+              myPrayers.length > 0 ? myPrayers.map((prayer) => (
+                <div
+                  key={prayer.id}
+                  onClick={() => void navigate(`/prayer/${prayer.id}`)}
+                  className="rounded-xl px-4 py-3 cursor-pointer active:scale-[0.99] transition-transform"
                   style={{
-                    background:
-                      "linear-gradient(160deg, rgba(17, 26, 58, 0.8), rgba(12, 18, 48, 0.6))",
-                    border: "1px solid rgba(124,143,255,0.06)",
+                    background: "linear-gradient(160deg, rgba(17, 26, 58, 0.5), rgba(12, 18, 48, 0.3))",
+                    border: "1px solid rgba(124,143,255,0.05)",
                   }}
-                  whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                  whileTap={{ scale: 0.98 }}
                 >
-                  <Icon
-                    size={16}
-                    style={{ color: stat.color }}
-                    className="mb-2 opacity-70"
-                  />
-                  <p
-                    className="text-[#e2e4f0] mb-0.5 font-heading"
-                    style={{ fontSize: "1.3rem", fontWeight: 300 }}
-                  >
-                    {stat.value}
+                  <p className="text-[#d0d4e8] text-sm line-clamp-2 leading-relaxed mb-2">
+                    {prayer.text}
                   </p>
-                  <p className="text-[#4e5573] text-[10px] uppercase tracking-wider">
-                    {stat.label}
-                  </p>
-                </motion.button>
-              );
-            })}
-          </motion.div>
-
-          {/* Recent Activity Preview */}
-          <div className="space-y-6 mb-8">
-            {/* Submitted Preview */}
-            {recentSubmitted.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                   <h3 className="text-[#e2e4f0] font-heading text-sm font-light">
-                     Recently Submitted
-                   </h3>
-                  <button
-                    onClick={() => void navigate('/profile/submitted')}
-                    className="text-[#5a6080] hover:text-[#7c8fff] text-xs flex items-center gap-1 cursor-pointer"
-                  >
-                    View All
-                    <ChevronDown size={10} className="transform -rotate-90" />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-[#5a6080]">🙏 {prayer.prayerCount}</span>
+                    {prayer.createdAt && (
+                      <span className="text-[#4e5573] text-[10px]">
+                        {new Date(prayer.createdAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  {recentSubmitted.map((prayer) => (
-                    <div
-                      key={prayer.id}
-                      onClick={() => setExpandedPreviewId(expandedPreviewId === prayer.id ? null : prayer.id)}
-                      className="rounded-xl px-3 py-2.5 cursor-pointer active:scale-[0.99] transition-transform duration-150"
-                      style={{
-                        background: "rgba(17, 26, 58, 0.4)",
-                        border: "1px solid rgba(124,143,255,0.05)",
-                      }}
-                    >
-                      <p className={`text-[#d0d4e8] text-sm ${expandedPreviewId === prayer.id ? "" : "line-clamp-2"} mb-1`}>
-                        {prayer.text}
-                      </p>
-                      <div className="flex items-center justify-between text-[#5a6080] text-xs">
-                        <span>{prayer.city}</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs opacity-60">🙏</span>
-                          <span>{prayer.prayerCount}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Prayed For Preview */}
-            {recentPrayed.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.25 }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                   <h3 className="text-[#e2e4f0] font-heading text-sm font-light">
-                     Recently Prayed For
-                   </h3>
-                  <button
-                    onClick={() => void navigate('/profile/prayed')}
-                    className="text-[#5a6080] hover:text-[#7c8fff] text-xs flex items-center gap-1 cursor-pointer"
-                  >
-                    View All
-                    <ChevronDown size={10} className="transform -rotate-90" />
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {recentPrayed.map((prayer) => (
-                    <div
-                      key={prayer.id}
-                      onClick={() => setExpandedPreviewId(expandedPreviewId === prayer.id ? null : prayer.id)}
-                      className="rounded-xl px-3 py-2.5 cursor-pointer active:scale-[0.99] transition-transform duration-150"
-                      style={{
-                        background: "rgba(17, 26, 58, 0.4)",
-                        border: "1px solid rgba(124,143,255,0.05)",
-                      }}
-                    >
-                      <p className={`text-[#d0d4e8] text-sm ${expandedPreviewId === prayer.id ? "" : "line-clamp-2"} mb-1`}>
-                        {prayer.text}
-                      </p>
-                      <div className="flex items-center justify-between text-[#5a6080] text-xs">
-                        <span>{prayer.city}</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs opacity-60">🙏</span>
-                          <span>{prayer.prayerCount}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Empty States */}
-            {recentSubmitted.length === 0 && recentPrayed.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-8 rounded-xl"
-                style={{
-                  background: "rgba(17, 26, 58, 0.4)",
-                  border: "1px solid rgba(124,143,255,0.05)",
-                }}
-              >
-                <Send size={20} className="text-[#4e5573] mx-auto mb-2" />
-                <p className="text-[#6b7499] text-sm mb-1">No prayers yet</p>
-                <p className="text-[#4e5573] text-xs mb-4">
-                  Start by submitting a prayer or praying for others
-                </p>
-                <div className="flex gap-2 justify-center">
+              )) : (
+                <div className="text-center py-8">
+                  <Send size={20} className="text-[#4e5573] mx-auto mb-2" />
+                  <p className="text-[#6b7499] text-sm mb-1">No prayers yet</p>
                   <button
                     onClick={() => void navigate('/submit')}
-                    className="px-4 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer hover:bg-[rgba(124,143,255,0.12)] transition-all"
+                    className="px-4 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer mt-2"
                   >
                     Submit Prayer
                   </button>
-                  <button
-                    onClick={() => void navigate('/feed')}
-                    className="px-4 py-2 rounded-full text-xs text-[#a78bfa] bg-[rgba(167,139,250,0.08)] border border-[rgba(167,139,250,0.12)] cursor-pointer hover:bg-[rgba(167,139,250,0.12)] transition-all"
-                  >
-                    Browse Feed
-                  </button>
                 </div>
-              </motion.div>
+              )
+            )}
+            {showSection === "saved" && (
+              <div className="text-center py-8">
+                <Bookmark size={20} className="text-[#4e5573] mx-auto mb-2" />
+                <p className="text-[#6b7499] text-sm mb-1">No saved prayers</p>
+                <p className="text-[#4e5573] text-xs">Save prayers from the prayer detail page</p>
+              </div>
             )}
           </div>
-
-          {/* Settings / Links */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-2"
-          >
-            <button
-              onClick={() => void navigate('/info')}
-              className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"
-              style={{
-                background: "transparent",
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <Info size={16} className="text-[#5a6080] opacity-60" />
-                <span className="text-[#5a6080] text-sm">Info</span>
-              </div>
-            </button>
-            <button
-              onClick={() => {
-                void signOut().then(() => navigate("/landing"));
-              }}
-              className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"
-              style={{
-                background: "transparent",
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <LogOut size={16} className="text-[#5a6080] opacity-60" />
-                <span className="text-[#5a6080] text-sm">Sign Out</span>
-              </div>
-            </button>
-          </motion.div>
         </div>
-
-        {/* Edit Display Name Drawer */}
-        <Drawer.Root open={editOpen} onOpenChange={setEditOpen}>
-          <Drawer.Portal>
-            <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[600]" />
-            <Drawer.Content
-              className="fixed bottom-0 left-0 right-0 z-[600] bg-[#0A1A3A] rounded-t-2xl p-6 outline-none"
-              style={{
-                borderTop: "1px solid rgba(124,143,255,0.1)",
-                boxShadow: "0 -20px 60px rgba(0, 0, 0, 0.3)",
-              }}
-            >
-              <div className="mx-auto w-12 h-1.5 bg-[rgba(124,143,255,0.2)] rounded-full mb-6" />
-               <Drawer.Title className="sr-only">Edit Profile</Drawer.Title>
-               <Drawer.Description className="sr-only">
-                 Update your username and display name
-               </Drawer.Description>
-              
-              <div className="max-w-md mx-auto">
-                 <h3 className="text-[#e2e4f0] text-center mb-2 font-heading text-lg">
-                   Edit Profile
-                 </h3>
-                 
-                 <div className="mb-6">
-                   <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2.5 text-center">
-                     Username
-                   </p>
-                   <input
-                     type="text"
-                     value={newUsername}
-                     onChange={(e) => { setNewUsername(e.target.value); setEditError(''); }}
-                     onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
-                     placeholder="username"
-                     className={`w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-[#ff6b6b]' : 'border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.3)]'}`}
-                     style={{ background: "rgba(15, 20, 50, 0.6)" }}
-                   />
-                 </div>
-                 
-                 <div className="mb-6">
-                   <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2.5 text-center">
-                     Display Name
-                   </p>
-                   <input
-                     type="text"
-                     value={newDisplayName}
-                     onChange={(e) => { setNewDisplayName(e.target.value); setEditError(''); }}
-                     onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
-                     placeholder="Leave empty to use username"
-                     className={`w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-[#ff6b6b]' : 'border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.3)]'}`}
-                     style={{ background: "rgba(15, 20, 50, 0.6)" }}
-                   />
-                   {editError && (
-                     <p className="text-[#ff6b6b] text-xs text-center mt-2">
-                       {editError}
-                     </p>
-                   )}
-                 </div>
-                
-                 <div className="mb-6 text-center">
-                   <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.06)] border border-[rgba(124,143,255,0.1)] hover:bg-[rgba(124,143,255,0.12)] transition-all cursor-pointer">
-                     {uploadingPhoto ? "Uploading..." : "Change Photo"}
-                     <input
-                       type="file"
-                       accept="image/*"
-                       onChange={handlePhotoUpload}
-                       className="hidden"
-                       disabled={uploadingPhoto}
-                     />
-                   </label>
-                 </div>
-
-                 <div className="flex gap-3">
-                   <button
-                     onClick={() => setEditOpen(false)}
-                     className="flex-1 py-3.5 rounded-full text-sm text-[#8b96c0] bg-[rgba(124,143,255,0.06)] border border-[rgba(124,143,255,0.1)] hover:bg-[rgba(124,143,255,0.12)] transition-all cursor-pointer"
-                   >
-                     Cancel
-                   </button>
-                   <button
-                      onClick={handleSaveProfile}
-                     className="flex-1 py-3.5 rounded-full text-sm text-white bg-[linear-gradient(135deg,#7c8fff,#5a6fd6)] hover:opacity-90 transition-all cursor-pointer"
-                   >
-                     Save Changes
-                   </button>
-                 </div>
-              </div>
-            </Drawer.Content>
-          </Drawer.Portal>
-        </Drawer.Root>
       </div>
+
+      {/* Edit Profile Drawer */}
+      <Drawer.Root open={editOpen} onOpenChange={setEditOpen}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[600]" />
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-[600] bg-[#0A1A3A] rounded-t-2xl p-6 outline-none"
+            style={{ borderTop: "1px solid rgba(124,143,255,0.1)", boxShadow: "0 -20px 60px rgba(0, 0, 0, 0.3)" }}
+          >
+            <div className="mx-auto w-12 h-1.5 bg-[rgba(124,143,255,0.2)] rounded-full mb-6" />
+            <Drawer.Title className="sr-only">Edit Profile</Drawer.Title>
+            <Drawer.Description className="sr-only">Update your username and display name</Drawer.Description>
+
+            <div className="max-w-md mx-auto">
+              <h3 className="text-[#e2e4f0] text-center mb-4 font-heading text-lg">Edit Profile</h3>
+
+              {/* Photo upload */}
+              <div className="flex justify-center mb-6">
+                <label className="flex flex-col items-center gap-2 cursor-pointer">
+                  <div className="relative">
+                    <img
+                      src={profile.photo || getInitialAvatarUrl(username)}
+                      alt=""
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                    <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center">
+                      <Camera size={16} className="text-white" />
+                    </div>
+                  </div>
+                  <span className="text-[#7c8fff] text-xs">
+                    {uploadingPhoto ? "Uploading..." : "Change Photo"}
+                  </span>
+                  <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploadingPhoto} />
+                </label>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2 text-center">Username</p>
+                <input type="text" value={newUsername}
+                  onChange={(e) => { setNewUsername(e.target.value); setEditError(''); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
+                  placeholder="username"
+                  className={`w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-[#ff6b6b]' : 'border-[rgba(124,143,255,0.12)]'}`}
+                  style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                />
+              </div>
+
+              <div className="mb-6">
+                <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2 text-center">Display Name</p>
+                <input type="text" value={newDisplayName}
+                  onChange={(e) => { setNewDisplayName(e.target.value); setEditError(''); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
+                  placeholder="Leave empty to use username"
+                  className={`w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-[#ff6b6b]' : 'border-[rgba(124,143,255,0.12)]'}`}
+                  style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                />
+                {editError && <p className="text-[#ff6b6b] text-xs text-center mt-2">{editError}</p>}
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setEditOpen(false)}
+                  className="flex-1 py-3.5 rounded-full text-sm text-[#8b96c0] bg-[rgba(124,143,255,0.06)] border border-[rgba(124,143,255,0.1)] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button onClick={handleSaveProfile}
+                  className="flex-1 py-3.5 rounded-full text-sm text-white bg-[linear-gradient(135deg,#7c8fff,#5a6fd6)] cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
     </div>
   );
 }
