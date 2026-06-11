@@ -14,15 +14,15 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-[rgba(124,143,255,0.12)]"
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-[rgba(124,143,255,0.08)]"
       style={{
         background: "#0A1A3A",
         backdropFilter: "blur(20px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
-      <div className="max-w-lg mx-auto flex justify-around items-center pt-1.5 pb-[calc(0.25rem+env(safe-area-inset-bottom))]">
+      <div className="max-w-lg mx-auto flex justify-around items-center py-1.5">
         {navItems.map((item) => {
-          // Highlight active tab: exact match for home, prefix match for others
           const isActive = item.path === '/' 
             ? location.pathname === '/'
             : location.pathname.startsWith(item.path);
@@ -31,17 +31,17 @@ export function BottomNav() {
             <button
               key={item.path}
               onClick={() => void navigate(item.path)}
-              className="flex flex-col items-center gap-0.5 px-3 py-1 transition-all cursor-pointer"
+              className="flex flex-col items-center gap-0.5 px-2 py-0.5 transition-all cursor-pointer"
             >
               <Icon
-                size={20}
+                size={18}
                 className={
                   isActive ? "text-[#7c8fff]" : "text-[#8890b5]"
                 }
                 strokeWidth={isActive ? 2.2 : 1.8}
               />
               <span
-                className={`text-[10px] ${
+                className={`text-[9px] ${
                   isActive ? "text-[#7c8fff]" : "text-[#8890b5]"
                 }`}
               >
