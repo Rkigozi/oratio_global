@@ -67,7 +67,10 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 export async function signInWithGoogle() {
-  return supabase.auth.signInWithOAuth({ provider: "google" });
+  return supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${window.location.origin}/feed` },
+  });
 }
 
 export async function signOut() {

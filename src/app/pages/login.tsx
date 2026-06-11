@@ -23,7 +23,7 @@ export function Login() {
     if (signInError) {
       setError(signInError.message);
     } else {
-      void navigate("/");
+      void navigate("/feed");
     }
   };
 

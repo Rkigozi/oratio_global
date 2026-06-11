@@ -61,12 +61,12 @@ export function Onboarding() {
         } catch {
           // fallback
         }
-        void navigate("/");
+        void navigate("/feed");
       }
       attempts++;
       if (attempts > 20) {
         clearInterval(checkUser);
-        void navigate("/");
+        void navigate("/feed");
       }
     }, 500);
   };
