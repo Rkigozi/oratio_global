@@ -125,7 +125,7 @@ export function Home() {
       {geoLocation && (
         <button
           onClick={() => setFlyTo({ lat: geoLocation.lat, lng: geoLocation.lng })}
-          className="absolute bottom-28 right-4 z-[500] w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+          className="absolute bottom-20 right-4 z-[500] w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
           style={{
             background: "rgba(10, 26, 58, 0.8)",
             border: "1px solid rgba(124, 143, 255, 0.12)",
@@ -143,7 +143,7 @@ export function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute bottom-24 left-4 right-4 z-[500] max-w-sm mx-auto"
+            className="absolute bottom-4 left-4 right-4 z-[500] max-w-sm mx-auto"
           >
             <div
               className="rounded-xl px-4 py-3 flex items-center gap-3"
