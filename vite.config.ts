@@ -23,10 +23,12 @@ export default defineConfig({
         display_override: ['window-controls-overlay'],
         orientation: 'portrait',
         scope: '/',
-        start_url: '/landing',
+        start_url: '/feed',
         categories: ['religion', 'spirituality', 'lifestyle'],
         icons: [
           { src: '/icons/icon.svg', sizes: '512x512', type: 'image/svg+xml' },
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
         ],
       },
       workbox: {
