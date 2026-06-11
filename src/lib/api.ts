@@ -289,6 +289,74 @@ export async function reportContent(report: {
   });
 }
 
+// ─── Follows ────────────────────────────────────────────────────────────
+
+export async function followUser(userId: string) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Must be signed in");
+  if (user.id === userId) throw new Error("Cannot follow yourself");
+
+  return supabase.from("follows").insert({
+    follower_id: user.id,
+    following_id: userId,
+  });
+}
+
+export async function unfollowUser(userId: string) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Must be signed in");
+
+  return supabase
+    .from("follows")
+    .delete()
+    .eq("follower_id", user.id)
+    .eq("following_id", userId);
+}
+
+export async function isFollowing(targetUserId: string): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("follows")
+    .select("id")
+    .eq("follower_id", user.id)
+    .eq("following_id", targetUserId)
+    .maybeSingle();
+
+  return !!data;
+}
+
+export async function getFollowersCount(userId: string): Promise<number> {
+  const { count } = await supabase
+    .from("follows")
+    .select("id", { count: "exact", head: true })
+    .eq("following_id", userId);
+
+  return count ?? 0;
+}
+
+export async function getFollowingCount(userId: string): Promise<number> {
+  const { count } = await supabase
+    .from("follows")
+    .select("id", { count: "exact", head: true })
+    .eq("follower_id", userId);
+
+  return count ?? 0;
+}
+
+export async function getFollowingUserIds(): Promise<string[]> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("follows")
+    .select("following_id")
+    .eq("follower_id", user.id);
+
+  return (data ?? []).map((f) => f.following_id);
+}
+
 // ─── Moderation ────────────────────────────────────────────────────────
 
 export async function getPendingReports() {
