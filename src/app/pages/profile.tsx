@@ -413,8 +413,7 @@ export function Profile() {
             </button>
             <button
               onClick={() => {
-                void signOut();
-                void navigate("/landing");
+                void signOut().then(() => navigate("/landing"));
               }}
               className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl cursor-pointer transition-colors hover:bg-[rgba(124,143,255,0.04)]"
               style={{
