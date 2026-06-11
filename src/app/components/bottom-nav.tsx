@@ -14,14 +14,13 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-[rgba(124,143,255,0.08)]"
+      className="bottom-nav-safe fixed bottom-0 left-0 right-0 z-40 border-t border-[rgba(124,143,255,0.08)]"
       style={{
         background: "#0A1A3A",
         backdropFilter: "blur(20px)",
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
-      <div className="max-w-lg mx-auto flex justify-around items-center py-1.5">
+      <div className="max-w-lg mx-auto flex justify-around items-center py-1">
         {navItems.map((item) => {
           const isActive = item.path === '/' 
             ? location.pathname === '/'

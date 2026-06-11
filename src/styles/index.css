@@ -2,6 +2,11 @@
 @import './theme.css';
 @import 'leaflet/dist/leaflet.css';
 
+/* ── Bottom nav safe area (PWA standalone mode) ───────────────────── */
+.bottom-nav-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* ── Prevent iOS Safari auto-zoom on input focus ───────────────────── */
 input, textarea, select {
   font-size: 16px;

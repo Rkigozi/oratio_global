@@ -529,7 +529,7 @@ export function Feed() {
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 px-4 pb-28 overflow-y-auto">
+      <div className="flex-1 px-4 overflow-y-auto">
         {/* Filter banners */}
         <AnimatePresence>
           {hasLocationFilter && (

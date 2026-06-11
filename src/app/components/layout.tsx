@@ -69,7 +69,7 @@ export function Layout() {
       style={{ height: "100dvh" }}
     >
       <Header />
-      <main className="w-full h-full">
+      <main className="w-full h-full" style={{ paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}>
         <Outlet />
       </main>
       <BottomNav />
