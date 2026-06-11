@@ -8,6 +8,7 @@ import { getPrayedIds } from "../data/profile-data";
 import { FeedCard } from "../components/feed-card";
 import { getHashtagCounts } from "../../lib/hashtags";
 import { useGeolocation } from "../../lib/use-geolocation";
+import { getFollowingUserIds } from "../../lib/api";
 
 
 
@@ -27,6 +28,8 @@ export function Feed() {
   };
 
   const [showSaved, setShowSaved] = useState(false);
+  const [showFollowing, setShowFollowing] = useState(false);
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
   const [showRecent, setShowRecent] = useState(false);
@@ -108,6 +111,17 @@ export function Feed() {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const trendingHashtags = useMemo(() => getHashtagCounts(prayers), [prayers]);
+
+  // Load following list
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const ids = await getFollowingUserIds();
+      if (!cancelled) setFollowingIds(ids);
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, []);
 
   // Listen for prayer addition/deletion via custom events
   useEffect(() => {
@@ -193,6 +207,11 @@ export function Feed() {
       result = result.filter((p) => savedIds.includes(p.id));
     }
 
+    // Following filter
+    if (showFollowing && followingIds.length > 0) {
+      result = result.filter((p) => p.username && followingIds.includes(p.username));
+    }
+
     // Search filter
     if (activeSearch) {
       const q = activeSearch.toLowerCase();
@@ -205,7 +224,7 @@ export function Feed() {
     }
 
     return result;
-  }, [prayers, locationCity, locationCountry, showSaved, activeSearch]);
+  }, [prayers, locationCity, locationCountry, showSaved, showFollowing, followingIds, activeSearch]);
 
   // Only render visible batch for infinite scroll
   const visiblePrayers = useMemo(() => {
@@ -368,6 +387,21 @@ export function Feed() {
             >
               <MapPin size={11} />
               Near Me
+            </button>
+          )}
+
+          {/* Following */}
+          {followingIds.length > 0 && (
+            <button
+              onClick={() => setShowFollowing(!showFollowing)}
+              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
+              style={{
+                background: showFollowing ? "rgba(124,143,255,0.12)" : "rgba(124,143,255,0.04)",
+                border: showFollowing ? "1px solid rgba(124,143,255,0.2)" : "1px solid rgba(124,143,255,0.06)",
+                color: showFollowing ? "#7c8fff" : "#6b7499",
+              }}
+            >
+              Following
             </button>
           )}
 
