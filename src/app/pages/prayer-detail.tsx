@@ -71,10 +71,9 @@ export function PrayerDetail() {
     try {
       await reportContent({ reportable_type: "prayer", reportable_id: prayer!.id, reason });
     } catch {
-      // localStorage fallback
       try {
         const reports = JSON.parse(localStorage.getItem("oratio_reports") || "[]") as Array<{prayerId: string; reason: string; timestamp: number}>;
-        reports.push({ prayerId: prayer!.id, reason, timestamp: Date.now() });
+        reports.push({ prayerId: prayer!.id, reason, timestamp: new Date().getTime() });
         localStorage.setItem("oratio_reports", JSON.stringify(reports));
       } catch { /* ignore */ }
     }
