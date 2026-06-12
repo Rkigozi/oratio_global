@@ -43,23 +43,6 @@ const roadmapItems = [
     status: "future" as const,
   },
 ];
-
-const [subscribed, setSubscribed] = useState(false);
-const [email, setEmail] = useState("");
-
-const handleSubscribe = (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!email) return;
-  try {
-    const list = JSON.parse(localStorage.getItem("oratio_waitlist") || "[]") as string[];
-    if (!list.includes(email)) {
-      list.push(email);
-      localStorage.setItem("oratio_waitlist", JSON.stringify(list));
-    }
-  } catch { /* ignore */ }
-  setSubscribed(true);
-};
-
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; text: string; label: string }> = {
     next: { bg: "rgba(124,143,255,0.12)", text: "#7c8fff", label: "Next" },
@@ -78,6 +61,22 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function Info() {
+  const [subscribed, setSubscribed] = useState(false);
+  const [email, setEmail] = useState("");
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    try {
+      const list = JSON.parse(localStorage.getItem("oratio_waitlist") || "[]") as string[];
+      if (!list.includes(email)) {
+        list.push(email);
+        localStorage.setItem("oratio_waitlist", JSON.stringify(list));
+      }
+    } catch { /* ignore */ }
+    setSubscribed(true);
+  };
+
   return (
     <div
       className="w-full h-full flex flex-col"

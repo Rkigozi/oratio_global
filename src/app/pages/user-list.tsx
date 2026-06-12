@@ -11,7 +11,7 @@ function hashString(s: string): number {
 }
 
 function generateMockFollowers(allUsernames: string[], target: string): string[] {
-  let hash = hashString(target);
+  const hash = hashString(target);
   const count = 3 + (hash % 3);
   const others = allUsernames.filter(u => u !== target);
   const followers: string[] = [];

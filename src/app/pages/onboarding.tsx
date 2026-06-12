@@ -15,7 +15,7 @@ export function Onboarding() {
     sanitized = sanitized.replace(/[^a-z0-9_.]/g, '_');
     sanitized = sanitized.replace(/_+/g, '_');
     sanitized = sanitized.replace(/[.]+/g, '.');
-    sanitized = sanitized.replace(/^[_\.]+|[_\.]+$/g, '');
+    sanitized = sanitized.replace(/^[_.]+|[_.]+$/g, '');
     return sanitized.slice(0, 30);
   };
 
