@@ -1,83 +1,32 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { supabase } from "./supabase";
-import type { User } from "@supabase/supabase-js";
-import { getProfile, type UserProfile, saveProfile } from "../app/data/profile-data";
+import { createContext, useContext, useState, type ReactNode } from "react";
+import { getProfile, logoutProfile, type UserProfile } from "../app/data/profile-data";
 
 interface AuthState {
-  user: User | null;
   profile: UserProfile | null;
-  loading: boolean;
-  signOut: () => Promise<void>;
+  signOut: () => void;
 }
 
 const AuthContext = createContext<AuthState>({
-  user: null,
   profile: null,
-  loading: true,
-  signOut: async () => {},
+  signOut: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const initialize = async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        if (data?.user) {
-          setUser(data.user);
-          try {
-            const { data: dbProfile } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("id", data.user.id)
-              .single();
-            if (dbProfile) {
-              const p: UserProfile = {
-                username: dbProfile.username,
-                displayName: dbProfile.display_name || "",
-                avatar: dbProfile.avatar_url || "🙏",
-                photo: undefined,
-                joinedAt: data.user.created_at || new Date().toISOString(),
-              };
-              setProfile(p);
-              saveProfile(p);
-            }
-          } catch {
-            setProfile(getProfile());
-          }
-        } else {
-          setProfile(getProfile());
-        }
-      } catch {
-        setProfile(getProfile());
-      }
-      setLoading(false);
-    };
-
-    void initialize();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => listener?.subscription.unsubscribe();
-  }, []);
-
-  const signOut = async () => {
+  const [profile, setProfile] = useState<UserProfile | null>(() => {
     try {
-      await supabase.auth.signOut();
-    } catch {
-      // ignore
-    }
-    setUser(null);
-    setProfile(getProfile());
+      const p = getProfile();
+      if (p.username && p.username !== "anonymous") return p;
+    } catch { /* ignore */ }
+    return null;
+  });
+
+  const signOut = () => {
+    logoutProfile();
+    setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ profile, signOut }}>
       {children}
     </AuthContext.Provider>
   );

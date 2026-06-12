@@ -1,25 +1,4 @@
-import { supabase } from "./supabase";
-
 export async function uploadAvatar(file: File): Promise<string | null> {
-  // Try Supabase first (requires auth session)
-  const user = await supabase.auth.getUser();
-  if (user.data?.user) {
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `${user.data.user.id}/${Date.now()}.${ext}`;
-
-    const { error } = await supabase.storage
-      .from("avatars")
-      .upload(path, file, { contentType: file.type, upsert: true });
-
-    if (!error) {
-      const { data: urlData } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(path);
-      return urlData?.publicUrl || null;
-    }
-  }
-
-  // Fallback: store as base64 data URL in localStorage
   try {
     return await fileToDataUrl(file);
   } catch {
@@ -37,7 +16,6 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 export function getInitialAvatarUrl(username: string): string {
-  // Check localStorage for uploaded photo
   try {
     const raw = localStorage.getItem("oratio_profile");
     if (raw) {

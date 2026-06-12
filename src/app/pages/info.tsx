@@ -1,55 +1,64 @@
+import { useState } from "react";
 import { motion } from "motion/react";
 import {
   Info as InfoIcon,
   Route,
-  GitCommit,
   Shield,
   Globe,
   Bell,
   Users,
   LogIn,
-  Smartphone,
+  Mail,
 } from "lucide-react";
 
 const roadmapItems = [
   {
-    icon: LogIn,
-    label: "Proper Accounts",
-    desc: "Sign in across devices — no more localStorage boundaries",
+    icon: Users,
+    label: "Community Profiles",
+    desc: "Bios, locations, follower lists, and mutual connections — build your prayer community.",
     status: "next" as const,
+  },
+  {
+    icon: LogIn,
+    label: "Cross-Device Accounts",
+    desc: "Sign in across devices with Supabase auth — no more localStorage boundaries.",
+    status: "planned" as const,
   },
   {
     icon: Bell,
     label: "Push Notifications",
-    desc: "Get notified when someone prays for your request",
-    status: "planned" as const,
-  },
-  {
-    icon: Globe,
-    label: "Real Prayer Map",
-    desc: "Live prayer activity from real users around the world",
+    desc: "Get notified when someone prays for or comments on your prayer.",
     status: "planned" as const,
   },
   {
     icon: Shield,
-    label: "Moderation Tools",
-    desc: "Guided submission, crisis resources, better reporting",
+    label: "Moderation & Safety",
+    desc: "Better reporting tools, content moderation, and safety features.",
     status: "planned" as const,
   },
   {
-    icon: Users,
-    label: "Community Features",
-    desc: "Follow users, discussion, prayer groups",
+    icon: Globe,
+    label: "Native Mobile App",
+    desc: "Oratio for iOS and Android — the full experience as a real installed app.",
     status: "future" as const,
   },
 ];
 
-const changelog = [
-  { version: "v0.1.4", date: "May 2026", items: ["Login & sign-out flow", "Info page with roadmap", "Session management"] },
-  { version: "v0.1.3", date: "May 2026", items: ["Save & report prayers", "iOS PWA fixes", "Profile pages"] },
-  { version: "v0.1.2", date: "Apr 2026", items: ["Prayer feed with filters", "Submit prayer flow", "Onboarding"] },
-  { version: "v0.1.1", date: "Apr 2026", items: ["World map with hotspots", "Bottom navigation", "Splash screen"] },
-];
+const [subscribed, setSubscribed] = useState(false);
+const [email, setEmail] = useState("");
+
+const handleSubscribe = (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!email) return;
+  try {
+    const list = JSON.parse(localStorage.getItem("oratio_waitlist") || "[]") as string[];
+    if (!list.includes(email)) {
+      list.push(email);
+      localStorage.setItem("oratio_waitlist", JSON.stringify(list));
+    }
+  } catch { /* ignore */ }
+  setSubscribed(true);
+};
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; text: string; label: string }> = {
@@ -69,9 +78,6 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function Info() {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-  const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
-
   return (
     <div
       className="w-full h-full flex flex-col"
@@ -164,111 +170,52 @@ export function Info() {
             </div>
           </motion.div>
 
-          {/* ── Install Oratio ── */}
-          {!isStandalone && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.25 }}
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <Smartphone size={16} className="text-[#7c8fff]" />
-                <h2 className="text-[#e2e4f0] font-heading text-sm font-light">
-                  Install Oratio
-                </h2>
-              </div>
-              <div
-                className="rounded-xl p-4 border"
-                style={{
-                  background: "rgba(124,143,255,0.04)",
-                  borderColor: "rgba(124,143,255,0.08)",
-                }}
-              >
-                {isIOS ? (
-                  <>
-                    <p className="text-[#d0d4e8] text-sm mb-3">
-                      Get the full Oratio experience — install it on your home screen like any other app.
-                    </p>
-                    <ol className="space-y-2 text-[#6b7499] text-xs">
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#7c8fff] mt-0.5 font-medium">1.</span>
-                        <span>Tap the <strong className="text-[#8890b5]">Share</strong> button <span className="inline-flex items-center gap-0.5">(<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5a6080" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>)</span> at the bottom of Safari</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#7c8fff] mt-0.5 font-medium">2.</span>
-                        <span>Scroll down and tap <strong className="text-[#8890b5]">Add to Home Screen</strong></span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#7c8fff] mt-0.5 font-medium">3.</span>
-                        <span>Tap <strong className="text-[#8890b5]">Add</strong> in the top-right corner</span>
-                      </li>
-                    </ol>
-                    <p className="text-[#4e5573] text-[10px] mt-3">Oratio will open full-screen, just like a native app.</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-[#d0d4e8] text-sm mb-3">
-                      Install Oratio on your device for quick access and a full-screen experience.
-                    </p>
-                    <ol className="space-y-2 text-[#6b7499] text-xs">
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#7c8fff] mt-0.5 font-medium">1.</span>
-                        <span>Open Chrome and navigate to Oratio</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#7c8fff] mt-0.5 font-medium">2.</span>
-                        <span>Tap the Chrome menu <strong className="text-[#8890b5]">⋮</strong> (three dots)</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-[#7c8fff] mt-0.5 font-medium">3.</span>
-                        <span>Tap <strong className="text-[#8890b5]">Install Oratio</strong> or <strong className="text-[#8890b5]">Add to Home Screen</strong></span>
-                      </li>
-                    </ol>
-                  </>
-                )}
-                <div className="mt-3 pt-3 border-t border-[rgba(124,143,255,0.06)]">
-                  <p className="text-[#4e5573] text-[10px]">Takes 30 seconds</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
 
-          {/* ── Changelog ── */}
+
+          {/* ── Stay Updated ── */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <div className="flex items-center gap-2 mb-4">
-              <GitCommit size={16} className="text-[#7c8fff]" />
+              <Mail size={16} className="text-[#7c8fff]" />
               <h2 className="text-[#e2e4f0] font-heading text-sm font-light">
-                Changelog
+                Stay Updated
               </h2>
             </div>
-            <div className="space-y-2">
-              {changelog.map((entry) => (
-                <div
-                  key={entry.version}
-                  className="rounded-xl px-4 py-3"
-                  style={{
-                    background: "rgba(17, 26, 58, 0.4)",
-                    border: "1px solid rgba(124,143,255,0.05)",
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[#7c8fff] text-xs font-mono">{entry.version}</span>
-                    <span className="text-[#4e5573] text-[10px]">{entry.date}</span>
-                  </div>
-                  <ul className="space-y-1">
-                    {entry.items.map((item) => (
-                      <li key={item} className="text-[#6b7499] text-xs flex items-start gap-1.5">
-                        <span className="text-[#4e5573] mt-0.5">-</span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+            <div
+              className="rounded-xl p-4 border"
+              style={{
+                background: "rgba(124,143,255,0.04)",
+                borderColor: "rgba(124,143,255,0.08)",
+              }}
+            >
+              <p className="text-[#d0d4e8] text-sm leading-relaxed mb-3">
+                Oratio is growing. Get notified when we launch new features, release the native app, or have updates to share.
+              </p>
+              {subscribed ? (
+                <p className="text-[#7c8fff] text-sm text-center py-2">You&apos;re on the list! 🙏</p>
+              ) : (
+                <form onSubmit={handleSubscribe} className="flex gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    required
+                    className="flex-1 rounded-xl px-4 py-2.5 text-[#e2e4f0] placeholder-[#4e5573] text-xs focus:outline-none border border-[rgba(124,143,255,0.12)]"
+                    style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                  />
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl text-xs text-white cursor-pointer transition-all active:scale-95"
+                    style={{ background: "linear-gradient(135deg, #7c8fff, #5a6fd6)" }}
+                  >
+                    Subscribe
+                  </button>
+                </form>
+              )}
             </div>
           </motion.div>
 

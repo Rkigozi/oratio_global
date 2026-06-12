@@ -1,11 +1,8 @@
-import { useEffect } from "react";
 import { RouterProvider } from "react-router";
 import { router } from "./routes";
 import { AuthProvider } from "../lib/auth-context";
-import { initAnalytics } from "../lib/analytics";
 
 export default function App() {
-  useEffect(() => { void initAnalytics(); }, []);
   return (
     <AuthProvider>
       <div style={{

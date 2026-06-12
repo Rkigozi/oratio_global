@@ -2,10 +2,12 @@ import type { PrayerRequest } from "./prayer-data";
 import { mockFeedPrayers } from "./prayer-data";
 
 export interface UserProfile {
-  username: string;         // Primary identifier (unique handle) e.g., "prayer_warrior"
-  displayName: string;      // Changeable display name (defaults to username, can be empty)
+  username: string;
+  displayName: string;
   avatar: string;
   photo?: string;
+  bio?: string;
+  location?: string;
   joinedAt: string;
 }
 
@@ -55,6 +57,8 @@ function migrateProfile(oldData: Partial<UserProfile> & { name?: string }): User
     displayName,
     avatar: oldData.avatar || "🙏",
     photo: oldData.photo,
+    bio: oldData.bio || "",
+    location: oldData.location || "",
     joinedAt: oldData.joinedAt || new Date().toISOString(),
   };
 }

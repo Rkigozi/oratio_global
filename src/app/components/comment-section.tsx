@@ -3,7 +3,7 @@ import { MessageCircle, Send, ChevronDown, X, Flag } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { reportContent } from "../../lib/api";
-import { createComment, getCommentsByPrayer, deleteComment } from "../../lib/api";
+import { createComment, deleteComment } from "../../lib/api";
 import { getInitialAvatarUrl } from "../../lib/upload";
 
 interface Comment {
@@ -41,51 +41,29 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const { data } = await getCommentsByPrayer(prayer.id);
-        if (!cancelled && data) {
-          setComments(data as unknown as Comment[]);
-        }
-      } catch {
-        // fall back to localStorage
-        const stored = loadLocalComments(prayer.id);
-        if (!cancelled) setComments(stored);
-      }
-      if (!cancelled) setLoading(false);
-    };
-    void load();
-    return () => { cancelled = true; };
+    const stored = loadLocalComments(prayer.id);
+    setComments(stored);
+    setLoading(false);
+    onCommentCountChange(stored.length);
   }, [prayer.id]);
 
   const handleSubmit = useCallback(async () => {
     const text = newComment.trim();
     if (!text || submitting) return;
     setSubmitting(true);
-    const addComment = (comment: Comment) => {
-      setComments((prev) => {
-        const updated = [...prev, comment];
-        onCommentCountChange(updated.length);
-        return updated;
-      });
-      setNewComment("");
-      setReplyTo(null);
-    };
     try {
-      const { data } = await createComment({
-        prayer_id: prayer.id,
-        body: text,
-        parent_id: replyTo?.id,
-      });
-      if (data) {
-        addComment(data as unknown as Comment);
-      }
+      await createComment({ prayer_id: prayer.id, body: text, parent_id: replyTo?.id });
     } catch {
-      const comment = saveLocalComment(prayer.id, text, replyTo?.id);
-      addComment(comment);
+      // API failed — fallback to localStorage
     }
+    const comment = saveLocalComment(prayer.id, text, replyTo?.id);
+    setComments((prev) => {
+      const updated = [...prev, comment];
+      onCommentCountChange(updated.length);
+      return updated;
+    });
+    setNewComment("");
+    setReplyTo(null);
     setSubmitting(false);
   }, [newComment, replyTo, prayer.id, submitting, onCommentCountChange]);
 

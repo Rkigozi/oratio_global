@@ -16,8 +16,17 @@ interface FeedCardProps {
 }
 
 
+function getCommentCount(prayerId: string): number {
+  try {
+    const raw = localStorage.getItem(`oratio_comments_${prayerId}`);
+    if (raw) return (JSON.parse(raw) as Array<unknown>).length;
+  } catch { /* ignore */ }
+  return 0;
+}
+
 export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick, onUserClick }: FeedCardProps) {
   const [prayed, setPrayed] = useState(hasPrayed);
+  const [commentCount] = useState(() => getCommentCount(prayer.id));
 
   useEffect(() => {
     setPrayed(hasPrayed);
@@ -79,7 +88,7 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick
           className="flex items-center gap-1 text-[#4e5573] hover:text-[#6b7499] text-xs transition-colors cursor-pointer"
         >
           <MessageCircle size={13} />
-          <span>Comment</span>
+          <span>{commentCount > 0 ? commentCount : "Comment"}</span>
         </button>
         <button
           onClick={handlePray}

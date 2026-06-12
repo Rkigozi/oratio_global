@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Send,
   LogOut,
@@ -30,6 +30,8 @@ export function Profile() {
   const [editOpen, setEditOpen] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState("");
   const [newUsername, setNewUsername] = useState("");
+  const [newBio, setNewBio] = useState("");
+  const [newLocation, setNewLocation] = useState("");
   const [editError, setEditError] = useState<string>("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showSection, setShowSection] = useState<"prayers" | "saved">("prayers");
@@ -73,6 +75,17 @@ export function Profile() {
     setUploadingPhoto(false);
   };
 
+  // Initialize edit drawer fields
+  useEffect(() => {
+    if (editOpen) {
+      setNewDisplayName(profile.displayName);
+      setNewUsername(profile.username);
+      setNewBio(profile.bio || "");
+      setNewLocation(profile.location || "");
+      setEditError('');
+    }
+  }, [editOpen, profile.displayName, profile.username, profile.bio, profile.location]);
+
   const handleSaveProfile = () => {
     setEditError("");
     const trimmedDisplayName = newDisplayName.trim();
@@ -100,6 +113,8 @@ export function Profile() {
       ...profile,
       username: trimmedUsername,
       displayName: trimmedDisplayName,
+      bio: newBio.trim(),
+      location: newLocation.trim(),
     };
     saveProfile(updatedProfile);
     setProfile(updatedProfile);
@@ -135,10 +150,12 @@ export function Profile() {
                   <Edit size={12} />
                 </button>
               </div>
-              <p className="text-[#5a6080] text-xs mb-3">@{username}</p>
+              <p className="text-[#5a6080] text-xs mb-1">@{username}</p>
+              {profile.bio && <p className="text-[#c5cbe2] text-xs mb-1.5 leading-relaxed">{profile.bio}</p>}
+              {profile.location && <p className="text-[#4e5573] text-[10px] mb-2">📍 {profile.location}</p>}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => void signOut().then(() => navigate("/landing"))}
+                  onClick={() => { signOut(); void navigate("/landing"); }}
                   className="flex items-center gap-1.5 px-4 py-1 rounded-full text-xs cursor-pointer"
                   style={{
                     background: "rgba(124,143,255,0.06)",
@@ -334,6 +351,29 @@ export function Profile() {
                   style={{ background: "rgba(15, 20, 50, 0.6)" }}
                 />
                 {editError && <p className="text-[#ff6b6b] text-xs text-center mt-2">{editError}</p>}
+              </div>
+
+              <div className="mb-4">
+                <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2 text-center">Bio</p>
+                <textarea value={newBio}
+                  onChange={(e) => setNewBio(e.target.value)}
+                  placeholder="Tell people a bit about yourself..."
+                  rows={2}
+                  maxLength={150}
+                  className="w-full rounded-xl px-4 py-3 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)] resize-none text-center"
+                  style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                />
+                <p className="text-[#4e5573] text-[10px] text-right mt-1">{newBio.length}/150</p>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2 text-center">Location</p>
+                <input type="text" value={newLocation}
+                  onChange={(e) => setNewLocation(e.target.value)}
+                  placeholder="e.g. London, UK"
+                  className="w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)] transition-colors text-center"
+                  style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                />
               </div>
 
               <div className="flex gap-3">
