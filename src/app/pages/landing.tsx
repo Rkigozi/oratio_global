@@ -2,24 +2,20 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Globe, Heart, MessageCircle, ArrowRight, Mail } from "lucide-react";
-import { getProfile } from "../data/profile-data";
+import { useAuth } from "../../lib/auth-context";
 
 export function Landing() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
-  // Check if user already has a profile
+  // Redirect to feed if already signed in
   useEffect(() => {
-    try {
-      const profile = getProfile();
-      if (profile.username && profile.username !== "anonymous") {
-        void navigate("/feed", { replace: true });
-      }
-    } catch {
-      // ignore
+    if (!loading && user) {
+      void navigate("/feed", { replace: true });
     }
-  }, [navigate]);
+  }, [user, loading, navigate]);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,13 +49,13 @@ export function Landing() {
   ];
 
   return (
-    <div className="flex flex-col min-h-dvh w-full" style={{ background: "#0A1A3A" }}>
+    <div className="flex flex-col min-h-dvh w-full overflow-y-auto" style={{ background: "#0A1A3A" }}>
       {/* Ambient glow */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full blur-[200px] pointer-events-none opacity-15"
         style={{ background: "radial-gradient(circle, rgba(124, 143, 255, 0.4), transparent 70%)" }}
       />
 
-      <div className="relative z-10 flex flex-col items-center w-full max-w-4xl mx-auto px-6 pt-20 pb-16">
+      <div className="relative z-10 flex flex-col items-center w-full max-w-4xl mx-auto px-6 pt-20 pb-32">
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
@@ -95,7 +91,9 @@ export function Landing() {
             <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm opacity-80"
               style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)" }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#8890b5"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#8890b5">
+                <path d="M4.08 2.23a1.5 1.5 0 0 0-.08.52v18.5a1.5 1.5 0 0 0 2.3 1.28l15.22-9.24a1.5 1.5 0 0 0 0-2.58L6.3 1.45a1.5 1.5 0 0 0-2.22.78z"/>
+              </svg>
               <span className="text-[#8890b5] text-sm">Android — Coming Soon</span>
             </div>
           </div>
@@ -103,21 +101,26 @@ export function Landing() {
           {/* Email waitlist */}
           <div className="w-full max-w-sm mx-auto">
             {subscribed ? (
-              <motion.p
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-[#7c8fff] text-sm py-3"
               >
-                You're on the list! We'll keep you updated.
-              </motion.p>
+                <p className="text-[#7c8fff] text-sm py-3 text-center">Saved! 🙏</p>
+                <button
+                  onClick={() => { setSubscribed(false); setEmail(""); }}
+                  className="text-[#4e5573] text-[10px] hover:text-[#6b7499] transition-colors cursor-pointer block mx-auto"
+                >
+                  Remove
+                </button>
+              </motion.div>
             ) : (
               <form onSubmit={handleSubscribe} className="flex gap-2">
                 <input
                   type="email" value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Get notified when we launch"
+                  placeholder="Save email as reminder (local only)"
                   required
-                  className="flex-1 rounded-xl px-4 py-3 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)]"
+                  className="flex-1 min-w-0 rounded-xl px-4 py-3 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)]"
                   style={{ background: "rgba(15, 20, 50, 0.6)" }}
                 />
                 <button type="submit"
@@ -125,7 +128,7 @@ export function Landing() {
                   style={{ background: "linear-gradient(135deg, #7c8fff, #5a6fd6)" }}
                 >
                   <Mail size={14} />
-                  Notify Me
+                  Save
                 </button>
               </form>
             )}
@@ -171,6 +174,16 @@ export function Landing() {
           transition={{ duration: 0.8, delay: 0.5 }}
           className="text-center"
         >
+          <button
+            onClick={() => void navigate("/onboarding")}
+            className="px-8 py-3.5 rounded-full text-sm font-medium text-white cursor-pointer transition-all active:scale-95 mb-5"
+            style={{
+              background: "linear-gradient(135deg, #7c8fff, #5a6fd6)",
+              boxShadow: "0 4px 28px rgba(124, 143, 255, 0.3)",
+            }}
+          >
+            Create Account
+          </button>
           <p className="text-[#4e5573] text-xs mb-3">Already have an account?</p>
           <button
             onClick={() => void navigate("/login")}

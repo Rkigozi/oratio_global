@@ -123,7 +123,7 @@ export function Profile() {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "#0A1A3A" }}>
-      <div className="relative z-10 px-5 pb-28 overflow-y-auto flex-1 h-full pt-24">
+      <div className="relative z-10 px-5 overflow-y-auto flex-1 h-full pt-24 pb-28">
         <div className="max-w-md mx-auto">
           {/* Profile header — Instagram style */}
           <div className="flex items-start gap-4 mb-6">
@@ -155,7 +155,7 @@ export function Profile() {
               {profile.location && <p className="text-[#4e5573] text-[10px] mb-2">📍 {profile.location}</p>}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => { signOut(); void navigate("/landing"); }}
+                  onClick={async () => { await signOut(); void navigate("/landing"); }}
                   className="flex items-center gap-1.5 px-4 py-1 rounded-full text-xs cursor-pointer"
                   style={{
                     background: "rgba(124,143,255,0.06)",
@@ -202,7 +202,7 @@ export function Profile() {
               <p className="text-[#e2e4f0] text-sm font-medium">{followingCount}</p>
               <p className="text-[#5a6080] text-[10px]">Following</p>
             </button>
-            <button onClick={() => setShowSection("saved")} className="text-center cursor-pointer">
+            <button onClick={() => void navigate("/profile/saved")} className="text-center cursor-pointer">
               <p className="text-[#e2e4f0] text-sm font-medium">{savedCount}</p>
               <p className="text-[#5a6080] text-[10px]">Saved</p>
             </button>
@@ -234,12 +234,12 @@ export function Profile() {
               🙏 Prayed For
             </button>
             <button
-              onClick={() => setShowSection("saved")}
+              onClick={() => void navigate("/profile/saved")}
               className="px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer"
               style={{
-                background: showSection === "saved" ? "rgba(124,143,255,0.12)" : "rgba(124,143,255,0.04)",
-                border: `1px solid ${showSection === "saved" ? "rgba(124,143,255,0.2)" : "rgba(124,143,255,0.06)"}`,
-                color: showSection === "saved" ? "#7c8fff" : "#6b7499",
+                background: "rgba(124,143,255,0.04)",
+                border: "1px solid rgba(124,143,255,0.06)",
+                color: "#6b7499",
               }}
             >
               <Bookmark size={11} className="inline mr-1" />
@@ -250,7 +250,9 @@ export function Profile() {
           {/* Prayer list */}
           <div className="space-y-2">
             {showSection === "prayers" && (
-              myPrayers.length > 0 ? myPrayers.map((prayer) => (
+              myPrayers.length > 0 ? (
+                <>
+                {myPrayers.slice(0, 5).map((prayer) => (
                 <div
                   key={prayer.id}
                   onClick={() => void navigate(`/prayer/${prayer.id}`)}
@@ -272,7 +274,17 @@ export function Profile() {
                     )}
                   </div>
                 </div>
-              )) : (
+              ))}
+              {myPrayers.length > 0 && (
+                <button
+                  onClick={() => void navigate("/profile/submitted")}
+                  className="w-full py-2.5 text-xs text-[#7c8fff] hover:text-[#a0b0ff] transition-colors cursor-pointer"
+                >
+                  View all {myPrayers.length} prayers →
+                </button>
+              )}
+              </>
+              ) : (
                 <div className="text-center py-8">
                   <Send size={20} className="text-[#4e5573] mx-auto mb-2" />
                   <p className="text-[#6b7499] text-sm mb-1">No prayers yet</p>
@@ -285,13 +297,7 @@ export function Profile() {
                 </div>
               )
             )}
-            {showSection === "saved" && (
-              <div className="text-center py-8">
-                <Bookmark size={20} className="text-[#4e5573] mx-auto mb-2" />
-                <p className="text-[#6b7499] text-sm mb-1">No saved prayers</p>
-                <p className="text-[#4e5573] text-xs">Save prayers from the prayer detail page</p>
-              </div>
-            )}
+
           </div>
         </div>
       </div>

@@ -120,6 +120,12 @@ export function UserProfile() {
 
       <div className="flex-1 px-5 pb-8 overflow-y-auto">
         <div className="max-w-md mx-auto">
+          <div className="mb-4 px-3 py-2 rounded-lg text-center"
+            style={{ background: "rgba(124,143,255,0.06)", border: "1px solid rgba(124,143,255,0.1)" }}
+          >
+            <p className="text-[#7c8fff] text-[10px]">Sample profile — real user data coming with accounts</p>
+          </div>
+
           {/* Profile header */}
           <div className="flex items-start gap-4 mb-6 mt-4">
             <img src={getInitialAvatarUrl(username)} alt="" className="w-20 h-20 rounded-full object-cover flex-shrink-0" />
@@ -229,7 +235,7 @@ function PrayerCard({ prayer }: { prayer: PrayerRequest }) {
       }}
     >
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-[#8890b5] text-[10px]">{prayer.city}</span>
+        <span className="text-[#8890b5] text-[10px]">{prayer.city || "Unknown"}</span>
         <span className="text-[#3e4460] text-[10px]">·</span>
         <span className="text-[#4e5573] text-[10px]">{prayer.createdAt ? timeAgo(prayer.createdAt) : ""}</span>
       </div>

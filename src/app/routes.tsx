@@ -1,6 +1,6 @@
 
 import { lazy, Suspense } from "react";
-import { createBrowserRouter, redirect } from "react-router";
+import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/layout";
 
 const Home = lazy(() => import("./pages/home").then(m => ({ default: m.Home })));
@@ -19,6 +19,7 @@ const Moderate = lazy(() => import("./pages/moderate").then(m => ({ default: m.M
 const UserProfile = lazy(() => import("./pages/user-profile").then(m => ({ default: m.UserProfile })));
 const UserFollowing = lazy(() => import("./pages/user-list").then(m => ({ default: m.UserFollowing })));
 const UserFollowers = lazy(() => import("./pages/user-list").then(m => ({ default: m.UserFollowers })));
+const NotFound = lazy(() => import("./pages/not-found").then(m => ({ default: m.NotFound })));
 
 function SuspenseWrapper({ Component }: { Component: React.LazyExoticComponent<() => React.ReactNode> }) {
   return (
@@ -57,5 +58,5 @@ export const router = createBrowserRouter([
     ],
   },
 
-  { path: "*", loader: () => redirect("/") },
+  { path: "*", element: <SuspenseWrapper Component={NotFound} /> },
 ]);

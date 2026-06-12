@@ -4,6 +4,7 @@ import { MessageCircle } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import { renderHashtags } from "../../lib/hashtags";
+import { getInitialAvatarUrl } from "../../lib/upload";
 
 interface FeedCardProps {
   prayer: PrayerRequest;
@@ -56,8 +57,8 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <img
-            src={`https://ui-avatars.com/api/?name=${(getAttributionText(prayer)[0] || "?").toUpperCase()}&background=7c8fff&color=fff&size=24&font-size=0.35`}
-            alt=""
+            src={getInitialAvatarUrl(prayer.username || getAttributionText(prayer))}
+            alt={prayer.username || "avatar"}
             className="w-5 h-5 rounded-full flex-shrink-0 object-cover cursor-pointer"
             onClick={(e) => { e.stopPropagation(); const u = prayer.username; if (u && onUserClick) onUserClick(u); }}
           />

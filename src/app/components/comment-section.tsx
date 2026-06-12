@@ -152,19 +152,26 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
           }}
           placeholder={replyTo ? "Write a reply..." : "Write an encouragement..."}
           rows={1}
-          className="flex-1 rounded-xl px-3 py-2.5 text-[#e2e4f0] placeholder-[#4e5573] text-xs focus:outline-none border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.3)] transition-colors resize-none"
+          maxLength={2000}
+          className="flex-1 min-w-0 rounded-xl px-3 py-2.5 text-[#e2e4f0] placeholder-[#4e5573] text-xs focus:outline-none border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.3)] transition-colors resize-none"
           style={{ background: "rgba(15, 20, 50, 0.6)", minHeight: 36 }}
         />
         <button
           onClick={() => void handleSubmit()}
           disabled={!newComment.trim() || submitting}
-          className="p-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
           style={{
             background: newComment.trim() ? "linear-gradient(135deg, #7c8fff, #5a6fd6)" : "rgba(124,143,255,0.06)",
             color: newComment.trim() ? "#ffffff" : "#4e5573",
+            width: 36,
+            height: 36,
           }}
         >
-          <Send size={14} />
+          {submitting ? (
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+          ) : (
+            <Send size={14} />
+          )}
         </button>
       </div>
     </div>

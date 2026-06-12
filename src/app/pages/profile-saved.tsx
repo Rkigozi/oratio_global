@@ -179,7 +179,7 @@ export function ProfileSaved() {
 
                     <div className="flex items-center gap-1.5 justify-center text-[#5a6080] text-xs mb-6">
                       <span className="text-xs opacity-60">🙏</span>
-                      <span>{selectedPrayer.prayerCount} people prayed</span>
+                      <span>{selectedPrayer.prayerCount} {selectedPrayer.prayerCount === 1 ? "person" : "people"} prayed</span>
                     </div>
 
                     <button

@@ -37,7 +37,7 @@ export function CrisisResources() {
         className="w-full flex items-center gap-2 px-4 py-3 text-left cursor-pointer"
       >
         <Heart size={13} className="text-[#7c8fff] flex-shrink-0" />
-        <span className="text-[#7c8fff] text-xs flex-1">
+        <span className="text-[#7c8fff] text-xs flex-1 min-w-0">
           If you&apos;re going through something difficult — you&apos;re not
           alone.
         </span>

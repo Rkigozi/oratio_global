@@ -127,6 +127,9 @@ test_server.sh
 # JIRA CLI config (contains API tokens)
 .jira-cli/
 
+# Supabase CLI temp files
+supabase/.temp/
+
 # Local test files
 *.test.local
 

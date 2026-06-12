@@ -86,6 +86,13 @@ function UserList({ type }: { type: "following" | "followers" }) {
 
       <div className="flex-1 px-5 pb-8 overflow-y-auto">
         <div className="max-w-md mx-auto">
+          {type === "followers" && (
+            <div className="mb-3 px-3 py-2 rounded-lg text-center"
+              style={{ background: "rgba(124,143,255,0.06)", border: "1px solid rgba(124,143,255,0.1)" }}
+            >
+              <p className="text-[#7c8fff] text-[10px]">Sample data — real followers coming with accounts</p>
+            </div>
+          )}
           {users.length > 0 ? (
             <div className="space-y-1.5">
               {users.map((u) => {
@@ -99,7 +106,7 @@ function UserList({ type }: { type: "following" | "followers" }) {
                     <div className="flex-1 min-w-0">
                       <p className="text-[#e2e4f0] text-sm font-medium truncate">{u.displayName}</p>
                       <p className="text-[#5a6080] text-xs">
-                        @{u.username} · {u.prayerCount} prayers
+                        @{u.username} · {u.prayerCount} {u.prayerCount === 1 ? "prayer" : "prayers"}
                         {isMutual && <span className="text-[#7c8fff]"> · Mutual</span>}
                       </p>
                     </div>

@@ -191,10 +191,18 @@ export function Info() {
               }}
             >
               <p className="text-[#d0d4e8] text-sm leading-relaxed mb-3">
-                Oratio is growing. Get notified when we launch new features, release the native app, or have updates to share.
+                Oratio is growing. Save your email below as a reminder (stored locally in this browser).
               </p>
               {subscribed ? (
-                <p className="text-[#7c8fff] text-sm text-center py-2">You&apos;re on the list! 🙏</p>
+                <div className="text-center">
+                  <p className="text-[#7c8fff] text-sm py-2">Saved! 🙏</p>
+                  <button
+                    onClick={() => { setSubscribed(false); setEmail(""); }}
+                    className="text-[#4e5573] text-[10px] hover:text-[#6b7499] transition-colors cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
               ) : (
                 <form onSubmit={handleSubscribe} className="flex gap-2">
                   <input
@@ -203,7 +211,7 @@ export function Info() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
                     required
-                    className="flex-1 rounded-xl px-4 py-2.5 text-[#e2e4f0] placeholder-[#4e5573] text-xs focus:outline-none border border-[rgba(124,143,255,0.12)]"
+                    className="flex-1 min-w-0 rounded-xl px-4 py-2.5 text-[#e2e4f0] placeholder-[#4e5573] text-xs focus:outline-none border border-[rgba(124,143,255,0.12)]"
                     style={{ background: "rgba(15, 20, 50, 0.6)" }}
                   />
                   <button
@@ -211,7 +219,7 @@ export function Info() {
                     className="px-5 py-2.5 rounded-xl text-xs text-white cursor-pointer transition-all active:scale-95"
                     style={{ background: "linear-gradient(135deg, #7c8fff, #5a6fd6)" }}
                   >
-                    Subscribe
+                    Save
                   </button>
                 </form>
               )}

@@ -43,9 +43,9 @@ export function ProfileSubmitted() {
       const prayed = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
       localStorage.setItem("oratio_prayed", JSON.stringify(prayed.filter(id => id !== prayerId)));
       
-      // Call bridge to update other components
+      // Dispatch event to update other components
       if (typeof window !== "undefined") {
-        (window as typeof window & { __oratio_removePrayer?: (id: string) => void }).__oratio_removePrayer?.(prayerId);
+        window.dispatchEvent(new CustomEvent("oratio-prayer-removed", { detail: prayerId }));
       }
 
       // Force re-render
@@ -176,7 +176,7 @@ export function ProfileSubmitted() {
 
                     <div className="flex items-center gap-1.5 justify-center text-[#5a6080] text-xs mb-8">
                       <span className="text-xs opacity-60">🙏</span>
-                      <span>{selectedPrayer.prayerCount} people prayed</span>
+                      <span>{selectedPrayer.prayerCount} {selectedPrayer.prayerCount === 1 ? "person" : "people"} prayed</span>
                     </div>
                   </motion.div>
                 </AnimatePresence>

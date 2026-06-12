@@ -143,7 +143,7 @@ export function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute bottom-4 left-4 right-4 z-[500] max-w-sm mx-auto"
+            className="absolute bottom-20 left-4 right-4 z-[500] max-w-sm mx-auto"
           >
             <div
               className="rounded-xl px-4 py-3 flex items-center gap-3"
@@ -239,7 +239,7 @@ export function Home() {
                     className="text-[#e2e4f0] text-center font-heading mb-2"
                     style={{ fontSize: "1.15rem", fontWeight: 300 }}
                   >
-                    {selectedPrayer.prayerCount} people praying in {selectedPrayer.city}
+                    {selectedPrayer.prayerCount} {selectedPrayer.prayerCount === 1 ? "person praying in" : "people praying in"} {selectedPrayer.city}
                   </p>
                   <p className="text-[#6b7499] text-sm text-center mb-6 max-w-[260px]">
                     People around {selectedPrayer.city} are lifting up prayers right now

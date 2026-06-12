@@ -4,6 +4,7 @@ import { MapPin, Trash2 } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import { categoryColors } from "../data/profile-data";
+import { renderHashtags } from "../../lib/hashtags";
 
 interface PrayerRowProps {
   prayer: PrayerRequest;
@@ -15,6 +16,7 @@ interface PrayerRowProps {
   hasPrayed?: boolean;
   onTogglePrayed?: (id: string) => void;
   showPrayedToggle?: boolean;
+  onTagClick?: (tag: string) => void;
 }
 
 export function PrayerRow({
@@ -27,6 +29,7 @@ export function PrayerRow({
   hasPrayed = false,
   onTogglePrayed,
   showPrayedToggle = false,
+  onTagClick,
 }: PrayerRowProps) {
   const [prayed, setPrayed] = useState(hasPrayed);
 
@@ -62,7 +65,7 @@ export function PrayerRow({
             className="text-[#d0d4e8] line-clamp-2 mb-1"
             style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
           >
-            {prayer.text}
+            {renderHashtags(prayer.text, onTagClick || (() => {}))}
           </p>
           <span className="text-[#6b7499] text-[11px] mb-1 block">
             {getAttributionText(prayer)}
@@ -70,7 +73,7 @@ export function PrayerRow({
           <div className="flex items-center gap-2">
             <MapPin size={10} className="text-[#5a6080] flex-shrink-0" />
             <span className="text-[#5a6080] text-[11px]">
-              {prayer.city}
+              {prayer.city || "Unknown"}
             </span>
             {prayer.category && (
               <span
@@ -97,7 +100,7 @@ export function PrayerRow({
             <div className="flex items-center gap-1">
               <span className="text-xs opacity-60">🙏</span>
               <span className="text-[#6b7499] text-[11px]">
-                {prayer.prayerCount}
+                {prayer.prayerCount ?? 0}
               </span>
             </div>
           )}

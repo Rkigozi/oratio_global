@@ -8,6 +8,7 @@ import { getPrayedIds } from "../data/profile-data";
 import { FeedCard } from "../components/feed-card";
 import { getHashtagCounts } from "../../lib/hashtags";
 import { useGeolocation } from "../../lib/use-geolocation";
+import { getFeedPrayers } from "../../lib/supabase-queries";
 
 
 
@@ -30,8 +31,9 @@ export function Feed() {
   const [showSaved, setShowSaved] = useState(false);
   const [showFollowing, setShowFollowing] = useState(false);
   const [followingIds, setFollowingIds] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeSearch, setActiveSearch] = useState("");
+  const searchParamActive = searchParams.get("search") || "";
+  const [searchQuery, setSearchQuery] = useState(searchParamActive);
+  const [activeSearch, setActiveSearch] = useState(searchParamActive);
   const [showRecent, setShowRecent] = useState(false);
   const [recentVersion, setRecentVersion] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -91,17 +93,26 @@ export function Feed() {
    const [prayers, setPrayers] = useState<PrayerRequest[]>(() => {
     try {
       const submitted = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
-      if (submitted.length > 0) {
-        // Merge submitted prayers at the top, deduplicating by id
-        const existingIds = new Set(mockFeedPrayers.map((p: PrayerRequest) => p.id));
-        const newOnes = submitted.filter((p: PrayerRequest) => !existingIds.has(p.id));
-        return [...newOnes, ...mockFeedPrayers];
-      }
+      // Merge submitted prayers at the top with mock data
+      const existingIds = new Set(mockFeedPrayers.map((p: PrayerRequest) => p.id));
+      const newOnes = submitted.filter((p: PrayerRequest) => !existingIds.has(p.id));
+      return [...newOnes, ...mockFeedPrayers];
     } catch {
-      // ignore localStorage errors
+      return mockFeedPrayers;
     }
-    return mockFeedPrayers;
   });
+  // Load real prayers from Supabase on mount
+  useEffect(() => {
+    getFeedPrayers().then((supabasePrayers) => {
+      if (supabasePrayers.length > 0) {
+        setPrayers((prev) => {
+          const supabaseIds = new Set(supabasePrayers.map((p) => p.id));
+          const kept = prev.filter((p) => !supabaseIds.has(p.id));
+          return [...supabasePrayers, ...kept];
+        });
+      }
+    });
+  }, []);
   const [showWelcome, setShowWelcome] = useState(() => {
     return !localStorage.getItem("oratio_feed_visited");
   });
@@ -331,23 +342,13 @@ export function Feed() {
     >
       {/* Fixed header area */}
       <div
-        className="sticky top-0 z-30 pt-[max(1rem,env(safe-area-inset-top))] pb-0 flex-shrink-0"
+        className="sticky top-0 z-30 pt-[max(3rem,env(safe-area-inset-top))] pb-0 flex-shrink-0"
         style={{
           background:
             "linear-gradient(to bottom, rgba(10, 26, 58, 0.98) 70%, rgba(10, 26, 58, 0))",
           backdropFilter: "blur(16px)",
         }}
       >
-        {/* Title row */}
-        <div className="px-5 pt-12 mb-4">
-          <h2
-            className="text-[#e2e4f0] font-heading tracking-wide"
-            style={{ fontSize: "1.35rem", fontWeight: 300 }}
-          >
-            Prayer Feed
-          </h2>
-        </div>
-
         {/* Filter pills row */}
         <div className="px-5 mb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
           {/* All */}
@@ -483,9 +484,9 @@ export function Feed() {
               className="w-full rounded-xl pl-9 pr-8 py-2.5 text-[#e2e4f0] placeholder-[#4e5573] text-xs focus:outline-none border border-[rgba(124,143,255,0.1)] focus:border-[rgba(124,143,255,0.3)] transition-colors"
               style={{ background: "rgba(15, 20, 50, 0.6)" }}
             />
-            {searchQuery && (
+              {searchQuery && (
               <button
-                onClick={() => { setSearchQuery(""); setActiveSearch(""); }}
+                onClick={() => { setSearchQuery(""); setActiveSearch(""); setSearchParams({}); }}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#4e5573] hover:text-[#6b7499] transition-colors cursor-pointer"
               >
                 <X size={14} />
@@ -516,7 +517,7 @@ export function Feed() {
                   >
                     <button
                       onClick={() => handleRecentClick(q)}
-                      className="flex-1 text-left text-[#c5cdff] text-xs truncate cursor-pointer"
+                      className="flex-1 min-w-0 text-left text-[#c5cdff] text-xs truncate cursor-pointer"
                     >
                       {q}
                     </button>

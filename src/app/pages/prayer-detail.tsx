@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
@@ -11,6 +11,8 @@ import { getInitialAvatarUrl } from "../../lib/upload";
 import { reportContent } from "../../lib/api";
 import { renderHashtags } from "../../lib/hashtags";
 import { translateText, needsTranslation, detectLanguage } from "../../lib/translate";
+import { supabase } from "../../lib/supabase";
+import { togglePray } from "../../lib/supabase-queries";
 
 function findPrayer(id: string): PrayerRequest | undefined {
   try {
@@ -22,11 +24,55 @@ function findPrayer(id: string): PrayerRequest | undefined {
   }
 }
 
+async function fetchSupabasePrayer(id: string): Promise<PrayerRequest | undefined> {
+  const { data, error } = await supabase
+    .from("prayer_requests")
+    .select(`
+      id, body, category,
+      location_city, location_country, location_lat, location_lng,
+      is_anonymous, prayer_count, created_at,
+      profiles!inner(username, display_name)
+    `)
+    .eq("id", id)
+    .single();
+
+  if (error || !data) return undefined;
+
+  const row = data as Record<string, unknown>;
+  const profile = row.profiles as { username: string; display_name: string };
+  return {
+    id: row.id as string,
+    city: (row.location_city as string) || "Unknown",
+    country: (row.location_country as string) || "Unknown",
+    text: row.body as string,
+    name: row.is_anonymous ? undefined : (profile.display_name || profile.username),
+    displayName: row.is_anonymous ? undefined : (profile.display_name || profile.username),
+    username: row.is_anonymous ? undefined : profile.username,
+    prayerCount: (row.prayer_count as number) || 0,
+    lat: (row.location_lat as number) || 0,
+    lng: (row.location_lng as number) || 0,
+    category: (row.category as string) || "Other",
+    createdAt: row.created_at as string,
+  } as PrayerRequest;
+}
+
 export function PrayerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const prayer = useMemo(() => id ? findPrayer(id) : undefined, [id]);
+  const [localPrayer, setLocalPrayer] = useState<PrayerRequest | undefined>(
+    () => id ? findPrayer(id) : undefined
+  );
+
+  // Try to load from Supabase as well
+  useEffect(() => {
+    if (!id) return;
+    void fetchSupabasePrayer(id).then((supabasePrayer) => {
+      if (supabasePrayer) setLocalPrayer(supabasePrayer);
+    });
+  }, [id]);
+
+  const prayer = localPrayer;
   const [prayedIds, setPrayedIds] = useState<string[]>(() => getPrayedIds());
   const [commentCount, setCommentCount] = useState(0);
   const [saved, setSaved] = useState(() => {
@@ -133,6 +179,8 @@ export function PrayerDetail() {
       try {
         localStorage.setItem("oratio_prayed", JSON.stringify(newIds));
       } catch { /* ignore */ }
+      // Sync to Supabase
+      void togglePray(prayerId, !isCurrentlyPrayed);
       return newIds;
     });
   }, []);
@@ -141,7 +189,7 @@ export function PrayerDetail() {
     if (!prayer) return;
     const url = `${window.location.origin}/prayer/${prayer.id}`;
     const attribution = getAttributionText(prayer);
-    const shareText = `🙏 Prayer request${attribution ? ` from ${attribution}` : ""}:\n\n"${prayer.text}"\n\n${prayer.prayerCount} people have prayed.\n${url}`;
+    const shareText = `🙏 Prayer request${attribution ? ` from ${attribution}` : ""}:\n\n"${prayer.text}"\n\n${prayer.prayerCount} ${prayer.prayerCount === 1 ? "person has" : "people have"} prayed.\n${url}`;
     if (navigator.share) {
       try { await navigator.share({ text: shareText }); } catch { /* ignore */ }
     } else {
@@ -266,7 +314,7 @@ export function PrayerDetail() {
             style={{ fontSize: "1.2rem", lineHeight: 1.8, fontWeight: 300 }}
           >
             {translatedText || renderHashtags(prayer.text, (tag) => {
-              void navigate(`/feed?search=%23${tag}`);
+              void navigate(`/feed?search=${encodeURIComponent(tag)}`);
             })}
           </motion.p>
           {translatedText && sourceLang && (
@@ -313,7 +361,7 @@ export function PrayerDetail() {
                 boxShadow: "0 0 6px rgba(124,143,255,0.5)",
               }}
             />
-            <span>{prayer.prayerCount + (isPrayed ? 1 : 0)} people prayed</span>
+            <span>{(() => { const c = prayer.prayerCount + (isPrayed ? 1 : 0); return `${c} ${c === 1 ? "person prayed" : "people prayed"}`; })()}</span>
           </div>
 
           {/* Pray button */}

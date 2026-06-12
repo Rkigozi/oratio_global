@@ -20,7 +20,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['icons/icon.svg'],
       manifest: {
         name: 'Oratio — Global Prayer Platform',
@@ -32,17 +32,19 @@ export default defineConfig({
         display_override: ['window-controls-overlay'],
         orientation: 'portrait',
         scope: '/',
-        start_url: '/feed',
+        start_url: '/',
         categories: ['religion', 'spirituality', 'lifestyle'],
         icons: [
           { src: '/icons/icon.svg', sizes: '512x512', type: 'image/svg+xml' },
           { src: '/icons/icon-180.png', sizes: '180x180', type: 'image/png' },
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable any' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable any' },
         ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,json,woff2}'],
+        navigateFallback: '/index.html',
+        navigateFallbackAllowlist: [/^\/[a-z]/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

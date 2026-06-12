@@ -1,29 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Send, Check, Share2 } from "lucide-react";
-import { PrayerRequest } from "../data/prayer-data";
+import { Send, Check, Share2, MapPin, RefreshCw } from "lucide-react";
+import { PrayerRequest, countries } from "../data/prayer-data";
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
 import { getProfile } from "../data/profile-data";
 import { CrisisResources } from "../components/crisis-resources";
+import { useGeolocation } from "../../lib/use-geolocation";
+import { createPrayerRequest } from "../../lib/supabase-queries";
+import { useAuth } from "../../lib/auth-context";
 
-function saveLastPrayerId(id: string) {
+function saveLastPrayerId(id: string, city: string, country: string) {
   try {
-    localStorage.setItem("oratio_last_prayer_location", JSON.stringify({ id, city: "", country: "" }));
+    localStorage.setItem("oratio_last_prayer_location", JSON.stringify({ id, city, country }));
   } catch { /* ignore */ }
 }
 
 export function Submit() {
   const navigate = useNavigate();
+  const { location: geoLocation, loading: geoLoading, denied: geoDenied, requestLocation } = useGeolocation();
   const [text, setText] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [lastPrayerId, setLastPrayerId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [city, setCity] = useState("");
+  const [country, setCountry] = useState("");
+  const [useAutoLocation, setUseAutoLocation] = useState(true);
 
+  const { user } = useAuth();
   const profile = getProfile();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Auto-fill location from geolocation when it resolves
+  useEffect(() => {
+    if (geoLocation && useAutoLocation && !city && !country) {
+      setCity(geoLocation.city);
+      setCountry(geoLocation.country);
+    }
+  }, [geoLocation, useAutoLocation, city, country]);
+
+  // Fall back to manual if geo was denied
+  useEffect(() => {
+    if (geoDenied) setUseAutoLocation(false);
+  }, [geoDenied]);
+
+  const handleDetectLocation = () => {
+    void requestLocation();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
@@ -40,29 +65,44 @@ export function Submit() {
         return;
       }
 
-      const displayName = anonymous ? undefined : profile.displayName || undefined;
-      const username = anonymous ? undefined : profile.username || undefined;
       const sanitizedText = sanitizePrayerText(text.trim());
+      const displayUsername = anonymous ? undefined : (profile.username || user?.email);
+      const displayNameVal = anonymous ? undefined : (profile.displayName || undefined);
+
+      // Submit to Supabase
+      let supabaseId: string | null = null;
+      if (user) {
+        supabaseId = await createPrayerRequest({
+          text: sanitizedText,
+          city: city.trim() || "Unknown",
+          country: country.trim() || "Unknown",
+          lat: geoLocation?.lat || 0,
+          lng: geoLocation?.lng || 0,
+          category: "Other",
+          name: displayNameVal,
+          displayName: displayNameVal,
+          username: displayUsername,
+          prayerCount: 0,
+        });
+      }
 
       const newPrayer: PrayerRequest = {
-        id: `new-${Date.now()}`,
-        city: "",
-        country: "",
+        id: supabaseId || `new-${Date.now()}`,
+        city: city.trim() || "Unknown",
+        country: country.trim() || "Unknown",
         text: sanitizedText,
-        name: displayName,
-        displayName,
-        username,
+        name: displayNameVal,
+        displayName: displayNameVal,
+        username: displayUsername,
         prayerCount: 0,
-        lat: 0,
-        lng: 0,
+        lat: geoLocation?.lat || 0,
+        lng: geoLocation?.lng || 0,
         category: "Other",
         createdAt: new Date().toISOString(),
       };
 
-      const hasBridge = typeof window !== "undefined" && (window as typeof window & { __oratio_addPrayer?: (prayer: PrayerRequest) => void }).__oratio_addPrayer;
-
-      if (hasBridge) {
-        (window as typeof window & { __oratio_addPrayer?: (prayer: PrayerRequest) => void }).__oratio_addPrayer!(newPrayer);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("oratio-prayer-added", { detail: newPrayer }));
       }
 
       try {
@@ -70,7 +110,7 @@ export function Submit() {
         localStorage.setItem("oratio_submitted", JSON.stringify([...existingIds, newPrayer.id]));
         const existingPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
         localStorage.setItem("oratio_submitted_prayers", JSON.stringify([newPrayer, ...existingPrayers]));
-        saveLastPrayerId(newPrayer.id);
+        saveLastPrayerId(newPrayer.id, city.trim(), country.trim());
         setLastPrayerId(newPrayer.id);
         setSubmitted(true);
       } catch (e) {
@@ -88,10 +128,7 @@ export function Submit() {
   };
 
   return (
-    <div
-      className="flex flex-col w-full bg-background relative overflow-hidden"
-      style={{ height: "100dvh" }}
-    >
+    <div className="flex flex-col w-full h-full bg-background relative">
       <div
         className="fixed top-0 left-1/2 -translate-x-1/2 w-[400px] h-[250px] rounded-full pointer-events-none"
         style={{
@@ -147,6 +184,91 @@ export function Submit() {
               <p className="text-[#4e5573] text-xs leading-relaxed text-center">
                 You&apos;re welcome to share what&apos;s on your heart. You may want to avoid sharing personal information so you can receive prayer freely and safely.
               </p>
+
+              {/* Location */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[#8890b5] text-sm">Your Location</label>
+                  <button
+                    type="button"
+                    onClick={() => { setUseAutoLocation(!useAutoLocation); if (!useAutoLocation) { setCity(""); setCountry(""); void requestLocation(); } }}
+                    className="relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
+                    style={{
+                      background: useAutoLocation ? "rgba(124, 143, 255, 0.35)" : "rgba(124, 143, 255, 0.12)",
+                    }}
+                    aria-label={useAutoLocation ? "Auto-detect on" : "Auto-detect off"}
+                  >
+                    <div
+                      className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+                      style={{
+                        transform: useAutoLocation ? "translateX(22px)" : "translateX(2px)",
+                      }}
+                    />
+                  </button>
+                </div>
+
+                {useAutoLocation ? (
+                  geoLocation ? (
+                    <div
+                      className="rounded-xl px-4 py-3 flex items-center gap-2 border border-[rgba(124,143,255,0.12)]"
+                      style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                    >
+                      <MapPin size={14} className="text-[#7c8fff] flex-shrink-0" />
+                      <span className="text-[#e8eaf6] text-sm flex-1">
+                        {city}, {country}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setUseAutoLocation(false)}
+                        className="text-[#7c8fff] text-xs hover:text-[#a0b0ff] transition-colors cursor-pointer flex-shrink-0"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-[#4e5573] text-xs">
+                        <RefreshCw size={11} className={geoLoading ? "animate-spin" : ""} />
+                        {geoLoading ? "Detecting your location..." : "Location not detected"}
+                      </div>
+                      {!geoLoading && !geoDenied && (
+                        <button
+                          type="button"
+                          onClick={handleDetectLocation}
+                          className="text-[#7c8fff] text-xs hover:text-[#a0b0ff] transition-colors cursor-pointer"
+                        >
+                          Try detecting now
+                        </button>
+                      )}
+                      {geoDenied && (
+                        <p className="text-[#4e5573] text-[10px]">Location access denied. Toggle off to enter manually.</p>
+                      )}
+                    </div>
+                  )
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="City"
+                      className="flex-1 min-w-0 rounded-xl px-4 py-3 text-[#e8eaf6] placeholder-[#5a5f80] text-sm border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)] focus:outline-none transition-colors"
+                      style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                    />
+                    <select
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="flex-1 min-w-0 rounded-xl px-4 py-3 text-[#e8eaf6] text-sm border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.35)] focus:outline-none transition-colors appearance-none cursor-pointer"
+                      style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                    >
+                      <option value="" className="bg-[#0A1A3A]">Country</option>
+                      {countries.map((c) => (
+                        <option key={c} value={c} className="bg-[#0A1A3A]">{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
 
               {/* Anonymous toggle */}
               <div
