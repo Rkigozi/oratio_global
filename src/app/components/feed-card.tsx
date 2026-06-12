@@ -53,6 +53,15 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick
         border: "1px solid rgba(124,143,255,0.07)",
       }}
     >
+      {/* Sample badge for mock data */}
+      {prayer.id.startsWith('feed-') && (
+        <span className="absolute top-2 right-2 text-[9px] px-1.5 py-0.5 rounded-full"
+          style={{ background: "rgba(251,191,36,0.1)", color: "#a38a3a", border: "1px solid rgba(251,191,36,0.15)" }}
+        >
+          Sample
+        </span>
+      )}
+
       {/* Top row: avatar + name + location + time */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 min-w-0">

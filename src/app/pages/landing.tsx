@@ -105,7 +105,7 @@ export function Landing() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                <p className="text-[#7c8fff] text-sm py-3 text-center">Saved! 🙏</p>
+                <p className="text-[#7c8fff] text-sm py-3 text-center">Saved to this browser 🙏</p>
                 <button
                   onClick={() => { setSubscribed(false); setEmail(""); }}
                   className="text-[#4e5573] text-[10px] hover:text-[#6b7499] transition-colors cursor-pointer block mx-auto"
@@ -118,7 +118,7 @@ export function Landing() {
                 <input
                   type="email" value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Save email as reminder (local only)"
+                  placeholder="your@email.com (saved locally)"
                   required
                   className="flex-1 min-w-0 rounded-xl px-4 py-3 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)]"
                   style={{ background: "rgba(15, 20, 50, 0.6)" }}

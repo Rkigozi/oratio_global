@@ -195,7 +195,7 @@ export function Info() {
               </p>
               {subscribed ? (
                 <div className="text-center">
-                  <p className="text-[#7c8fff] text-sm py-2">Saved! 🙏</p>
+                  <p className="text-[#7c8fff] text-sm py-2">Saved to this browser 🙏</p>
                   <button
                     onClick={() => { setSubscribed(false); setEmail(""); }}
                     className="text-[#4e5573] text-[10px] hover:text-[#6b7499] transition-colors cursor-pointer"

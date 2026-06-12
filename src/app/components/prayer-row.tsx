@@ -59,13 +59,22 @@ export function PrayerRow({
         border: "1px solid rgba(124,143,255,0.06)",
       }}
     >
+      {/* Sample badge for mock data */}
+      {prayer.id.startsWith('feed-') && (
+        <span className="absolute top-2 right-2 text-[9px] px-1.5 py-0.5 rounded-full"
+          style={{ background: "rgba(251,191,36,0.1)", color: "#a38a3a", border: "1px solid rgba(251,191,36,0.15)" }}
+        >
+          Sample
+        </span>
+      )}
+
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p
             className="text-[#d0d4e8] line-clamp-2 mb-1"
             style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
           >
-            {renderHashtags(prayer.text, onTagClick || (() => {}))}
+            {onTagClick ? renderHashtags(prayer.text, onTagClick) : prayer.text}
           </p>
           <span className="text-[#6b7499] text-[11px] mb-1 block">
             {getAttributionText(prayer)}

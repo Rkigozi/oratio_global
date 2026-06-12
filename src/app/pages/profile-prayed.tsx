@@ -21,6 +21,11 @@ export function ProfilePrayed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prayedIds, version]);
 
+  const handleTagClick = (tag: string) => {
+    const q = tag.startsWith("#") ? tag : `#${tag}`;
+    void navigate(`/feed?search=${encodeURIComponent(q)}`);
+  };
+
   const handleOpenPrayer = (prayer: PrayerRequest) => {
     setSelectedPrayer(prayer);
   };
@@ -69,6 +74,7 @@ export function ProfilePrayed() {
                 showCount={true}
                 canManage={true}
                 onTap={handleOpenPrayer}
+                onTagClick={handleTagClick}
                 hasPrayed={prayedIds.includes(prayer.id)}
                 onTogglePrayed={togglePrayed}
                 showPrayedToggle={true}

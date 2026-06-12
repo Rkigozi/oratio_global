@@ -56,6 +56,11 @@ export function ProfileSubmitted() {
     }
   };
 
+  const handleTagClick = (tag: string) => {
+    const q = tag.startsWith("#") ? tag : `#${tag}`;
+    void navigate(`/feed?search=${encodeURIComponent(q)}`);
+  };
+
   const handleDeleteClick = (prayerId: string) => {
     const prayer = mySubmitted.find(p => p.id === prayerId);
     if (prayer) {
@@ -83,7 +88,8 @@ export function ProfileSubmitted() {
                 showCount={true}
                 canManage={true}
                 onTap={handleOpenPrayer}
-                 onDelete={handleDeleteClick}
+                onTagClick={handleTagClick}
+                onDelete={handleDeleteClick}
               />
             ))}
           </div>
