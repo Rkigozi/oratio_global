@@ -20,7 +20,7 @@ import {
 import { validateProfile } from "../../lib/validation";
 import { useAuth } from "../../lib/auth-context";
 import { uploadAvatar, getInitialAvatarUrl } from "../../lib/upload";
-import { getFollowCounts } from "../../lib/supabase-queries";
+import { getFollowCounts, updateProfile, getMyProfile } from "../../lib/supabase-queries";
 import { useGeolocation } from "../../lib/use-geolocation";
 
 export function Profile() {
@@ -28,6 +28,23 @@ export function Profile() {
   const { signOut, user } = useAuth();
   const [profile, setProfile] = useState(getProfile);
   const [editOpen, setEditOpen] = useState(false);
+
+  // Load profile from Supabase on mount
+  useEffect(() => {
+    if (user?.id) {
+      getMyProfile().then((supabaseProfile) => {
+        if (supabaseProfile) {
+          setProfile((prev) => ({
+            ...prev,
+            username: supabaseProfile.username,
+            displayName: supabaseProfile.display_name || prev.displayName,
+            bio: supabaseProfile.bio || prev.bio,
+            location: supabaseProfile.location || prev.location,
+          }));
+        }
+      });
+    }
+  }, [user?.id]);
   const [newDisplayName, setNewDisplayName] = useState("");
   const { location: geoLocation, loading: geoLoading, denied: geoDenied, requestLocation } = useGeolocation();
   const [useAutoLocation, setUseAutoLocation] = useState(false);
@@ -108,6 +125,17 @@ export function Profile() {
       bio: newBio.trim(),
       location: newLocation.trim(),
     };
+
+    // Save to Supabase (cross-device persistence)
+    if (user?.id) {
+      void updateProfile({
+        display_name: trimmedDisplayName || undefined,
+        bio: newBio.trim() || undefined,
+        location: newLocation.trim() || undefined,
+      });
+    }
+
+    // Save to localStorage (fallback + legacy)
     saveProfile(updatedProfile);
     setProfile(updatedProfile);
     setEditOpen(false);

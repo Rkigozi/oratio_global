@@ -392,6 +392,52 @@ export async function resolveReport(reportId: string, status: "resolved" | "dism
 
 // ─── Profiles ──────────────────────────────────────────────────────────
 
+export async function updateProfile(data: {
+  display_name?: string;
+  bio?: string;
+  location?: string;
+  avatar_url?: string;
+}): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update(data)
+    .eq("id", user.id);
+
+  if (error) {
+    console.error("Failed to update profile:", error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function getMyProfile(): Promise<{
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  location: string | null;
+  created_at: string;
+} | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url, bio, location, created_at")
+    .eq("id", user.id)
+    .single();
+
+  if (error || !data) {
+    console.error("Failed to fetch my profile:", error?.message);
+    return null;
+  }
+  return data;
+}
+
 export async function getProfileByUsername(username: string): Promise<{
   id: string;
   username: string;
