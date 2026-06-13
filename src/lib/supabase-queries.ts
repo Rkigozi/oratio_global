@@ -136,3 +136,20 @@ export async function getPrayedIds(): Promise<string[]> {
 
   return (data || []).map((r: { prayer_id: string }) => r.prayer_id);
 }
+
+export async function subscribeToWaitlist(
+  email: string,
+  source: "landing" | "info" = "landing"
+): Promise<"subscribed" | "exists" | "error"> {
+  const { error } = await supabase
+    .from("waitlist")
+    .insert({ email, source });
+
+  if (!error) return "subscribed";
+
+  // Postgres unique violation code
+  if (error.code === "23505") return "exists";
+
+  console.error("Failed to subscribe:", error.message);
+  return "error";
+}

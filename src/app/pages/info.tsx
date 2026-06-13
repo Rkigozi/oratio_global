@@ -10,6 +10,7 @@ import {
   LogIn,
   Mail,
 } from "lucide-react";
+import { subscribeToWaitlist } from "../../lib/supabase-queries";
 
 const roadmapItems = [
   {
@@ -64,16 +65,11 @@ export function Info() {
   const [subscribed, setSubscribed] = useState(false);
   const [email, setEmail] = useState("");
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    try {
-      const list = JSON.parse(localStorage.getItem("oratio_waitlist") || "[]") as string[];
-      if (!list.includes(email)) {
-        list.push(email);
-        localStorage.setItem("oratio_waitlist", JSON.stringify(list));
-      }
-    } catch { /* ignore */ }
+    const result = await subscribeToWaitlist(email, "info");
+    if (result === "error") return;
     setSubscribed(true);
   };
 
@@ -190,12 +186,12 @@ export function Info() {
                 borderColor: "rgba(124,143,255,0.08)",
               }}
             >
-              <p className="text-[#d0d4e8] text-sm leading-relaxed mb-3">
-                Oratio is growing. Save your email below as a reminder (stored locally in this browser).
+               <p className="text-[#d0d4e8] text-sm leading-relaxed mb-3">
+                Oratio is growing. Join the waitlist and we'll keep you updated on new features and releases.
               </p>
               {subscribed ? (
                 <div className="text-center">
-                  <p className="text-[#7c8fff] text-sm py-2">Saved to this browser 🙏</p>
+                  <p className="text-[#7c8fff] text-sm py-2">You're on the list! 🙏</p>
                   <button
                     onClick={() => { setSubscribed(false); setEmail(""); }}
                     className="text-[#4e5573] text-[10px] hover:text-[#6b7499] transition-colors cursor-pointer"

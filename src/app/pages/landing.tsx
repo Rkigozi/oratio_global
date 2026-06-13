@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Globe, Heart, MessageCircle, ArrowRight, Mail } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
+import { subscribeToWaitlist } from "../../lib/supabase-queries";
 
 export function Landing() {
   const navigate = useNavigate();
@@ -17,16 +18,11 @@ export function Landing() {
     }
   }, [user, loading, navigate]);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    try {
-      const list = JSON.parse(localStorage.getItem("oratio_waitlist") || "[]") as string[];
-      if (!list.includes(email)) {
-        list.push(email);
-        localStorage.setItem("oratio_waitlist", JSON.stringify(list));
-      }
-    } catch { /* ignore */ }
+    const result = await subscribeToWaitlist(email, "landing");
+    if (result === "error") return;
     setSubscribed(true);
   };
 
@@ -105,7 +101,7 @@ export function Landing() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                <p className="text-[#7c8fff] text-sm py-3 text-center">Saved to this browser 🙏</p>
+                <p className="text-[#7c8fff] text-sm py-3 text-center">You're on the list! 🙏</p>
                 <button
                   onClick={() => { setSubscribed(false); setEmail(""); }}
                   className="text-[#4e5573] text-[10px] hover:text-[#6b7499] transition-colors cursor-pointer block mx-auto"
@@ -118,7 +114,7 @@ export function Landing() {
                 <input
                   type="email" value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com (saved locally)"
+                  placeholder="your@email.com"
                   required
                   className="flex-1 min-w-0 rounded-xl px-4 py-3 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)]"
                   style={{ background: "rgba(15, 20, 50, 0.6)" }}
