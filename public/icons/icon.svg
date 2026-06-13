@@ -9,16 +9,11 @@
       <stop offset="100%" stop-color="#5a6fd6"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="72" fill="url(#bg)"/>
-  <!-- Subtle cross glow -->
-  <rect x="240" y="100" width="32" height="312" rx="16" fill="url(#accent)" opacity="0.08"/>
-  <rect x="100" y="240" width="312" height="32" rx="16" fill="url(#accent)" opacity="0.08"/>
-  <!-- Small cross icon above text -->
-  <rect x="248" y="160" width="16" height="50" rx="3" fill="url(#accent)" opacity="0.5"/>
-  <rect x="231" y="176" width="50" height="16" rx="3" fill="url(#accent)" opacity="0.5"/>
+  <rect width="512" height="512" rx="80" fill="url(#bg)"/>
   <!-- ORATIO text -->
-  <text x="256" y="380" font-family="'Sora','Inter',sans-serif" font-size="108" font-weight="300" fill="#d8ddef" text-anchor="middle" letter-spacing="20">ORATIO</text>
-  <!-- Beta badge -->
-  <rect x="283" y="398" width="46" height="18" rx="9" fill="rgba(124,143,255,0.12)"/>
-  <text x="306" y="411" font-family="sans-serif" font-size="10" fill="#7c8fff" text-anchor="middle" font-weight="600">BETA</text>
+  <text x="256" y="300" font-family="'Sora','Inter',sans-serif" font-size="120" font-weight="300" fill="#d8ddef" text-anchor="middle" letter-spacing="12">ORATIO</text>
+  <!-- Accent line -->
+  <rect x="156" y="330" width="200" height="2" rx="1" fill="url(#accent)" opacity="0.3"/>
+  <!-- Tagline -->
+  <text x="256" y="360" font-family="sans-serif" font-size="14" font-weight="300" fill="#6b7499" text-anchor="middle" letter-spacing="8">PRAY TOGETHER</text>
 </svg>
