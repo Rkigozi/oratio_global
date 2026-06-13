@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, MapPin, X, MoreHorizontal, Share2, Flag, Bookmark } from "lucide-react";
-import { mockFeedPrayers, timeAgo, getAttributionText } from "../data/prayer-data";
+import { timeAgo, getAttributionText } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { getPrayedIds } from "../data/profile-data";
 import { CommentSection } from "../components/comment-section";
@@ -11,64 +11,18 @@ import { getInitialAvatarUrl } from "../../lib/upload";
 import { reportContent } from "../../lib/api";
 import { renderHashtags } from "../../lib/hashtags";
 import { translateText, needsTranslation, detectLanguage } from "../../lib/translate";
-import { supabase } from "../../lib/supabase";
-import { togglePray } from "../../lib/supabase-queries";
-
-function findPrayer(id: string): PrayerRequest | undefined {
-  try {
-    const submitted = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
-    const all = [...submitted, ...mockFeedPrayers];
-    return all.find((p) => p.id === id);
-  } catch {
-    return mockFeedPrayers.find((p) => p.id === id);
-  }
-}
-
-async function fetchSupabasePrayer(id: string): Promise<PrayerRequest | undefined> {
-  const { data, error } = await supabase
-    .from("prayer_requests")
-    .select(`
-      id, body, category,
-      location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at,
-      profiles!inner(username, display_name)
-    `)
-    .eq("id", id)
-    .single();
-
-  if (error || !data) return undefined;
-
-  const row = data as Record<string, unknown>;
-  const profile = row.profiles as { username: string; display_name: string };
-  return {
-    id: row.id as string,
-    city: (row.location_city as string) || "Unknown",
-    country: (row.location_country as string) || "Unknown",
-    text: row.body as string,
-    name: row.is_anonymous ? undefined : (profile.display_name || profile.username),
-    displayName: row.is_anonymous ? undefined : (profile.display_name || profile.username),
-    username: row.is_anonymous ? undefined : profile.username,
-    prayerCount: (row.prayer_count as number) || 0,
-    lat: (row.location_lat as number) || 0,
-    lng: (row.location_lng as number) || 0,
-    category: (row.category as string) || "Other",
-    createdAt: row.created_at as string,
-  } as PrayerRequest;
-}
+import { getPrayerById, togglePray } from "../../lib/supabase-queries";
 
 export function PrayerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [localPrayer, setLocalPrayer] = useState<PrayerRequest | undefined>(
-    () => id ? findPrayer(id) : undefined
-  );
+  const [localPrayer, setLocalPrayer] = useState<PrayerRequest | undefined>(undefined);
 
-  // Try to load from Supabase as well
   useEffect(() => {
     if (!id) return;
-    void fetchSupabasePrayer(id).then((supabasePrayer) => {
-      if (supabasePrayer) setLocalPrayer(supabasePrayer);
+    getPrayerById(id).then((prayer) => {
+      if (prayer) setLocalPrayer(prayer);
     });
   }, [id]);
 

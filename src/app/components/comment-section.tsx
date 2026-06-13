@@ -3,18 +3,10 @@ import { MessageCircle, Send, ChevronDown, X, Flag } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { reportContent } from "../../lib/api";
-import { createComment, deleteComment } from "../../lib/api";
+import { getComments, createComment, deleteComment } from "../../lib/supabase-queries";
+import type { Comment } from "../../lib/supabase-queries";
 import { getInitialAvatarUrl } from "../../lib/upload";
-
-interface Comment {
-  id: string;
-  prayer_id: string;
-  user_id: string;
-  parent_id: string | null;
-  body: string;
-  created_at: string;
-  user?: { username: string; display_name: string } | null;
-}
+import { useAuth } from "../../lib/auth-context";
 
 interface Props {
   prayer: PrayerRequest;
@@ -34,6 +26,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export function CommentSection({ prayer, commentCount, onCommentCountChange }: Props) {
+  const { profile } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
@@ -41,43 +34,44 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    const stored = loadLocalComments(prayer.id);
-    setComments(stored);
-    setLoading(false);
-    onCommentCountChange(stored.length);
+    getComments(prayer.id).then((data) => {
+      setComments(data);
+      setLoading(false);
+      onCommentCountChange(data.length);
+    });
   }, [prayer.id]);
 
   const handleSubmit = useCallback(async () => {
     const text = newComment.trim();
     if (!text || submitting) return;
     setSubmitting(true);
-    try {
-      await createComment({ prayer_id: prayer.id, body: text, parent_id: replyTo?.id });
-    } catch {
-      // API failed — fallback to localStorage
-    }
-    const comment = saveLocalComment(prayer.id, text, replyTo?.id);
-    setComments((prev) => {
-      const updated = [...prev, comment];
-      onCommentCountChange(updated.length);
-      return updated;
+    const comment = await createComment({
+      prayer_id: prayer.id,
+      body: text,
+      parent_id: replyTo?.id,
     });
+    if (comment) {
+      comment.user = profile ? { username: profile.username, display_name: profile.display_name } : null;
+      setComments((prev) => {
+        const updated = [...prev, comment];
+        onCommentCountChange(updated.length);
+        return updated;
+      });
+    }
     setNewComment("");
     setReplyTo(null);
     setSubmitting(false);
-  }, [newComment, replyTo, prayer.id, submitting, onCommentCountChange]);
+  }, [newComment, replyTo, prayer.id, submitting, onCommentCountChange, profile]);
 
   const handleDelete = async (commentId: string) => {
-    try {
-      await deleteComment(commentId);
-    } catch {
-      // ignore
+    const ok = await deleteComment(commentId);
+    if (ok) {
+      setComments((prev) => {
+        const filtered = prev.filter((c) => c.id !== commentId);
+        onCommentCountChange(filtered.length);
+        return filtered;
+      });
     }
-    setComments((prev) => {
-      const filtered = prev.filter((c) => c.id !== commentId);
-      onCommentCountChange(filtered.length);
-      return filtered;
-    });
   };
 
   const topLevel = comments.filter((c) => !c.parent_id);
@@ -114,7 +108,6 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
         </div>
       )}
 
-      {/* Reply indicator */}
       <AnimatePresence>
         {replyTo && (
           <motion.div
@@ -139,7 +132,6 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
         )}
       </AnimatePresence>
 
-      {/* Comment input */}
       <div className="flex gap-2 items-end">
         <textarea
           value={newComment}
@@ -294,48 +286,4 @@ function CommentThread({
   );
 }
 
-// ─── localStorage fallback ─────────────────────────────────────────────
 
-function loadLocalComments(prayerId: string): Comment[] {
-  try {
-    const raw = localStorage.getItem(`oratio_comments_${prayerId}`);
-    return raw ? (JSON.parse(raw) as Comment[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-let localCommentId = 1;
-function getLocalUsername(): string {
-  try {
-    const raw = localStorage.getItem("oratio_profile");
-    if (raw) {
-      const profile = JSON.parse(raw) as { username?: string; displayName?: string };
-      return profile.username || profile.displayName || "you";
-    }
-  } catch {
-    // ignore
-  }
-  return "you";
-}
-
-function saveLocalComment(prayerId: string, body: string, parentId?: string): Comment {
-  const username = getLocalUsername();
-  const comment: Comment = {
-    id: `local-comment-${Date.now()}-${localCommentId++}`,
-    prayer_id: prayerId,
-    user_id: "local",
-    parent_id: parentId ?? null,
-    body,
-    created_at: new Date().toISOString(),
-    user: { username, display_name: username },
-  };
-  try {
-    const existing = loadLocalComments(prayerId);
-    existing.push(comment);
-    localStorage.setItem(`oratio_comments_${prayerId}`, JSON.stringify(existing));
-  } catch {
-    // ignore
-  }
-  return comment;
-}

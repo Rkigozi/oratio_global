@@ -2,13 +2,13 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { MapPin, X, Search, ChevronDown, Users } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router";
-import { mockFeedPrayers, countries } from "../data/prayer-data";
+import { countries } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { getPrayedIds } from "../data/profile-data";
 import { FeedCard } from "../components/feed-card";
 import { getHashtagCounts } from "../../lib/hashtags";
 import { useGeolocation } from "../../lib/use-geolocation";
-import { getFeedPrayers } from "../../lib/supabase-queries";
+import { getFeedPrayers, searchUsers } from "../../lib/supabase-queries";
 
 
 
@@ -36,6 +36,8 @@ export function Feed() {
   const [activeSearch, setActiveSearch] = useState(searchParamActive);
   const [showRecent, setShowRecent] = useState(false);
   const [recentVersion, setRecentVersion] = useState(0);
+  const [userResults, setUserResults] = useState<Array<{ username: string; display_name: string | null }>>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   const recentSearches = useMemo(() => {
@@ -90,27 +92,11 @@ export function Feed() {
 
   const [showCountryFilter, setShowCountryFilter] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-   const [prayers, setPrayers] = useState<PrayerRequest[]>(() => {
-    try {
-      const submitted = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
-      // Merge submitted prayers at the top with mock data
-      const existingIds = new Set(mockFeedPrayers.map((p: PrayerRequest) => p.id));
-      const newOnes = submitted.filter((p: PrayerRequest) => !existingIds.has(p.id));
-      return [...newOnes, ...mockFeedPrayers];
-    } catch {
-      return mockFeedPrayers;
-    }
-  });
-  // Load real prayers from Supabase on mount
+  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  // Load prayers from Supabase on mount
   useEffect(() => {
-    getFeedPrayers().then((supabasePrayers) => {
-      if (supabasePrayers.length > 0) {
-        setPrayers((prev) => {
-          const supabaseIds = new Set(supabasePrayers.map((p) => p.id));
-          const kept = prev.filter((p) => !supabaseIds.has(p.id));
-          return [...supabasePrayers, ...kept];
-        });
-      }
+    getFeedPrayers().then((data) => {
+      setPrayers(data);
     });
   }, []);
   const [showWelcome, setShowWelcome] = useState(() => {
@@ -179,7 +165,18 @@ export function Feed() {
     }
   }, [showCountryFilter]);
 
-  // Add to recent searches
+  // Search users from Supabase when query changes
+  useEffect(() => {
+    if (!activeSearch) {
+      setUserResults([]);
+      return;
+    }
+    setSearchingUsers(true);
+    searchUsers(activeSearch).then((results) => {
+      setUserResults(results);
+      setSearchingUsers(false);
+    });
+  }, [activeSearch]);
 
   const dismissWelcome = () => {
     setShowWelcome(false);
@@ -684,32 +681,31 @@ export function Feed() {
               <span className="text-[#8890b5] text-[10px] uppercase tracking-[0.15em]">Users</span>
             </div>
             <div className="space-y-1.5">
-              {(() => {
-                const q = activeSearch.toLowerCase();
-                const unique = [...new Set(mockFeedPrayers.map(p => p.username).filter(Boolean) as string[])];
-                const matched = unique.filter(u => u.toLowerCase().includes(q));
-                return matched.length > 0 ? matched.map((u) => (
+              {searchingUsers ? (
+                <p className="text-[#4e5573] text-xs px-1">Searching...</p>
+              ) : userResults.length > 0 ? (
+                userResults.map((u) => (
                   <div
-                    key={u}
-                    onClick={() => void navigate(`/user/${encodeURIComponent(u)}`)}
+                    key={u.username}
+                    onClick={() => void navigate(`/user/${encodeURIComponent(u.username)}`)}
                     className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-[rgba(124,143,255,0.04)] transition-colors"
                   >
                     <img
-                      src={`https://ui-avatars.com/api/?name=${u[0].toUpperCase()}&background=7c8fff&color=fff&size=32&font-size=0.5`}
+                      src={`https://ui-avatars.com/api/?name=${u.username[0].toUpperCase()}&background=7c8fff&color=fff&size=32&font-size=0.5`}
                       alt=""
                       className="w-8 h-8 rounded-full object-cover"
                     />
                     <div>
-                      <p className="text-[#c5cbe2] text-sm">@{u}</p>
-                      <p className="text-[#4e5573] text-[10px]">
-                        {mockFeedPrayers.filter(p => p.username === u).length} prayers
-                      </p>
+                      <p className="text-[#c5cbe2] text-sm">@{u.username}</p>
+                      {u.display_name && (
+                        <p className="text-[#4e5573] text-[10px]">{u.display_name}</p>
+                      )}
                     </div>
                   </div>
-                )) : (
-                  <p className="text-[#4e5573] text-xs px-1">No users found</p>
-                );
-              })()}
+                ))
+              ) : (
+                <p className="text-[#4e5573] text-xs px-1">No users found</p>
+              )}
             </div>
           </div>
         )}

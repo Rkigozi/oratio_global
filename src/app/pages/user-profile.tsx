@@ -1,100 +1,56 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
 import { ArrowLeft, Send, MessageCircle } from "lucide-react";
-import { mockFeedPrayers, timeAgo, getAttributionText } from "../data/prayer-data";
+import { timeAgo } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { getInitialAvatarUrl } from "../../lib/upload";
-
-const mockBios: Record<string, string> = {
-  "marcus_t": "Trusting God through the storm. Praying for healing and breakthrough.",
-  "jess_w": "Mother of two. Finding strength in prayer. 🙏",
-  "david kim": "Walking with Jesus. Learning to surrender every day.",
-  "tolu_a": "Faithful servant. Believing in miracles.",
-  "sarah chen": "Praying for my family and yours. God is faithful.",
-  "andre_m": "New to faith. Learning to pray. Grateful for this community.",
-};
-
-const mockLocations: Record<string, string> = {
-  "marcus_t": "London, UK",
-  "jess_w": "Manchester, UK",
-  "david kim": "Seoul, South Korea",
-  "tolu_a": "Lagos, Nigeria",
-  "sarah chen": "New York, USA",
-  "andre_m": "Nairobi, Kenya",
-};
-
-function generateMockFollowers(usernames: string[], target: string): string[] {
-  // Deterministic: 3-5 random followers based on username hash
-  let hash = 0;
-  for (let i = 0; i < target.length; i++) hash = ((hash << 5) - hash) + target.charCodeAt(i);
-  hash = Math.abs(hash);
-  const count = 3 + (hash % 3);
-  const followers: string[] = [];
-  const others = usernames.filter(u => u !== target);
-  for (let i = 0; i < count && i < others.length; i++) {
-    const idx = (hash + i * 7) % others.length;
-    followers.push(others[idx]);
-  }
-  return followers;
-}
+import { useAuth } from "../../lib/auth-context";
+import { getProfileByUsername, getUserPrayers, followUser, unfollowUser, isFollowing, getFollowCounts } from "../../lib/supabase-queries";
 
 export function UserProfile() {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const username = name ? decodeURIComponent(name) : "";
   const [following, setFollowing] = useState(false);
+  const [profile, setProfile] = useState<{ id: string; username: string; display_name: string | null; avatar_url: string | null; created_at: string } | null>(null);
+  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
 
-  const allUsernames = useMemo(() =>
-    [...new Set(mockFeedPrayers.map(p => p.username).filter(Boolean) as string[])],
-  []);
-
-  const prayers = useMemo(() =>
-    mockFeedPrayers.filter(p => getAttributionText(p).toLowerCase() === username.toLowerCase()),
-  [username]);
-
-  const mockFollowers = useMemo(() =>
-    generateMockFollowers(allUsernames, username),
-  [allUsernames, username]);
-
-  const myUsername = (() => {
-    try { return JSON.parse(localStorage.getItem("oratio_profile") || "{}")?.username || ""; }
-    catch { return ""; }
-  })();
-  const isOwnProfile = username === myUsername;
-
-  const followerCount = mockFollowers.length;
-  const displayFollowingCount = isOwnProfile
-    ? (() => { try { return (JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[]).length; } catch { return 0; } })()
-    : 1 + (hashString(username) % 5);
-
-  const mockBio = mockBios[username] || "Child of God. Praying without ceasing.";
-  const mockLoc = mockLocations[username] || "";
-
-  // Mutual followers
-  const mutuals = useMemo(() => {
-    try {
-      const myFollowing = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
-      return mockFollowers.filter(f => myFollowing.includes(f));
-    } catch { return []; }
-  }, [mockFollowers]);
+  const isOwnProfile = currentUser?.user_metadata?.username === username;
 
   useEffect(() => {
     if (!username) return;
-    try {
-      const ids = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
-      setFollowing(ids.includes(username));
-    } catch { setFollowing(false); }
+    Promise.all([
+      getProfileByUsername(username),
+      getUserPrayers(username),
+      getFollowCounts(""),
+      isFollowing(""),
+    ]).then(([prof, userPrayers]) => {
+      if (prof) {
+        setProfile(prof);
+        getFollowCounts(prof.id).then(setFollowCounts);
+        isFollowing(prof.id).then(setFollowing);
+      }
+      setPrayers(userPrayers);
+    });
   }, [username]);
 
-  const handleFollowToggle = () => {
-    const newState = !following;
-    setFollowing(newState);
-    try {
-      const ids = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
-      if (newState) { if (!ids.includes(username)) ids.push(username); }
-      else { const idx = ids.indexOf(username); if (idx > -1) ids.splice(idx, 1); }
-      localStorage.setItem("oratio_following", JSON.stringify(ids));
-    } catch { /* ignore */ }
+  const handleFollowToggle = async () => {
+    if (!profile) return;
+    if (following) {
+      const ok = await unfollowUser(profile.id);
+      if (ok) {
+        setFollowing(false);
+        setFollowCounts((prev) => ({ ...prev, followers: Math.max(0, prev.followers - 1) }));
+      }
+    } else {
+      const ok = await followUser(profile.id);
+      if (ok) {
+        setFollowing(true);
+        setFollowCounts((prev) => ({ ...prev, followers: prev.followers + 1 }));
+      }
+    }
   };
 
   if (!username) {
@@ -120,20 +76,12 @@ export function UserProfile() {
 
       <div className="flex-1 px-5 pb-8 overflow-y-auto">
         <div className="max-w-md mx-auto">
-          <div className="mb-4 px-3 py-2 rounded-lg text-center"
-            style={{ background: "rgba(124,143,255,0.06)", border: "1px solid rgba(124,143,255,0.1)" }}
-          >
-            <p className="text-[#7c8fff] text-[10px]">Sample profile — real user data coming with accounts</p>
-          </div>
-
           {/* Profile header */}
           <div className="flex items-start gap-4 mb-6 mt-4">
-            <img src={getInitialAvatarUrl(username)} alt="" className="w-20 h-20 rounded-full object-cover flex-shrink-0" />
+            <img src={getInitialAvatarUrl(profile?.display_name || username)} alt="" className="w-20 h-20 rounded-full object-cover flex-shrink-0" />
             <div className="flex-1 min-w-0 pt-1">
-              <h1 className="text-[#e2e4f0] font-heading text-base font-medium mb-0.5">{username}</h1>
+              <h1 className="text-[#e2e4f0] font-heading text-base font-medium mb-0.5">{profile?.display_name || username}</h1>
               <p className="text-[#5a6080] text-xs mb-1">@{username}</p>
-              <p className="text-[#c5cbe2] text-xs leading-relaxed mb-1.5">{mockBio}</p>
-              {mockLoc && <p className="text-[#4e5573] text-[10px] mb-2">📍 {mockLoc}</p>}
               {!isOwnProfile && (
                 <button onClick={handleFollowToggle}
                   className="px-5 py-1.5 rounded-full text-xs transition-all cursor-pointer"
@@ -149,16 +97,6 @@ export function UserProfile() {
             </div>
           </div>
 
-          {/* Mutual followers */}
-          {mutuals.length > 0 && (
-            <div className="mb-4 px-1">
-              <p className="text-[#4e5573] text-[10px]">
-                Followed by <span className="text-[#7c8fff]">@{mutuals[0]}</span>
-                {mutuals.length > 1 && <> and {mutuals.length - 1} other{mutuals.length > 2 ? "s" : ""} you follow</>}
-              </p>
-            </div>
-          )}
-
           {/* Stats row */}
           <div className="flex justify-around mb-6 py-3 rounded-xl"
             style={{ background: "rgba(17, 26, 58, 0.4)", border: "1px solid rgba(124,143,255,0.06)" }}
@@ -168,11 +106,11 @@ export function UserProfile() {
               <p className="text-[#5a6080] text-[10px]">Prayers</p>
             </div>
             <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/followers`)} className="text-center cursor-pointer">
-              <p className="text-[#e2e4f0] text-sm font-medium">{followerCount}</p>
+              <p className="text-[#e2e4f0] text-sm font-medium">{followCounts.followers}</p>
               <p className="text-[#5a6080] text-[10px]">Followers</p>
             </button>
             <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/following`)} className="text-center cursor-pointer">
-              <p className="text-[#e2e4f0] text-sm font-medium">{displayFollowingCount}</p>
+              <p className="text-[#e2e4f0] text-sm font-medium">{followCounts.following}</p>
               <p className="text-[#5a6080] text-[10px]">Following</p>
             </button>
           </div>
@@ -261,8 +199,4 @@ function PrayerCard({ prayer }: { prayer: PrayerRequest }) {
   );
 }
 
-function hashString(s: string): number {
-  let hash = 0;
-  for (let i = 0; i < s.length; i++) hash = ((hash << 5) - hash) + s.charCodeAt(i);
-  return Math.abs(hash);
-}
+

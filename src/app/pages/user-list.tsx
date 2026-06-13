@@ -1,25 +1,8 @@
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { ArrowLeft, UserPlus, Users } from "lucide-react";
-import { mockFeedPrayers } from "../data/prayer-data";
 import { getInitialAvatarUrl } from "../../lib/upload";
-
-function hashString(s: string): number {
-  let hash = 0;
-  for (let i = 0; i < s.length; i++) hash = ((hash << 5) - hash) + s.charCodeAt(i);
-  return Math.abs(hash);
-}
-
-function generateMockFollowers(allUsernames: string[], target: string): string[] {
-  const hash = hashString(target);
-  const count = 3 + (hash % 3);
-  const others = allUsernames.filter(u => u !== target);
-  const followers: string[] = [];
-  for (let i = 0; i < count && i < others.length; i++) {
-    followers.push(others[(hash + i * 7) % others.length]);
-  }
-  return [...new Set(followers)];
-}
+import { getProfileByUsername, getFollowers, getFollowingIds } from "../../lib/supabase-queries";
 
 export function UserFollowing() {
   return <UserList type="following" />;
@@ -33,40 +16,32 @@ function UserList({ type }: { type: "following" | "followers" }) {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const username = name ? decodeURIComponent(name) : "";
+  const [userIds, setUserIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const allUsernames = useMemo(() =>
-    [...new Set(mockFeedPrayers.map(p => p.username).filter(Boolean) as string[])],
-  []);
+  useEffect(() => {
+    if (!username) return;
+    setLoading(true);
 
-  const users = useMemo(() => {
-    let ids: string[];
-    if (type === "following") {
-      // Read from localStorage (real following data)
-      try {
-        ids = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
-      } catch { ids = []; }
-    } else {
-      // Generate mock followers for this user
-      ids = generateMockFollowers(allUsernames, username);
-    }
+    const fetchUsers = async () => {
+      const profile = await getProfileByUsername(username);
+      if (!profile) {
+        setLoading(false);
+        return;
+      }
 
-    return ids.map((u: string) => {
-      const prayer = mockFeedPrayers.find(p => p.username === u);
-      return {
-        username: u,
-        displayName: prayer?.displayName || u,
-        prayerCount: mockFeedPrayers.filter(p => p.username === u).length,
-      };
-    });
-  }, [type, username, allUsernames]);
+      if (type === "following") {
+        const ids = await getFollowingIds();
+        setUserIds(ids);
+      } else {
+        const ids = await getFollowers(profile.id);
+        setUserIds(ids);
+      }
+      setLoading(false);
+    };
 
-  // Check which of these users you also follow (mutuals)
-  const mutuals = useMemo(() => {
-    try {
-      const myFollowing = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
-      return users.filter(u => myFollowing.includes(u.username)).map(u => u.username);
-    } catch { return []; }
-  }, [users]);
+    void fetchUsers();
+  }, [username, type]);
 
   return (
     <div className="w-full min-h-dvh flex flex-col" style={{ background: "#0A1A3A" }}>
@@ -86,33 +61,21 @@ function UserList({ type }: { type: "following" | "followers" }) {
 
       <div className="flex-1 px-5 pb-8 overflow-y-auto">
         <div className="max-w-md mx-auto">
-          {type === "followers" && (
-            <div className="mb-3 px-3 py-2 rounded-lg text-center"
-              style={{ background: "rgba(124,143,255,0.06)", border: "1px solid rgba(124,143,255,0.1)" }}
-            >
-              <p className="text-[#7c8fff] text-[10px]">Sample data — real followers coming with accounts</p>
-            </div>
-          )}
-          {users.length > 0 ? (
+          {loading ? (
+            <p className="text-center text-[#4e5573] text-xs py-12">Loading...</p>
+          ) : userIds.length > 0 ? (
             <div className="space-y-1.5">
-              {users.map((u) => {
-                const isMutual = mutuals.includes(u.username);
-                return (
-                  <div key={u.username}
-                    onClick={() => void navigate(`/user/${encodeURIComponent(u.username)}`)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[rgba(124,143,255,0.04)] transition-colors"
-                  >
-                    <img src={getInitialAvatarUrl(u.username)} alt="" className="w-10 h-10 rounded-full object-cover" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[#e2e4f0] text-sm font-medium truncate">{u.displayName}</p>
-                      <p className="text-[#5a6080] text-xs">
-                        @{u.username} · {u.prayerCount} {u.prayerCount === 1 ? "prayer" : "prayers"}
-                        {isMutual && <span className="text-[#7c8fff]"> · Mutual</span>}
-                      </p>
-                    </div>
+              {userIds.map((uid) => (
+                <div key={uid}
+                  onClick={() => void navigate(`/user/${encodeURIComponent(uid)}`)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[rgba(124,143,255,0.04)] transition-colors"
+                >
+                  <img src={getInitialAvatarUrl(uid)} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[#e2e4f0] text-sm truncate">{uid}</p>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           ) : (
             <div className="text-center py-16">
