@@ -1,54 +1,59 @@
 # Progress - Oratio Prayer Platform
 
 ## Current Status
-**Phase:** Sprint D — Launch Readiness
-**Last milestone:** Sprints A, B, C complete
-**Next milestone:** CI/CD, Sentry, Analytics, A11y audit, Launch collateral
-**Deployed:** Yes (Netlify, auto-deploy from main)
+**Phase:** Sprint D — Launch Readiness (almost complete)
+**Last milestone:** Web PWA production-hardened, all data on Supabase
+**Next milestone:** Add Sentry/PostHog keys, deploy
+**Deployed:** Yes (Netlify, manual deploy via GitHub Actions)
 **Repo:** github.com/Rkigozi/oratio_global.git
-**Tests:** 27 passing (vitest)
+**Tests:** 50 passing (vitest)
 
 ## Sprint A — Foundation (✅ Done)
 - [x] Supabase project + schema (8 tables, RLS, triggers, auto-profile)
-- [x] REST API layer (src/lib/api.ts)
+- [x] REST API layer migrated to Supabase queries
 - [x] Auth: email/password + Google OAuth (removed username-based login)
-- [x] PWA manifest + icons
+- [x] PWA manifest + branded ORATIO icons
 - [x] Service worker (workbox caching)
 - [x] Landing page scroll freeze fix (iPhone 15)
 
 ## Sprint B — Core Loop + Comments (✅ Done)
-- [x] Comments (Reddit-style threaded replies)
-- [x] Comment moderation (report flow)
-- [x] Code splitting (lazy routes, 295KB → 153KB initial)
-- [x] Contrast fix (time labels #3e4460 → #6b7499)
+- [x] Comments (Reddit-style threaded, wired to Supabase)
+- [x] Comment moderation (report flow, wired to Supabase)
+- [x] Code splitting (lazy routes, minimized initial bundle)
+- [x] Contrast fix (time labels)
 - [x] Push notifications removed (no tester demand)
 
 ## Sprint C — Discovery + Polish (✅ Done)
-- [x] Search bar (Enter-to-search, recent searches, delete)
-- [x] Hashtag system (inline #tags, clickable, trending)
-- [x] Map refresh (ESRI Light Gray tiles, country borders, gold markers)
-- [x] Translation (Google Cloud Translation API)
-- [x] Shareable link (submit success + prayer detail page)
-- [x] Save button (moved to detail page three-dot menu)
-- [x] Install prompt (Info page, iOS/Android steps)
-- [x] Geolocation (Near Me in feed, locate button on map)
-- [x] Country filter + filter pill redesign
-- [x] Multi-language mock data (ES, FR, PT, DE, IT)
-- [x] City removed from feed cards
+- [x] Search bar + user search (via Supabase `searchUsers`)
+- [x] Hashtag system (inline #tags, clickable in FeedCard + PrayerRow)
+- [x] Map with real Supabase prayer hotspots
+- [x] Translation (Google Cloud via Supabase Edge Function proxy — key is server-side)
+- [x] Shareable link + save button
+- [x] Geolocation (Near Me, profile auto-detect, submit auto-detect)
+- [x] Country filter + trending hashtags
+- [x] Location auto-detect toggle on profile + submit
 
-## Sprint D — Launch Readiness (⬜ Planned)
-- [ ] CI/CD pipeline (GitHub Actions → Netlify)
-- [ ] Error monitoring (Sentry)
-- [ ] Analytics (PostHog)
-- [ ] Accessibility audit
-- [ ] Church launch collateral (install flyer, demo script)
-- [ ] Clean up profile-data.ts localStorage functions
-- [ ] Remove unused code/imports
+## Sprint D — Launch Readiness (✅ Done)
+- [x] CI/CD split: auto-checks on push, manual deploy via workflow_dispatch
+- [x] Error monitoring (Sentry SDK installed, needs DSN in .env)
+- [x] Analytics (PostHog SDK installed, needs key in .env)
+- [x] Security headers (HSTS, X-Frame-Options, CSP, etc.)
+- [x] OG meta tags + Twitter Card for social sharing
+- [x] ORATIO-branded favicon + OG image
+- [x] All data wired to Supabase (feed, comments, prayers, follows, reports, profiles, map)
+- [x] Mock data removed from main flows
+- [x] Username locked after signup
+- [x] Profile edits persist cross-device
+- [x] Email waitlist wired to Supabase
+- [x] iOS splash screen / white flash fix
+- [x] Unused code/imports cleaned up
 
-## JIRA Backlog
-All Sprint A, B, C stories closed as Done in JIRA.
-Sprint D stories: KAN-31 (Testing), KAN-32 (Release), KAN-54 (A11y), KAN-56 (Analytics), KAN-57 (CI/CD), KAN-58 (Tests), KAN-60 (Critical path tests), KAN-62 (Sentry), KAN-95 (Landing), KAN-96 (Collateral)
+## Remaining
+- [ ] Add Sentry DSN to `.env` (user needs to provide)
+- [ ] Add PostHog key to `.env` (user needs to provide)
+- [ ] Manual deploy via GitHub Actions when ready
+- [ ] Native app development (oratio-app/) — separate phase
 
 ---
-*Last Updated: 2026-06-11*
-*Next: Sprint D — Launch Readiness*
+*Last Updated: 2026-06-13*
+*Next: Sentry/PostHog keys → Deploy*
