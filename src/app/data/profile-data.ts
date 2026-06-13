@@ -1,5 +1,4 @@
 import type { PrayerRequest } from "./prayer-data";
-import { mockFeedPrayers } from "./prayer-data";
 
 export interface UserProfile {
   username: string;
@@ -130,18 +129,10 @@ export const categoryColors: Record<string, string> = {
   Other: "#8890b5",
 };
 
-// Get all prayers (mock feed + user submitted)
-export function getAllPrayers(): PrayerRequest[] {
-  const submitted = getStoredSubmittedPrayers();
-  const submittedIds = new Set(submitted.map(p => p.id));
-  const mockPrayers = mockFeedPrayers.filter(p => !submittedIds.has(p.id));
-  return [...submitted, ...mockPrayers];
-}
-
-// Helper to get prayed-for prayers
+// Helper to get prayed-for prayers (from localStorage submitted prayers only)
 export function getPrayedForPrayers(): PrayerRequest[] {
   const prayedIds = new Set(getPrayedIds());
-  return getAllPrayers().filter(p => prayedIds.has(p.id));
+  return getStoredSubmittedPrayers().filter(p => prayedIds.has(p.id));
 }
 
 // Check if username is available (optionally exclude current username)
@@ -234,36 +225,5 @@ export function clearAllData(): void {
   }
 }
 
-// Update username in all submitted prayers
-export function updateUsernameInPrayers(oldUsername: string, newUsername: string): void {
-  try {
-    const raw = localStorage.getItem('oratio_submitted_prayers');
-    if (!raw) return;
-    const prayers = JSON.parse(raw) as PrayerRequest[];
-    const updated = prayers.map(p => 
-      p.username === oldUsername ? { ...p, username: newUsername } : p
-    );
-    localStorage.setItem('oratio_submitted_prayers', JSON.stringify(updated));
-  } catch {
-    // ignore
-  }
-}
 
-// Change username and update all related data
-export function changeUsername(oldUsername: string, newUsername: string): void {
-  // Update used usernames list
-  try {
-    const used = JSON.parse(localStorage.getItem('oratio_usernames') || '[]') as string[];
-    const filtered = used.filter(u => u !== oldUsername.toLowerCase());
-    if (!filtered.includes(newUsername.toLowerCase())) {
-      filtered.push(newUsername.toLowerCase());
-      localStorage.setItem('oratio_usernames', JSON.stringify(filtered));
-    }
-  } catch {
-    // ignore
-  }
-  
-  // Update username in submitted prayers
-  updateUsernameInPrayers(oldUsername, newUsername);
-}
 
