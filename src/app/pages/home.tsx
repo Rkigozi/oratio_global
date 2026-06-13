@@ -2,26 +2,23 @@ import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router";
 import { WorldMapClean } from "../components/world-map-clean";
-import { mockHotspots } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { Heart, ArrowRight, MapPin, Locate } from "lucide-react";
 import { Drawer } from "vaul";
-import { getStoredSubmittedPrayers } from "../data/profile-data";
 import { useGeolocation } from "../../lib/use-geolocation";
+import { getMapHotspots } from "../../lib/supabase-queries";
 
 
 export function Home() {
   
   const navigate = useNavigate();
   const { location: geoLocation, loading: geoLoading, denied: geoDenied, requestLocation } = useGeolocation();
-   const [prayers, setPrayers] = useState(() => {
-     const submitted = getStoredSubmittedPrayers();
-     const combined = [...submitted, ...mockHotspots];
-     const unique = combined.filter((p, index, self) => 
-       index === self.findIndex((p2) => p2.id === p.id)
-     );
-     return unique;
-   });
+  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+
+  // Load real prayers from Supabase for map hotspots
+  useEffect(() => {
+    getMapHotspots().then(setPrayers);
+  }, []);
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
    const [newPrayerId, setNewPrayerId] = useState<string | null>(null);
    const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null);

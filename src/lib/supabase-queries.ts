@@ -11,6 +11,46 @@ export interface Comment {
   user?: { username: string; display_name: string } | null;
 }
 
+// ─── Map Hotspots ──────────────────────────────────────────────────────
+
+export async function getMapHotspots(): Promise<PrayerRequest[]> {
+  const { data, error } = await supabase
+    .from("prayer_requests")
+    .select(`
+      id, body, category,
+      location_city, location_country, location_lat, location_lng,
+      is_anonymous, prayer_count, created_at,
+      profiles!inner(username, display_name)
+    `)
+    .not("location_lat", "is", null)
+    .not("location_lng", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error || !data) {
+    console.error("Failed to fetch map hotspots:", error?.message);
+    return [];
+  }
+
+  return data.map((row: Record<string, unknown>) => {
+    const profile = row.profiles as { username: string; display_name: string };
+    return {
+      id: row.id as string,
+      city: (row.location_city as string) || "Unknown",
+      country: (row.location_country as string) || "Unknown",
+      text: row.body as string,
+      name: row.is_anonymous ? undefined : (profile.display_name || profile.username),
+      displayName: row.is_anonymous ? undefined : (profile.display_name || profile.username),
+      username: row.is_anonymous ? undefined : profile.username,
+      prayerCount: (row.prayer_count as number) || 0,
+      lat: (row.location_lat as number) || 0,
+      lng: (row.location_lng as number) || 0,
+      category: (row.category as string) || "Other",
+      createdAt: row.created_at as string,
+    } as PrayerRequest;
+  });
+}
+
 // ─── Feed ──────────────────────────────────────────────────────────────
 
 export async function getFeedPrayers(): Promise<PrayerRequest[]> {
