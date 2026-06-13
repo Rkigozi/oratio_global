@@ -16,13 +16,12 @@ import {
   getPrayedIds,
   getStoredSubmittedPrayers,
   getPrayedForPrayers,
-  isUsernameAvailable,
-  changeUsername,
 } from "../data/profile-data";
 import { validateProfile } from "../../lib/validation";
 import { useAuth } from "../../lib/auth-context";
 import { uploadAvatar, getInitialAvatarUrl } from "../../lib/upload";
 import { getFollowCounts } from "../../lib/supabase-queries";
+import { useGeolocation } from "../../lib/use-geolocation";
 
 export function Profile() {
   const navigate = useNavigate();
@@ -30,7 +29,8 @@ export function Profile() {
   const [profile, setProfile] = useState(getProfile);
   const [editOpen, setEditOpen] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState("");
-  const [newUsername, setNewUsername] = useState("");
+  const { location: geoLocation, loading: geoLoading, denied: geoDenied, requestLocation } = useGeolocation();
+  const [useAutoLocation, setUseAutoLocation] = useState(false);
   const [newBio, setNewBio] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [editError, setEditError] = useState<string>("");
@@ -82,7 +82,6 @@ export function Profile() {
   useEffect(() => {
     if (editOpen) {
       setNewDisplayName(profile.displayName);
-      setNewUsername(profile.username);
       setNewBio(profile.bio || "");
       setNewLocation(profile.location || "");
       setEditError('');
@@ -92,10 +91,9 @@ export function Profile() {
   const handleSaveProfile = () => {
     setEditError("");
     const trimmedDisplayName = newDisplayName.trim();
-    const trimmedUsername = newUsername.trim().toLowerCase();
 
     const validation = validateProfile({
-      username: trimmedUsername,
+      username: profile.username,
       displayName: trimmedDisplayName,
     });
     if (!validation.success) {
@@ -104,17 +102,8 @@ export function Profile() {
       return;
     }
 
-    if (trimmedUsername !== profile.username) {
-      if (!isUsernameAvailable(trimmedUsername, profile.username)) {
-        setEditError("This username is already taken");
-        return;
-      }
-      changeUsername(profile.username, trimmedUsername);
-    }
-
     const updatedProfile = {
       ...profile,
-      username: trimmedUsername,
       displayName: trimmedDisplayName,
       bio: newBio.trim(),
       location: newLocation.trim(),
@@ -339,15 +328,10 @@ export function Profile() {
                 </label>
               </div>
 
-              <div className="mb-4">
-                <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2 text-center">Username</p>
-                <input type="text" value={newUsername}
-                  onChange={(e) => { setNewUsername(e.target.value); setEditError(''); }}
-                  onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
-                  placeholder="username"
-                  className={`w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-[#ff6b6b]' : 'border-[rgba(124,143,255,0.12)]'}`}
-                  style={{ background: "rgba(15, 20, 50, 0.6)" }}
-                />
+              <div className="mb-4 text-center">
+                <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-1">Username</p>
+                <p className="text-[#e2e4f0] text-sm">@{profile.username}</p>
+                <p className="text-[#4e5573] text-[10px] mt-1">Username can't be changed at this time</p>
               </div>
 
               <div className="mb-6">
@@ -376,13 +360,46 @@ export function Profile() {
               </div>
 
               <div className="mb-6">
-                <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em] mb-2 text-center">Location</p>
-                <input type="text" value={newLocation}
-                  onChange={(e) => setNewLocation(e.target.value)}
-                  placeholder="e.g. London, UK"
-                  className="w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)] transition-colors text-center"
-                  style={{ background: "rgba(15, 20, 50, 0.6)" }}
-                />
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <p className="text-[#8890b5] text-xs uppercase tracking-[0.15em]">Location</p>
+                  <button
+                    type="button"
+                    onClick={() => { setUseAutoLocation(!useAutoLocation); if (!useAutoLocation) void requestLocation(); }}
+                    className="relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
+                    style={{ background: useAutoLocation ? "rgba(124,143,255,0.35)" : "rgba(124,143,255,0.12)" }}
+                    aria-label="Auto-detect location"
+                  >
+                    <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 shadow-md"
+                      style={{ transform: useAutoLocation ? "translateX(18px)" : "translateX(2px)" }}
+                    />
+                  </button>
+                </div>
+                <p className="text-[#4e5573] text-[10px] text-center mb-2">Toggle to auto-detect from your browser</p>
+                {useAutoLocation ? (
+                  geoLocation ? (
+                    <div className="rounded-xl px-4 py-3 flex items-center gap-2 border border-[rgba(124,143,255,0.12)] justify-center"
+                      style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                    >
+                      <span className="text-[#e2e4f0] text-sm">{geoLocation.city}, {geoLocation.country}</span>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <p className="text-[#4e5573] text-xs">
+                        {geoLoading ? "Detecting..." : geoDenied ? "Location access denied" : "Location not available"}
+                      </p>
+                      {!geoLoading && !geoDenied && (
+                        <button onClick={() => void requestLocation()} className="text-[#7c8fff] text-xs mt-1 cursor-pointer">Try again</button>
+                      )}
+                    </div>
+                  )
+                ) : (
+                  <input type="text" value={newLocation}
+                    onChange={(e) => setNewLocation(e.target.value)}
+                    placeholder="e.g. London, UK"
+                    className="w-full rounded-xl px-4 py-3.5 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)] transition-colors text-center"
+                    style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                  />
+                )}
               </div>
 
               <div className="flex gap-3">
