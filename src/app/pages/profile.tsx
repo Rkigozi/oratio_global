@@ -22,10 +22,11 @@ import {
 import { validateProfile } from "../../lib/validation";
 import { useAuth } from "../../lib/auth-context";
 import { uploadAvatar, getInitialAvatarUrl } from "../../lib/upload";
+import { getFollowCounts } from "../../lib/supabase-queries";
 
 export function Profile() {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [profile, setProfile] = useState(getProfile);
   const [editOpen, setEditOpen] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState("");
@@ -56,11 +57,13 @@ export function Profile() {
     } catch { return 0; }
   }, []);
 
-  const followingCount = useMemo(() => {
-    try {
-      return (JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[]).length;
-    } catch { return 0; }
-  }, []);
+  const [followingCount, setFollowingCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.id) {
+      getFollowCounts(user.id).then((counts) => setFollowingCount(counts.following));
+    }
+  }, [user?.id]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
