@@ -42,24 +42,22 @@ export function needsTranslation(text: string, userLang: string): boolean {
   return detected !== userLang;
 }
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
 export async function translateText(text: string, targetLang: string): Promise<string | null> {
   const key = `${text}_${targetLang}`;
   const cached = cache.get(key);
   if (cached) return cached;
 
-  const apiKey = import.meta.env.VITE_GOOGLE_TRANSLATE_API_KEY;
-  if (!apiKey) return null;
-
   try {
     const res = await fetch(
-      `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`,
+      `${supabaseUrl}/functions/v1/translate`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           q: text.slice(0, 500),
           target: targetLang,
-          format: "text",
         }),
       }
     );
