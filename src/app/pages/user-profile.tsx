@@ -24,8 +24,6 @@ export function UserProfile() {
     Promise.all([
       getProfileByUsername(username),
       getUserPrayers(username),
-      getFollowCounts(""),
-      isFollowing(""),
     ]).then(([prof, userPrayers]) => {
       if (prof) {
         setProfile(prof);
@@ -55,19 +53,19 @@ export function UserProfile() {
 
   if (!username) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh" style={{ background: "#0A1A3A" }}>
-        <p className="text-[#6b7499] text-sm">User not found</p>
+      <div className="flex flex-col items-center justify-center min-h-dvh" style={{ background: "rgb(var(--rgb-bg))" }}>
+        <p className="text-text-muted text-sm">User not found</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-dvh flex flex-col" style={{ background: "#0A1A3A" }}>
+    <div className="w-full min-h-dvh flex flex-col" style={{ background: "rgb(var(--rgb-bg))" }}>
       <div className="flex-shrink-0 pt-[max(1.5rem,env(safe-area-inset-top))] pb-2 px-4"
-        style={{ background: "linear-gradient(to bottom, rgba(10, 26, 58, 0.98), rgba(10, 26, 58, 0))" }}
+        style={{ background: "linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98), rgba(var(--rgb-bg), 0))" }}
       >
         <button onClick={() => void navigate(-1)}
-          className="flex items-center gap-2 text-[#6b7499] hover:text-[#8890b5] transition-colors cursor-pointer mt-12"
+          className="flex items-center gap-2 text-text-muted hover:text-text-muted transition-colors cursor-pointer mt-12"
         >
           <ArrowLeft size={16} />
           <span className="text-xs">Back</span>
@@ -78,17 +76,17 @@ export function UserProfile() {
         <div className="max-w-md mx-auto">
           {/* Profile header */}
           <div className="flex items-start gap-4 mb-6 mt-4">
-            <img src={getInitialAvatarUrl(profile?.display_name || username)} alt="" className="w-20 h-20 rounded-full object-cover flex-shrink-0" />
+            <img src={getInitialAvatarUrl(profile?.display_name || username)} alt={profile?.display_name || username || "User"} className="w-20 h-20 rounded-full object-cover flex-shrink-0" />
             <div className="flex-1 min-w-0 pt-1">
-              <h1 className="text-[#e2e4f0] font-heading text-base font-medium mb-0.5">{profile?.display_name || username}</h1>
-              <p className="text-[#5a6080] text-xs mb-1">@{username}</p>
+              <h1 className="text-text font-heading text-base font-medium mb-0.5">{profile?.display_name || username}</h1>
+              <p className="text-text-dim text-xs mb-1">@{username}</p>
               {!isOwnProfile && (
                 <button onClick={handleFollowToggle}
                   className="px-5 py-1.5 rounded-full text-xs transition-all cursor-pointer"
                   style={{
-                    background: following ? "rgba(124,143,255,0.1)" : "linear-gradient(135deg, #7c8fff, #5a6fd6)",
-                    border: following ? "1px solid rgba(124,143,255,0.2)" : "none",
-                    color: following ? "#7c8fff" : "#ffffff",
+                    background: following ? "rgba(var(--rgb-accent), 0.1)" : "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
+                    border: following ? "1px solid rgba(var(--rgb-accent), 0.2)" : "none",
+                    color: following ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text))",
                   }}
                 >
                   {following ? "Following" : "Follow"}
@@ -99,26 +97,26 @@ export function UserProfile() {
 
           {/* Stats row */}
           <div className="flex justify-around mb-6 py-3 rounded-xl"
-            style={{ background: "rgba(17, 26, 58, 0.4)", border: "1px solid rgba(124,143,255,0.06)" }}
+            style={{ background: "rgba(var(--rgb-surface), 0.4)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
           >
             <div className="text-center">
-              <p className="text-[#e2e4f0] text-sm font-medium">{prayers.length}</p>
-              <p className="text-[#5a6080] text-[10px]">Prayers</p>
+              <p className="text-text text-sm font-medium">{prayers.length}</p>
+              <p className="text-text-dim text-[10px]">Prayers</p>
             </div>
             <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/followers`)} className="text-center cursor-pointer">
-              <p className="text-[#e2e4f0] text-sm font-medium">{followCounts.followers}</p>
-              <p className="text-[#5a6080] text-[10px]">Followers</p>
+              <p className="text-text text-sm font-medium">{followCounts.followers}</p>
+              <p className="text-text-dim text-[10px]">Followers</p>
             </button>
             <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/following`)} className="text-center cursor-pointer">
-              <p className="text-[#e2e4f0] text-sm font-medium">{followCounts.following}</p>
-              <p className="text-[#5a6080] text-[10px]">Following</p>
+              <p className="text-text text-sm font-medium">{followCounts.following}</p>
+              <p className="text-text-dim text-[10px]">Following</p>
             </button>
           </div>
 
           {/* Prayers header */}
           <div className="flex items-center gap-2 mb-3">
-            <Send size={12} className="text-[#5a6080]" />
-            <span className="text-[#8890b5] text-[10px] uppercase tracking-[0.15em]">Prayers</span>
+            <Send size={12} className="text-text-dim" />
+            <span className="text-text-muted text-[10px] uppercase tracking-[0.15em]">Prayers</span>
           </div>
 
           {/* Prayer list */}
@@ -126,7 +124,7 @@ export function UserProfile() {
             {prayers.length > 0 ? prayers.map((prayer) => (
               <PrayerCard key={prayer.id} prayer={prayer} />
             )) : (
-              <p className="text-center text-[#4e5573] text-xs py-8">No prayers from this user</p>
+              <p className="text-center text-text-dim text-xs py-8">No prayers from this user</p>
             )}
           </div>
         </div>
@@ -168,27 +166,27 @@ function PrayerCard({ prayer }: { prayer: PrayerRequest }) {
     <div onClick={() => void navigate(`/prayer/${prayer.id}`)}
       className="rounded-xl px-4 py-3 cursor-pointer active:scale-[0.99] transition-transform"
       style={{
-        background: "linear-gradient(160deg, rgba(17, 26, 58, 0.5), rgba(12, 18, 48, 0.3))",
-        border: "1px solid rgba(124,143,255,0.05)",
+        background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))",
+        border: "1px solid rgba(var(--rgb-accent), 0.05)",
       }}
     >
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-[#8890b5] text-[10px]">{prayer.city || "Unknown"}</span>
-        <span className="text-[#3e4460] text-[10px]">·</span>
-        <span className="text-[#4e5573] text-[10px]">{prayer.createdAt ? timeAgo(prayer.createdAt) : ""}</span>
+        <span className="text-text-muted text-[10px]">{prayer.city || "Unknown"}</span>
+        <span className="text-text-faint text-[10px]">·</span>
+        <span className="text-text-dim text-[10px]">{prayer.createdAt ? timeAgo(prayer.createdAt) : ""}</span>
       </div>
-      <p className="text-[#d0d4e8] text-sm line-clamp-2 leading-relaxed mb-2">{prayer.text}</p>
+      <p className="text-text-secondary text-sm line-clamp-2 leading-relaxed mb-2">{prayer.text}</p>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={handlePray}
             className="flex items-center gap-1 text-xs transition-colors cursor-pointer"
-            style={{ color: prayed ? "#7c8fff" : "#5a6080" }}
+            style={{ color: prayed ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-dim))" }}
           >
             <span>🙏</span>
             <span>{count}</span>
           </button>
           {commentCount > 0 && (
-            <span className="flex items-center gap-1 text-[#4e5573] text-xs">
+            <span className="flex items-center gap-1 text-text-dim text-xs">
               <MessageCircle size={11} />
               <span>{commentCount}</span>
             </span>

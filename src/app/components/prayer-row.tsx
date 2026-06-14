@@ -52,17 +52,17 @@ export function PrayerRow({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.5), duration: 0.35 }}
       onClick={canManage ? () => onTap(prayer) : undefined}
-      className={`rounded-xl px-4 py-3.5 relative overflow-hidden ${canManage ? "cursor-pointer active:bg-[rgba(124,143,255,0.05)] transition-colors duration-150" : ""}`}
+      className={`rounded-xl px-4 py-3.5 relative overflow-hidden ${canManage ? "cursor-pointer active:bg-accent/5 transition-colors duration-150" : ""}`}
       style={{
         background:
-          "linear-gradient(160deg, rgba(17, 26, 58, 0.6), rgba(12, 18, 48, 0.4))",
-        border: "1px solid rgba(124,143,255,0.06)",
+          "linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))",
+        border: "1px solid rgba(var(--rgb-accent), 0.06)",
       }}
     >
       {/* Sample badge for mock data */}
       {prayer.id.startsWith('feed-') && (
         <span className="absolute top-2 right-2 text-[9px] px-1.5 py-0.5 rounded-full"
-          style={{ background: "rgba(251,191,36,0.1)", color: "#a38a3a", border: "1px solid rgba(251,191,36,0.15)" }}
+          style={{ background: "rgba(var(--rgb-warning), 0.1)", color: "rgb(var(--rgb-text-muted))", border: "1px solid rgba(var(--rgb-warning), 0.15)" }}
         >
           Sample
         </span>
@@ -71,17 +71,17 @@ export function PrayerRow({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p
-            className="text-[#d0d4e8] line-clamp-2 mb-1"
+            className="text-text-secondary line-clamp-2 mb-1"
             style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
           >
             {onTagClick ? renderHashtags(prayer.text, onTagClick) : prayer.text}
           </p>
-          <span className="text-[#6b7499] text-[11px] mb-1 block">
+          <span className="text-text-muted text-[11px] mb-1 block">
             {getAttributionText(prayer)}
           </span>
           <div className="flex items-center gap-2">
-            <MapPin size={10} className="text-[#5a6080] flex-shrink-0" />
-            <span className="text-[#5a6080] text-[11px]">
+            <MapPin size={10} className="text-text-dim flex-shrink-0" />
+            <span className="text-text-dim text-[11px]">
               {prayer.city || "Unknown"}
             </span>
             {prayer.category && (
@@ -97,7 +97,7 @@ export function PrayerRow({
               </span>
             )}
             {prayer.createdAt && (
-              <span className="text-[#6b7499] text-[10px] ml-auto">
+              <span className="text-text-muted text-[10px] ml-auto">
                 {timeAgo(prayer.createdAt)}
               </span>
             )}
@@ -108,7 +108,7 @@ export function PrayerRow({
           {showCount && (
             <div className="flex items-center gap-1">
               <span className="text-xs opacity-60">🙏</span>
-              <span className="text-[#6b7499] text-[11px]">
+              <span className="text-text-muted text-[11px]">
                 {prayer.prayerCount ?? 0}
               </span>
             </div>
@@ -119,10 +119,10 @@ export function PrayerRow({
               className="flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300 cursor-pointer"
               style={{
                 background: prayed
-                  ? "rgba(124, 143, 255, 0.1)"
-                  : "rgba(124, 143, 255, 0.06)",
+                  ? "rgba(var(--rgb-accent), 0.1)"
+                  : "rgba(var(--rgb-accent), 0.06)",
                 border: `1px solid ${
-                  prayed ? "rgba(124, 143, 255, 0.2)" : "rgba(124, 143, 255, 0.1)"
+                  prayed ? "rgba(var(--rgb-accent), 0.2)" : "rgba(var(--rgb-accent), 0.1)"
                 }`,
               }}
               title={prayed ? "Unpray" : "Pray"}
@@ -143,7 +143,7 @@ export function PrayerRow({
                 e.preventDefault();
                 onDelete(prayer.id);
               }}
-              className="text-[#5a6080] hover:text-[#8890b5] cursor-pointer"
+              className="text-text-dim hover:text-text-muted cursor-pointer"
               title="Delete prayer"
             >
               <Trash2 size={12} />

@@ -1,33 +1,43 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Bookmark, MapPin } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
-import { mockFeedPrayers } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { categoryColors } from "../data/profile-data";
+import { getSavedPrayers, toggleSavePrayer } from "../../lib/supabase-queries";
+import { LoadingSpinner } from "../components/loading-spinner";
 
 export function ProfileSaved() {
   const navigate = useNavigate();
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
-  const [version, setVersion] = useState(0);
+  const [savedPrayers, setSavedPrayers] = useState<PrayerRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const savedPrayers = useMemo(() => {
-    let savedIds: string[] = [];
-    try { savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[]; }
-    catch { savedIds = []; }
-
-    let submitted: PrayerRequest[] = [];
-    try { submitted = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[]; }
-    catch { submitted = []; }
-
-    const allPrayers = [...submitted, ...mockFeedPrayers];
-    return allPrayers.filter((p) => savedIds.includes(p.id));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [version]);
+  useEffect(() => {
+    setLoading(true);
+    getSavedPrayers().then((prayers) => {
+      setLoading(false);
+      if (prayers.length > 0) {
+        setSavedPrayers(prayers);
+      } else {
+        // Fallback to localStorage
+        let savedIds: string[] = [];
+        try { savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[]; }
+        catch { savedIds = []; }
+        let submitted: PrayerRequest[] = [];
+        try { submitted = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[]; }
+        catch { submitted = []; }
+        const allPrayers = submitted;
+        setSavedPrayers(allPrayers.filter((p) => savedIds.includes(p.id)));
+      }
+      setLoading(false);
+    });
+  }, []);
 
   const removeSaved = (prayerId: string) => {
+    void toggleSavePrayer(prayerId, false);
     try {
       const savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
       const idx = savedIds.indexOf(prayerId);
@@ -35,29 +45,31 @@ export function ProfileSaved() {
       localStorage.setItem("oratio_saved", JSON.stringify(savedIds));
     } catch { /* ignore */ }
     setSelectedPrayer(null);
-    setVersion(v => v + 1);
+    setSavedPrayers((prev) => prev.filter((p) => p.id !== prayerId));
   };
 
   return (
     <div
       className="w-full min-h-full flex flex-col px-6 pb-28"
-      style={{ background: "#0A1A3A" }}
+      style={{ background: "rgb(var(--rgb-bg))" }}
     >
       <div className="flex-1 overflow-y-auto pt-24">
-        {savedPrayers.length === 0 ? (
+        {loading ? (
+          <LoadingSpinner text="Loading saved prayers..." />
+        ) : savedPrayers.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="text-center py-16"
           >
-            <Bookmark size={24} className="text-[#4e5573] mx-auto mb-3" />
-            <p className="text-[#6b7499] text-sm mb-1">No saved prayers yet</p>
-            <p className="text-[#4e5573] text-xs mb-4">
+            <Bookmark size={24} className="text-text-dim mx-auto mb-3" />
+            <p className="text-text-muted text-sm mb-1">No saved prayers yet</p>
+            <p className="text-text-dim text-xs mb-4">
               Tap &#8942; on a prayer in the feed and select Save
             </p>
             <button
               onClick={() => void navigate('/feed')}
-              className="px-5 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer hover:bg-[rgba(124,143,255,0.12)] transition-all"
+              className="px-5 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer hover:bg-accent/12 transition-all"
             >
               Browse Feed
             </button>
@@ -73,26 +85,26 @@ export function ProfileSaved() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(i * 0.04, 0.5), duration: 0.35 }}
                   onClick={() => setSelectedPrayer(prayer)}
-                  className="rounded-xl px-4 py-3.5 cursor-pointer active:bg-[rgba(124,143,255,0.05)] transition-colors duration-150"
+                  className="rounded-xl px-4 py-3.5 cursor-pointer active:bg-accent/5 transition-colors duration-150"
                   style={{
-                    background: "linear-gradient(160deg, rgba(17, 26, 58, 0.6), rgba(12, 18, 48, 0.4))",
-                    border: "1px solid rgba(124,143,255,0.06)",
+                    background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))",
+                    border: "1px solid rgba(var(--rgb-accent), 0.06)",
                   }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p
-                        className="text-[#d0d4e8] line-clamp-2 mb-1"
+                        className="text-text-secondary line-clamp-2 mb-1"
                         style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
                       >
                         {prayer.text}
                       </p>
-                      <span className="text-[#6b7499] text-[11px] mb-1 block">
+                      <span className="text-text-muted text-[11px] mb-1 block">
                         {getAttributionText(prayer)}
                       </span>
                       <div className="flex items-center gap-2">
-                        <MapPin size={10} className="text-[#5a6080]" />
-                        <span className="text-[#5a6080] text-[11px]">{prayer.city}</span>
+                        <MapPin size={10} className="text-text-dim" />
+                        <span className="text-text-dim text-[11px]">{prayer.city}</span>
                         {prayer.category && (
                           <span
                             className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider"
@@ -106,13 +118,13 @@ export function ProfileSaved() {
                           </span>
                         )}
                         {prayer.createdAt && (
-                          <span className="text-[#6b7499] text-[10px] ml-auto">
+                          <span className="text-text-muted text-[10px] ml-auto">
                             {timeAgo(prayer.createdAt)}
                           </span>
                         )}
                       </div>
                     </div>
-                    <Bookmark size={12} className="text-[#5a6080] flex-shrink-0 mt-1" fill="#5a6080" />
+                    <Bookmark size={12} className="text-text-dim flex-shrink-0 mt-1" fill="#5a6080" />
                   </div>
                 </motion.div>
               );
@@ -131,8 +143,8 @@ export function ProfileSaved() {
           <Drawer.Content
             className="flex flex-col rounded-t-[1.5rem] fixed bottom-0 left-0 right-0 z-[600] max-h-[85vh] focus:outline-none"
             style={{
-              background: "linear-gradient(180deg, #111a3a, #0c1230)",
-              borderTop: "1px solid rgba(124, 143, 255, 0.1)",
+              background: "linear-gradient(180deg, rgb(var(--rgb-surface)), rgb(var(--rgb-surface)))",
+              borderTop: "1px solid rgba(var(--rgb-accent), 0.1)",
             }}
           >
             <Drawer.Title className="sr-only">Saved Prayer</Drawer.Title>
@@ -141,7 +153,7 @@ export function ProfileSaved() {
             </Drawer.Description>
 
             <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-[rgba(124,143,255,0.2)]" />
+              <div className="w-10 h-1 rounded-full bg-accent/20" />
             </div>
 
             <div className="max-w-md w-full mx-auto p-6 pt-2 flex-1 overflow-auto">
@@ -155,36 +167,36 @@ export function ProfileSaved() {
                     transition={{ duration: 0.3 }}
                   >
                     <div className="flex items-center gap-2 mb-1 justify-center">
-                      <MapPin size={12} className="text-[#5a6080]" />
-                      <p className="text-[#6b7499] text-xs">
+                      <MapPin size={12} className="text-text-dim" />
+                      <p className="text-text-muted text-xs">
                         {selectedPrayer.city}, {selectedPrayer.country}
                       </p>
                     </div>
                     {selectedPrayer.createdAt && (
-                      <p className="text-[#6b7499] text-[11px] mb-5 text-center">
+                      <p className="text-text-muted text-[11px] mb-5 text-center">
                         {timeAgo(selectedPrayer.createdAt)}
                       </p>
                     )}
 
                     <p
-                      className="text-[#d0d4e8] text-center mb-4"
+                      className="text-text-secondary text-center mb-4"
                       style={{ fontSize: "0.95rem", lineHeight: 1.7 }}
                     >
                       {selectedPrayer.text}
                     </p>
 
-                    <p className="text-[#5a6080] text-xs text-center mb-2">
+                    <p className="text-text-dim text-xs text-center mb-2">
                       {getAttributionText(selectedPrayer)}
                     </p>
 
-                    <div className="flex items-center gap-1.5 justify-center text-[#5a6080] text-xs mb-6">
+                    <div className="flex items-center gap-1.5 justify-center text-text-dim text-xs mb-6">
                       <span className="text-xs opacity-60">🙏</span>
                       <span>{selectedPrayer.prayerCount} {selectedPrayer.prayerCount === 1 ? "person" : "people"} prayed</span>
                     </div>
 
                     <button
                       onClick={() => removeSaved(selectedPrayer.id)}
-                      className="w-full py-3 rounded-full text-sm text-[#6b7499] border border-[rgba(124,143,255,0.15)] hover:text-[#ff6b6b] hover:border-[rgba(255,107,107,0.3)] transition-all cursor-pointer"
+                      className="w-full py-3 rounded-full text-sm text-text-muted border border-accent/15 hover:text-danger hover:border-danger/30 transition-all cursor-pointer"
                     >
                       Remove from saved
                     </button>

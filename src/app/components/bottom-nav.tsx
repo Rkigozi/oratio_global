@@ -14,9 +14,9 @@ export function BottomNav() {
 
   return (
     <nav
-      className="bottom-nav-safe fixed bottom-0 left-0 right-0 z-40 border-t border-[rgba(124,143,255,0.08)]"
+      className="bottom-nav-safe fixed bottom-0 left-0 right-0 z-40 border-t border-accent/8"
       style={{
-        background: "#0A1A3A",
+        background: "rgb(var(--rgb-bg))",
         backdropFilter: "blur(20px)",
       }}
     >
@@ -35,21 +35,21 @@ export function BottomNav() {
               <Icon
                 size={18}
                 className={
-                  isActive ? "text-[#7c8fff]" : "text-[#8890b5]"
+                  isActive ? "text-accent" : "text-text-muted"
                 }
                 strokeWidth={isActive ? 2.2 : 1.8}
               />
               <span
                 className={`text-[9px] ${
-                  isActive ? "text-[#7c8fff]" : "text-[#8890b5]"
+                  isActive ? "text-accent" : "text-text-muted"
                 }`}
               >
                 {item.label}
               </span>
               {isActive && (
                 <div
-                  className="w-1 h-1 rounded-full bg-[#7c8fff]"
-                  style={{ boxShadow: "0 0 6px rgba(124, 143, 255, 0.6)" }}
+                  className="w-1 h-1 rounded-full bg-accent"
+                  style={{ boxShadow: "0 0 6px rgba(var(--rgb-accent), 0.6)" }}
                 />
               )}
             </button>

@@ -10,8 +10,8 @@ export interface PrayerRequest {
   lat: number;
   lng: number;
   category?: string;
-  tags?: string[];
   createdAt?: string; // ISO timestamp
+  commentsEnabled?: boolean; // Whether comments are allowed on this prayer
 }
 
 // Get attribution text for a prayer (username > displayName > legacy name > Anonymous)
@@ -262,16 +262,8 @@ const hotspotNames: (string | undefined)[] = [
 
 export const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
 
-export const TAGS_BY_CATEGORY: Record<string, string[]> = {
-  Health: ["Physical Health", "Mental Health", "Healing", "Chronic Illness", "Surgery", "Recovery", "Emotional"],
-  Family: ["Marriage", "Parenting", "Children", "Relationships", "Loss", "Pregnancy", "Reconciliation"],
-  Career: ["Work", "School", "Finances", "Purpose", "Provision", "New Opportunity"],
-  Guidance: ["Decision", "Direction", "Wisdom", "Faith", "Discernment", "Patience"],
-  Peace: ["Anxiety", "Fear", "Hope", "Strength", "Rest", "Comfort", "Loneliness"],
-  Other: ["Gratitude", "Testimony", "Community", "Church", "Persecution", "Nation"],
-};
-
-export const ALL_TAGS = Object.values(TAGS_BY_CATEGORY).flat();
+// TAGS_BY_CATEGORY and ALL_TAGS were removed — tags are now extracted
+// client-side from prayer text via the hashtag utilities.
 
 // ── Seeded random ────────────────────────────────────────────────────
 function seededRandom(seed: number) {
@@ -315,12 +307,13 @@ const generateHotspotData = (): PrayerRequest[] => {
       city: city.name,
       country: city.country,
       text: prayerTexts[Math.floor(rand() * prayerTexts.length)],
-      name: nameValue, // Legacy field
+      name: nameValue,
       displayName: displayNameValue,
       username: usernameValue,
       prayerCount: activityLevel,
       lat: coords.lat,
       lng: coords.lng,
+      commentsEnabled: true,
     });
     id++;
   }
@@ -355,8 +348,6 @@ const generateFeedData = (): PrayerRequest[] => {
       const usernameValue = nameValue ? generateUsernameFromDisplayName(nameValue) : undefined;
       
       const cat = CATEGORIES[Math.floor(rand() * CATEGORIES.length)];
-      const availableTags = TAGS_BY_CATEGORY[cat];
-      const tags = availableTags ? availableTags.slice(0, Math.floor(rand() * 2) + 1) : undefined;
       
       prayers.push({
         id: `feed-${id}`,
@@ -370,8 +361,8 @@ const generateFeedData = (): PrayerRequest[] => {
         lat: coords.lat,
         lng: coords.lng,
         category: cat,
-        tags,
         createdAt: createdAt.toISOString(),
+        commentsEnabled: true,
       });
       nameIdx++;
       textIdx++;
@@ -389,8 +380,6 @@ const generateFeedData = (): PrayerRequest[] => {
 
 export const mockHotspots: PrayerRequest[] = generateHotspotData();
 export const mockFeedPrayers: PrayerRequest[] = generateFeedData();
-
-export const cities = [...new Set(cityDatabase.map((c) => `${c.name}, ${c.country}`))];
 
 // ── Utilities ────────────────────────────────────────────────────────
 export function timeAgo(isoDate: string): string {

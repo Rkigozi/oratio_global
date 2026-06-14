@@ -12,9 +12,9 @@ input, textarea, select {
   font-size: 16px;
 }
 
-/* ── Leaflet dark theme overrides ──────────────────────────────────── */
+/* ── Leaflet map background ─────────────────────────────────────────── */
 .leaflet-container {
-  background: #e8ecf0 !important;
+  background: var(--color-bg) !important;
 }
 
 /* CartoDB Dark Matter - dark map tested without brightness filter */

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import type { PrayerRequest } from "../data/prayer-data";
 import L from "leaflet";
+import { useTheme } from "../../lib/theme-context";
 // Leaflet CSS is imported in src/styles/index.css
 
 // ── Main component ──────────────────────────────────────────────────
@@ -27,9 +28,10 @@ export function WorldMapClean({
    const mapRef = useRef<L.Map | null>(null);
    const layerGroupRef = useRef<L.LayerGroup | null>(null);
    const labelLayerRef = useRef<L.LayerGroup | null>(null);
-   const onPrayerTapRef = useRef(onPrayerTap);
-   const [ready, setReady] = useState(false);
-   const [zoom, setZoom] = useState(4);
+  const onPrayerTapRef = useRef(onPrayerTap);
+  const [ready, setReady] = useState(false);
+  const [zoom, setZoom] = useState(4);
+  const { theme } = useTheme();
 
   // Keep ref updated with latest callback
   useEffect(() => {
@@ -56,24 +58,25 @@ export function WorldMapClean({
         maxBoundsViscosity: 0.8,
       });
 
-      // ESRI Light Gray — minimal, clean, light land/ocean, clear borders
-      L.tileLayer(
-        "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-        {
-          attribution: '&copy; Esri',
-          maxZoom: 10,
-          crossOrigin: true,
-        }
-      ).addTo(map);
+      // Theme-aware tile layers
+      const baseTiles = theme === "dark"
+        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        : "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 
-      // Reference layer — country outlines, city labels
-      L.tileLayer(
-        "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
-        {
-          maxZoom: 10,
-          crossOrigin: true,
-        }
-      ).addTo(map);
+      const refTiles = theme === "dark"
+        ? "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+        : "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}";
+
+      L.tileLayer(baseTiles, {
+        attribution: '&copy; OpenStreetMap',
+        maxZoom: 10,
+        crossOrigin: true,
+      }).addTo(map);
+
+      L.tileLayer(refTiles, {
+        maxZoom: 10,
+        crossOrigin: true,
+      }).addTo(map);
 
       // Canvas renderer
       layerGroupRef.current = L.layerGroup().addTo(map);
@@ -101,7 +104,7 @@ export function WorldMapClean({
          labelLayerRef.current = null;
       }
     };
-  }, []);
+  }, [theme]);
 
   // ── Render markers ──────────────────────────────────────────────
   const updateMarkers = useCallback(() => {

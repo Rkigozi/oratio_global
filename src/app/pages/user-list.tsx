@@ -44,35 +44,35 @@ function UserList({ type }: { type: "following" | "followers" }) {
   }, [username, type]);
 
   return (
-    <div className="w-full min-h-dvh flex flex-col" style={{ background: "#0A1A3A" }}>
+    <div className="w-full min-h-dvh flex flex-col" style={{ background: "rgb(var(--rgb-bg))" }}>
       <div className="flex-shrink-0 pt-[max(1.5rem,env(safe-area-inset-top))] pb-2 px-4"
-        style={{ background: "linear-gradient(to bottom, rgba(10, 26, 58, 0.98), rgba(10, 26, 58, 0))" }}
+        style={{ background: "linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98), rgba(var(--rgb-bg), 0))" }}
       >
         <div className="flex items-center gap-3 mt-12">
           <button onClick={() => void navigate(-1)}
-            className="flex items-center gap-2 text-[#6b7499] hover:text-[#8890b5] transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-text-muted hover:text-text-muted transition-colors cursor-pointer"
           >
             <ArrowLeft size={16} />
             <span className="text-xs">Back</span>
           </button>
-          <h2 className="text-[#e2e4f0] font-heading text-sm font-light capitalize">{type}</h2>
+          <h2 className="text-text font-heading text-sm font-light capitalize">{type}</h2>
         </div>
       </div>
 
       <div className="flex-1 px-5 pb-8 overflow-y-auto">
         <div className="max-w-md mx-auto">
           {loading ? (
-            <p className="text-center text-[#4e5573] text-xs py-12">Loading...</p>
+            <p className="text-center text-text-dim text-xs py-12">Loading...</p>
           ) : userIds.length > 0 ? (
             <div className="space-y-1.5">
               {userIds.map((uid) => (
                 <div key={uid}
                   onClick={() => void navigate(`/user/${encodeURIComponent(uid)}`)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-[rgba(124,143,255,0.04)] transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-accent/4 transition-colors"
                 >
-                  <img src={getInitialAvatarUrl(uid)} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  <img src={getInitialAvatarUrl(uid)} alt={uid || "User"} className="w-10 h-10 rounded-full object-cover" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[#e2e4f0] text-sm truncate">{uid}</p>
+                    <p className="text-text text-sm truncate">{uid}</p>
                   </div>
                 </div>
               ))}
@@ -81,15 +81,15 @@ function UserList({ type }: { type: "following" | "followers" }) {
             <div className="text-center py-16">
               {type === "following" ? (
                 <>
-                  <UserPlus size={24} className="text-[#4e5573] mx-auto mb-3" />
-                  <p className="text-[#6b7499] text-sm mb-1">Not following anyone</p>
-                  <p className="text-[#4e5573] text-xs">Follow people from their prayer pages</p>
+                  <UserPlus size={24} className="text-text-dim mx-auto mb-3" />
+                  <p className="text-text-muted text-sm mb-1">Not following anyone</p>
+                  <p className="text-text-dim text-xs">Follow people from their prayer pages</p>
                 </>
               ) : (
                 <>
-                  <Users size={24} className="text-[#4e5573] mx-auto mb-3" />
-                  <p className="text-[#6b7499] text-sm mb-1">No followers yet</p>
-                  <p className="text-[#4e5573] text-xs">Growing your community takes time</p>
+                  <Users size={24} className="text-text-dim mx-auto mb-3" />
+                  <p className="text-text-muted text-sm mb-1">No followers yet</p>
+                  <p className="text-text-dim text-xs">Growing your community takes time</p>
                 </>
               )}
             </div>

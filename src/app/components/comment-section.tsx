@@ -78,20 +78,20 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
   const replies = (parentId: string) => comments.filter((c) => c.parent_id === parentId);
 
   return (
-    <div className="w-full mt-6 pt-4 border-t border-[rgba(124,143,255,0.08)]">
+    <div className="w-full mt-6 pt-4 border-t border-accent/8">
       <div className="flex items-center gap-2 mb-4">
-        <MessageCircle size={14} className="text-[#5a6080]" />
-        <span className="text-[#8890b5] text-xs uppercase tracking-[0.15em]">
+        <MessageCircle size={14} className="text-text-dim" />
+        <span className="text-text-muted text-xs uppercase tracking-[0.15em]">
           Comments ({commentCount})
         </span>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-6">
-          <div className="w-5 h-5 rounded-full border-2 border-[rgba(124,143,255,0.2)] border-t-[#7c8fff] animate-spin" />
+          <div className="w-5 h-5 rounded-full border-2 border-accent/20 border-t-accent animate-spin" />
         </div>
       ) : topLevel.length === 0 ? (
-        <p className="text-[#4e5573] text-xs text-center py-4">
+        <p className="text-text-dim text-xs text-center py-4">
           No comments yet. Be the first to encourage them.
         </p>
       ) : (
@@ -117,13 +117,13 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
             className="overflow-hidden"
           >
             <div className="flex items-center gap-2 mb-2 px-1">
-              <ChevronDown size={10} className="text-[#5a6080] transform -rotate-90" />
-              <span className="text-[#5a6080] text-[10px]">
+              <ChevronDown size={10} className="text-text-dim transform -rotate-90" />
+              <span className="text-text-dim text-[10px]">
                 Replying to @{replyTo.username}
               </span>
               <button
                 onClick={() => setReplyTo(null)}
-                className="text-[#3e4460] hover:text-[#6b7499] transition-colors cursor-pointer ml-auto"
+                className="text-text-faint hover:text-text-muted transition-colors cursor-pointer ml-auto"
               >
                 <X size={12} />
               </button>
@@ -145,16 +145,16 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
           placeholder={replyTo ? "Write a reply..." : "Write an encouragement..."}
           rows={1}
           maxLength={2000}
-          className="flex-1 min-w-0 rounded-xl px-3 py-2.5 text-[#e2e4f0] placeholder-[#4e5573] text-xs focus:outline-none border border-[rgba(124,143,255,0.12)] focus:border-[rgba(124,143,255,0.3)] transition-colors resize-none"
-          style={{ background: "rgba(15, 20, 50, 0.6)", minHeight: 36 }}
+          className="flex-1 min-w-0 rounded-xl px-3 py-2.5 text-text placeholder-text-dim text-xs focus:outline-none border border-accent/12 focus:border-accent/30 transition-colors resize-none"
+          style={{ background: "rgba(var(--rgb-surface), 0.6)", minHeight: 36 }}
         />
         <button
           onClick={() => void handleSubmit()}
           disabled={!newComment.trim() || submitting}
           className="p-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
           style={{
-            background: newComment.trim() ? "linear-gradient(135deg, #7c8fff, #5a6fd6)" : "rgba(124,143,255,0.06)",
-            color: newComment.trim() ? "#ffffff" : "#4e5573",
+            background: newComment.trim() ? "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))" : "rgba(var(--rgb-accent), 0.06)",
+            color: newComment.trim() ? "#ffffff" : "rgb(var(--rgb-text-dim))",
             width: 36,
             height: 36,
           }}
@@ -181,18 +181,17 @@ function CommentThread({
   onReply: (id: string, username: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const { user } = useAuth();
   const username = comment.user?.display_name || comment.user?.username || "Anonymous";
   const [reported, setReported] = useState(false);
   const [showReportConfirm, setShowReportConfirm] = useState(false);
   const [showAllReplies, setShowAllReplies] = useState(false);
 
   const handleReport = async () => {
+    await reportContent({ reportable_type: "comment", reportable_id: comment.id, reason: "Upsetting or harmful" });
+    setReported(true);
     setShowReportConfirm(true);
-    setTimeout(async () => {
-      setShowReportConfirm(false);
-      setReported(true);
-      await reportContent({ reportable_type: "comment", reportable_id: comment.id, reason: "Upsetting or harmful" });
-    }, 1500);
+    setTimeout(() => setShowReportConfirm(false), 2000);
   };
 
   const visibleReplies = showAllReplies ? replies : replies.slice(0, 1);
@@ -204,38 +203,40 @@ function CommentThread({
         {/* Avatar */}
         <img
           src={getInitialAvatarUrl(username)}
-          alt=""
+          alt={username || "User"}
           className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5 object-cover"
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[#8890b5] text-[11px] font-medium">@{username}</span>
-            <span className="text-[#4e5573] text-[9px]">{timeAgo(comment.created_at)}</span>
+            <span className="text-text-muted text-[11px] font-medium">@{username}</span>
+            <span className="text-text-dim text-[9px]">{timeAgo(comment.created_at)}</span>
           </div>
-          <p className="text-[#c5cbe2] text-sm leading-relaxed">{comment.body}</p>
+          <p className="text-text-secondary text-sm leading-relaxed">{comment.body}</p>
           <div className="flex items-center gap-3 mt-1">
             <button
               onClick={() => onReply(comment.id, username)}
-              className="text-[#5a6080] hover:text-[#7c8fff] text-[10px] transition-colors cursor-pointer"
+              className="text-text-dim hover:text-accent text-[10px] transition-colors cursor-pointer"
             >
               Reply
             </button>
-            <button
-              onClick={() => onDelete(comment.id)}
-              className="text-[#3e4460] hover:text-[#ff6b6b] text-[10px] transition-colors cursor-pointer"
-            >
-              Delete
-            </button>
+            {user && comment.user_id === user.id && (
+              <button
+                onClick={() => onDelete(comment.id)}
+                className="text-text-faint hover:text-danger text-[10px] transition-colors cursor-pointer"
+              >
+                Delete
+              </button>
+            )}
             {!reported && (
               <button
                 onClick={handleReport}
-                className="text-[#3e4460] hover:text-[#fbbf24] text-[10px] transition-colors cursor-pointer"
+                className="text-text-faint hover:text-warning text-[10px] transition-colors cursor-pointer"
               >
                 Report
               </button>
             )}
             {reported && (
-              <span className="text-[#fbbf24] text-[10px] flex items-center gap-1">
+              <span className="text-warning text-[10px] flex items-center gap-1">
                 <Flag size={9} /> Reported
               </span>
             )}
@@ -250,7 +251,7 @@ function CommentThread({
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="text-[#fbbf24] text-[10px] ml-9 mt-1"
+            className="text-warning text-[10px] ml-9 mt-1"
           >
             Thanks for reporting — we'll review it.
           </motion.p>
@@ -259,23 +260,23 @@ function CommentThread({
 
       {/* Instagram-style replies */}
       {replies.length > 0 && (
-        <div className="ml-9 mt-2 border-l-2 border-[rgba(124,143,255,0.06)] pl-3 space-y-2">
+        <div className="ml-9 mt-2 border-l-2 border-accent/6 pl-3 space-y-2">
           {visibleReplies.map((reply) => {
             const replyUsername = reply.user?.display_name || reply.user?.username || "Anonymous";
             return (
               <div key={reply.id}>
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-[#6b7499] text-[10px] font-medium">@{replyUsername}</span>
-                  <span className="text-[#4e5573] text-[9px]">{timeAgo(reply.created_at)}</span>
+                  <span className="text-text-muted text-[10px] font-medium">@{replyUsername}</span>
+                  <span className="text-text-dim text-[9px]">{timeAgo(reply.created_at)}</span>
                 </div>
-                <p className="text-[#b0b4c8] text-sm leading-relaxed">{reply.body}</p>
+                <p className="text-text-dim text-sm leading-relaxed">{reply.body}</p>
               </div>
             );
           })}
           {hiddenCount > 0 && !showAllReplies && (
             <button
               onClick={() => setShowAllReplies(true)}
-              className="text-[#7c8fff] text-[10px] hover:text-[#a0b4ff] transition-colors cursor-pointer"
+              className="text-accent text-[10px] hover:text-accent transition-colors cursor-pointer"
             >
               View {hiddenCount} more {hiddenCount === 1 ? "reply" : "replies"}
             </button>

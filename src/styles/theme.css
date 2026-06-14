@@ -1,131 +1,136 @@
 @custom-variant dark (&:is(.dark *));
 
+/* ── Color tokens as RGB triplets (enables rgba(var(--rgb-xxx), opacity) ── */
 :root {
+  /* Core surfaces */
+  --rgb-bg: 10, 26, 58;
+  --rgb-surface: 15, 20, 50;
+  --rgb-surface-hover: 20, 28, 60;
+  --rgb-surface-elevated: 17, 26, 58;
+  --rgb-overlay: 12, 20, 48;
+
+  /* Text */
+  --rgb-text: 226, 228, 240;
+  --rgb-text-secondary: 197, 203, 226;
+  --rgb-text-muted: 136, 144, 181;
+  --rgb-text-dim: 78, 85, 115;
+  --rgb-text-faint: 62, 68, 96;
+
+  /* Accent (blue) */
+  --rgb-accent: 124, 143, 255;
+  --rgb-accent-dark: 90, 111, 214;
+  --rgb-accent-light: 160, 180, 255;
+
+  /* Feedback */
+  --rgb-danger: 255, 107, 107;
+  --rgb-warning: 251, 191, 36;
+  --rgb-success: 110, 231, 183;
+
+  /* Category colors (for hashtags etc.) — color-blind friendly palette */
+  --rgb-category-blue: 96, 165, 250;
+  --rgb-category-orange: 251, 146, 60;
+  --rgb-category-teal: 45, 212, 191;
+  --rgb-category-purple: 167, 139, 250;
+  --rgb-category-yellow: 250, 204, 21;
+  --rgb-category-pink: 244, 114, 182;
+
+  /* Map */
+  --rgb-map-bg: 232, 236, 240;
+  --rgb-map-hotspot: 124, 143, 255;
+
+  /* Font */
   --font-size: 17px;
-  --background: #0A1A3A;
-  --foreground: #e2e4f0;
-  --card: rgba(17, 26, 58, 0.85);
-  --card-foreground: #e2e4f0;
-  --popover: #111a3a;
-  --popover-foreground: #e2e4f0;
-  --primary: #7c8fff;
-  --primary-foreground: #0a0e27;
-  --secondary: rgba(124, 143, 255, 0.15);
-  --secondary-foreground: #c5cdff;
-  --muted: rgba(124, 143, 255, 0.1);
-  --muted-foreground: #8890b5;
-  --accent: rgba(124, 143, 255, 0.2);
-  --accent-foreground: #e8eaf6;
-  --destructive: #ff6b6b;
-  --destructive-foreground: #ffffff;
-  --border: rgba(124, 143, 255, 0.15);
-  --input: rgba(124, 143, 255, 0.1);
-  --input-background: rgba(15, 20, 50, 0.6);
-  --switch-background: rgba(124, 143, 255, 0.3);
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* ── CSS variables for var() use in inline styles and Leaflet ── */
+  --color-bg: rgb(var(--rgb-bg));
+  --color-surface: rgba(var(--rgb-surface), 0.6);
+  --color-text: rgb(var(--rgb-text));
+  --color-text-secondary: rgb(var(--rgb-text-secondary));
+  --color-text-muted: rgb(var(--rgb-text-muted));
+  --color-text-dim: rgb(var(--rgb-text-dim));
+  --color-text-faint: rgb(var(--rgb-text-faint));
+  --color-accent: rgb(var(--rgb-accent));
+  --color-accent-dark: rgb(var(--rgb-accent-dark));
+  --color-danger: rgb(var(--rgb-danger));
+  --color-warning: rgb(var(--rgb-warning));
+  --color-success: rgb(var(--rgb-success));
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+/* ── Light theme ── */
+[data-theme="light"] {
+  --rgb-bg: 248, 249, 252;
+  --rgb-surface: 255, 255, 255;
+  --rgb-surface-hover: 243, 244, 248;
+  --rgb-surface-elevated: 255, 255, 255;
+  --rgb-overlay: 255, 255, 255;
+
+  --rgb-text: 30, 30, 40;
+  --rgb-text-secondary: 70, 72, 90;
+  --rgb-text-muted: 120, 125, 145;
+  --rgb-text-dim: 160, 165, 180;
+  --rgb-text-faint: 200, 204, 215;
+
+  --rgb-accent: 80, 100, 220;
+  --rgb-accent-dark: 60, 78, 190;
+  --rgb-accent-light: 110, 128, 240;
+
+  --rgb-danger: 220, 60, 60;
+  --rgb-warning: 200, 150, 20;
+  --rgb-success: 50, 180, 130;
+
+  --rgb-map-bg: 232, 236, 240;
 }
 
+/* ── Tailwind v4 theme variables ── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-input-background: var(--input-background);
-  --color-switch-background: var(--switch-background);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
+  --color-bg: rgb(var(--rgb-bg));
+  --color-surface: rgb(var(--rgb-surface));
+  --color-surface-hover: rgb(var(--rgb-surface-hover));
+  --color-surface-elevated: rgb(var(--rgb-surface-elevated));
+  --color-overlay: rgb(var(--rgb-overlay));
+
+  --color-text: rgb(var(--rgb-text));
+  --color-text-secondary: rgb(var(--rgb-text-secondary));
+  --color-text-muted: rgb(var(--rgb-text-muted));
+  --color-text-dim: rgb(var(--rgb-text-dim));
+  --color-text-faint: rgb(var(--rgb-text-faint));
+
+  --color-accent: rgb(var(--rgb-accent));
+  --color-accent-dark: rgb(var(--rgb-accent-dark));
+  --color-accent-light: rgb(var(--rgb-accent-light));
+
+  --color-danger: rgb(var(--rgb-danger));
+  --color-warning: rgb(var(--rgb-warning));
+  --color-success: rgb(var(--rgb-success));
+  --color-border: rgba(var(--rgb-text-faint), 0.3);
+  --color-ring: rgba(var(--rgb-accent), 0.5);
+
+  --color-category-blue: rgb(var(--rgb-category-blue));
+  --color-category-orange: rgb(var(--rgb-category-orange));
+  --color-category-teal: rgb(var(--rgb-category-teal));
+  --color-category-purple: rgb(var(--rgb-category-purple));
+  --color-category-yellow: rgb(var(--rgb-category-yellow));
+  --color-category-pink: rgb(var(--rgb-category-pink));
+
+  --color-map-bg: rgb(var(--rgb-map-bg));
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ── Base layer ── */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-bg text-text;
     font-family: 'Inter', sans-serif;
   }
 
@@ -133,54 +138,15 @@
     font-family: 'Sora', sans-serif;
   }
 
-  /**
-  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
-  */
-
   html {
     font-size: var(--font-size);
   }
 
-  h1 {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h2 {
-    font-size: var(--text-xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h3 {
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h4 {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  label {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  button {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  input {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-normal);
-    line-height: 1.5;
-  }
+  h1 { font-size: var(--text-2xl); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  h2 { font-size: var(--text-xl); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  h3 { font-size: var(--text-lg); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  h4 { font-size: var(--text-base); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  label { font-size: var(--text-base); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  button { font-size: var(--text-base); font-weight: var(--font-weight-medium); line-height: 1.5; }
+  input { font-size: var(--text-base); font-weight: var(--font-weight-normal); line-height: 1.5; }
 }

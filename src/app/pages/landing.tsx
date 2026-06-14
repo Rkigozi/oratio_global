@@ -45,10 +45,10 @@ export function Landing() {
   ];
 
   return (
-    <div className="flex flex-col min-h-dvh w-full overflow-y-auto" style={{ background: "#0A1A3A" }}>
+    <div className="flex flex-col min-h-dvh w-full overflow-y-auto" style={{ background: "rgb(var(--rgb-bg))" }}>
       {/* Ambient glow */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full blur-[200px] pointer-events-none opacity-15"
-        style={{ background: "radial-gradient(circle, rgba(124, 143, 255, 0.4), transparent 70%)" }}
+        style={{ background: "radial-gradient(circle, rgba(var(--rgb-accent), 0.4), transparent 70%)" }}
       />
 
       <div className="relative z-10 flex flex-col items-center w-full max-w-4xl mx-auto px-6 pt-20 pb-32">
@@ -64,47 +64,48 @@ export function Landing() {
               ORATIO
             </h1>
             <span className="text-[10px] px-2 py-0.5 rounded-full mt-2"
-              style={{ background: "rgba(124,143,255,0.1)", color: "#7c8fff" }}
+              style={{ background: "rgba(var(--rgb-accent), 0.1)", color: "rgb(var(--rgb-accent))" }}
             >
               Beta
             </span>
           </div>
-          <p className="text-[#7a84a8] text-base md:text-lg mb-2 font-light tracking-[0.3em] uppercase">
+          <p className="text-text-muted text-base md:text-lg mb-2 font-light tracking-[0.3em] uppercase">
             Pray Together. Anywhere.
           </p>
-          <p className="text-[#5a6080] text-sm max-w-md mx-auto mb-10 leading-relaxed">
+          <p className="text-text-dim text-sm max-w-md mx-auto mb-10 leading-relaxed">
             A global Christian prayer platform. Share your needs, pray for others, and experience the power of a worldwide prayer community.
           </p>
 
           {/* App Store badges */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
             <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm opacity-80"
-              style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)" }}
+              style={{ background: "rgba(var(--rgb-bg), 0.3)", border: "1px solid rgba(var(--rgb-text), 0.1)" }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#8890b5"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-              <span className="text-[#8890b5] text-sm">iOS — Coming Soon</span>
+              <span className="text-text-muted text-sm">iOS — Coming Soon</span>
             </div>
             <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm opacity-80"
-              style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)" }}
+              style={{ background: "rgba(var(--rgb-bg), 0.3)", border: "1px solid rgba(var(--rgb-text), 0.1)" }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="#8890b5">
                 <path d="M4.08 2.23a1.5 1.5 0 0 0-.08.52v18.5a1.5 1.5 0 0 0 2.3 1.28l15.22-9.24a1.5 1.5 0 0 0 0-2.58L6.3 1.45a1.5 1.5 0 0 0-2.22.78z"/>
               </svg>
-              <span className="text-[#8890b5] text-sm">Android — Coming Soon</span>
+              <span className="text-text-muted text-sm">Android — Coming Soon</span>
             </div>
           </div>
 
           {/* Email waitlist */}
           <div className="w-full max-w-sm mx-auto">
+            <p className="text-text-dim text-xs mb-3 text-center">We'll save your interest locally — real email subscription coming with accounts.</p>
             {subscribed ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                <p className="text-[#7c8fff] text-sm py-3 text-center">You're on the list! 🙏</p>
+                <p className="text-accent text-sm py-3 text-center">You're on the list! 🙏</p>
                 <button
                   onClick={() => { setSubscribed(false); setEmail(""); }}
-                  className="text-[#4e5573] text-[10px] hover:text-[#6b7499] transition-colors cursor-pointer block mx-auto"
+                  className="text-text-dim text-[10px] hover:text-text-muted transition-colors cursor-pointer block mx-auto"
                 >
                   Remove
                 </button>
@@ -116,12 +117,12 @@ export function Landing() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
                   required
-                  className="flex-1 min-w-0 rounded-xl px-4 py-3 text-[#e2e4f0] placeholder-[#4e5573] text-sm focus:outline-none border border-[rgba(124,143,255,0.12)]"
-                  style={{ background: "rgba(15, 20, 50, 0.6)" }}
+                  className="flex-1 min-w-0 rounded-xl px-4 py-3 text-text placeholder-text-dim text-sm focus:outline-none border border-accent/12"
+                  style={{ background: "rgba(var(--rgb-surface), 0.6)" }}
                 />
                 <button type="submit"
                   className="px-5 py-3 rounded-xl text-sm text-white cursor-pointer transition-all active:scale-95 flex items-center gap-2"
-                  style={{ background: "linear-gradient(135deg, #7c8fff, #5a6fd6)" }}
+                  style={{ background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))" }}
                 >
                   <Mail size={14} />
                   Save
@@ -147,17 +148,17 @@ export function Landing() {
                 transition={{ duration: 0.5, delay: 0.3 + i * 0.1 }}
                 className="rounded-xl px-5 py-5 text-center"
                 style={{
-                  background: "linear-gradient(160deg, rgba(17, 26, 58, 0.6), rgba(12, 18, 48, 0.4))",
-                  border: "1px solid rgba(124,143,255,0.06)",
+                  background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))",
+                  border: "1px solid rgba(var(--rgb-accent), 0.06)",
                 }}
               >
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: "rgba(124,143,255,0.08)" }}
+                  style={{ background: "rgba(var(--rgb-accent), 0.08)" }}
                 >
-                  <feature.icon size={16} className="text-[#7c8fff]" />
+                  <feature.icon size={16} className="text-accent" />
                 </div>
-                <h3 className="text-[#d0d4e8] text-sm font-medium mb-1.5">{feature.title}</h3>
-                <p className="text-[#6b7499] text-xs leading-relaxed">{feature.desc}</p>
+                <h3 className="text-text-secondary text-sm font-medium mb-1.5">{feature.title}</h3>
+                <p className="text-text-muted text-xs leading-relaxed">{feature.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -174,16 +175,16 @@ export function Landing() {
             onClick={() => void navigate("/onboarding")}
             className="px-8 py-3.5 rounded-full text-sm font-medium text-white cursor-pointer transition-all active:scale-95 mb-5"
             style={{
-              background: "linear-gradient(135deg, #7c8fff, #5a6fd6)",
-              boxShadow: "0 4px 28px rgba(124, 143, 255, 0.3)",
+              background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
+              boxShadow: "0 4px 28px rgba(var(--rgb-accent), 0.3)",
             }}
           >
             Create Account
           </button>
-          <p className="text-[#4e5573] text-xs mb-3">Already have an account?</p>
+          <p className="text-text-dim text-xs mb-3">Already have an account?</p>
           <button
             onClick={() => void navigate("/login")}
-            className="inline-flex items-center gap-2 text-[#7c8fff] text-sm hover:text-[#a0b0ff] transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 text-accent text-sm hover:text-accent transition-colors cursor-pointer"
           >
             Sign in
             <ArrowRight size={14} />
@@ -191,8 +192,8 @@ export function Landing() {
         </motion.div>
 
         {/* Footer */}
-        <div className="w-full text-center mt-16 pt-6 border-t border-[rgba(124,143,255,0.06)]">
-          <p className="text-[#3e4460] text-[10px]">
+        <div className="w-full text-center mt-16 pt-6 border-t border-accent/6">
+          <p className="text-text-faint text-[10px]">
             Oratio · A global Christian prayer platform
           </p>
         </div>

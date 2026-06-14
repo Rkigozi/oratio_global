@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, MapPin, X, MoreHorizontal, Share2, Flag, Bookmark } from "lucide-react";
+import { ArrowLeft, MapPin, X, MoreHorizontal, Share2, Flag, Bookmark, MessageCircle } from "lucide-react";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { getPrayedIds } from "../data/profile-data";
@@ -11,18 +11,28 @@ import { getInitialAvatarUrl } from "../../lib/upload";
 import { reportContent } from "../../lib/api";
 import { renderHashtags } from "../../lib/hashtags";
 import { translateText, needsTranslation, detectLanguage } from "../../lib/translate";
-import { getPrayerById, togglePray } from "../../lib/supabase-queries";
+import { getPrayerById, togglePray, toggleSavePrayer, followUser, unfollowUser, getProfileByUsername, isFollowing, toggleCommentsEnabled } from "../../lib/supabase-queries";
+import { LoadingSpinner, ErrorState } from "../components/loading-spinner";
+import { useAuth } from "../../lib/auth-context";
 
 export function PrayerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [localPrayer, setLocalPrayer] = useState<PrayerRequest | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
+    setLoading(true);
+    setError(null);
     getPrayerById(id).then((prayer) => {
       if (prayer) setLocalPrayer(prayer);
+      setLoading(false);
+    }).catch(() => {
+      setError("Failed to load prayer");
+      setLoading(false);
     });
   }, [id]);
 
@@ -53,12 +63,20 @@ export function PrayerDetail() {
   }, [showMenu]);
   const [reported, setReported] = useState(false);
   const [following, setFollowing] = useState(false);
+  const { profile: authProfile } = useAuth();
+  const isAuthor = prayer ? prayer.username === authProfile?.username : false;
 
   const username = prayer?.username;
   const handleFollowToggle = () => {
     if (!username) return;
     const newState = !following;
     setFollowing(newState);
+    // Look up user UUID and follow/unfollow via Supabase
+    getProfileByUsername(username).then((prof) => {
+      if (prof) {
+        void (newState ? followUser(prof.id) : unfollowUser(prof.id));
+      }
+    });
     try {
       const ids = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
       if (newState) {
@@ -73,10 +91,11 @@ export function PrayerDetail() {
 
   useEffect(() => {
     if (!username) return;
-    try {
-      const ids = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
-      setFollowing(ids.includes(username));
-    } catch { setFollowing(false); }
+    getProfileByUsername(username).then((prof) => {
+      if (prof) {
+        isFollowing(prof.id).then(setFollowing);
+      }
+    });
   }, [username]);
 
   const handleTranslate = async () => {
@@ -96,6 +115,7 @@ export function PrayerDetail() {
   const toggleSave = () => {
     const newSaved = !saved;
     setSaved(newSaved);
+    void toggleSavePrayer(prayer!.id, newSaved);
     try {
       const ids = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
       if (newSaved) {
@@ -120,6 +140,18 @@ export function PrayerDetail() {
         localStorage.setItem("oratio_reports", JSON.stringify(reports));
       } catch { /* ignore */ }
     }
+  };
+
+  const [commentsEnabled, setCommentsEnabled] = useState(true);
+
+  useEffect(() => {
+    if (prayer) setCommentsEnabled(prayer.commentsEnabled ?? true);
+  }, [prayer]);
+
+  const handleToggleComments = () => {
+    const newVal = !commentsEnabled;
+    setCommentsEnabled(newVal);
+    void toggleCommentsEnabled(prayer!.id, newVal);
   };
 
   const isPrayed = prayer ? prayedIds.includes(prayer.id) : false;
@@ -151,13 +183,35 @@ export function PrayerDetail() {
     }
   };
 
-  if (!prayer) {
+  if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full" style={{ background: "#0A1A3A" }}>
-        <p className="text-[#6b7499] text-sm mb-4">Prayer not found</p>
+      <div className="flex flex-col items-center justify-center h-full w-full" style={{ background: "rgb(var(--rgb-bg))" }}>
+        <LoadingSpinner text="Loading prayer..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full w-full" style={{ background: "rgb(var(--rgb-bg))" }}>
+        <ErrorState message={error} onRetry={() => { setLoading(true); setError(null); if (id) getPrayerById(id).then((p) => { if (p) setLocalPrayer(p); setLoading(false); }).catch(() => { setError("Failed to load prayer"); setLoading(false); }); }} />
         <button
           onClick={() => void navigate("/feed")}
-          className="px-5 py-2 rounded-full text-xs text-[#7c8fff] bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.12)] cursor-pointer"
+          className="mt-2 px-5 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer"
+        >
+          Back to Feed
+        </button>
+      </div>
+    );
+  }
+
+  if (!prayer) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full w-full" style={{ background: "rgb(var(--rgb-bg))" }}>
+        <p className="text-text-muted text-sm mb-4">Prayer not found</p>
+        <button
+          onClick={() => void navigate("/feed")}
+          className="px-5 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer"
         >
           Back to Feed
         </button>
@@ -168,19 +222,19 @@ export function PrayerDetail() {
   return (
     <div
       className="w-full h-full flex flex-col overflow-hidden"
-      style={{ background: "#0A1A3A" }}
+      style={{ background: "rgb(var(--rgb-bg))" }}
     >
       {/* Header with back button + menu */}
       <div
         className="flex-shrink-0 pt-[max(1.5rem,env(safe-area-inset-top))] pb-2 px-4"
         style={{
-          background: "linear-gradient(to bottom, rgba(10, 26, 58, 0.98), rgba(10, 26, 58, 0))",
+          background: "linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98), rgba(var(--rgb-bg), 0))",
         }}
       >
         <div className="flex items-center justify-between mt-12">
           <button
             onClick={() => void navigate(-1)}
-            className="flex items-center gap-2 text-[#6b7499] hover:text-[#8890b5] transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-text-muted hover:text-text-muted transition-colors cursor-pointer"
           >
             <ArrowLeft size={16} />
             <span className="text-xs">Back</span>
@@ -188,7 +242,7 @@ export function PrayerDetail() {
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="w-8 h-8 flex items-center justify-center rounded-full text-[#4e5573] hover:text-[#6b7499] hover:bg-[rgba(124,143,255,0.06)] transition-all cursor-pointer"
+              className="w-8 h-8 flex items-center justify-center rounded-full text-text-dim hover:text-text-muted hover:bg-accent/6 transition-all cursor-pointer"
             >
               <MoreHorizontal size={16} />
             </button>
@@ -198,22 +252,22 @@ export function PrayerDetail() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute right-0 top-full mt-1 w-36 rounded-xl border border-[rgba(124,143,255,0.1)] overflow-hidden z-30"
+                  className="absolute right-0 top-full mt-1 w-36 rounded-xl border border-accent/10 overflow-hidden z-30"
                   style={{
-                    background: "rgba(12, 20, 48, 0.98)",
+                    background: "rgba(var(--rgb-surface), 0.98)",
                     backdropFilter: "blur(16px)",
                   }}
                 >
                   <button
                     onClick={() => { setShowMenu(false); handleShare(); }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer flex items-center gap-2"
+                    className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
                   >
                     <Share2 size={12} />
                     Share
                   </button>
                   <button
                     onClick={() => { setShowMenu(false); toggleSave(); }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer flex items-center gap-2"
+                    className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
                   >
                     <Bookmark size={12} fill={saved ? "#c5cdff" : "none"} />
                     {saved ? "Saved" : "Save"}
@@ -221,16 +275,25 @@ export function PrayerDetail() {
                   {showTranslate && (
                     <button
                       onClick={() => { setShowMenu(false); void handleTranslate(); }}
-                      className="w-full text-left px-4 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer flex items-center gap-2"
+                      className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
                     >
                       <span className="text-[10px]">🌐</span>
                       {translating ? "Translating..." : translatedText ? "Original" : "Translate"}
                     </button>
                   )}
+                  {isAuthor && (
+                    <button
+                      onClick={() => { setShowMenu(false); handleToggleComments(); }}
+                      className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
+                    >
+                      <MessageCircle size={12} />
+                      {commentsEnabled ? "Turn off comments" : "Turn on comments"}
+                    </button>
+                  )}
                   {!reported && (
                     <button
                       onClick={() => { setShowMenu(false); setShowReport(true); }}
-                      className="w-full text-left px-4 py-2.5 text-xs text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] transition-colors cursor-pointer flex items-center gap-2"
+                      className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
                     >
                       <Flag size={12} />
                       Report
@@ -248,13 +311,13 @@ export function PrayerDetail() {
         <div className="max-w-md mx-auto">
           {/* Location + time */}
           <div className="flex items-center gap-2 mb-1">
-            <MapPin size={12} className="text-[#5a6080]" />
-            <p className="text-[#6b7499] text-xs uppercase tracking-[0.15em]">
+            <MapPin size={12} className="text-text-dim" />
+            <p className="text-text-muted text-xs uppercase tracking-[0.15em]">
               {prayer.city}, {prayer.country}
             </p>
           </div>
           {prayer.createdAt && (
-            <p className="text-[#6b7499] text-[11px] mb-5">
+            <p className="text-text-muted text-[11px] mb-5">
               {timeAgo(prayer.createdAt)}
             </p>
           )}
@@ -264,7 +327,7 @@ export function PrayerDetail() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="text-[#e2e4f0] font-heading mb-2"
+            className="text-text font-heading mb-2"
             style={{ fontSize: "1.2rem", lineHeight: 1.8, fontWeight: 300 }}
           >
             {translatedText || renderHashtags(prayer.text, (tag) => {
@@ -272,7 +335,7 @@ export function PrayerDetail() {
             })}
           </motion.p>
           {translatedText && sourceLang && (
-            <p className="text-[#4e5573] text-[10px] mb-6">
+            <p className="text-text-dim text-[10px] mb-6">
               Translated from {langName[sourceLang] || sourceLang}
             </p>
           )}
@@ -281,13 +344,13 @@ export function PrayerDetail() {
           <div className="flex items-center gap-2.5 mb-4">
             <img
               src={getInitialAvatarUrl(getAttributionText(prayer))}
-              alt=""
+              alt={username || "User"}
               className="w-6 h-6 rounded-full object-cover flex-shrink-0 cursor-pointer"
               onClick={() => username && void navigate(`/user/${encodeURIComponent(username)}`)}
             />
             <button
               onClick={() => username && void navigate(`/user/${encodeURIComponent(username)}`)}
-              className="text-[#6b7499] text-sm hover:text-[#8890b5] transition-colors cursor-pointer"
+              className="text-text-muted text-sm hover:text-text-muted transition-colors cursor-pointer"
             >
               {getAttributionText(prayer)}
             </button>
@@ -296,9 +359,9 @@ export function PrayerDetail() {
                 onClick={handleFollowToggle}
                 className="text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer"
                 style={{
-                  background: following ? "rgba(124,143,255,0.1)" : "rgba(124,143,255,0.04)",
-                  border: `1px solid ${following ? "rgba(124,143,255,0.2)" : "rgba(124,143,255,0.08)"}`,
-                  color: following ? "#7c8fff" : "#5a6080",
+                  background: following ? "rgba(var(--rgb-accent), 0.1)" : "rgba(var(--rgb-accent), 0.04)",
+                  border: `1px solid ${following ? "rgba(var(--rgb-accent), 0.2)" : "rgba(var(--rgb-accent), 0.08)"}`,
+                  color: following ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-dim))",
                 }}
               >
                 {following ? "Following" : "Follow"}
@@ -306,13 +369,21 @@ export function PrayerDetail() {
             )}
           </div>
 
-          {/* Prayer count */}
-          <div className="flex items-center gap-1.5 text-[#6b7499] text-xs mb-8">
+          {/* Prayer count + comments indicator */}
+          <div className="flex items-center gap-3 text-text-muted text-xs mb-8">
+            {!commentsEnabled && (
+              <span className="flex items-center gap-1 text-text-dim">
+                <MessageCircle size={11} />
+                <span>Comments off</span>
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-text-muted text-xs mb-8">
             <span
               className="inline-block w-1.5 h-1.5 rounded-full"
               style={{
-                background: "#7c8fff",
-                boxShadow: "0 0 6px rgba(124,143,255,0.5)",
+                background: "rgb(var(--rgb-accent))",
+                boxShadow: "0 0 6px rgba(var(--rgb-accent), 0.5)",
               }}
             />
             <span>{(() => { const c = prayer.prayerCount + (isPrayed ? 1 : 0); return `${c} ${c === 1 ? "person prayed" : "people prayed"}`; })()}</span>
@@ -326,12 +397,12 @@ export function PrayerDetail() {
               className="flex items-center gap-2.5 px-8 py-3 rounded-full text-sm transition-all duration-500 cursor-pointer"
               style={{
                 background: isPrayed
-                  ? "rgba(124, 143, 255, 0.12)"
-                  : "linear-gradient(135deg, #7c8fff, #5a6fd6)",
-                color: isPrayed ? "#7c8fff" : "#ffffff",
+                  ? "rgba(var(--rgb-accent), 0.12)"
+                  : "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
+                color: isPrayed ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text))",
                 boxShadow: isPrayed
                   ? "none"
-                  : "0 4px 24px rgba(124, 143, 255, 0.25), 0 0 0 1px rgba(124,143,255,0.1)",
+                  : "0 4px 24px rgba(var(--rgb-accent), 0.25), 0 0 0 1px rgba(var(--rgb-accent), 0.1)",
               }}
             >
               <span className="text-base">🙏</span>
@@ -341,17 +412,24 @@ export function PrayerDetail() {
 
           {reported && (
             <div className="flex justify-center mb-8">
-              <span className="text-[#4e5573] text-[11px]">Reported</span>
+              <span className="text-text-dim text-[11px]">Reported</span>
             </div>
           )}
 
           {/* Comments section */}
-          <div className="border-t border-[rgba(124,143,255,0.08)] pt-4">
-            <CommentSection
-              prayer={prayer}
-              commentCount={commentCount}
-              onCommentCountChange={setCommentCount}
-            />
+          <div className="border-t border-accent/8 pt-4">
+            {commentsEnabled ? (
+              <CommentSection
+                prayer={prayer}
+                commentCount={commentCount}
+                onCommentCountChange={setCommentCount}
+              />
+            ) : (
+              <div className="text-center py-6">
+                <MessageCircle size={20} className="text-text-dim mx-auto mb-2" />
+                <p className="text-text-muted text-xs">Comments are disabled for this prayer</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -372,15 +450,15 @@ export function PrayerDetail() {
                 initial={{ scale: 0.92, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.92, opacity: 0 }}
-                className="w-full max-w-sm rounded-2xl p-5 border border-[rgba(124,143,255,0.1)]"
-                style={{ background: "rgba(15, 22, 55, 0.98)" }}
+                className="w-full max-w-sm rounded-2xl p-5 border border-accent/10"
+                style={{ background: "rgba(var(--rgb-surface), 0.98)" }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-[#c5cdff] text-sm">Why are you reporting this?</p>
+                  <p className="text-text-secondary text-sm">Why are you reporting this?</p>
                   <button
                     onClick={() => setShowReport(false)}
-                    className="text-[#3e4460] hover:text-[#6b7499] transition-colors cursor-pointer"
+                    className="text-text-faint hover:text-text-muted transition-colors cursor-pointer"
                   >
                     <X size={16} />
                   </button>
@@ -390,7 +468,7 @@ export function PrayerDetail() {
                     <button
                       key={reason}
                       onClick={() => void handleReport(reason)}
-                      className="w-full text-left px-4 py-3 rounded-xl text-xs text-[#8890b5] hover:text-[#c5cdff] hover:bg-[rgba(124,143,255,0.08)] border border-[rgba(124,143,255,0.06)] transition-all cursor-pointer"
+                      className="w-full text-left px-4 py-3 rounded-xl text-xs text-text-muted hover:text-text-secondary hover:bg-accent/8 border border-accent/6 transition-all cursor-pointer"
                     >
                       {reason}
                     </button>

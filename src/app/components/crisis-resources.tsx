@@ -27,8 +27,8 @@ export function CrisisResources() {
     <div
       className="rounded-xl border overflow-hidden"
       style={{
-        background: "rgba(124, 143, 255, 0.02)",
-        borderColor: "rgba(124, 143, 255, 0.05)",
+        background: "rgba(var(--rgb-accent), 0.02)",
+        borderColor: "rgba(var(--rgb-accent), 0.05)",
       }}
     >
       <button
@@ -36,8 +36,8 @@ export function CrisisResources() {
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-2 px-4 py-3 text-left cursor-pointer"
       >
-        <Heart size={13} className="text-[#7c8fff] flex-shrink-0" />
-        <span className="text-[#7c8fff] text-xs flex-1 min-w-0">
+        <Heart size={13} className="text-accent flex-shrink-0" />
+        <span className="text-accent text-xs flex-1 min-w-0">
           If you&apos;re going through something difficult — you&apos;re not
           alone.
         </span>
@@ -45,7 +45,7 @@ export function CrisisResources() {
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown size={14} className="text-[#5a6080]" />
+          <ChevronDown size={14} className="text-text-dim" />
         </motion.div>
       </button>
       <AnimatePresence>
@@ -58,7 +58,7 @@ export function CrisisResources() {
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 space-y-3">
-              <p className="text-[#6b7499] text-xs leading-relaxed">
+              <p className="text-text-muted text-xs leading-relaxed">
                 We&apos;re praying with you, and we want you to have every
                 support available. These organisations are here to listen and
                 help:
@@ -74,13 +74,13 @@ export function CrisisResources() {
                     >
                       <ExternalLink
                         size={11}
-                        className="text-[#5a6080] mt-0.5 flex-shrink-0 group-hover:text-[#7c8fff] transition-colors"
+                        className="text-text-dim mt-0.5 flex-shrink-0 group-hover:text-accent transition-colors"
                       />
                       <div>
-                        <span className="text-[#7c8fff] text-xs group-hover:underline">
+                        <span className="text-accent text-xs group-hover:underline">
                           {r.name}
                         </span>
-                        <p className="text-[#4e5573] text-[11px] mt-px">
+                        <p className="text-text-dim text-[11px] mt-px">
                           {r.description}
                         </p>
                       </div>

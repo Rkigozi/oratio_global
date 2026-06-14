@@ -49,14 +49,14 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick
       className="rounded-2xl p-4 relative cursor-pointer active:scale-[0.98] transition-transform duration-150"
       style={{
         background:
-          "linear-gradient(160deg, rgba(17, 26, 58, 0.7), rgba(12, 18, 48, 0.5))",
-        border: "1px solid rgba(124,143,255,0.07)",
+          "linear-gradient(160deg, rgba(var(--rgb-surface), 0.7), rgba(var(--rgb-surface), 0.5))",
+        border: "1px solid rgba(var(--rgb-accent), 0.07)",
       }}
     >
       {/* Sample badge for mock data */}
       {prayer.id.startsWith('feed-') && (
         <span className="absolute top-2 right-2 text-[9px] px-1.5 py-0.5 rounded-full"
-          style={{ background: "rgba(251,191,36,0.1)", color: "#a38a3a", border: "1px solid rgba(251,191,36,0.15)" }}
+          style={{ background: "rgba(var(--rgb-warning), 0.1)", color: "rgb(var(--rgb-text-muted))", border: "1px solid rgba(var(--rgb-warning), 0.15)" }}
         >
           Sample
         </span>
@@ -73,19 +73,19 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick
           />
           <button
             onClick={(e) => { e.stopPropagation(); const u = prayer.username; if (u && onUserClick) onUserClick(u); }}
-            className="text-[#6b7499] text-xs truncate hover:text-[#8890b5] transition-colors cursor-pointer"
+            className="text-text-muted text-xs truncate hover:text-text-muted transition-colors cursor-pointer"
           >
             {getAttributionText(prayer)}
           </button>
         </div>
-        <span className="text-[#4e5573] text-[10px] flex-shrink-0">
+        <span className="text-text-dim text-[10px] flex-shrink-0">
           {prayer.createdAt ? timeAgo(prayer.createdAt) : ""}
         </span>
       </div>
 
       {/* Prayer text with hashtags */}
       <p
-        className="text-[#d0d4e8] mb-3 line-clamp-3"
+        className="text-text-secondary mb-3 line-clamp-3"
         style={{ fontSize: "0.95rem", lineHeight: 1.7 }}
       >
         {onTagClick ? renderHashtags(prayer.text, onTagClick) : prayer.text}
@@ -95,22 +95,22 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick
       <div className="flex items-center gap-3">
         <button
           onClick={(e) => { e.stopPropagation(); onTap(prayer); }}
-          className="flex items-center gap-1 text-[#4e5573] hover:text-[#6b7499] text-xs transition-colors cursor-pointer"
+          className="flex items-center gap-1 text-text-dim hover:text-text-muted text-xs transition-colors cursor-pointer"
         >
-          <MessageCircle size={13} />
-          <span>{commentCount > 0 ? commentCount : "Comment"}</span>
+          <MessageCircle size={13} className={prayer.commentsEnabled === false ? "opacity-30" : ""} />
+          <span>{prayer.commentsEnabled === false ? "Off" : (commentCount > 0 ? commentCount : "Comment")}</span>
         </button>
         <button
           onClick={handlePray}
           className="flex items-center gap-1.5 text-xs transition-colors duration-300 cursor-pointer ml-auto"
-          style={{ color: prayed ? "#7c8fff" : "#4e5573" }}
+          style={{ color: prayed ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-dim))" }}
         >
           <span className={`text-sm transition-all duration-300 ${prayed ? "opacity-100" : "opacity-50"}`}>
             🙏
           </span>
-          <span>{prayer.prayerCount}</span>
-          <span className="text-[#3e4460]">·</span>
-          <span className="text-[#3e4460] hover:text-[#6b7499] transition-colors">
+          <span>{prayer.prayerCount ?? 0}</span>
+          <span className="text-text-faint">·</span>
+          <span className="text-text-faint hover:text-text-muted transition-colors">
             {prayed ? "Prayed" : "Pray"}
           </span>
         </button>

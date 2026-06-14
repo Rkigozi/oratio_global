@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import type { PrayerRequest } from "../app/data/prayer-data";
+import { logError } from "./logger";
 
 export interface Comment {
   id: string;
@@ -19,7 +20,7 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
     .select(`
       id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at,
+      is_anonymous, prayer_count, created_at, comments_enabled,
       profiles!inner(username, display_name)
     `)
     .not("location_lat", "is", null)
@@ -28,7 +29,7 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
     .limit(200);
 
   if (error || !data) {
-    console.error("Failed to fetch map hotspots:", error?.message);
+    logError("getMapHotspots", error);
     return [];
   }
 
@@ -47,6 +48,7 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
       lng: (row.location_lng as number) || 0,
       category: (row.category as string) || "Other",
       createdAt: row.created_at as string,
+      commentsEnabled: row.comments_enabled !== false,
     } as PrayerRequest;
   });
 }
@@ -57,16 +59,16 @@ export async function getFeedPrayers(): Promise<PrayerRequest[]> {
   const { data, error } = await supabase
     .from("prayer_requests")
     .select(`
-      id, body, category, tags,
+      id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at,
+      is_anonymous, prayer_count, created_at, comments_enabled,
       profiles!inner(username, display_name)
     `)
     .order("created_at", { ascending: false })
     .limit(100);
 
   if (error || !data) {
-    console.error("Failed to fetch feed:", error?.message);
+    logError("getFeedPrayers", error);
     return [];
   }
 
@@ -85,6 +87,7 @@ export async function getFeedPrayers(): Promise<PrayerRequest[]> {
       lng: (row.location_lng as number) || 0,
       category: (row.category as string) || "Other",
       createdAt: row.created_at as string,
+      commentsEnabled: row.comments_enabled !== false,
     } as PrayerRequest;
   });
 }
@@ -93,16 +96,16 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
   const { data, error } = await supabase
     .from("prayer_requests")
     .select(`
-      id, body, category, tags,
+      id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at,
+      is_anonymous, prayer_count, created_at, comments_enabled,
       profiles!inner(username, display_name)
     `)
     .eq("id", prayerId)
     .single();
 
   if (error || !data) {
-    console.error("Failed to fetch prayer:", error?.message);
+    logError("fetch prayer", error);
     return null;
   }
 
@@ -120,6 +123,7 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
     lng: (data.location_lng as number) || 0,
     category: (data.category as string) || "Other",
     createdAt: data.created_at as string,
+    commentsEnabled: data.comments_enabled !== false,
   } as PrayerRequest;
 }
 
@@ -140,12 +144,13 @@ export async function createPrayerRequest(
       location_lat: prayer.lat,
       location_lng: prayer.lng,
       is_anonymous: !prayer.username,
+      comments_enabled: prayer.commentsEnabled ?? true,
     })
     .select("id")
     .single();
 
   if (error) {
-    console.error("Failed to create prayer:", error.message);
+    logError("create prayer", error);
     return null;
   }
   return (data as { id: string }).id;
@@ -158,7 +163,7 @@ export async function deletePrayerRequest(prayerId: string): Promise<boolean> {
     .eq("id", prayerId);
 
   if (error) {
-    console.error("Failed to delete prayer:", error.message);
+    logError("delete prayer", error);
     return false;
   }
   return true;
@@ -178,7 +183,7 @@ export async function togglePray(
       .from("prayer_interactions")
       .insert({ user_id: user.id, prayer_id: prayerId });
     if (error) {
-      console.error("Failed to add prayer interaction:", error.message);
+      logError("add prayer interaction", error);
       return false;
     }
     await supabase.rpc("increment_prayer_count", { p_prayer_id: prayerId });
@@ -189,7 +194,7 @@ export async function togglePray(
       .eq("user_id", user.id)
       .eq("prayer_id", prayerId);
     if (error) {
-      console.error("Failed to remove prayer interaction:", error.message);
+      logError("remove prayer interaction", error);
       return false;
     }
     await supabase.rpc("decrement_prayer_count", { p_prayer_id: prayerId });
@@ -236,7 +241,7 @@ export async function getComments(prayerId: string): Promise<Comment[]> {
     .order("created_at", { ascending: true });
 
   if (error || !data) {
-    console.error("Failed to fetch comments:", error?.message);
+    logError("fetch comments", error);
     return [];
   }
 
@@ -274,7 +279,7 @@ export async function createComment(input: {
     .single();
 
   if (error || !data) {
-    console.error("Failed to create comment:", error?.message);
+    logError("create comment", error);
     return null;
   }
 
@@ -292,7 +297,7 @@ export async function deleteComment(commentId: string): Promise<boolean> {
     .eq("id", commentId);
 
   if (error) {
-    console.error("Failed to delete comment:", error.message);
+    logError("delete comment", error);
     return false;
   }
   return true;
@@ -309,7 +314,7 @@ export async function followUser(followingId: string): Promise<boolean> {
     .insert({ follower_id: user.id, following_id: followingId });
 
   if (error) {
-    console.error("Failed to follow user:", error.message);
+    logError("follow user", error);
     return false;
   }
   return true;
@@ -326,7 +331,7 @@ export async function unfollowUser(followingId: string): Promise<boolean> {
     .eq("following_id", followingId);
 
   if (error) {
-    console.error("Failed to unfollow user:", error.message);
+    logError("unfollow user", error);
     return false;
   }
   return true;
@@ -397,7 +402,7 @@ export async function createReport(input: {
   });
 
   if (error) {
-    console.error("Failed to create report:", error.message);
+    logError("create report", error);
     return false;
   }
   return true;
@@ -411,7 +416,7 @@ export async function getPendingReports(): Promise<Array<Record<string, unknown>
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("Failed to fetch reports:", error.message);
+    logError("fetch reports", error);
     return [];
   }
   return data || [];
@@ -424,7 +429,7 @@ export async function resolveReport(reportId: string, status: "resolved" | "dism
     .eq("id", reportId);
 
   if (error) {
-    console.error("Failed to resolve report:", error.message);
+    logError("resolve report", error);
     return false;
   }
   return true;
@@ -447,7 +452,7 @@ export async function updateProfile(data: {
     .eq("id", user.id);
 
   if (error) {
-    console.error("Failed to update profile:", error.message);
+    logError("update profile", error);
     return false;
   }
   return true;
@@ -472,7 +477,7 @@ export async function getMyProfile(): Promise<{
     .single();
 
   if (error || !data) {
-    console.error("Failed to fetch my profile:", error?.message);
+    logError("fetch my profile", error);
     return null;
   }
   return data;
@@ -492,7 +497,7 @@ export async function getProfileByUsername(username: string): Promise<{
     .single();
 
   if (error || !data) {
-    console.error("Failed to fetch profile:", error?.message);
+    logError("fetch profile", error);
     return null;
   }
   return data;
@@ -505,16 +510,16 @@ export async function getUserPrayers(username: string): Promise<PrayerRequest[]>
   const { data, error } = await supabase
     .from("prayer_requests")
     .select(`
-      id, body, category, tags,
+      id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at
+      is_anonymous, prayer_count, created_at, comments_enabled
     `)
     .eq("user_id", profile.id)
     .order("created_at", { ascending: false })
     .limit(50);
 
   if (error || !data) {
-    console.error("Failed to fetch user prayers:", error?.message);
+    logError("fetch user prayers", error);
     return [];
   }
 
@@ -531,6 +536,7 @@ export async function getUserPrayers(username: string): Promise<PrayerRequest[]>
     lng: (row.location_lng as number) || 0,
     category: (row.category as string) || "Other",
     createdAt: row.created_at as string,
+    commentsEnabled: row.comments_enabled !== false,
   })) as PrayerRequest[];
 }
 
@@ -542,10 +548,174 @@ export async function searchUsers(query: string): Promise<Array<{ username: stri
     .limit(20);
 
   if (error || !data) {
-    console.error("Failed to search users:", error?.message);
+    logError("search users", error);
     return [];
   }
   return data;
+}
+
+// ─── Saved Prayers ─────────────────────────────────────────────────────
+
+export async function toggleSavePrayer(
+  prayerId: string,
+  save: boolean
+): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  if (save) {
+    const { error } = await supabase
+      .from("saved_prayers")
+      .insert({ user_id: user.id, prayer_id: prayerId });
+    if (error) {
+      logError("save prayer", error);
+      return false;
+    }
+  } else {
+    const { error } = await supabase
+      .from("saved_prayers")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("prayer_id", prayerId);
+    if (error) {
+      logError("unsave prayer", error);
+      return false;
+    }
+  }
+  return true;
+}
+
+export async function getSavedPrayerIds(): Promise<string[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("saved_prayers")
+    .select("prayer_id")
+    .eq("user_id", user.id);
+
+  return (data || []).map((r: { prayer_id: string }) => r.prayer_id);
+}
+
+export async function getSavedPrayers(): Promise<PrayerRequest[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const savedIds = await getSavedPrayerIds();
+  if (savedIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("prayer_requests")
+    .select(`
+      id, body, category,
+      location_city, location_country, location_lat, location_lng,
+      is_anonymous, prayer_count, created_at, comments_enabled,
+      profiles!inner(username, display_name)
+    `)
+    .in("id", savedIds)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) {
+    logError("fetch saved prayers", error);
+    return [];
+  }
+
+  return (data as Array<Record<string, unknown>>).map((row) => {
+    const profile = row.profiles as { username: string; display_name: string } | null;
+    return {
+      id: row.id as string,
+      city: (row.location_city as string) || "Unknown",
+      country: (row.location_country as string) || "Unknown",
+      text: row.body as string,
+      name: row.is_anonymous ? undefined : (profile?.display_name || profile?.username),
+      displayName: row.is_anonymous ? undefined : (profile?.display_name || profile?.username),
+      username: row.is_anonymous ? undefined : profile?.username,
+      prayerCount: (row.prayer_count as number) || 0,
+      lat: (row.location_lat as number) || 0,
+      lng: (row.location_lng as number) || 0,
+      category: (row.category as string) || "Other",
+      createdAt: row.created_at as string,
+      commentsEnabled: row.comments_enabled !== false,
+    } as PrayerRequest;
+  });
+}
+
+export async function getMyPrayers(): Promise<PrayerRequest[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("prayer_requests")
+    .select(`
+      id, body, category,
+      location_city, location_country, location_lat, location_lng,
+      is_anonymous, prayer_count, created_at, comments_enabled
+    `)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error || !data) {
+    logError("fetch my prayers", error);
+    return [];
+  }
+
+  return (data as Array<Record<string, unknown>>).map((row) => ({
+    id: row.id as string,
+    city: (row.location_city as string) || "Unknown",
+    country: (row.location_country as string) || "Unknown",
+    text: row.body as string,
+    prayerCount: (row.prayer_count as number) || 0,
+    lat: (row.location_lat as number) || 0,
+    lng: (row.location_lng as number) || 0,
+    category: (row.category as string) || "Other",
+    createdAt: row.created_at as string,
+    commentsEnabled: row.comments_enabled !== false,
+  })) as PrayerRequest[];
+}
+
+export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("prayer_interactions")
+    .select(`
+      prayer_id,
+      prayer_requests!inner(
+        id, body, category,
+        location_city, location_country, location_lat, location_lng,
+        is_anonymous, prayer_count, created_at, comments_enabled,
+        profiles!inner(username, display_name)
+      )
+    `)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) {
+    logError("fetch prayed-for prayers", error);
+    return [];
+  }
+
+  return (data as Array<Record<string, unknown>>).map((row) => {
+    const prayer = row.prayer_requests as Record<string, unknown>;
+    const profile = prayer.profiles as { username: string; display_name: string } | null;
+    return {
+      id: prayer.id as string,
+      city: (prayer.location_city as string) || "Unknown",
+      country: (prayer.location_country as string) || "Unknown",
+      text: prayer.body as string,
+      name: prayer.is_anonymous ? undefined : (profile?.display_name || profile?.username),
+      displayName: prayer.is_anonymous ? undefined : (profile?.display_name || profile?.username),
+      username: prayer.is_anonymous ? undefined : profile?.username,
+      prayerCount: (prayer.prayer_count as number) || 0,
+      lat: (prayer.location_lat as number) || 0,
+      lng: (prayer.location_lng as number) || 0,
+      category: (prayer.category as string) || "Other",
+      createdAt: prayer.created_at as string,
+      commentsEnabled: prayer.comments_enabled !== false,
+    } as PrayerRequest;
+  });
 }
 
 // ─── Waitlist ──────────────────────────────────────────────────────────
@@ -562,6 +732,95 @@ export async function subscribeToWaitlist(
 
   if (error.code === "23505") return "exists";
 
-  console.error("Failed to subscribe:", error.message);
+  logError("subscribe", error);
   return "error";
+}
+
+// ─── Comments Toggle ──────────────────────────────────────────────────
+
+export async function toggleCommentsEnabled(
+  prayerId: string,
+  enabled: boolean
+): Promise<boolean> {
+  const { error } = await supabase
+    .from("prayer_requests")
+    .update({ comments_enabled: enabled })
+    .eq("id", prayerId);
+
+  if (error) {
+    logError("toggle comments", error);
+    return false;
+  }
+  return true;
+}
+
+// ─── Account Deletion ─────────────────────────────────────────────────
+
+export async function deleteAccount(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return "Not authenticated";
+
+  const { error } = await supabase.functions.invoke("delete-account", {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+
+  if (error) {
+    return error.message || "Failed to delete account";
+  }
+  return null;
+}
+
+// ─── Profile Preferences ──────────────────────────────────────────────
+
+export interface ProfilePreferences {
+  notify_on_prayed: boolean;
+  notify_on_comment: boolean;
+  language: string;
+  comments_enabled_default: boolean;
+}
+
+const defaultPreferences: ProfilePreferences = {
+  notify_on_prayed: true,
+  notify_on_comment: true,
+  language: "auto",
+  comments_enabled_default: true,
+};
+
+export async function getProfilePreferences(): Promise<ProfilePreferences> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return defaultPreferences;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("preferences")
+    .eq("id", user.id)
+    .single();
+
+  if (error || !data) {
+    logError("fetch preferences", error);
+    return defaultPreferences;
+  }
+
+  return { ...defaultPreferences, ...((data.preferences as Partial<ProfilePreferences>) || {}) };
+}
+
+export async function updateProfilePreferences(
+  prefs: Partial<ProfilePreferences>
+): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const current = await getProfilePreferences();
+  const merged = { ...current, ...prefs };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ preferences: merged })
+    .eq("id", user.id);
+
+  if (error) {
+    logError("update preferences", error);
+    return false;
+  }
+  return true;
 }

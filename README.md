@@ -6,8 +6,8 @@ Oratio is a global Christian prayer platform designed to connect people through 
 ## Project Status
 
 **Status**: Beta — deployed & collecting user feedback  
-**Phase**: v0.1 — Initial Beta (feedback collection)  
-**Target Platform**: Progressive Web App (PWA) with mock data  
+**Phase**: v0.2 — Supabase backend integration  
+**Target Platform**: Progressive Web App (PWA) with Supabase backend  
 **Git Repository**: Initialized ✅
 
 ## Development Server Note
@@ -59,14 +59,14 @@ node node_modules/vite/bin/vite.js
 
 ## Technology Stack
 
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS + CSS Variables (design tokens)
-- **UI Components**: Radix UI primitives + custom components
+- **Frontend**: React 19 + TypeScript 6 + Vite
+- **Styling**: Tailwind CSS v4 + CSS Variables (design tokens)
 - **Maps**: React Leaflet with custom hotspots
-- **Animations**: Framer Motion (Motion)
-- **Forms**: React Hook Form + validation
+- **Animations**: Motion (Framer Motion v12)
 - **Routing**: React Router v7
-- **State**: React hooks + localStorage (mock data)
+- **State**: React hooks + Supabase (PostgreSQL)
+- **Backend**: Supabase (Auth, Database, Storage, Edge Functions)
+- **Monitoring**: Sentry (error tracking) + PostHog (analytics)
 
 ## Quick Start
 
@@ -130,25 +130,32 @@ Oratio_Prototype_MVP/
 - ✅ Core features built (map, feed, submit, pray, profile)
 - ✅ Deployed on Netlify for beta testing
 - ✅ ESLint, Prettier, TypeScript configured
-- ✅ Privacy fix (approximate coordinates only)
-- ✅ Input validation (Zod for prayer submission)
+- ✅ Supabase backend integrated (Auth, Database, Edge Functions)
+- ✅ Sentry error monitoring + PostHog analytics
+- ✅ CI/CD pipeline (GitHub Actions → Netlify)
+- ✅ PWA support (service worker, manifest, offline)
+- ✅ Input validation (Zod schemas)
+- ✅ Privacy-first (approximate coordinates only)
 - ✅ Fonts loaded (DM Sans + Sora)
+- ✅ 41+ unit tests (validation, hashtags, data integrity)
 
-### v0.2 — Feedback Iteration (Next)
-1. **Feedback Triage**: Process Google Sheet entries into JIRA backlog
-2. **P1 Fixes**: Feed UX clarity, accessibility/readability improvements
-3. **Backend Setup**: Begin Supabase project and schema
+### v0.2 — Feedback & Hardening (Current)
+1. **Completed**: Supabase backend integration (map, feed, prayers, comments, follows, reports, auth)
+2. **Completed**: Saved prayers persistence (cross-device)
+3. **Completed**: Sentry + PostHog monitoring
+4. **Completed**: CI/CD pipeline
 
-### v0.3 — In-Person Test Release
-1. **Backend Integration**: Supabase, auth, API layer
-2. **In-Person Testing**: Structured testing sessions with recruited users
-3. **Safety & Moderation**: Report flow, disclaimers
+### v0.3 — Production Hardening
+1. **Testing**: Add component + E2E tests (Playwright)
+2. **Performance**: Pagination, Lighthouse > 90
+3. **Accessibility**: ARIA labels, contrast audit
+4. **Moderation**: Report resolution dashboard
 
 ### v1.0 — Public Launch
-1. **PWA**: Service worker, manifest, offline support
-2. **CI/CD**: Automated deployment pipeline
-3. **Monitoring**: Sentry, analytics
-4. **Performance**: Pagination, code splitting, Lighthouse > 90
+1. **Refinement**: Feed UX clarity, readability improvements
+2. **Mobile**: Expo React Native app integration
+3. **Localization**: Full i18n via Google Cloud Translation
+4. **Community**: Moderation tools, crisis resources
 
 ## Key Documentation
 
@@ -169,14 +176,18 @@ Oratio_Prototype_MVP/
 
 ### Known Issues
 - **Performance**: No pagination, loads all data at once
-- **No Backend**: All data is localStorage-based (mock data)
-- **No Tests**: Zero unit/integration tests
-- **No PWA**: Not installable, no offline support
-- **No Moderation**: No report flow or content filtering
+- **Tests**: Only 41 unit tests — no component, integration, or E2E tests
 - **Accessibility**: Needs ARIA labels and contrast audit
+- **Large files**: `feed.tsx` (785 lines), `supabase-queries.ts` (600+ lines) should be split
+- **Console error handling**: Some production paths use `console.error` instead of Sentry
 
 ### Already Fixed
-- ✅ **Privacy**: Exact coordinates removed from mock data
+- ✅ **Backend**: Supabase fully integrated (Auth, DB, Storage, Edge Functions)
+- ✅ **Saved prayers**: Cross-device persistence via Supabase
+- ✅ **Monitoring**: Sentry error tracking + PostHog analytics
+- ✅ **PWA**: Service worker, manifest, offline support
+- ✅ **CI/CD**: Automated type-check, lint, test, build, deploy
+- ✅ **Privacy**: Exact coordinates removed, city/country only
 - ✅ **Input Validation**: Zod schemas for forms
 - ✅ **Dependencies**: Unused packages removed (~20 kept)
 - ✅ **Fonts**: DM Sans + Sora now loading properly
@@ -203,5 +214,5 @@ For development inquiries, refer to the Memory Bank documentation for context an
 
 ---
 
-**Important**: This is a prototype with mock data only. Backend integration (Supabase) is required for production deployment.
+**Important**: Supabase backend is now integrated. The app reads/writes from Supabase (PostgreSQL) with localStorage as a legacy fallback. Run the migrations in `supabase/migrations/` to set up your database schema.
   

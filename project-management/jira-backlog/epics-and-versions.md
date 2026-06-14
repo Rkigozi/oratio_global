@@ -8,26 +8,26 @@
 
 | Version | Name | Status | Dates |
 |---------|------|--------|-------|
-| v0.1 | Initial Beta | Deployed | Apr 20 → May 11 |
-| v0.2 | Feedback Iteration | Deployed | May 11 → Jun 6 |
-| v0.3 | v1.0 Foundation | In Progress | Jun 16 → Jul 14 |
-| v1.0 | Public Release | Planned | Jul 14 → Aug 11 |
+| v0.1 | Initial Beta | ✅ Deployed | Apr 20 → May 11 |
+| v0.2 | Feedback Iteration | ✅ Deployed | May 11 → Jun 6 |
+| v0.3 | v1.0 Foundation | ✅ Mostly Complete | Jun 16 → (ongoing) |
+| v1.0 | Public Release | In Progress | Ongoing |
 
 ### v0.1 — Initial Beta
 Deploy prototype with mock data to validate concept and surface critical issues.
-**Status:** Deployed
+**Status:** ✅ Deployed
 
 ### v0.2 — Feedback Iteration
 Address P1 and P2 feedback from initial user testing. Bug fixes, UX improvements, and high-priority enhancements before wider testing.
-**Status:** Deployed
+**Status:** ✅ Deployed
 
 ### v0.3 — v1.0 Foundation
-Backend, auth, PWA, comments, search, categories, translation, visual polish. Building toward v1.0 public release.
-**Status:** In Progress (Jun 16–Jul 14)
+Backend, auth, PWA, comments, search, categories, translation, visual polish, loading/error states, schema cleanup.
+**Status:** ✅ Mostly Complete — split `feed.tsx` and `supabase-queries.ts` remaining
 
 ### v1.0 — Public Release
-CI/CD, monitoring, analytics, testing, accessibility, launch collateral. Everything needed to ship to St Paul's congregation and beyond.
-**Status:** Planned (Jul 14–Aug 11)
+CI/CD, monitoring, analytics, testing, accessibility, launch collateral.
+**Status:** In Progress — Sentry/PostHog keys needed, lint warnings to fix
 
 ---
 
@@ -35,313 +35,129 @@ CI/CD, monitoring, analytics, testing, accessibility, launch collateral. Everyth
 
 ### Epic 1: Foundation — Backend & Data Layer
 **Goal:** Replace mock data with a real backend so user data persists across sessions and devices.
-**Covers:** Supabase setup, database schema (users, prayers, interactions, comments, reports), REST API layer, authentication, real-time updates, data migration from localStorage.
-**Sprint:** A (Jun 16–30)
+**Covers:** Supabase setup, database schema, REST API layer, authentication, data migration.
+**Status:** ✅ Complete
+- Supabase project with 8 tables: profiles, prayer_requests, prayer_interactions, comments, reports, follows, waitlist, saved_prayers
+- Full RLS policies, auto-profile trigger, increment/decrement functions
+- Authentication: email/password + Google OAuth
+- All pages wired to Supabase (localStorage fallback for unauthenticated)
+- Dead schema elements cleaned: dropped `tags`, `is_answered`, `push_subscriptions`, `language_preference`
 
 ---
 
 ### Epic 2: Core Prayer Loop v2
-**Goal:** Polish the submit → feed → pray → comment flow so it's fast, reliable, and emotionally connected.
-**Covers:** Comments (Reddit-style), comment notifications, push notifications infrastructure, comment moderation, performance optimization, contrast/readability fix, search, category redesign, save button UX, shareable link.
-**Sprint:** B + C (Jun 30–Jul 28)
+**Goal:** Polish the submit → feed → pray → comment flow.
+**Covers:** Comments, search, save button UX, shareable link, performance optimization.
+**Status:** ✅ Mostly Complete
+- Comments (Reddit-style threaded, wired to Supabase)
+- Comment moderation (report flow, wired to Supabase)
+- Search bar + user search (via `searchUsers`)
+- Save button with cross-device persistence via `saved_prayers` table
+- Shareable link after prayer submission
+- Report button + flow
+- Performance: code splitting (lazy routes)
+- `feed.tsx` (785 lines) needs splitting into smaller components
 
 ---
 
 ### Epic 3: PWA & App Experience
-**Goal:** Deliver a fast, installable mobile experience that feels like a real app.
-**Covers:** PWA manifest, service worker, offline support, install prompt, push notifications.
-**Sprint:** A + B + C (Jun 16–Jul 28)
+**Goal:** Deliver a fast, installable mobile experience.
+**Covers:** PWA manifest, service worker, offline support, install prompt.
+**Status:** ✅ Mostly Complete
+- PWA manifest with branded ORATIO icons (16 sizes)
+- Service worker (Workbox, precaches 59 entries)
+- iOS white flash fix
+- Install prompt deferred (no user demand yet)
 
 ---
 
 ### Epic 4: Discovery & Translation
-**Goal:** Let users find prayers that matter to them, in their language.
-**Covers:** Search bar, category redesign (tags/sub-categories), map visual refresh, translation.
-**Sprint:** C (Jul 14–28)
+**Goal:** Let users find prayers that matter, in their language.
+**Covers:** Search, hashtags, map, translation.
+**Status:** ✅ Complete
+- Search bar in feed header (keyword across text, location, category)
+- Hashtag system (inline #tags, clickable, trending)
+- Map with real Supabase prayer hotspots
+- Google Cloud Translation via Supabase Edge Function proxy
 
 ---
 
 ### Epic 5: Safety & Moderation
-**Goal:** Keep Oratio a safe, respectful space with clear guardrails against harmful content.
-**Covers:** Comment moderation (report, admin delete), crisis resources (already built), report button (already built).
-**Sprint:** B (Jun 30–Jul 14)
+**Goal:** Keep Oratio safe with clear guardrails.
+**Covers:** Report flow, crisis resources.
+**Status:** ✅ Complete
+- Report button on prayer cards + prayer detail
+- Report reason selection dialog
+- Crisis resources on submit page
+- Reports logged in `reports` table with RLS
 
 ---
 
 ### Epic 6: Launch Readiness
-**Goal:** The mechanical work to actually ship v1.0 and know how it's performing.
-**Covers:** CI/CD pipeline, Sentry error monitoring, PostHog analytics, critical path tests, accessibility audit, landing page clarity, church launch collateral.
-**Sprint:** D (Jul 28–Aug 11)
+**Goal:** The mechanical work to actually ship v1.0.
+**Covers:** CI/CD, Sentry, PostHog, landing page, church collateral.
+**Status:** 🔶 Mostly Complete — needs env keys
+- CI/CD: GitHub Actions (auto type-check/lint/test/build, manual deploy)
+- Sentry SDK installed + `logError()` utility routing errors to Sentry
+- PostHog SDK installed
+- Security headers on Netlify (HSTS, X-Frame-Options, CSP)
+- OG meta tags + Twitter Card
+- Landing page with purpose statement and CTAs
+- **Blocked:** Sentry DSN + PostHog key not yet in `.env`
 
 ---
 
 ### Epic 7: Testing & Quality
-**Goal:** Ship with confidence by catching regressions before they reach users.
-**Covers:** Jest + RTL setup, critical path tests (submit, pray, comment, feed), a11y audit, cross-browser testing, QA checklist.
-**Sprint:** D (Jul 28–Aug 11)
+**Goal:** Ship with confidence.
+**Covers:** Unit tests, component tests, a11y audit.
+**Status:** 🔶 Partial
+- 50 unit tests passing (validation, hashtags, data integrity, timeAgo, attribution)
+- Loading states + error states with retry on all data-fetching pages
+- **Remaining:** No component/E2E tests, no accessibility audit, 74 lint warnings
 
 ---
 
-## Sprint Plan — v0.3 → v1.0
+## Current Sprint — Production Hardening
 
-### Sprint A: Foundation (Jun 16–30)
-
-| ID | Story | Epic | Priority |
-|----|-------|------|----------|
-| F-001 | Set up Supabase project and database schema (users, prayers, interactions, comments, reports) | Backend | P0 |
-| F-002 | Create REST API for prayer CRUD with pagination and filtering | Backend | P0 |
-| F-003 | Implement authentication (email, Google OAuth, anonymous, session persistence) | Backend | P0 |
-| F-004 | Create PWA manifest (icons, display: standalone, theme, splash screen) | PWA | P0 |
-| F-005 | Register service worker with cache strategy for static assets | PWA | P0 |
-| F-006 | Fix landing page scroll freeze on iOS 18 / iPhone 15 | Core Loop | P0 |
-
-**Acceptance Criteria — F-001:**
-- Supabase project created with production-ready config
-- Database tables: users, prayer_requests, prayer_interactions, comments, reports
-- Row-level security policies defined for all tables
-- Migration scripts versioned in the repo
-- Environment variables configured
-
-**Acceptance Criteria — F-002:**
-- Endpoints: POST /prayers, GET /prayers, GET /prayers/:id, DELETE /prayers/:id
-- Pagination and filtering (by category, location) supported
-- Rate limiting on POST endpoint
-- Consistent error response format
-
-**Acceptance Criteria — F-003:**
-- Email/password sign-up and sign-in
-- Google OAuth sign-in
-- Anonymous opt-in (use without account, prompt to create later)
-- Session persistence across browser close
-- Sign-out from profile
-- Password reset flow
-
-**Acceptance Criteria — F-004:**
-- Web App Manifest with icons (192px, 512px), theme colour, background colour
-- display: standalone — opens full-screen, no browser chrome
-- start_url set to landing page
-- Splash screen generated from manifest
-- Passes Lighthouse PWA audit
-
-**Acceptance Criteria — F-005:**
-- Service worker registered on first visit
-- Cache-first strategy for static assets (JS, CSS, images)
-- Stale-while-revalidate for API responses
-- Graceful update flow (skip waiting + refresh prompt)
-
-**Acceptance Criteria — F-006:**
-- Landing page scrolls on iPhone 15 in both Safari and Chrome
-- Tested on iOS 18+ with both mobile Safari and Chrome
-- No regressions on other devices
-- Root cause identified and fixed
-
----
-
-### Sprint B: Core Loop + Comments (Jun 30–Jul 14)
-
-| ID | Story | Epic | Priority |
-|----|-------|------|----------|
-| CL-001 | Comments (Reddit-style): table, API, UI, threading, reply button, comment count on cards | Core Loop | P0 |
-| CL-002 | Comment notifications: push to submitter on comment, to replied-to user on reply | Core Loop | P1 |
-| CL-003 | Push notifications infrastructure: FCM/Web Push, permission prompt, subscribe/unsubscribe | PWA | P1 |
-| CL-004 | Comment moderation: report comment, delete own comment, admin delete | Safety | P1 |
-| CL-005 | Performance optimization: code splitting, bundle analysis, cold-start target <3s | Core Loop | P1 |
-| CL-006 | Contrast/readability fix: dim text brightness, WCAG AA compliance | Core Loop | P1 |
-
-**Acceptance Criteria — CL-001:**
-- comments database table: id, prayer_id, user_id, parent_id (nullable), body, created_at
-- CRUD API endpoints for comments
-- Comment count displayed on prayer feed cards
-- Tap comment button opens comment sheet/drawer
-- Top-level comments + single-level replies (reply to a comment)
-- Reply button on each comment opens inline composer
-- Delete own comment
-- Report a comment
-- No nested threading beyond 1 level (v1.0)
-
-**Acceptance Criteria — CL-002:**
-- Prayer submitter receives push notification when someone comments
-- Comment author receives push notification when someone replies to their comment
-- Notification includes prayer preview + comment preview
-- Tap notification opens the prayer with comment thread visible
-- Notification dot/badge in app
-
-**Acceptance Criteria — CL-003:**
-- FCM / Web Push API integration
-- Permission prompt appears after value demonstrated (not on first visit)
-- Subscribe/unsubscribe in profile settings
-- Notification types: new comment on prayer, reply to comment, someone prayed for prayer
-
-**Acceptance Criteria — CL-004:**
-- Report comment flow (three-dot menu → select reason → confirm)
-- Reported comments logged in database with reason + timestamp
-- Admin delete comment capability
-- No pre-approval queue (v1.1 feature)
-
-**Acceptance Criteria — CL-005:**
-- Route-level code splitting (lazy load pages)
-- Bundle analysis run — total JS bundle under 200KB (gzipped)
-- Cold start < 3s on mobile 3G
-- Lighthouse performance score > 80
-
-**Acceptance Criteria — CL-006:**
-- Relative time labels ("30d ago") match brightness of city/location text
-- Prayer card backgrounds checked for WCAG AA contrast compliance
-- Base font size verified at minimum 16px
-- All text visible on device at 50% brightness
-
----
-
-### Sprint C: Discovery + Polish (Jul 14–28)
-
-| ID | Story | Epic | Priority |
-|----|-------|------|----------|
-| DP-001 | Search bar: keyword search across prayer text, location, category | Core Loop | P1 |
-| DP-002 | Category redesign: replace broad categories with tag/sub-category system | Core Loop | P1 |
-| DP-003 | Map visual refresh: lighter tiles, clearer borders, colour | Core Loop | P2 |
-| DP-004 | Translation: "Translate" button on prayer cards, language detection, cache | Discovery | P1 |
-| DP-005 | PWA offline support: cache feed + map tiles, graceful offline state | PWA | P2 |
-| DP-006 | Install prompt: timed, contextual, iOS step-by-step, Android native prompt | PWA | P1 |
-| DP-007 | Save button UX: more prominent placement, visual feedback | Core Loop | P2 |
-| DP-008 | Shareable link: generate share URL after prayer submission | Core Loop | P2 |
-
-**Acceptance Criteria — DP-001:**
-- Search input in feed header
-- Searches across: prayer text, category, location (city + country)
-- Results update as user types (debounced, 300ms)
-- Empty state: "No prayers found for [query]"
-- Clears filters visually
-
-**Acceptance Criteria — DP-002:**
-- Current broad categories replaced with tag system
-- Multiple tags per prayer (e.g. "Healing: Physical", "Healing: Emotional", "Family: Parenting")
-- Tag picker on submit form updated
-- Filter by tag on feed
-- Tags visible on prayer cards
-- Backward compatibility: existing prayers with old categories mapped
-
-**Acceptance Criteria — DP-003:**
-- Map tile layer evaluated — lighter option considered
-- Clearer country borders
-- Optional: colour gradient on markers indicating density or recency
-- No performance regression
-
-**Acceptance Criteria — DP-004:**
-- Integration with translation API (Google Cloud or DeepL)
-- "Translate" button on each prayer card
-- Toggle between original and translated text
-- Language auto-detection on prayer content
-- Translation cache (localStorage or backend)
-- User language preference in profile (default: browser locale)
-- No auto-translate — only on explicit button tap
-
-**Acceptance Criteria — DP-005:**
-- Prayer feed cache for offline reading
-- Map tiles cached for offline viewing
-- Graceful offline state: "You're offline — showing prayers from earlier"
-- Submit button disabled with message when offline
-
-**Acceptance Criteria — DP-006:**
-- Prompt appears after user submits first prayer OR after 3rd visit
-- Android: Native beforeinstallprompt event captured, custom banner shown
-- iOS: Step-by-step overlay ("Tap Share → Add to Home Screen → Add") with screenshots
-- Dismissible ("Not now, maybe later")
-- Doesn't reappear after dismissal for 7 days
-- Detects standalone mode and suppresses
-
-**Acceptance Criteria — DP-007:**
-- Save/bookmark button more prominent on prayer cards
-- Visual feedback on save (icon fill animation)
-- Saved prayers appear in profile's saved section
-- No regression on existing save function
-
-**Acceptance Criteria — DP-008:**
-- Share button after successful prayer submission generates shareable link
-- Link opens the specific prayer in the feed
-- Native share sheet on mobile, clipboard copy on desktop
-- Link works for non-signed-up users (opens prayer, then prompts to join)
-
----
-
-### Sprint D: Launch Readiness (Jul 28–Aug 11)
-
-| ID | Story | Epic | Priority |
-|----|-------|------|----------|
-| LR-001 | CI/CD pipeline: GitHub Actions → Netlify, preview deploys, auto-deploy | Launch | P0 |
-| LR-002 | Error monitoring: Sentry SDK, error boundaries, source maps | Launch | P1 |
-| LR-003 | Analytics: PostHog, key events tracking, dashboard | Launch | P1 |
-| LR-004 | Critical path tests: submit, pray, comment, feed, search, auth | Quality | P1 |
-| LR-005 | Accessibility audit: ARIA labels, keyboard nav, WCAG AA, VoiceOver/TalkBack | Quality | P1 |
-| LR-006 | Landing page clarity: purpose statement, feature highlights, CTAs | Launch | P1 |
-| LR-007 | Church launch collateral: install flyer, demo script, helpers brief | Launch | P2 |
-
-**Acceptance Criteria — LR-001:**
-- GitHub Actions workflow for build + deploy to Netlify
-- Preview deploys on PR branches
-- Production deploy on merge to main
-- Build fails on TypeScript errors
-
-**Acceptance Criteria — LR-002:**
-- Sentry SDK integrated into React app
-- Error boundaries at route level
-- Unhandled promise rejections captured
-- Source maps uploaded for readable stack traces
-- Performance tracing for critical flows
-
-**Acceptance Criteria — LR-003:**
-- PostHog or similar privacy-friendly analytics
-- Events tracked: prayer submitted, prayed for, comment left, search performed, user signed up, app installed
-- Dashboard with weekly active users, retention, top categories
-- No PII sent to analytics
-
-**Acceptance Criteria — LR-004:**
-- Test: User can submit a prayer
-- Test: User can tap "I Prayed" and see count increment
-- Test: User can comment on a prayer
-- Test: Feed loads and displays prayers
-- Test: User can search and see results
-- Test: Auth sign-up and sign-in flow
-
-**Acceptance Criteria — LR-005:**
-- ARIA labels on all interactive elements
-- Keyboard navigation works for all features
-- Colour contrast ratios meet WCAG AA minimum
-- Focus indicators visible on all interactive elements
-- Tested with VoiceOver (iOS) and TalkBack (Android)
-
-**Acceptance Criteria — LR-006:**
-- Tagline: "Pray together. Anywhere."
-- 1-2 sentence mission statement above the fold
-- Three feature highlights (Map, Submit, Pray)
-- Beta/prototype transparency notice
-- Clear CTA: "Start Praying" (new) / "Sign In" (returning)
-
-**Acceptance Criteria — LR-007:**
-- One-page install flyer (screenshots of each install step for iOS + Android)
-- Demo script for projector walkthrough
-- Helpers brief (how to assist users during launch service)
+| ID | Story | Epic | Priority | Status |
+|----|-------|------|----------|--------|
+| PH-001 | Loading states on all data-fetching pages | Quality | P0 | ✅ Done |
+| PH-002 | Error states with retry on Supabase failures | Quality | P0 | ✅ Done |
+| PH-003 | `console.error` → Sentry logging via `logError()` | Launch | P0 | ✅ Done |
+| PH-004 | Saved prayers table + cross-device persistence | Backend | P0 | ✅ Done |
+| PH-005 | Wire profile pages to Supabase (submitted, prayed, saved) | Backend | P0 | ✅ Done |
+| PH-006 | Dead schema cleanup (tags, push_subs, language, etc.) | Backend | P0 | ✅ Done |
+| PH-007 | Split `feed.tsx` (785 lines) into components | Core Loop | P1 | 🔶 Pending |
+| PH-008 | Split `supabase-queries.ts` (700+ lines) by domain | Backend | P1 | 🔶 Pending |
+| PH-009 | Fix 74 lint warnings (floating promises, any types) | Quality | P2 | 🔶 Pending |
+| PH-010 | Add Sentry DSN + PostHog key to `.env` | Launch | P0 | 🔶 Blocked (needs user keys) |
 
 ---
 
 ## v1.0 Release Checklist
 
-- [ ] Backend live (Supabase with proper RLS)
-- [ ] Auth working (email + Google OAuth + anonymous)
-- [ ] PWA installable and passing Lighthouse PWA audit
-- [ ] Core prayer loop: submit → feed → pray → comment → notify
-- [ ] Search functional (keyword across text, category, location)
-- [ ] Categories redesigned with tags/sub-categories
-- [ ] Map visually refreshed
-- [ ] Translation working on prayer cards
-- [ ] Offline reading supported
-- [ ] Install prompt working on iOS + Android
-- [ ] CI/CD auto-deploying
-- [ ] Error monitoring (Sentry) active
-- [ ] Analytics (PostHog) tracking key events
-- [ ] Critical path tests passing
-- [ ] Accessibility audit passed (WCAG AA)
-- [ ] Landing page clear and purposeful
-- [ ] No known P0 bugs
+- [x] Backend live (Supabase with proper RLS)
+- [x] Auth working (email + Google OAuth)
+- [x] PWA installable (manifest + service worker)
+- [x] Core prayer loop: submit → feed → pray → comment
+- [x] Search functional (keyword across text, location, category)
+- [x] Hashtag system with trending
+- [x] Map with live Supabase data
+- [x] Translation working on prayer cards
+- [x] Save/bookmark with cross-device persistence
+- [x] Report + moderation flow
+- [x] Loading states + error states with retry
+- [x] CI/CD pipeline (auto-checks + manual deploy)
+- [x] Error monitoring (Sentry SDK + logError utility)
+- [x] Security headers (HSTS, X-Frame-Options, CSP)
+- [x] OG meta tags + Twitter Card
+- [ ] Component + E2E tests
+- [ ] Accessibility audit (WCAG AA)
+- [ ] `feed.tsx` split into components
+- [ ] `supabase-queries.ts` split by domain
+- [ ] Lint warnings cleaned (74 → 0)
+- [ ] Sentry DSN in `.env`
+- [ ] PostHog key in `.env`
 
 ---
 
@@ -349,44 +165,17 @@ CI/CD, monitoring, analytics, testing, accessibility, launch collateral. Everyth
 
 | Feature | Rationale |
 |---------|-----------|
-| Native mobile app (React Native) | PWA first to validate; native planned post-v1.0 |
-| @mentions in comments | Reply button covers the need with simpler infra |
-| Answered prayer / testimonies | Adds new content type — v1.1 candidate |
+| Native mobile app (React Native) | PWA first to validate; oratio-app/ scaffolded but empty |
+| @mentions in comments | Reply button covers the need |
+| Answered prayer / testimonies | Adds new content type |
 | Light/dark mode | Polish, not essential |
-| Pray-for-region | Requires data model change + map rework |
-| Trending by region | Needs search infra and aggregation |
-| Prayer groups / communities | Out of scope for v1.0 |
-| Donate | Feature request, not in product vision |
-| Full moderation dashboard | Report + admin delete sufficient for v1.0 |
+| Pray-for-region | Requires data model change |
+| Trending by region | Needs search infra |
+| Prayer groups / communities | Out of scope |
+| Donate | Not in product vision |
+| Full moderation dashboard | Report + admin delete sufficient |
 | Real-time updates | v1.1 performance enhancement |
-| Follow system | v1.1 community feature |
-
----
-
-## Legacy Sprint 1 — In-Person Testing (May 12–Jun 13)
-
-| ID | Story | Status |
-|----|-------|--------|
-| KAN-34 | Recruit testing volunteers | ✅ Done |
-| KAN-35 | Compile findings into v0.3 plan | ✅ Done |
-| KAN-36 | Create in-person testing session kit | ✅ Done |
-| KAN-37 | Schedule and conduct testing sessions (Jun 7) | ✅ Done |
-
-## Legacy v0.2 — The Clarity Sprint (Done)
-
-| ID | Story | Status |
-|----|-------|--------|
-| KAN-001 | Fix readability (font size 16→17px, card contrast) | ✅ Done |
-| KAN-002 | Fix category picker scroll on submit | ✅ Done |
-| KAN-003 | Clarifying microcopy (onboarding, feed, submit, map) | ✅ Done |
-| KAN-004 | Replace like/react with praying hands | ✅ Done |
-| C-001 | Add infinite scroll to prayer feed | ✅ Done |
-| C-002 | Add character countdown to submit form | ✅ Done |
-| C-003 | Add "I Prayed" confirmation animation | ✅ Done |
-| S-001 | Guided submission form | ✅ Done |
-| S-002 | Crisis resources on submit page | ✅ Done |
-| S-003 | Report button on prayer cards | ✅ Done |
-| T-001 | Research crisis hotline numbers | ✅ Done |
+| Follow system notifications | Community feature for later |
 
 ---
 

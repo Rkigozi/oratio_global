@@ -80,7 +80,7 @@ export function Home() {
   return (
     <div
       className="relative w-full h-full overflow-hidden"
-      style={{ background: "#0A1A3A" }}
+      style={{ background: "rgb(var(--rgb-bg))" }}
     >
        {/* Header hint — shows once */}
        {!hintDone && (
@@ -96,10 +96,10 @@ export function Home() {
              onAnimationComplete={() => {
                try { localStorage.setItem("oratio_hint_shown", "1"); } catch {}
              }}
-             className="text-[#e8eaf6] text-xs tracking-widest uppercase px-4 py-1.5 rounded-full max-w-xs mx-auto"
+             className="text-text text-xs tracking-widest uppercase px-4 py-1.5 rounded-full max-w-xs mx-auto"
              style={{
-               background: "rgba(10, 26, 58, 0.85)",
-               border: "1px solid rgba(124, 143, 255, 0.15)",
+               background: "rgba(var(--rgb-bg), 0.85)",
+               border: "1px solid rgba(var(--rgb-accent), 0.15)",
              }}
            >
              Tap a location to pray
@@ -124,12 +124,12 @@ export function Home() {
           onClick={() => setFlyTo({ lat: geoLocation.lat, lng: geoLocation.lng })}
           className="absolute bottom-16 right-4 z-[500] w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
           style={{
-            background: "rgba(10, 26, 58, 0.8)",
-            border: "1px solid rgba(124, 143, 255, 0.12)",
+            background: "rgba(var(--rgb-bg), 0.8)",
+            border: "1px solid rgba(var(--rgb-accent), 0.12)",
             backdropFilter: "blur(8px)",
           }}
         >
-          <Locate size={15} className="text-[#7c8fff]" />
+          <Locate size={15} className="text-accent" />
         </button>
       )}
 
@@ -145,20 +145,20 @@ export function Home() {
             <div
               className="rounded-xl px-4 py-3 flex items-center gap-3"
               style={{
-                background: "rgba(10, 26, 58, 0.92)",
-                border: "1px solid rgba(124, 143, 255, 0.12)",
+                background: "rgba(var(--rgb-bg), 0.92)",
+                border: "1px solid rgba(var(--rgb-accent), 0.12)",
                 backdropFilter: "blur(12px)",
               }}
             >
-              <MapPin size={16} className="text-[#7c8fff] flex-shrink-0" />
+              <MapPin size={16} className="text-accent flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-[#e2e4f0] text-sm font-medium mb-0.5">See prayers near you?</p>
-                <p className="text-[#6b7499] text-xs">Find prayers from your area</p>
+                <p className="text-text text-sm font-medium mb-0.5">See prayers near you?</p>
+                <p className="text-text-muted text-xs">Find prayers from your area</p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => setShowGeoPrompt(false)}
-                  className="text-[#4e5573] hover:text-[#6b7499] text-xs transition-colors cursor-pointer"
+                  className="text-text-dim hover:text-text-muted text-xs transition-colors cursor-pointer"
                 >
                   Not now
                 </button>
@@ -166,7 +166,7 @@ export function Home() {
                   onClick={() => { void requestLocation(); }}
                   className="px-3 py-1.5 rounded-full text-xs text-white cursor-pointer"
                   style={{
-                    background: "linear-gradient(135deg, #7c8fff, #5a6fd6)",
+                    background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
                   }}
                 >
                   Allow
@@ -187,8 +187,8 @@ export function Home() {
           <Drawer.Content
             className="flex flex-col rounded-t-[1.5rem] fixed bottom-0 left-0 right-0 z-[600] max-h-[75vh] focus:outline-none"
             style={{
-              background: "linear-gradient(180deg, #111a3a, #0c1230)",
-              borderTop: "1px solid rgba(124, 143, 255, 0.1)",
+              background: "linear-gradient(180deg, rgb(var(--rgb-surface)), rgb(var(--rgb-surface)))",
+              borderTop: "1px solid rgba(var(--rgb-accent), 0.1)",
             }}
           >
             <Drawer.Title className="sr-only">Hotspot Details</Drawer.Title>
@@ -197,7 +197,7 @@ export function Home() {
             </Drawer.Description>
             {/* Drag handle — subtle pill indicator */}
             <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-[rgba(124,143,255,0.2)]" />
+              <div className="w-10 h-1 rounded-full bg-accent/20" />
             </div>
             <div className="max-w-md w-full mx-auto p-6 pt-2 flex-1 overflow-auto">
               {selectedPrayer && (
@@ -208,7 +208,7 @@ export function Home() {
                   className="w-full flex flex-col items-center"
                 >
                   {/* Location */}
-                  <p className="text-[#6b7499] text-xs uppercase tracking-[0.2em] mb-4">
+                  <p className="text-text-muted text-xs uppercase tracking-[0.2em] mb-4">
                     {selectedPrayer.city}, {selectedPrayer.country}
                   </p>
 
@@ -233,12 +233,12 @@ export function Home() {
                   </div>
 
                   <p
-                    className="text-[#e2e4f0] text-center font-heading mb-2"
+                    className="text-text text-center font-heading mb-2"
                     style={{ fontSize: "1.15rem", fontWeight: 300 }}
                   >
                     {selectedPrayer.prayerCount} {selectedPrayer.prayerCount === 1 ? "person praying in" : "people praying in"} {selectedPrayer.city}
                   </p>
-                  <p className="text-[#6b7499] text-sm text-center mb-6 max-w-[260px]">
+                  <p className="text-text-muted text-sm text-center mb-6 max-w-[260px]">
                     People around {selectedPrayer.city} are lifting up prayers right now
                   </p>
 
@@ -259,9 +259,9 @@ export function Home() {
                     }}
                     className="flex items-center gap-2.5 px-7 py-3 rounded-full text-sm cursor-pointer"
                     style={{
-                      background: "linear-gradient(135deg, #7c8fff, #5a6fd6)",
-                      color: "#ffffff",
-                      boxShadow: "0 4px 24px rgba(124, 143, 255, 0.25)",
+                      background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
+                      color: "rgb(var(--rgb-text))",
+                      boxShadow: "0 4px 24px rgba(var(--rgb-accent), 0.25)",
                     }}
                   >
                     <Heart size={15} />
@@ -271,7 +271,7 @@ export function Home() {
 
                   <button
                     onClick={() => setSelectedPrayer(null)}
-                    className="mt-3 px-6 py-2 text-xs text-[#5a6080] hover:text-[#8b96c0] transition-colors cursor-pointer"
+                    className="mt-3 px-6 py-2 text-xs text-text-dim hover:text-text-muted transition-colors cursor-pointer"
                   >
                     Back to Map
                   </button>
