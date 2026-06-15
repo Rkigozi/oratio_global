@@ -5,15 +5,15 @@ import { createPortal } from "react-dom";
 import { ArrowLeft, MapPin, X, MoreHorizontal, Share2, Flag, Bookmark, MessageCircle } from "lucide-react";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
-import { getPrayedIds } from "../data/profile-data";
 import { CommentSection } from "../components/comment-section";
 import { getInitialAvatarUrl } from "../../lib/upload";
 import { reportContent } from "../../lib/api";
 import { renderHashtags } from "../../lib/hashtags";
 import { translateText, needsTranslation, detectLanguage } from "../../lib/translate";
-import { getPrayerById, togglePray, toggleSavePrayer, followUser, unfollowUser, getProfileByUsername, isFollowing, toggleCommentsEnabled } from "../../lib/supabase-queries";
+import { getPrayerById, togglePray, toggleSavePrayer, followUser, unfollowUser, getProfileByUsername, isFollowing, toggleCommentsEnabled, getMyPrayedIds, getMySavedIds } from "../../lib/supabase-queries";
 import { LoadingSpinner, ErrorState } from "../components/loading-spinner";
 import { useAuth } from "../../lib/auth-context";
+import { logError } from "../../lib/logger";
 import posthog from "posthog-js";
 
 export function PrayerDetail() {
@@ -38,14 +38,18 @@ export function PrayerDetail() {
   }, [id]);
 
   const prayer = localPrayer;
-  const [prayedIds, setPrayedIds] = useState<string[]>(() => getPrayedIds());
+  const [prayedIds, setPrayedIds] = useState<string[]>([]);
   const [commentCount, setCommentCount] = useState(0);
-  const [saved, setSaved] = useState(() => {
-    try {
-      const ids = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
-      return prayer ? ids.includes(prayer.id) : false;
-    } catch { return false; }
-  });
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getMyPrayedIds().then(setPrayedIds);
+  }, []);
+
+  useEffect(() => {
+    if (!prayer) return;
+    getMySavedIds().then(ids => setSaved(ids.includes(prayer.id)));
+  }, [prayer]);
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -72,22 +76,11 @@ export function PrayerDetail() {
     if (!username) return;
     const newState = !following;
     setFollowing(newState);
-    // Look up user UUID and follow/unfollow via Supabase
     getProfileByUsername(username).then((prof) => {
       if (prof) {
         void (newState ? followUser(prof.id) : unfollowUser(prof.id));
       }
     });
-    try {
-      const ids = JSON.parse(localStorage.getItem("oratio_following") || "[]") as string[];
-      if (newState) {
-        if (!ids.includes(username)) ids.push(username);
-      } else {
-        const idx = ids.indexOf(username);
-        if (idx > -1) ids.splice(idx, 1);
-      }
-      localStorage.setItem("oratio_following", JSON.stringify(ids));
-    } catch { /* ignore */ }
   };
 
   useEffect(() => {
@@ -118,16 +111,6 @@ export function PrayerDetail() {
     setSaved(newSaved);
     void toggleSavePrayer(prayer!.id, newSaved);
     posthog.capture(newSaved ? "prayer_saved" : "prayer_unsaved", { prayerId: prayer!.id });
-    try {
-      const ids = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
-      if (newSaved) {
-        ids.push(prayer!.id);
-      } else {
-        const idx = ids.indexOf(prayer!.id);
-        if (idx > -1) ids.splice(idx, 1);
-      }
-      localStorage.setItem("oratio_saved", JSON.stringify(ids));
-    } catch { /* ignore */ }
   };
 
   const handleReport = async (reason: string) => {
@@ -137,11 +120,7 @@ export function PrayerDetail() {
       posthog.capture("prayer_reported", { prayerId: prayer!.id, reason });
       setReported(true);
     } catch {
-      try {
-        const reports = JSON.parse(localStorage.getItem("oratio_reports") || "[]") as Array<{prayerId: string; reason: string; timestamp: number}>;
-        reports.push({ prayerId: prayer!.id, reason, timestamp: new Date().getTime() });
-        localStorage.setItem("oratio_reports", JSON.stringify(reports));
-      } catch { /* ignore */ }
+      logError("report prayer", "report failed");
     }
   };
 
@@ -165,10 +144,6 @@ export function PrayerDetail() {
       const newIds = isCurrentlyPrayed
         ? prev.filter((pid) => pid !== prayerId)
         : [...prev, prayerId];
-      try {
-        localStorage.setItem("oratio_prayed", JSON.stringify(newIds));
-      } catch { /* ignore */ }
-      // Sync to Supabase
       void togglePray(prayerId, !isCurrentlyPrayed);
       posthog.capture(isCurrentlyPrayed ? "prayer_unprayed" : "prayer_prayed", { prayerId });
       return newIds;

@@ -5,7 +5,6 @@ import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
-import { getStoredSubmittedPrayers } from "../data/profile-data";
 import { PrayerRow } from "../components/prayer-row";
 import { getMyPrayers, deletePrayerRequest } from "../../lib/supabase-queries";
 import { LoadingSpinner } from "../components/loading-spinner";
@@ -25,13 +24,7 @@ export function ProfileSubmitted() {
   useEffect(() => {
     setLoading(true);
     getMyPrayers().then((prayers) => {
-      setLoading(false);
-      if (prayers.length > 0) {
-        setMySubmitted(prayers);
-      } else {
-        // Fallback to localStorage
-        setMySubmitted(getStoredSubmittedPrayers().map((p) => ({ ...p, prayerCount: 0 })));
-      }
+      setMySubmitted(prayers);
       setLoading(false);
     });
   }, [version]);
@@ -41,31 +34,13 @@ export function ProfileSubmitted() {
   };
 
   const performDeletePrayer = (prayerId: string) => {
-    // Delete from Supabase
     void deletePrayerRequest(prayerId);
 
-    try {
-      // Remove from submitted prayers list
-      const submitted = JSON.parse(localStorage.getItem("oratio_submitted") || "[]") as string[];
-      localStorage.setItem("oratio_submitted", JSON.stringify(submitted.filter(id => id !== prayerId)));
-      
-      // Remove from submitted prayers storage
-      const storedPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
-      localStorage.setItem("oratio_submitted_prayers", JSON.stringify(storedPrayers.filter(p => p.id !== prayerId)));
-      
-      // Remove from prayed IDs if present
-      const prayed = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
-      localStorage.setItem("oratio_prayed", JSON.stringify(prayed.filter(id => id !== prayerId)));
-      
-      // Dispatch event to update other components
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("oratio-prayer-removed", { detail: prayerId }));
-      }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("oratio-prayer-removed", { detail: prayerId }));
+    }
 
-      // Force re-render
-      setVersion(v => v + 1);
-
-    } catch { /* ignore */ }
+    setMySubmitted(prev => prev.filter(p => p.id !== prayerId));
   };
 
   const handleTagClick = (tag: string) => {

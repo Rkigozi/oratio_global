@@ -745,6 +745,42 @@ export async function deleteAccount(): Promise<string | null> {
   return null;
 }
 
+// ─── Prayer Interactions for current user ────────────────────────────
+
+export async function getMyPrayedIds(): Promise<string[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("prayer_interactions")
+    .select("prayer_id")
+    .eq("user_id", user.id);
+
+  if (error || !data) {
+    logError("fetch prayed IDs", error);
+    return [];
+  }
+
+  return data.map((row: { prayer_id: string }) => row.prayer_id);
+}
+
+export async function getMySavedIds(): Promise<string[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("saved_prayers")
+    .select("prayer_id")
+    .eq("user_id", user.id);
+
+  if (error || !data) {
+    logError("fetch saved IDs", error);
+    return [];
+  }
+
+  return data.map((row: { prayer_id: string }) => row.prayer_id);
+}
+
 // ─── Profile Preferences ──────────────────────────────────────────────
 
 export interface ProfilePreferences {

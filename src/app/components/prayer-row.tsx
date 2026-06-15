@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { MapPin, Trash2 } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
-import { categoryColors } from "../data/profile-data";
+import { categoryColors } from "../data/prayer-data";
 import { renderHashtags } from "../../lib/hashtags";
 
 interface PrayerRowProps {

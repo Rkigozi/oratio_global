@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "./supabase";
 import type { User } from "@supabase/supabase-js";
-import type { PrayerRequest } from "@oratio/shared";
 
 interface AuthState {
   user: User | null;

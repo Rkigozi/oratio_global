@@ -5,7 +5,6 @@ import { countries } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
-import { getProfile } from "../data/profile-data";
 import { CrisisResources } from "../components/crisis-resources";
 import { useGeolocation } from "../../lib/use-geolocation";
 import { createPrayerRequest, getProfilePreferences } from "../../lib/supabase-queries";
@@ -33,8 +32,7 @@ export function Submit() {
   const [country, setCountry] = useState("");
   const [useAutoLocation, setUseAutoLocation] = useState(true);
 
-  const { user } = useAuth();
-  const profile = getProfile();
+  const { user, profile } = useAuth();
 
   // Load default comment preference from profile settings
   useEffect(() => {
@@ -79,8 +77,8 @@ export function Submit() {
       }
 
       const sanitizedText = sanitizePrayerText(text.trim());
-      const displayUsername = anonymous ? undefined : (profile.username || user?.email);
-      const displayNameVal = anonymous ? undefined : (profile.displayName || undefined);
+      const displayUsername = anonymous ? undefined : (profile?.username || user?.email || undefined);
+      const displayNameVal = anonymous ? undefined : (profile?.display_name || undefined);
 
       // Round to ~11km (0.1°) for privacy
       const approxLat = geoLocation?.lat ? Math.round(geoLocation.lat * 10) / 10 : 0;
@@ -124,18 +122,10 @@ export function Submit() {
         window.dispatchEvent(new CustomEvent("oratio-prayer-added", { detail: newPrayer }));
       }
 
-      try {
-        const existingIds = JSON.parse(localStorage.getItem("oratio_submitted") || "[]") as string[];
-        localStorage.setItem("oratio_submitted", JSON.stringify([...existingIds, newPrayer.id]));
-        const existingPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
-        localStorage.setItem("oratio_submitted_prayers", JSON.stringify([newPrayer, ...existingPrayers]));
-        saveLastPrayerId(newPrayer.id, city.trim(), country.trim());
-        setLastPrayerId(newPrayer.id);
-        posthog.capture("prayer_submitted", { city: city.trim(), country: country.trim(), anonymous: !displayUsername });
-        setSubmitted(true);
-      } catch (e) {
-        logError("submit localstorage", e);
-      }
+      saveLastPrayerId(newPrayer.id, city.trim(), country.trim());
+      setLastPrayerId(newPrayer.id);
+      posthog.capture("prayer_submitted", { city: city.trim(), country: country.trim(), anonymous: !displayUsername });
+      setSubmitted(true);
     } catch (error) {
       logError("submit prayer", error);
     } finally {
@@ -299,7 +289,7 @@ export function Submit() {
               >
                 <div>
                   <p className="text-text text-sm">
-                     {anonymous ? "Submitting anonymously" : `Submitting as ${profile.username || "yourself"}`}
+                     {anonymous ? "Submitting anonymously" : `Submitting as ${profile?.username || "yourself"}`}
                   </p>
                   <p className="text-text-dim text-xs mt-0.5">
                     {anonymous ? "Your name won't be shown" : "Your profile name will be shown"}

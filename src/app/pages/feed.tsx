@@ -4,11 +4,10 @@ import { MapPin, X, Search, ChevronDown, Users } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router";
 import { countries } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
-import { getPrayedIds } from "../data/profile-data";
 import { FeedCard } from "../components/feed-card";
 import { getHashtagCounts } from "../../lib/hashtags";
 import { useGeolocation } from "../../lib/use-geolocation";
-import { getFeedPrayers, searchUsers, togglePray, getFollowingIds } from "../../lib/supabase-queries";
+import { getFeedPrayers, searchUsers, togglePray, getFollowingIds, getMyPrayedIds, getMySavedIds } from "../../lib/supabase-queries";
 import { LoadingSpinner, ErrorState } from "../components/loading-spinner";
 import posthog from "posthog-js";
 
@@ -25,6 +24,7 @@ export function Feed() {
   };
 
   const [showSaved, setShowSaved] = useState(false);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
   const [showFollowing, setShowFollowing] = useState(false);
   const [followingIds, setFollowingIds] = useState<string[]>([]);
   const searchParamActive = searchParams.get("search") || "";
@@ -112,17 +112,22 @@ export function Feed() {
   const [showWelcome, setShowWelcome] = useState(() => {
     try { return !localStorage.getItem("oratio_feed_visited"); } catch { return true; }
   });
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-  const [prayedIds, setPrayedIds] = useState<string[]>(() => getPrayedIds());
+  const [prayedIds, setPrayedIds] = useState<string[]>([]);
   const [visibleCount, setVisibleCount] = useState(20);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const trendingHashtags = useMemo(() => getHashtagCounts(prayers), [prayers]);
 
-  // Load following list from Supabase
+  // Load following list, prayed IDs, and saved IDs from Supabase
   useEffect(() => {
     getFollowingIds().then((ids) => {
       setFollowingIds(ids);
+    });
+    getMyPrayedIds().then((ids) => {
+      setPrayedIds(ids);
+    });
+    getMySavedIds().then((ids) => {
+      setSavedIds(ids);
     });
   }, []);
 
@@ -215,9 +220,6 @@ export function Feed() {
 
     // Saved filter
     if (showSaved) {
-      let savedIds: string[] = [];
-      try { savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[]; }
-      catch { savedIds = []; }
       result = result.filter((p) => savedIds.includes(p.id));
     }
 
@@ -282,16 +284,6 @@ export function Feed() {
 
       // Sync to Supabase
       void togglePray(id, newPrayed);
-
-      // Persist to localStorage for legacy profile tracking
-      try {
-        const existing = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
-        if (newPrayed && !existing.includes(id)) {
-          localStorage.setItem("oratio_prayed", JSON.stringify([...existing, id]));
-        } else if (!newPrayed && existing.includes(id)) {
-          localStorage.setItem("oratio_prayed", JSON.stringify(existing.filter(pId => pId !== id)));
-        }
-      } catch { /* ignore */ }
 
       // Return updated prayed IDs
       if (newPrayed && !prev.includes(id)) {

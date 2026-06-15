@@ -5,7 +5,7 @@ import { timeAgo } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { getInitialAvatarUrl } from "../../lib/upload";
 import { useAuth } from "../../lib/auth-context";
-import { getProfileByUsername, getUserPrayers, followUser, unfollowUser, isFollowing, getFollowCounts } from "../../lib/supabase-queries";
+import { getProfileByUsername, getUserPrayers, followUser, unfollowUser, isFollowing, getFollowCounts, togglePray } from "../../lib/supabase-queries";
 
 export function UserProfile() {
   const { name } = useParams<{ name: string }>();
@@ -152,14 +152,7 @@ function PrayerCard({ prayer }: { prayer: PrayerRequest }) {
     const newState = !prayed;
     setPrayed(newState);
     setCount(c => c + (newState ? 1 : -1));
-    try {
-      const ids = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
-      if (newState && !ids.includes(prayer.id)) {
-        localStorage.setItem("oratio_prayed", JSON.stringify([...ids, prayer.id]));
-      } else if (!newState && ids.includes(prayer.id)) {
-        localStorage.setItem("oratio_prayed", JSON.stringify(ids.filter(i => i !== prayer.id)));
-      }
-    } catch { /* ignore */ }
+    void togglePray(prayer.id, newState);
   }, [prayed, prayer.id]);
 
   return (

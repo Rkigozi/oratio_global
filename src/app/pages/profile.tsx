@@ -10,23 +10,22 @@ import {
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
-import {
-  getProfile,
-  saveProfile,
-  getSubmittedIds,
-  getPrayedIds,
-  getStoredSubmittedPrayers,
-  getPrayedForPrayers,
-} from "../data/profile-data";
 import { validateProfile } from "../../lib/validation";
 import { useAuth } from "../../lib/auth-context";
 import { uploadAvatar, getInitialAvatarUrl } from "../../lib/upload";
-import { getFollowCounts, updateProfile, getMyProfile } from "../../lib/supabase-queries";
+import { getFollowCounts, updateProfile, getMyProfile, getMyPrayers, getMyPrayedForPrayers, getSavedPrayers } from "../../lib/supabase-queries";
 import { useGeolocation } from "../../lib/use-geolocation";
 export function Profile() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const [profile, setProfile] = useState(getProfile);
+  const [profile, setProfile] = useState<{
+    username: string;
+    displayName: string;
+    display_name?: string;
+    bio?: string;
+    location?: string;
+    photo?: string;
+  }>({ username: "", displayName: "" });
   const [editOpen, setEditOpen] = useState(false);
 
   // Load profile from Supabase on mount
@@ -34,17 +33,27 @@ export function Profile() {
     if (user?.id) {
       getMyProfile().then((supabaseProfile) => {
         if (supabaseProfile) {
-          setProfile((prev) => ({
-            ...prev,
+          setProfile({
             username: supabaseProfile.username,
-            displayName: supabaseProfile.display_name || prev.displayName,
-            bio: supabaseProfile.bio || prev.bio,
-            location: supabaseProfile.location || prev.location,
-          }));
+            displayName: supabaseProfile.display_name || supabaseProfile.username,
+            display_name: supabaseProfile.display_name || undefined,
+            bio: supabaseProfile.bio || "",
+            location: supabaseProfile.location || "",
+          });
         }
       });
     }
   }, [user?.id]);
+  const [myPrayers, setMyPrayers] = useState<number>(0);
+  const [myPrayedFor, setMyPrayedFor] = useState<number>(0);
+
+  useEffect(() => {
+    if (user?.id) {
+      getMyPrayers().then(p => setMyPrayers(p.length));
+      getMyPrayedForPrayers().then(p => setMyPrayedFor(p.length));
+    }
+  }, [user?.id]);
+
   const [newDisplayName, setNewDisplayName] = useState("");
   const { location: geoLocation, loading: geoLoading, denied: geoDenied, requestLocation } = useGeolocation();
   const [useAutoLocation, setUseAutoLocation] = useState(false);
@@ -57,28 +66,18 @@ export function Profile() {
   const username = profile.username || "anonymous";
   const displayName = profile.displayName || username;
 
-  const submittedIds = getSubmittedIds();
-  const prayedIds = getPrayedIds();
-
-  const myPrayers = useMemo(() => {
-    return getStoredSubmittedPrayers();
-  }, [submittedIds]);
-
-  const myPrayedFor = useMemo(() => {
-    return getPrayedForPrayers();
-  }, [prayedIds]);
-
-  const savedCount = useMemo(() => {
-    try {
-      return (JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[]).length;
-    } catch { return 0; }
-  }, []);
-
+  const [savedCount, setSavedCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
     if (user?.id) {
       getFollowCounts(user.id).then((counts) => setFollowingCount(counts.following));
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (user?.id) {
+      getSavedPrayers().then(p => setSavedCount(p.length));
     }
   }, [user?.id]);
 
@@ -88,9 +87,7 @@ export function Profile() {
     setUploadingPhoto(true);
     const url = await uploadAvatar(file);
     if (url) {
-      const updated = { ...profile, photo: url };
-      saveProfile(updated);
-      setProfile(updated);
+      setProfile(prev => ({ ...prev, photo: url }));
     }
     setUploadingPhoto(false);
   };
@@ -119,14 +116,6 @@ export function Profile() {
       return;
     }
 
-    const updatedProfile = {
-      ...profile,
-      displayName: trimmedDisplayName,
-      bio: newBio.trim(),
-      location: newLocation.trim(),
-    };
-
-    // Save to Supabase (cross-device persistence)
     if (user?.id) {
       void updateProfile({
         display_name: trimmedDisplayName || undefined,
@@ -135,9 +124,7 @@ export function Profile() {
       });
     }
 
-    // Save to localStorage (fallback + legacy)
-    saveProfile(updatedProfile);
-    setProfile(updatedProfile);
+    setProfile(prev => ({ ...prev, displayName: trimmedDisplayName || prev.username, bio: newBio.trim(), location: newLocation.trim() }));
     setEditOpen(false);
   };
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { timeAgo, getAttributionText, mockFeedPrayers, mockHotspots, CATEGORIES } from "./prayer-data";
+import { timeAgo, getAttributionText, CATEGORIES } from "./prayer-data";
+import { mockFeedPrayers, mockHotspots } from "./mock-prayers";
 
 describe("timeAgo", () => {
   it('returns "just now" for recent times', () => {

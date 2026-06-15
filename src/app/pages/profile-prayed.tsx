@@ -5,9 +5,8 @@ import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
-import { getPrayedIds, getPrayedForPrayers } from "../data/profile-data";
 import { PrayerRow } from "../components/prayer-row";
-import { getMyPrayedForPrayers, togglePray } from "../../lib/supabase-queries";
+import { getMyPrayedForPrayers, togglePray, getMyPrayedIds } from "../../lib/supabase-queries";
 import { LoadingSpinner } from "../components/loading-spinner";
 
 export function ProfilePrayed() {
@@ -18,22 +17,19 @@ export function ProfilePrayed() {
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
   
   const [myPrayed, setMyPrayed] = useState<PrayerRequest[]>([]);
-  const [prayedIds, setPrayedIds] = useState<string[]>(() => getPrayedIds());
+  const [prayedIds, setPrayedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    getMyPrayedForPrayers().then((prayers) => {
-      setLoading(false);
-      if (prayers.length > 0) {
-        setMyPrayed(prayers);
-      } else {
-        // Fallback to localStorage
-        setMyPrayed(getPrayedForPrayers());
-      }
+    Promise.all([
+      getMyPrayedForPrayers(),
+      getMyPrayedIds(),
+    ]).then(([prayers, ids]) => {
+      setMyPrayed(prayers);
+      setPrayedIds(ids);
       setLoading(false);
     });
-    setPrayedIds(getPrayedIds());
   }, [version]);
 
   const handleTagClick = (tag: string) => {
@@ -49,21 +45,10 @@ export function ProfilePrayed() {
     const isCurrentlyPrayed = prayedIds.includes(id);
     const newPrayed = !isCurrentlyPrayed;
     void togglePray(id, newPrayed);
-
-    try {
-      const ids = JSON.parse(localStorage.getItem("oratio_prayed") || "[]") as string[];
-      if (newPrayed && !ids.includes(id)) {
-        localStorage.setItem("oratio_prayed", JSON.stringify([...ids, id]));
-      } else if (!newPrayed && ids.includes(id)) {
-        localStorage.setItem("oratio_prayed", JSON.stringify(ids.filter(pId => pId !== id)));
-      }
-      const submittedPrayers = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[];
-      const updated = submittedPrayers.map(p => 
-        p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
-      );
-      localStorage.setItem("oratio_submitted_prayers", JSON.stringify(updated));
-      setVersion(v => v + 1);
-    } catch { /* ignore */ }
+    setPrayedIds(prev =>
+      newPrayed ? [...prev, id] : prev.filter(pId => pId !== id)
+    );
+    setVersion(v => v + 1);
   };
 
   return (

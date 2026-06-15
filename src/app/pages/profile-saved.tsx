@@ -3,9 +3,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { Bookmark, MapPin } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
-import { timeAgo, getAttributionText } from "../data/prayer-data";
+import { timeAgo, getAttributionText, categoryColors } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
-import { categoryColors } from "../data/profile-data";
 import { getSavedPrayers, toggleSavePrayer } from "../../lib/supabase-queries";
 import { LoadingSpinner } from "../components/loading-spinner";
 
@@ -18,32 +17,13 @@ export function ProfileSaved() {
   useEffect(() => {
     setLoading(true);
     getSavedPrayers().then((prayers) => {
-      setLoading(false);
-      if (prayers.length > 0) {
-        setSavedPrayers(prayers);
-      } else {
-        // Fallback to localStorage
-        let savedIds: string[] = [];
-        try { savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[]; }
-        catch { savedIds = []; }
-        let submitted: PrayerRequest[] = [];
-        try { submitted = JSON.parse(localStorage.getItem("oratio_submitted_prayers") || "[]") as PrayerRequest[]; }
-        catch { submitted = []; }
-        const allPrayers = submitted;
-        setSavedPrayers(allPrayers.filter((p) => savedIds.includes(p.id)));
-      }
+      setSavedPrayers(prayers);
       setLoading(false);
     });
   }, []);
 
   const removeSaved = (prayerId: string) => {
     void toggleSavePrayer(prayerId, false);
-    try {
-      const savedIds = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
-      const idx = savedIds.indexOf(prayerId);
-      if (idx > -1) savedIds.splice(idx, 1);
-      localStorage.setItem("oratio_saved", JSON.stringify(savedIds));
-    } catch { /* ignore */ }
     setSelectedPrayer(null);
     setSavedPrayers((prev) => prev.filter((p) => p.id !== prayerId));
   };
