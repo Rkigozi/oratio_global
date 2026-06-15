@@ -29,7 +29,8 @@
     "supabase/functions/**",
     "dist/**",
     "node_modules/**",
-    "oratio-app/**"
+    "oratio-app/**",
+    "shared/**"
   ],
   "rules": {
     "react/react-in-jsx-scope": "off",
