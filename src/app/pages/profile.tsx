@@ -130,7 +130,7 @@ export function Profile() {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
-      <div className="relative z-10 px-5 overflow-y-auto flex-1 h-full pt-24 pb-28">
+      <div className="relative z-10 px-5 overflow-y-auto overflow-x-hidden flex-1 h-full pt-24 pb-28">
         <div className="max-w-md mx-auto">
           {/* Profile header — Instagram style */}
           <div className="flex items-start gap-4 mb-6">
@@ -160,42 +160,39 @@ export function Profile() {
               <p className="text-text-dim text-xs mb-1">@{username}</p>
               {profile.bio && <p className="text-text-secondary text-xs mb-1.5 leading-relaxed">{profile.bio}</p>}
               {profile.location && <p className="text-text-dim text-[10px] mb-2">📍 {profile.location}</p>}
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={async () => { await signOut(); void navigate("/landing"); }}
-                  className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px] cursor-pointer"
+                  className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
                   style={{
                     background: "rgba(var(--rgb-accent), 0.06)",
                     border: "1px solid rgba(var(--rgb-accent), 0.1)",
-                    color: "rgb(var(--rgb-text-muted))",
                   }}
+                  aria-label="Sign out"
                 >
-                  <LogOut size={10} />
-                  Sign Out
+                  <LogOut size={14} className="text-text-muted" />
                 </button>
                 <button
                   onClick={() => void navigate("/info")}
-                  className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px] cursor-pointer"
+                  className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
                   style={{
                     background: "rgba(var(--rgb-accent), 0.06)",
                     border: "1px solid rgba(var(--rgb-accent), 0.1)",
-                    color: "rgb(var(--rgb-text-muted))",
                   }}
+                  aria-label="Info"
                 >
-                  <Info size={10} />
-                  Info
+                  <Info size={14} className="text-text-muted" />
                 </button>
                 <button
                   onClick={() => void navigate("/profile/settings")}
-                  className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px] cursor-pointer"
+                  className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
                   style={{
                     background: "rgba(var(--rgb-accent), 0.06)",
                     border: "1px solid rgba(var(--rgb-accent), 0.1)",
-                    color: "rgb(var(--rgb-text-muted))",
                   }}
+                  aria-label="Settings"
                 >
-                  <Settings size={10} />
-                  Settings
+                  <Settings size={14} className="text-text-muted" />
                 </button>
               </div>
             </div>
