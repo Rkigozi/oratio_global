@@ -26,15 +26,6 @@ export function markUsernameUsed(username: string): void {
   }
 }
 
-// Clear all used usernames (for testing/reset)
-export function clearUsedUsernames(): void {
-  try {
-    localStorage.removeItem('oratio_usernames');
-  } catch {
-    // ignore
-  }
-}
-
 // Migrate old profile format (with 'name' field) to new format (displayName + username)
 function migrateProfile(oldData: Partial<UserProfile> & { name?: string }): UserProfile {
   // Determine username (required field)
@@ -135,95 +126,7 @@ export function getPrayedForPrayers(): PrayerRequest[] {
   return getStoredSubmittedPrayers().filter(p => prayedIds.has(p.id));
 }
 
-// Check if username is available (optionally exclude current username)
-export function isUsernameAvailable(username: string, excludeUsername?: string): boolean {
-  try {
-    const used = JSON.parse(localStorage.getItem('oratio_usernames') || '[]') as string[];
-    const lower = username.toLowerCase();
-    const filtered = excludeUsername ? used.filter(u => u !== excludeUsername.toLowerCase()) : used;
-    return !filtered.includes(lower);
-  } catch {
-    return true;
-  }
-}
 
-// ── Session management ─────────────────────────────────────────────
-
-export type UserSession = "no-profile" | "active" | "signed-out";
-
-export function getSessionState(): UserSession {
-  try {
-    const profile = localStorage.getItem("oratio_profile");
-    if (!profile) return "no-profile";
-    const parsed = JSON.parse(profile) as { username?: string };
-    if (!parsed.username || parsed.username === "anonymous") return "no-profile";
-    const session = localStorage.getItem("oratio_session");
-    return session === "signed-out" ? "signed-out" : "active";
-  } catch {
-    return "no-profile";
-  }
-}
-
-// Check if Supabase session is active (used by auth context and layout)
-export function hasSupabaseSession(): boolean {
-  try {
-    const raw = localStorage.getItem("sb-" + import.meta.env.VITE_SUPABASE_URL?.split("//")[1]?.split(".")[0] + "-auth-token");
-    return !!raw;
-  } catch {
-    return false;
-  }
-}
-
-export function logoutProfile(): void {
-  try {
-    // Remember who signed out so login page can hint
-    const profile = localStorage.getItem("oratio_profile");
-    if (profile) {
-      const parsed = JSON.parse(profile) as { username?: string };
-      if (parsed.username && parsed.username !== "anonymous") {
-        localStorage.setItem("oratio_last_user", parsed.username);
-      }
-    }
-    localStorage.setItem("oratio_session", "signed-out");
-  } catch {
-    // ignore
-  }
-}
-
-export function loginProfile(username: string): boolean {
-  try {
-    const raw = localStorage.getItem("oratio_profile");
-    if (!raw) return false;
-    const profile = JSON.parse(raw) as { username?: string };
-    if (profile.username?.toLowerCase() === username.toLowerCase()) {
-      localStorage.removeItem("oratio_session");
-      localStorage.removeItem("oratio_last_user");
-      return true;
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-export function clearAllData(): void {
-  try {
-    const keys = [
-      "oratio_profile",
-      "oratio_session",
-      "oratio_last_user",
-      "oratio_submitted",
-      "oratio_submitted_prayers",
-      "oratio_prayed",
-      "oratio_saved",
-      "oratio_reports",
-      "oratio_usernames",
-    ];
-    keys.forEach(k => localStorage.removeItem(k));
-  } catch {
-    // ignore
-  }
-}
 
 
 

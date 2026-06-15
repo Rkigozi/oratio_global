@@ -7,6 +7,7 @@ import { getComments, createComment, deleteComment } from "../../lib/supabase-qu
 import type { Comment } from "../../lib/supabase-queries";
 import { getInitialAvatarUrl } from "../../lib/upload";
 import { useAuth } from "../../lib/auth-context";
+import posthog from "posthog-js";
 
 interface Props {
   prayer: PrayerRequest;
@@ -51,6 +52,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
       parent_id: replyTo?.id,
     });
     if (comment) {
+      posthog.capture("comment_added", { prayerId: prayer.id, hasParent: !!replyTo });
       comment.user = profile ? { username: profile.username, display_name: profile.display_name } : null;
       setComments((prev) => {
         const updated = [...prev, comment];
@@ -133,21 +135,26 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
       </AnimatePresence>
 
       <div className="flex gap-2 items-end">
-        <textarea
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void handleSubmit();
-            }
-          }}
-          placeholder={replyTo ? "Write a reply..." : "Write an encouragement..."}
-          rows={1}
-          maxLength={2000}
-          className="flex-1 min-w-0 rounded-xl px-3 py-2.5 text-text placeholder-text-dim text-xs focus:outline-none border border-accent/12 focus:border-accent/30 transition-colors resize-none"
-          style={{ background: "rgba(var(--rgb-surface), 0.6)", minHeight: 36 }}
-        />
+        <div className="relative flex-1">
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                void handleSubmit();
+              }
+            }}
+            placeholder={replyTo ? "Write a reply..." : "Write an encouragement..."}
+            rows={1}
+            maxLength={2000}
+            className="w-full rounded-xl px-3 py-2.5 text-text placeholder-text-dim text-xs focus:outline-none border border-accent/12 focus:border-accent/30 transition-colors resize-none"
+            style={{ background: "rgba(var(--rgb-surface), 0.6)", minHeight: 36 }}
+          />
+          <span className="absolute bottom-1.5 right-2.5 text-[10px] text-text-faint pointer-events-none">
+            {newComment.length}/2000
+          </span>
+        </div>
         <button
           onClick={() => void handleSubmit()}
           disabled={!newComment.trim() || submitting}

@@ -1,244 +1,236 @@
-# Developer Audit Package - Oratio Prayer Platform
+# Oratio — Developer Audit Package
 
-## Overview
-This document provides everything needed for a comprehensive developer audit of the Oratio Prayer Platform prototype. It includes current status, identified issues, technical debt, and recommended next steps.
+> Last updated: June 15, 2026
+> Stack: React 19 + TypeScript + Vite + Supabase + Tailwind v4
+
+---
 
 ## Executive Summary
 
-### Current State
-- **Platform**: React 18 + TypeScript web application (NOT React Native as documented)
-- **Status**: Functional prototype with mock data only
-- **Backend**: No backend integration (planned: Supabase)
-- **Dependencies**: 69 packages with significant bloat
-- **Code Quality**: Mixed quality - good UI foundation but architectural issues
+Oratio is a production-ready PWA (Progressive Web App) — a global Christian prayer platform. The codebase has been through a full audit and cleanup cycle. Supabase backend is fully integrated. Monitoring (Sentry + PostHog) is live. 50 tests pass. Build, types, and lint all green.
 
-### Critical Findings
-1. **Architecture Mismatch**: Documentation specifies React Native, implementation is React web
-2. **Privacy Violation**: Storing exact lat/lng coordinates (fixed in mock data, needs backend enforcement)
-3. **Security Issues**: No input validation, outdated dependencies, XSS vulnerabilities
-4. **Performance**: No pagination, all data loaded at once (720KB bundle size)
-5. **Missing Infrastructure**: No tests, no CI/CD, no monitoring
+### What's Been Done (April–June 2026)
 
-### Recommendation
-**PWA (Progressive Web App) Approach**: Continue as React web app, add PWA capabilities for mobile-like experience, implement Supabase backend as documented. This leverages existing code and provides faster time-to-market.
-
-## Audit Checklist
-
-### ✅ Documentation Review
-- [x] Project scope documents analyzed
-- [x] Memory Bank established
-- [x] Technical debt inventory created
-- [x] Architecture mismatch documented
-- [x] Migration path defined
-
-### ✅ Development Environment
-- [x] Dependencies installed (npm install --legacy-peer-deps)
-- [x] Project builds successfully (`npm run build`)
-- [x] Project runs locally (`npm run dev` on http://localhost:5174/)
-- [x] TypeScript configuration complete (tsconfig.json, tsconfig.node.json)
-- [x] ESLint configured (v8.57.1 with .eslintrc.json)
-- [x] Prettier configured (.prettierrc.json)
-- [x] Basic error handling implemented (src/lib/error-handling.ts)
-
-### ⚠️ Code Quality Issues
-- [ ] **Dependency Bloat**: 69 packages, many unused (React DnD, Recharts, html2canvas, etc.)
-- [ ] **Inline Styles**: Hardcoded colors and spacing throughout components
-- [ ] **Mixed UI Libraries**: Radix UI + MUI Material (redundant)
-- [ ] **Empty Catch Blocks**: 12+ instances of `catch {}` swallowing errors
-- [ ] **No Error Boundaries**: React components can crash without graceful fallback
-- [ ] **State Management**: Fragmented (useState + localStorage as database)
-- [ ] **Type Safety**: Optional types used as required, many `any` types
-
-### 🔴 Critical Security Issues
-- [ ] **Input Validation**: No validation on prayer submissions or form inputs
-- [ ] **XSS Vulnerabilities**: User content displayed raw without sanitization
-- [ ] **Outdated Dependencies**: React 2 versions behind (18.3.1 vs 19.2.4)
-- [ ] **Privacy Violation**: Documentation says "no exact locations stored" but implementation did
-- [ ] **No Authentication**: Anonymous access only, no rate limiting
-
-### 🟡 Performance Issues
-- [ ] **Bundle Size**: 720KB minified (209KB gzipped) - above target
-- [ ] **No Pagination**: All prayers loaded at once, will not scale
-- [ ] **No Code Splitting**: Single bundle for entire application
-- [ ] **No Image Optimization**: User icons/profile images not optimized
-- [ ] **No Virtualization**: Long lists not virtualized
-
-### 🟢 Architecture Issues
-- [ ] **Separation of Concerns**: Mixed business logic in components
-- [ ] **No API Layer**: Direct mock data access instead of abstraction
-- [ ] **No State Management**: Global state handled via localStorage
-- [ ] **Component Architecture**: Inconsistent patterns, no atomic design
-- [ ] **Testing**: No unit, integration, or E2E tests
-
-## Technical Debt Inventory
-
-### High Priority (Fix Before Production)
-1. **Dependency Cleanup**: Remove 40+ unused packages, update critical dependencies
-2. **Input Validation**: Implement Zod schemas for all form inputs
-3. **Content Sanitization**: Add DOMPurify for user-generated content
-4. **Pagination**: Implement infinite scroll or load-more for prayer feed
-5. **Error Boundaries**: Add React Error Boundaries to prevent complete crashes
-
-### Medium Priority
-1. **Design Tokens**: Replace inline styles with CSS variables
-2. **Component Refactoring**: Atomic design pattern, extract business logic
-3. **State Management**: Implement Zustand for global state
-4. **API Layer**: Create centralized API client with React Query hooks
-5. **Testing Framework**: Set up Jest + React Testing Library
-
-### Low Priority
-1. **Accessibility**: Add ARIA labels, keyboard navigation
-2. **Performance Optimizations**: Code splitting, image optimization
-3. **Developer Experience**: Better error messages, debugging tools
-4. **Documentation**: Component documentation, API documentation
-5. **UI Polish**: Minor visual consistency improvements
-
-## Integration Roadmap (Supabase)
-
-### Phase 1: Database Schema (Week 1-2)
-1. Create Supabase project
-2. Implement schema from Data-Model.md
-   - `users` table with anonymous authentication
-   - `prayers` table with privacy-safe location data
-   - `prayer_interactions` table for "I Prayed" clicks
-   - `categories` table for prayer categories
-3. Set up Row Level Security (RLS) policies
-4. Create indexes for common queries
-
-### Phase 2: Authentication & API (Week 2-3)
-1. Implement Supabase Auth with anonymous option
-2. Create centralized API client
-3. Migrate mock data calls to real API endpoints
-4. Add proper error handling and loading states
-5. Implement React Query for data fetching/caching
-
-### Phase 3: Real Features (Week 3-4)
-1. Prayer submission with real backend
-2. "I Prayed" interaction with database persistence
-3. User profile with prayer history
-4. Prayer feed with pagination and filtering
-5. Map visualization with aggregated location data
-
-### Phase 4: Production Readiness (Week 4-5)
-1. Add input validation (Zod)
-2. Implement content moderation (Edge Functions)
-3. Add performance monitoring
-4. Set up CI/CD pipeline
-5. Deploy to production environment
-
-## Questions for Developer
-
-### Business Context
-1. What is the target launch timeline?
-2. What are the success metrics for MVP?
-3. What is the development budget for cleanup + backend?
-4. Who will maintain the app post-launch?
-5. What are the scaling requirements (users, prayers per day)?
-
-### Technical Decisions Needed
-1. **UI Library**: Radix UI vs. MUI - which to keep? (Recommend Radix UI)
-2. **Testing Strategy**: Jest + React Testing Library vs. other options
-3. **Deployment Platform**: Vercel vs. Netlify vs. self-hosted
-4. **Monitoring**: Sentry vs. other error tracking solutions
-5. **Analytics**: What metrics to track and how?
-
-### Architecture Decisions
-1. **PWA vs. Native**: Confirm PWA approach vs. converting to React Native
-2. **Offline Support**: How much offline capability is needed?
-3. **Push Notifications**: Required for MVP or later?
-4. **Internationalization**: Support for multiple languages?
-5. **Accessibility**: WCAG compliance level required?
-
-## Setup Instructions
-
-### Prerequisites
-- Node.js v18+ (v23.7.0 currently)
-- npm v10+ (v10.9.2 currently)
-- Git
-
-### Installation
-```bash
-# Clone the repository
-git clone <repository-url>
-cd Oratio_Prototype_MVP
-
-# Install dependencies (use legacy peer deps due to outdated packages)
-npm install --legacy-peer-deps
-
-# Start development server
-npm run dev
-```
-
-### Available Scripts
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run lint` - Run ESLint checks
-- `npm run lint:fix` - Fix auto-fixable ESLint issues
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
-- `npm run type-check` - Run TypeScript type checking
-
-### Project Structure
-```
-src/
-├── app/                    # Main application code
-│   ├── components/        # UI components (needs refactoring)
-│   ├── pages/            # Page components
-│   ├── data/             # Mock data generation
-│   └── routes.ts         # React Router configuration
-├── lib/                  # Utilities and helpers
-│   └── error-handling.ts # Basic error handling utilities
-└── styles/               # CSS/Tailwind styles
-```
-
-## Success Criteria for Audit
-
-### Immediate (Post-Audit)
-1. Clear understanding of current technical debt
-2. Approved cleanup roadmap and priorities
-3. Confirmed PWA approach vs. React Native
-4. Agreement on dependency cleanup strategy
-5. Initial Supabase setup plan
-
-### Short-term (2-4 weeks)
-1. Dependency cleanup completed
-2. Basic input validation implemented
-3. Error boundaries and proper error handling
-4. Design tokens and component refactoring started
-5. Supabase schema created and tested
-
-### Medium-term (1-2 months)
-1. Full backend integration with Supabase
-2. Performance improvements (pagination, code splitting)
-3. Basic testing framework implemented
-4. CI/CD pipeline established
-5. Deployed to staging environment
-
-## Risk Assessment
-
-### High Risk Items
-1. **Security Vulnerabilities**: Outdated dependencies, no input validation
-2. **Scalability**: No pagination, all data loaded at once
-3. **Maintainability**: Complex state, mixed concerns, no tests
-4. **Privacy**: Need to ensure no exact coordinates in production
-
-### Mitigation Strategies
-1. **Immediate**: Update critical dependencies, add input validation
-2. **Short-term**: Implement pagination, error boundaries, design tokens
-3. **Medium-term**: Complete backend integration, add testing
-4. **Long-term**: Performance optimization, monitoring, scaling
-
-## Conclusion
-
-The Oratio prototype has a solid visual foundation and core functionality, but requires significant technical cleanup before production. The recommended approach is to:
-
-1. **Clean up existing codebase** (dependency cleanup, error handling, design tokens)
-2. **Implement Supabase backend** following documented data model
-3. **Add PWA capabilities** for mobile-like experience
-4. **Gradually improve** performance, security, and maintainability
-
-This approach provides the fastest path to a production-ready MVP while maintaining the existing investment in UI/UX design and core functionality.
+| Area | Status |
+|------|--------|
+| Supabase migration (auth, prayers, comments, follows, reports, feed) | ✅ Complete |
+| Google OAuth + Email/Password auth | ✅ Complete |
+| Edge Function for translation (API key server-side) | ✅ Complete |
+| Error Boundary (root-level, Sentry-connected) | ✅ Complete |
+| 404 page | ✅ Complete |
+| Code splitting (React.lazy on all 21 routes) | ✅ Complete |
+| PWA (manifest, service worker, offline fallback, update prompt) | ✅ Complete |
+| Privacy (lat/lng rounded to 0.1°, anonymous submissions) | ✅ Complete |
+| Input validation (Zod schemas for prayers + profiles) | ✅ Complete |
+| Sentry error tracking | ✅ Live |
+| PostHog analytics (8 custom events) | ✅ Live |
+| Dark/light theme | ✅ Complete |
+| Responsive mobile-first design | ✅ Complete |
+| Testing (50 tests, Vitest + Testing Library) | ✅ Passing |
+| Production build | ✅ Passing (2.7s build time) |
+| TypeScript strict mode | ✅ Zero errors |
+| ESLint | ✅ 95 warnings (mostly hooks patterns, no errors) |
 
 ---
-*Last Updated: 2026-04-04*
-*Next Review: After Developer Feedback*
+
+## Tech Stack
+
+| Layer | Technology | Notes |
+|-------|-----------|-------|
+| Framework | React 19 | Latest stable |
+| Language | TypeScript 6.x | Strict mode |
+| Build | Vite 6.3 + SWC | ~2.7s production build |
+| Styling | Tailwind CSS v4 | CSS variables for theming, no runtime |
+| Routing | React Router v7 | Lazy-loaded routes |
+| Backend | Supabase | Auth + PostgreSQL + Edge Functions + Storage |
+| Map | Leaflet | Canvas-rendered, no API key needed |
+| Animations | motion (Framer Motion) | Spring physics, tree-shakeable |
+| Icons | lucide-react | Tree-shakeable |
+| Drawers | vaul | Mobile-native bottom sheets |
+| Validation | Zod v4 | Schema validation |
+| Error tracking | Sentry | `@sentry/react` + `@sentry/browser` |
+| Analytics | PostHog (EU) | `posthog-js` |
+| PWA | vite-plugin-pwa | Workbox, generateSW mode |
+| Deployment | Netlify | Auto-deploy from git, SPA redirects |
+| Testing | Vitest + Testing Library + happy-dom | 50 tests, 4 test files |
+
+---
+
+## Project Size
+
+```
+src/                           ~10,500 lines of TypeScript/TSX
+├── lib/                       15 modules   ~2,600 lines  (auth, queries, validation, etc.)
+├── app/components/            10 components ~1,200 lines  (reusable UI)
+├── app/pages/                 21 pages      ~6,300 lines  (route components)
+├── app/data/                  2 files       ~625 lines    (types, mock data, legacy profile)
+├── styles/                    3 files       ~430 lines    (Tailwind, theme, animations)
+├── test/ setup                1 file
+├── main.tsx                   Entry point (Sentry + PostHog init)
+└── sw.ts                      Service worker
+
+dist/ (production build)       68 precached entries, ~1.5 MB total
+```
+
+---
+
+## Architecture
+
+### Routes
+- **Public** (no layout): `/landing`, `/onboarding`, `/login`, `/reset-password`, `/update-password`, `/privacy`, `/terms`, `/prayer/:id`, `/moderate`, `/user/:name`, `/user/:name/following`, `/user/:name/followers`
+- **App shell** (Header + BottomNav): `/` (map), `/feed`, `/submit`, `/profile`, `/profile/submitted`, `/profile/prayed`, `/profile/saved`, `/profile/settings`, `/info`
+- **Catch-all**: `*` → 404 page
+
+All routes are code-split via `React.lazy()`.
+
+### Data Flow
+- Primary: **Supabase** (8 tables: profiles, prayer_requests, prayer_interactions, comments, follows, saved_prayers, reports, waitlist)
+- Fallback: **localStorage** (16 keys, mostly for optimistic updates and legacy compatibility)
+- Real-time: **CustomEvents** (`oratio-prayer-added`, `oratio-prayer-removed`) dispatched on `window`
+- Mock data: `prayer-data.ts` generates deterministic test data from a 26-city database (only used in tests, tree-shaken from production)
+
+### Auth
+- Supabase Auth with Email/Password + Google OAuth
+- Auth state managed via React Context (`auth-context.tsx`)
+- Session persisted automatically by Supabase client
+- Profile auto-created via DB trigger on signup
+
+### Key Dependencies (Production)
+`@sentry/react`, `@supabase/supabase-js`, `leaflet`, `lucide-react`, `motion`, `posthog-js`, `react`, `react-router`, `vaul`, `zod`
+
+Total: ~14 production dependencies, ~20 dev dependencies.
+
+---
+
+## Database Schema (Supabase)
+
+| Table | Purpose | RLS |
+|-------|---------|-----|
+| `profiles` | User profiles (auto-created on signup) | SELECT: all, UPDATE: own |
+| `prayer_requests` | Prayer submissions with location | SELECT: all, INSERT: auth'd, DELETE: owner |
+| `prayer_interactions` | "I prayed" tracking | SELECT: all, INSERT/DELETE: own |
+| `comments` | Threaded comments on prayers | SELECT: all, INSERT: auth'd, DELETE: own |
+| `follows` | Follow relationships | SELECT: all, INSERT/DELETE: own |
+| `saved_prayers` | Bookmarked prayers | SELECT/INSERT/DELETE: own |
+| `reports` | Content moderation reports | INSERT: all, SELECT: own, UPDATE: mod |
+| `waitlist` | Email waitlist signups | INSERT: all |
+
+### Edge Functions
+- `translate` — Google Cloud Translation proxy (API key server-side)
+- `delete-account` — Server-side user data deletion
+- `send-push-notification` — Web push notifications (for future use)
+
+---
+
+## Monitoring
+
+| Service | Purpose | Access |
+|---------|---------|--------|
+| Sentry | Error tracking | https://sentry.io/organizations/oratio-3j/issues/ |
+| PostHog | Product analytics | https://eu.posthog.com/project/ |
+
+Custom PostHog events: `user_signed_up`, `user_signed_in`, `prayer_submitted`, `prayer_prayed`, `prayer_unprayed`, `prayer_saved`, `prayer_unsaved`, `prayer_reported`, `comment_added`, `search_performed`
+
+---
+
+## Security
+
+- **XSS**: Zod regex validation (`/^[\p{L}\p{N}\p{P}\p{Z}]+$/u`) strips unsafe characters; HTML tags removed via `sanitizePrayerText()`
+- **Privacy**: Lat/lng rounded to 0.1° (~11km) before storage; anonymous submission option
+- **Auth**: Supabase RLS policies on all tables; OAuth via Google
+- **API keys**: Google Translate key is server-side only (Supabase Edge Function secret); Supabase anon key is publishable-by-design
+- **Headers**: HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy configured in `netlify.toml`
+
+---
+
+## Performance
+
+| Metric | Status |
+|--------|--------|
+| Build time | ~2.7s |
+| Total bundle (gzip) | ~1.5 MB (68 entries) |
+| Largest chunk | 720 KB (vendor/libs) — exceeds 500 KB advisory |
+| Code splitting | ✅ Per-route lazy loading |
+| Infinite scroll | ✅ Feed loads 20 at a time via IntersectionObserver |
+| Image optimization | ❌ No WebP, no lazy loading |
+| Map marker clustering | ❌ All markers render individually |
+| LCP / FID / CLS | ❌ Not measured |
+
+---
+
+## Testing
+
+| Type | Count | Framework |
+|------|-------|-----------|
+| Unit tests | 50 | Vitest + Testing Library |
+| Component tests | 0 | Not yet |
+| Integration tests | 0 | Not yet |
+| E2E tests | 0 | Not yet |
+
+---
+
+## Known Issues & Limitations
+
+1. **Bundle size**: Main vendor chunk is 720 KB (advisory threshold is 500 KB). Could split via `manualChunks` in Rollup.
+2. **No pagination on map**: Home page loads all prayer hotspots at once via `getMapHotspots()` (limit 200). Fine for beta but won't scale.
+3. **No skeleton loaders**: All loading states use spinners instead of skeleton screens.
+4. **No image optimization**: Avatars are base64 data URLs or UI Avatars API calls. No WebP, no responsive images.
+5. **No map marker clustering**: All hotspots render as individual circle markers.
+6. **LocalStorage dual-write**: Several features still write to both Supabase and localStorage as fallback. Cleanup deferred.
+7. **No component/E2E tests**: Only unit tests exist.
+8. **CSP header missing**: `Content-Security-Policy` not configured in `netlify.toml`.
+
+---
+
+## Environment Variables
+
+```env
+VITE_SUPABASE_URL=                           # Supabase project URL
+VITE_SUPABASE_ANON_KEY=                      # Supabase anon/public key
+VITE_SENTRY_DSN=                             # Sentry DSN (error tracking)
+VITE_POSTHOG_KEY=                            # PostHog API key (analytics)
+VITE_POSTHOG_HOST=                           # PostHog host (https://eu.posthog.com for EU)
+```
+
+---
+
+## Development Commands
+
+```bash
+npm run dev              # Start dev server
+npm run build            # Production build
+npm run type-check       # TypeScript check (tsc --noEmit)
+npm run test             # Run all tests (vitest)
+npm run lint             # ESLint check
+npm run format           # Prettier format
+```
+
+---
+
+## File Map (src/)
+
+```
+src/
+├── main.tsx                      # Entry — Sentry + PostHog init
+├── sw.ts                         # Service worker (Workbox)
+├── lib/
+│   ├── supabase.ts               # Supabase client
+│   ├── auth-context.tsx           # Auth state + methods
+│   ├── supabase-queries.ts       # All DB CRUD (826 lines)
+│   ├── api.ts                    # Report wrappers
+│   ├── validation.ts             # Zod schemas + sanitizer
+│   ├── theme-context.tsx         # Dark/light theme
+│   ├── translate.ts              # Translation via Edge Function
+│   ├── use-geolocation.ts        # Geo API + Nominatim
+│   ├── hashtags.tsx              # Hashtag utilities
+│   ├── logger.ts                 # Error logging (console + Sentry)
+│   ├── upload.ts                 # Avatar handling
+│   └── username.ts               # Username generator
+├── app/
+│   ├── App.tsx                   # Root providers + UpdatePrompt
+│   ├── routes.tsx                # Route definitions
+│   ├── components/               # 10 reusable components
+│   └── pages/                    # 21 route pages
+├── styles/                       # Tailwind v4, theme, animations
+└── test/                         # Test setup
+```

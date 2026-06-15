@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Send, Check, Share2, MapPin, RefreshCw, Loader } from "lucide-react";
-import { PrayerRequest, countries } from "../data/prayer-data";
+import { countries } from "../data/prayer-data";
+import type { PrayerRequest } from "../data/prayer-data";
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../lib/validation";
 import { getProfile } from "../data/profile-data";
@@ -9,6 +10,8 @@ import { CrisisResources } from "../components/crisis-resources";
 import { useGeolocation } from "../../lib/use-geolocation";
 import { createPrayerRequest, getProfilePreferences } from "../../lib/supabase-queries";
 import { useAuth } from "../../lib/auth-context";
+import { logError } from "../../lib/logger";
+import posthog from "posthog-js";
 
 function saveLastPrayerId(id: string, city: string, country: string) {
   try {
@@ -79,6 +82,10 @@ export function Submit() {
       const displayUsername = anonymous ? undefined : (profile.username || user?.email);
       const displayNameVal = anonymous ? undefined : (profile.displayName || undefined);
 
+      // Round to ~11km (0.1°) for privacy
+      const approxLat = geoLocation?.lat ? Math.round(geoLocation.lat * 10) / 10 : 0;
+      const approxLng = geoLocation?.lng ? Math.round(geoLocation.lng * 10) / 10 : 0;
+
       // Submit to Supabase
       let supabaseId: string | null = null;
       if (user) {
@@ -86,8 +93,8 @@ export function Submit() {
           text: sanitizedText,
           city: city.trim() || "Unknown",
           country: country.trim() || "Unknown",
-          lat: geoLocation?.lat || 0,
-          lng: geoLocation?.lng || 0,
+          lat: approxLat,
+          lng: approxLng,
           category: "Other",
           name: displayNameVal,
           displayName: displayNameVal,
@@ -106,8 +113,8 @@ export function Submit() {
         displayName: displayNameVal,
         username: displayUsername,
         prayerCount: 0,
-        lat: geoLocation?.lat || 0,
-        lng: geoLocation?.lng || 0,
+        lat: approxLat,
+        lng: approxLng,
         category: "Other",
         createdAt: new Date().toISOString(),
         commentsEnabled,
@@ -124,12 +131,13 @@ export function Submit() {
         localStorage.setItem("oratio_submitted_prayers", JSON.stringify([newPrayer, ...existingPrayers]));
         saveLastPrayerId(newPrayer.id, city.trim(), country.trim());
         setLastPrayerId(newPrayer.id);
+        posthog.capture("prayer_submitted", { city: city.trim(), country: country.trim(), anonymous: !displayUsername });
         setSubmitted(true);
       } catch (e) {
-        console.error('localStorage error:', e);
+        logError("submit localstorage", e);
       }
     } catch (error) {
-      console.error('Submission error:', error);
+      logError("submit prayer", error);
     } finally {
       setSubmitting(false);
     }

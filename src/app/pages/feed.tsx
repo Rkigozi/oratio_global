@@ -10,6 +10,7 @@ import { getHashtagCounts } from "../../lib/hashtags";
 import { useGeolocation } from "../../lib/use-geolocation";
 import { getFeedPrayers, searchUsers, togglePray, getFollowingIds } from "../../lib/supabase-queries";
 import { LoadingSpinner, ErrorState } from "../components/loading-spinner";
+import posthog from "posthog-js";
 
 export function Feed() {
   const navigate = useNavigate();
@@ -65,6 +66,7 @@ export function Feed() {
     setActiveSearch(q);
     addRecentSearch(q);
     setShowRecent(false);
+    if (q) posthog.capture("search_performed", { query: q });
   };
 
   const handleRecentClick = (q: string) => {
@@ -108,7 +110,7 @@ export function Feed() {
     loadPrayers();
   }, [loadPrayers]);
   const [showWelcome, setShowWelcome] = useState(() => {
-    return !localStorage.getItem("oratio_feed_visited");
+    try { return !localStorage.getItem("oratio_feed_visited"); } catch { return true; }
   });
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
   const [prayedIds, setPrayedIds] = useState<string[]>(() => getPrayedIds());
@@ -185,7 +187,7 @@ export function Feed() {
 
   const dismissWelcome = () => {
     setShowWelcome(false);
-    localStorage.setItem("oratio_feed_visited", "true");
+    try { localStorage.setItem("oratio_feed_visited", "true"); } catch { /* ignore */ }
   };
 
 

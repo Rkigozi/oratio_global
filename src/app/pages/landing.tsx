@@ -96,7 +96,7 @@ export function Landing() {
 
           {/* Email waitlist */}
           <div className="w-full max-w-sm mx-auto">
-            <p className="text-text-dim text-xs mb-3 text-center">We'll save your interest locally — real email subscription coming with accounts.</p>
+            <p className="text-text-dim text-xs mb-3 text-center">Get notified when Oratio launches — we'll never spam you.</p>
             {subscribed ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}

@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "./supabase";
+import { logError } from "./logger";
+import posthog from "posthog-js";
 import type { User } from "@supabase/supabase-js";
 
 interface AuthState {
@@ -76,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { data: { username } },
     });
     if (error) return error.message;
+    posthog.capture("user_signed_up", { method: "email" });
     // If user needs email confirmation, set the flag
     if (data?.user?.identities?.length === 0 || data?.user?.email_confirmed_at === null) {
       setNeedsEmailVerification(true);
@@ -85,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string): Promise<string | null> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) posthog.capture("user_signed_in", { method: "email" });
     return error?.message || null;
   };
 
@@ -93,7 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       provider: "google",
       options: { redirectTo: window.location.origin },
     });
-    if (error) console.error("Google sign-in error:", error.message);
+    if (error) logError("google sign-in", error);
+    else posthog.capture("user_signed_in", { method: "google" });
   };
 
   const signOut = async () => {

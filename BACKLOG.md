@@ -1,7 +1,7 @@
 # Oratio v1.0 Backlog
 
 > Organized by priority within each epic.
-> ✅ = Completed this session
+> Last audited: June 15, 2026
 
 ---
 
@@ -9,107 +9,119 @@
 
 ### ✅ P0 — Completed
 
-| Task | Description |
-|------|-------------|
-| ✅ Live prayer updates | Submit page dispatches `oratio-prayer-added` event; delete dispatches `oratio-prayer-removed`. Home + Feed listen and update in real time. |
-| ✅ Location on submit | City + Country fields added. Country is a dropdown from curated list. Auto-detect via geolocation with toggle between auto/manual. Lat/lng saved when geo available. |
-| ✅ Profile Saved section | Stats row + section toggle now navigate to `/profile/saved` (working dedicated page) instead of broken inline empty state. |
-| ✅ Hashtag clicks | PrayerDetail hashtag → Feed with `?search=` param. Feed reads URL param and initializes search state from it. |
-| ✅ Feed duplicate header | Removed redundant "Prayer Feed" title. Global header + bottom nav handle it. |
-| ✅ Back buttons | Added back arrows on Onboarding and Login → `/landing`. |
-| ✅ My Prayers → full list | Profile shows first 5 prayers with "View all N prayers →" link to `/profile/submitted`. |
-| ✅ Landing page polish | Fixed Android Google icon, added Create Account button, fixed mobile scrolling, more bottom padding. |
-| ✅ Auth redirect removed | Layout no longer redirects unauthenticated users to landing. App loads directly at `/`. |
+| Task | Status | Notes |
+|------|--------|-------|
+| Live prayer updates | ✅ Done | CustomEvent dispatch + listen in Feed + Home |
+| Location on submit | ✅ Done | City + Country dropdown, geo auto-detect toggle |
+| Profile Saved section | ✅ Done | Stats + section toggle → `/profile/saved` |
+| Hashtag clicks | ✅ Done | PrayerDetail hashtag → Feed with `?search=` |
+| Feed duplicate header | ✅ Done | Redundant title removed |
+| Back buttons (Onboarding/Login) | ✅ Done | ArrowLeft → `/landing` on both |
+| My Prayers → full list | ✅ Done | Profile shows 5 + "View all N →" |
+| Landing page polish | ✅ Done | Google icon SVG, Create Account, scroll/padding |
+| Auth redirect removed | ✅ Done | Layout no longer gates unauthenticated users |
+| Fake email subscription | ✅ Done | Now wired to Supabase `waitlist` table |
 
 ### 🔴 P0 — Fix now
 
-| # | Task | Description | Acceptance Criteria |
-|---|------|-------------|---------------------|
-| 1 | **Fix double back buttons** | Header auto-shows back + many pages also render their own back button (UserProfile, UserList, PrayerDetail). | Only one back button visible per page. |
-| 2 | **Label mock data** | Followers/following counts are fake (generated from hash), bios/locations are hardcoded. Add "(sample)" label or a banner: "Sample data — real data coming with accounts". | Users can distinguish real vs sample data. |
-| 3 | **Fix fake email subscription** | Landing + Info page "Subscribe" stores email in localStorage only. User thinks they joined a real mailing list. | Either wire to a real API/webhook, or change CTA text to clarify local-only storage. |
-| 4 | **Comment submit spinner** | Submit button greys out with no spinner when `submitting`. If API hangs, zero feedback. | Show inline spinner on button while submitting. |
-| 5 | **Hashtags in PrayerRow** | PrayerRow (used in profile pages) renders plain text. FeedCard renders clickable hashtags. Inconsistent. | Import `renderHashtags` and wire `onTagClick` in PrayerRow. |
+| # | Task | Description | Status |
+|---|------|-------------|--------|
+| 1 | ~~Fix double back buttons~~ | PrayerDetail/UserProfile/UserList are standalone routes (not in Layout) — their back buttons are correct | ✅ Not an issue |
+| 2 | **Label mock data** | Followers/following counts still fake/hardcoded without "(sample)" label | ⚠️ Partial — prayers labeled, followers count not |
+| 3 | **Comment submit spinner** | Greys out with no feedback if API hangs | ✅ Fixed — spinner implemented |
+| 4 | **Hashtags in PrayerRow** | Was plain text, inconsistent with FeedCard | ✅ Fixed — `renderHashtags` wired |
+| 5 | **Stale text on Landing** | Says "We'll save your interest locally" but subscription now hits Supabase | ✅ Fixed |
+| 6 | **Google Translate API key in client bundle** | `VITE_GOOGLE_TRANSLATE_API_KEY` in `.env` gets inlined into built JS | ✅ Fixed — removed from `.env` |
 
 ### 🟡 P1 — Important polish
 
-| # | Task | Description |
-|---|------|-------------|
-| 6 | **Fix report flow timing** | Confirmation "Thanks for reporting" shows before API call resolves. Move toast to after response. |
-| 7 | **Comment character limit** | No maxlength or counter on comment textarea. Add generous limit (2000) with counter. |
-| 8 | **Hide Delete on other's comments** | Every comment shows Delete. Check ownership against current profile first. |
-| 9 | **Missing fallbacks** | `prayerCount` renders blank if 0/undefined. `city` renders blank if empty. Add `?? 0` / `|| "Unknown location"`. |
-| 10 | **Avatar alt text** | All avatar `<img>` tags have `alt=""`. Replace with `alt={username}` for accessibility. |
+| # | Task | Description | Status |
+|---|------|-------------|--------|
+| 6 | **Fix report flow timing** | PrayerDetail shows confirmation before API resolves | ✅ Fixed |
+| 7 | **Comment character counter** | `maxLength` exists (2000) but no visible counter | ⚠️ Partial — needs `{length}/2000` display |
+| 8 | **Hide Delete on other's comments** | Check ownership against current profile | ✅ Done |
+| 9 | **Missing fallbacks** | `prayerCount` blank if 0/undefined in profile pages; `city` blank in PrayerDetail/profile pages | ⚠️ Partial — some done, several missing |
+| 10 | **Avatar alt text** | All avatars use descriptive alt (e.g. `alt={username}`) instead of `alt=""` | ✅ Done (descriptive is actually better for a11y) |
 
 ### 🟢 P2 — Refinement
 
-| # | Task | Description |
-|---|------|-------------|
-| 11 | Read-more affordance | Truncated text (`line-clamp-2/3`) has no visual indicator it was cut off. Add gradient fade or "..." |
-| 12 | Bottom nav tap feedback | Missing `active:scale-95` press effect (inconsistent with rest of app) |
-| 13 | Comment count in PrayerRow | FeedCard shows it, PrayerRow doesn't. Make consistent. |
-| 14 | Animated new comments | New comments pop in instantly. Add fade/slide animation like rest of app. |
-| 15 | Info page unsubscribe | No way to undo "Subscribe". Add "Remove me" link in subscribed state. |
-| 16 | Title transitions in Header | Title text swaps instantly on route change. Add crossfade. |
-| 17 | Crisis resources phone numbers | All links are websites. Add helpline phone numbers for acute distress. |
+| # | Task | Description | Status |
+|---|------|-------------|--------|
+| 11 | Read-more affordance | `line-clamp-2/3` has no visual indicator of truncation | ❌ Not done |
+| 12 | Bottom nav tap feedback | Missing `active:scale-95` press effect | ❌ Not done |
+| 13 | Comment count in PrayerRow | FeedCard shows it, PrayerRow doesn't | ❌ Not done |
+| 14 | Animated new comments | No fade/slide animation on new comments | ❌ Not done |
+| 15 | Info page unsubscribe | "Remove" clears local state but not DB row | ⚠️ Partial — no DELETE API call |
+| 16 | Title transitions in Header | Title swaps instantly with no crossfade | ❌ Not done |
+| 17 | Crisis resources phone numbers | All links are websites, no `tel:` numbers | ❌ Not done |
+| 18 | Apple splash screens | No `apple-touch-startup-image` tags in `index.html` | ❌ Not done |
+| 19 | Web Share Target API | Manifest missing `share_target` field | ❌ Not done |
+| 20 | CSP security headers | `netlify.toml` missing `Content-Security-Policy` | ❌ Not done |
+| 21 | `.ico` favicon fallback | PNG fallback exists, no `favicon.ico` for old browsers | ⚠️ Partial — has PNG, no ICO |
 
 ---
 
 ## Epic: Backend / Supabase Migration
 
-### 🔴 P0 — Prerequisite for production
+> **Note:** Most Supabase migration work is already complete. Remaining items are cleanup/security/monitoring.
+
+### ✅ Completed
+
+| # | Task | Notes |
+|---|------|-------|
+| 1 | Supabase SDK | `@supabase/supabase-js` installed, client created, env vars wired |
+| 2 | Real auth | Email/password + Google OAuth via Supabase Auth |
+| 3 | Prayer data | `prayer_requests` table — Supabase CRUD with localStorage dual-write fallback |
+| 4 | Comments | `comments` table — Supabase CRUD, no localStorage |
+| 5 | Follows | `follows` table — Supabase CRUD, minor localStorage relic |
+| 6 | Reports | `reports` table — Supabase INSERT with localStorage fallback |
+| 7 | Real feed | Supabase-powered; `mockFeedPrayers`/`mockHotspots` are dead code |
+| 8 | Google Translate proxy | Edge function proxies to Google Translate — no key in client bundle |
+| 9 | Error Boundary | Class-based ErrorBoundary wrapping root app |
+| 10 | Real 404 page | Catch-all route → `NotFound` component |
+
+### 🔴 P0 — Still needed
 
 | # | Task | Description |
 |---|------|-------------|
-| 1 | **Install Supabase SDK** | `npm install @supabase/supabase-js`. Create client. Wire env vars. |
-| 2 | **Implement real auth** | OAuth (Google/GitHub) via Supabase Auth. Replace localStorage profile system. |
-| 3 | **Migrate prayer data** | Create `prayer_requests` table. Submit writes to Supabase instead of localStorage. |
-| 4 | **Migrate comments** | Create `comments` table. Wire `api.ts` to Supabase CRUD. |
-| 5 | **Migrate follows** | Create `follows` table. Wire follow/unfollow to Supabase. |
-| 6 | **Migrate reports** | Create `reports` table. Wire report submission + moderation view. |
-| 7 | **Real feed** | Replace `mockFeedPrayers` with Supabase query. Remove mock data dependency. |
+| 11 | **Remove localStorage dual-writes** | Prayer creation/follow/report still dual-write to localStorage. Clean up. |
+| 12 | **Remove dead mock data** | `mockHotspots` and `mockFeedPrayers` in `prayer-data.ts` are unused |
+| 13 | **Deprecate localStorage profile system** | `profile-data.ts` (229 lines) coexists alongside Supabase Auth |
 
-### 🟡 P1 — Security & reliability
+### 🟡 P1 — Monitoring & analytics
 
-| # | Task | Description |
-|---|------|-------------|
-| 8 | **Google Translate → Edge Function** | API key is hardcoded in client bundle. Proxy through Supabase Edge Function or Netlify Function. |
-| 9 | **Add Error Boundary** | Wrap app in error boundary. Current: any render crash = white screen. |
-| 10 | **Real 404 page** | Catch-all route currently redirects silently to `/`. Create proper NotFound page. |
-
-### 🟢 P2 — Monitoring & analytics
-
-| # | Task | Description |
-|---|------|-------------|
-| 11 | Wire Sentry (`@sentry/react`) | DSN already in env vars. No SDK installed. |
-| 12 | Wire PostHog | Key already in env vars. No SDK installed. |
+| # | Task | Description | Status |
+|---|------|-------------|--------|
+| 14 | **Wire Sentry** | `@sentry/react` + `@sentry/browser` installed, `Sentry.init()` called — **DSN missing from `.env`** | ❌ Not configured |
+| 15 | **Wire PostHog** | `posthog-js` installed, `posthog.init()` called — **API key missing from `.env`** | ❌ Not configured |
 
 ---
 
 ## Epic: PWA Polish
 
-### 🟡 P1
+### ✅ Completed
 
-| # | Task | Description |
-|---|------|-------------|
-| 1 | **Maskable PWA icons** | Manifest icons missing `purpose: "maskable any"`. Android shows white square on home screen. |
-| 2 | **Offline fallback** | Workbox config missing `navigateFallback`. Navigation while offline shows browser "No Internet" page. |
-| 3 | **Apple splash screens** | No `apple-touch-startup-image` tags. White flash on iOS cold start. |
+| # | Task | Notes |
+|---|------|-------|
+| 1 | Maskable PWA icons | `purpose: "maskable any"` on 192+512 PNG icons in manifest |
+| 2 | Offline fallback | `navigateFallback: '/index.html'` configured in workbox |
+| 3 | SW update prompt | `registerType: 'prompt'` + React `UpdatePrompt` component with Update/Dismiss UI |
+| 4 | HSTS header | `Strict-Transport-Security` present in `netlify.toml` |
 
-### 🟢 P2
+### ❌ Not done
 
-| # | Task | Description |
-|---|------|-------------|
-| 4 | SW update prompt | Currently `autoUpdate`. Users get no "Update available" notification. |
-| 5 | Web Share Target API | Manifest missing `share_target`. Can't share into Oratio from other apps. |
-| 6 | CSP / Security headers | Netlify config missing `Content-Security-Policy`, `HSTS` headers. |
-| 7 | SVG favicon fallback | No `.ico` fallback for older browsers. |
+| # | Task | Notes |
+|---|------|-------|
+| 5 | Apple splash screens | No `apple-touch-startup-image` tags in `index.html` |
+| 6 | Web Share Target API | No `share_target` in manifest |
+| 7 | CSP security headers | `Content-Security-Policy` absent from `netlify.toml` |
+| 8 | `.ico` favicon fallback | Has PNG 32x32 fallback but no `favicon.ico` |
 
 ---
 
-## Notes for JIRA cleanup
+## Quick Wins — Remaining
 
-- If you see tickets about "Landing page redirect", "Auth gate", "Custom events", "Saved section broken", "Hashtag search" — those are all ✅ done.
-- Tickets about "Mock data", "Fake followers", "Double back buttons" — not done, in P0/P1 above.
-- Tickets about "Supabase auth", "Database migration", "Backend API" — not started, Epic 2.
-- Anything about "Push notifications", "Badging API", "Background sync" — deferred to post-v1.0.
+1. **Add monitored env vars** — Ask Robert for `VITE_SENTRY_DSN` and `VITE_POSTHOG_KEY` values, add to `.env`
+2. **Add comment char counter** — Show `{newComment.length}/2000` below comment textarea in `comment-section.tsx`
+3. **Add missing fallbacks** — `prayerCount ?? 0` in profile pages, `city || "Unknown"` in PrayerDetail + profile pages
+4. **Add `.ico` favicon** — Create `public/icons/favicon.ico` for old browsers

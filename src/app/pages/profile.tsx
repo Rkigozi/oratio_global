@@ -298,7 +298,7 @@ export function Profile() {
                     {prayer.text}
                   </p>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-text-dim">🙏 {prayer.prayerCount}</span>
+                    <span className="text-xs text-text-dim">🙏 {prayer.prayerCount ?? 0}</span>
                     {prayer.createdAt && (
                       <span className="text-text-dim text-[10px]">
                         {new Date(prayer.createdAt).toLocaleDateString()}

@@ -14,6 +14,7 @@ import { translateText, needsTranslation, detectLanguage } from "../../lib/trans
 import { getPrayerById, togglePray, toggleSavePrayer, followUser, unfollowUser, getProfileByUsername, isFollowing, toggleCommentsEnabled } from "../../lib/supabase-queries";
 import { LoadingSpinner, ErrorState } from "../components/loading-spinner";
 import { useAuth } from "../../lib/auth-context";
+import posthog from "posthog-js";
 
 export function PrayerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -116,6 +117,7 @@ export function PrayerDetail() {
     const newSaved = !saved;
     setSaved(newSaved);
     void toggleSavePrayer(prayer!.id, newSaved);
+    posthog.capture(newSaved ? "prayer_saved" : "prayer_unsaved", { prayerId: prayer!.id });
     try {
       const ids = JSON.parse(localStorage.getItem("oratio_saved") || "[]") as string[];
       if (newSaved) {
@@ -129,10 +131,11 @@ export function PrayerDetail() {
   };
 
   const handleReport = async (reason: string) => {
-    setReported(true);
     setShowReport(false);
     try {
       await reportContent({ reportable_type: "prayer", reportable_id: prayer!.id, reason });
+      posthog.capture("prayer_reported", { prayerId: prayer!.id, reason });
+      setReported(true);
     } catch {
       try {
         const reports = JSON.parse(localStorage.getItem("oratio_reports") || "[]") as Array<{prayerId: string; reason: string; timestamp: number}>;
@@ -167,6 +170,7 @@ export function PrayerDetail() {
       } catch { /* ignore */ }
       // Sync to Supabase
       void togglePray(prayerId, !isCurrentlyPrayed);
+      posthog.capture(isCurrentlyPrayed ? "prayer_unprayed" : "prayer_prayed", { prayerId });
       return newIds;
     });
   }, []);
@@ -313,7 +317,7 @@ export function PrayerDetail() {
           <div className="flex items-center gap-2 mb-1">
             <MapPin size={12} className="text-text-dim" />
             <p className="text-text-muted text-xs uppercase tracking-[0.15em]">
-              {prayer.city}, {prayer.country}
+              {prayer.city || "Unknown"}, {prayer.country}
             </p>
           </div>
           {prayer.createdAt && (
@@ -386,7 +390,7 @@ export function PrayerDetail() {
                 boxShadow: "0 0 6px rgba(var(--rgb-accent), 0.5)",
               }}
             />
-            <span>{(() => { const c = prayer.prayerCount + (isPrayed ? 1 : 0); return `${c} ${c === 1 ? "person prayed" : "people prayed"}`; })()}</span>
+            <span>{(() => { const c = (prayer.prayerCount ?? 0) + (isPrayed ? 1 : 0); return `${c} ${c === 1 ? "person prayed" : "people prayed"}`; })()}</span>
           </div>
 
           {/* Pray button */}

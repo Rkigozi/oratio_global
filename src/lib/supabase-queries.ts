@@ -202,31 +202,6 @@ export async function togglePray(
   return true;
 }
 
-export async function hasPrayed(prayerId: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data } = await supabase
-    .from("prayer_interactions")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("prayer_id", prayerId)
-    .maybeSingle();
-
-  return !!data;
-}
-
-export async function getPrayedIds(): Promise<string[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data } = await supabase
-    .from("prayer_interactions")
-    .select("prayer_id")
-    .eq("user_id", user.id);
-
-  return (data || []).map((r: { prayer_id: string }) => r.prayer_id);
-}
 
 // ─── Comments ──────────────────────────────────────────────────────────
 

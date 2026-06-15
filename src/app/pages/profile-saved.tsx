@@ -169,7 +169,7 @@ export function ProfileSaved() {
                     <div className="flex items-center gap-2 mb-1 justify-center">
                       <MapPin size={12} className="text-text-dim" />
                       <p className="text-text-muted text-xs">
-                        {selectedPrayer.city}, {selectedPrayer.country}
+                        {(selectedPrayer.city || "Unknown")}, {selectedPrayer.country}
                       </p>
                     </div>
                     {selectedPrayer.createdAt && (
@@ -191,7 +191,7 @@ export function ProfileSaved() {
 
                     <div className="flex items-center gap-1.5 justify-center text-text-dim text-xs mb-6">
                       <span className="text-xs opacity-60">🙏</span>
-                      <span>{selectedPrayer.prayerCount} {selectedPrayer.prayerCount === 1 ? "person" : "people"} prayed</span>
+                      <span>{(selectedPrayer.prayerCount ?? 0)} {(selectedPrayer.prayerCount ?? 0) === 1 ? "person" : "people"} prayed</span>
                     </div>
 
                     <button
