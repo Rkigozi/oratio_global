@@ -313,12 +313,11 @@ export function Feed() {
     >
       {/* Fixed header area */}
       <div
-        className="sticky top-0 z-30 pb-0 flex-shrink-0"
+        className="sticky top-0 z-20 pb-0 flex-shrink-0"
         style={{
-          paddingTop: "calc(5rem + env(safe-area-inset-top))",
+          paddingTop: "calc(3.5rem + env(safe-area-inset-top))",
           background:
             "linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98) 70%, rgba(var(--rgb-bg), 0))",
-          backdropFilter: "blur(16px)",
         }}
       >
         {/* Filter pills row */}

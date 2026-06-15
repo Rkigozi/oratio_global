@@ -160,66 +160,63 @@ export function Profile() {
               <p className="text-text-dim text-xs mb-1">@{username}</p>
               {profile.bio && <p className="text-text-secondary text-xs mb-1.5 leading-relaxed">{profile.bio}</p>}
               {profile.location && <p className="text-text-dim text-[10px] mb-2">📍 {profile.location}</p>}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={async () => { await signOut(); void navigate("/landing"); }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
+                  className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
                   style={{
                     background: "rgba(var(--rgb-accent), 0.06)",
                     border: "1px solid rgba(var(--rgb-accent), 0.1)",
                   }}
                   aria-label="Sign out"
                 >
-                  <LogOut size={14} className="text-text-muted" />
+                  <LogOut size={16} className="text-text-muted" />
                 </button>
                 <button
                   onClick={() => void navigate("/info")}
-                  className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
+                  className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
                   style={{
                     background: "rgba(var(--rgb-accent), 0.06)",
                     border: "1px solid rgba(var(--rgb-accent), 0.1)",
                   }}
-                  aria-label="Info"
+                  aria-label="About"
                 >
-                  <Info size={14} className="text-text-muted" />
+                  <Info size={16} className="text-text-muted" />
                 </button>
                 <button
                   onClick={() => void navigate("/profile/settings")}
-                  className="w-8 h-8 flex items-center justify-center rounded-full cursor-pointer"
+                  className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
                   style={{
                     background: "rgba(var(--rgb-accent), 0.06)",
                     border: "1px solid rgba(var(--rgb-accent), 0.1)",
                   }}
                   aria-label="Settings"
                 >
-                  <Settings size={14} className="text-text-muted" />
+                  <Settings size={16} className="text-text-muted" />
                 </button>
               </div>
             </div>
           </div>
 
           {/* Stats row */}
-          <div className="flex justify-around mb-6 py-3 rounded-xl"
+          <div className="flex justify-center gap-6 mb-6 py-3 rounded-xl"
             style={{ background: "rgba(var(--rgb-surface), 0.4)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
           >
-            <button onClick={() => setShowSection("prayers")} className="text-center cursor-pointer">
-              <p className="text-text text-sm font-medium">{myPrayers}</p>
+            <button onClick={() => setShowSection("prayers")} className="text-center cursor-pointer min-w-[50px]">
+              <p className="text-text text-sm font-semibold">{myPrayers}</p>
               <p className="text-text-dim text-[10px]">Prayers</p>
             </button>
-            <button onClick={() => void navigate("/profile/prayed")} className="text-center cursor-pointer">
-              <p className="text-text text-sm font-medium">{myPrayedFor}</p>
-              <p className="text-text-dim text-[10px]">Prayed For</p>
+            <button onClick={() => void navigate("/profile/prayed")} className="text-center cursor-pointer min-w-[50px]">
+              <p className="text-text text-sm font-semibold">{myPrayedFor}</p>
+              <p className="text-text-dim text-[10px]">Prayed</p>
             </button>
-            <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/followers`)} className="text-center cursor-pointer">
-              <p className="text-text text-sm font-medium">0</p>
-              <p className="text-text-dim text-[10px]">Followers</p>
-            </button>
-            <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/following`)} className="text-center cursor-pointer">
-              <p className="text-text text-sm font-medium">{followingCount}</p>
+            <div className="w-px bg-accent/10" />
+            <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/following`)} className="text-center cursor-pointer min-w-[50px]">
+              <p className="text-text text-sm font-semibold">{followingCount}</p>
               <p className="text-text-dim text-[10px]">Following</p>
             </button>
-            <button onClick={() => void navigate("/profile/saved")} className="text-center cursor-pointer">
-              <p className="text-text text-sm font-medium">{savedCount}</p>
+            <button onClick={() => void navigate("/profile/saved")} className="text-center cursor-pointer min-w-[50px]">
+              <p className="text-text text-sm font-semibold">{savedCount}</p>
               <p className="text-text-dim text-[10px]">Saved</p>
             </button>
           </div>
