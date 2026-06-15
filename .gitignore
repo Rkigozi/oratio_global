@@ -135,3 +135,5 @@ supabase/.temp/
 # Backup files
 *.backup
 *.bak
+# Local Netlify folder
+.netlify
