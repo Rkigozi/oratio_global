@@ -313,8 +313,9 @@ export function Feed() {
     >
       {/* Fixed header area */}
       <div
-        className="sticky top-0 z-30 pt-[max(3rem,env(safe-area-inset-top))] pb-0 flex-shrink-0"
+        className="sticky top-0 z-30 pb-0 flex-shrink-0"
         style={{
+          paddingTop: "calc(5rem + env(safe-area-inset-top))",
           background:
             "linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98) 70%, rgba(var(--rgb-bg), 0))",
           backdropFilter: "blur(16px)",
@@ -533,7 +534,7 @@ export function Feed() {
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 px-4 overflow-y-auto">
+      <div className="flex-1 px-4 overflow-y-auto pb-28">
         {/* Filter banners */}
         <AnimatePresence>
           {hasLocationFilter && (
