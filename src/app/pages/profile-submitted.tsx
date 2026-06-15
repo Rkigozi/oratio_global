@@ -11,7 +11,6 @@ import { LoadingSpinner } from "../components/loading-spinner";
 
 export function ProfileSubmitted() {
   const navigate = useNavigate();
-  const [version, setVersion] = useState(0);
   
   // Prayer detail / action drawer
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
@@ -27,7 +26,7 @@ export function ProfileSubmitted() {
       setMySubmitted(prayers);
       setLoading(false);
     });
-  }, [version]);
+  }, []);
 
   const handleOpenPrayer = (prayer: PrayerRequest) => {
     setSelectedPrayer(prayer);

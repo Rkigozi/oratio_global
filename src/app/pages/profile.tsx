@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Send,
   LogOut,
@@ -160,41 +160,41 @@ export function Profile() {
               <p className="text-text-dim text-xs mb-1">@{username}</p>
               {profile.bio && <p className="text-text-secondary text-xs mb-1.5 leading-relaxed">{profile.bio}</p>}
               {profile.location && <p className="text-text-dim text-[10px] mb-2">📍 {profile.location}</p>}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   onClick={async () => { await signOut(); void navigate("/landing"); }}
-                  className="flex items-center gap-1.5 px-4 py-1 rounded-full text-xs cursor-pointer"
+                  className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px] cursor-pointer"
                   style={{
                     background: "rgba(var(--rgb-accent), 0.06)",
                     border: "1px solid rgba(var(--rgb-accent), 0.1)",
                     color: "rgb(var(--rgb-text-muted))",
                   }}
                 >
-                  <LogOut size={11} />
+                  <LogOut size={10} />
                   Sign Out
                 </button>
                 <button
                   onClick={() => void navigate("/info")}
-                  className="flex items-center gap-1.5 px-4 py-1 rounded-full text-xs cursor-pointer"
+                  className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px] cursor-pointer"
                   style={{
                     background: "rgba(var(--rgb-accent), 0.06)",
                     border: "1px solid rgba(var(--rgb-accent), 0.1)",
                     color: "rgb(var(--rgb-text-muted))",
                   }}
                 >
-                  <Info size={11} />
+                  <Info size={10} />
                   Info
                 </button>
                 <button
                   onClick={() => void navigate("/profile/settings")}
-                  className="flex items-center gap-1.5 px-4 py-1 rounded-full text-xs cursor-pointer"
+                  className="flex items-center gap-1 px-3 py-1 rounded-full text-[11px] cursor-pointer"
                   style={{
                     background: "rgba(var(--rgb-accent), 0.06)",
                     border: "1px solid rgba(var(--rgb-accent), 0.1)",
                     color: "rgb(var(--rgb-text-muted))",
                   }}
                 >
-                  <Settings size={11} />
+                  <Settings size={10} />
                   Settings
                 </button>
               </div>
@@ -206,11 +206,11 @@ export function Profile() {
             style={{ background: "rgba(var(--rgb-surface), 0.4)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
           >
             <button onClick={() => setShowSection("prayers")} className="text-center cursor-pointer">
-              <p className="text-text text-sm font-medium">{myPrayers.length}</p>
+              <p className="text-text text-sm font-medium">{myPrayers}</p>
               <p className="text-text-dim text-[10px]">Prayers</p>
             </button>
             <button onClick={() => void navigate("/profile/prayed")} className="text-center cursor-pointer">
-              <p className="text-text text-sm font-medium">{myPrayedFor.length}</p>
+              <p className="text-text text-sm font-medium">{myPrayedFor}</p>
               <p className="text-text-dim text-[10px]">Prayed For</p>
             </button>
             <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/followers`)} className="text-center cursor-pointer">
@@ -269,40 +269,19 @@ export function Profile() {
           {/* Prayer list */}
           <div className="space-y-2">
             {showSection === "prayers" && (
-              myPrayers.length > 0 ? (
-                <>
-                {myPrayers.slice(0, 5).map((prayer) => (
+              myPrayers > 0 ? (
                 <div
-                  key={prayer.id}
-                  onClick={() => void navigate(`/prayer/${prayer.id}`)}
-                  className="rounded-xl px-4 py-3 cursor-pointer active:scale-[0.99] transition-transform"
+                  onClick={() => void navigate("/profile/submitted")}
+                  className="rounded-xl px-4 py-4 cursor-pointer active:scale-[0.99] transition-transform text-center"
                   style={{
                     background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))",
                     border: "1px solid rgba(var(--rgb-accent), 0.05)",
                   }}
                 >
-                  <p className="text-text-secondary text-sm line-clamp-2 leading-relaxed mb-2">
-                    {prayer.text}
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-text-dim">🙏 {prayer.prayerCount ?? 0}</span>
-                    {prayer.createdAt && (
-                      <span className="text-text-dim text-[10px]">
-                        {new Date(prayer.createdAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
+                  <Send size={20} className="text-text-dim mx-auto mb-2" />
+                  <p className="text-text text-sm font-medium">{myPrayers} prayer{myPrayers !== 1 ? "s" : ""}</p>
+                  <p className="text-text-dim text-xs mt-1">Tap to view all</p>
                 </div>
-              ))}
-              {myPrayers.length > 0 && (
-                <button
-                  onClick={() => void navigate("/profile/submitted")}
-                  className="w-full py-2.5 text-xs text-accent hover:text-accent transition-colors cursor-pointer"
-                >
-                  View all {myPrayers.length} prayers →
-                </button>
-              )}
-              </>
               ) : (
                 <div className="text-center py-8">
                   <Send size={20} className="text-text-dim mx-auto mb-2" />
@@ -316,7 +295,6 @@ export function Profile() {
                 </div>
               )
             )}
-
           </div>
         </div>
       </div>
