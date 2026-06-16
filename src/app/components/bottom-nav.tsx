@@ -13,7 +13,7 @@ export function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bottom-nav-safe" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bottom-nav-safe" style={{ background: "rgb(var(--rgb-bg))" }}>
       <div className="max-w-lg mx-auto flex justify-around items-center border-t border-accent/8" style={{ height: "49px" }}>
         {navItems.map((item) => {
           const isActive = item.path === '/' 
@@ -42,6 +42,6 @@ export function BottomNav() {
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

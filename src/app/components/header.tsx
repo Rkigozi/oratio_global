@@ -26,15 +26,16 @@ export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
     <header
       className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between py-4 px-4 pt-[max(1rem,env(safe-area-inset-top))]"
       style={{
+        minHeight: "calc(3.5rem + env(safe-area-inset-top))",
         background: "linear-gradient(to bottom, rgba(var(--rgb-bg), 0.97) 40%, rgba(var(--rgb-bg), 0))",
       }}
     >
       {/* Left side: Back button or empty spacer */}
-      <div className="w-10">
+      <div className="w-11">
         {showBack ? (
           <button
             onClick={() => void navigate(-1)}
-            className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer transition-colors hover:bg-accent/10 active:scale-95"
+            className="w-11 h-11 flex items-center justify-center rounded-full cursor-pointer transition-colors hover:bg-accent/10 active:scale-95"
             aria-label="Go back"
           >
             <ChevronLeft size={20} className="text-text-secondary" />
@@ -74,7 +75,7 @@ export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
       </div>
       
       {/* Right side: spacer for symmetry */}
-      <div className="w-10" />
+      <div className="w-11" />
     </header>
   );
 }
