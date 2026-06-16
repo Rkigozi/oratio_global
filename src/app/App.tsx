@@ -5,39 +5,29 @@ import { ThemeProvider } from "../lib/theme-context";
 import { ErrorBoundary } from "./components/error-boundary";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
-function UpdatePrompt() {
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW();
+// How often to ask the browser to check for a newer deploy (1 hour).
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
-  if (!needRefresh) return null;
+// With registerType: 'autoUpdate', a new deploy is applied and the page
+// reloads automatically once detected. The browser only checks for a new
+// service worker on navigation by default, so we poll on an interval and
+// whenever the tab becomes visible again — the moment that matters most on
+// mobile, where the PWA spends most of its life backgrounded.
+function ServiceWorkerUpdater() {
+  useRegisterSW({
+    onRegisteredSW(_swUrl, registration) {
+      if (!registration) return;
 
-  return (
-    <div
-      className="fixed bottom-24 left-4 right-4 z-[1000] max-w-sm mx-auto rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg"
-      style={{
-        background: "rgba(var(--rgb-surface), 0.98)",
-        border: "1px solid rgba(var(--rgb-accent), 0.15)",
-        backdropFilter: "blur(16px)",
-      }}
-    >
-      <p className="text-text-secondary text-xs flex-1">Update available — reload for the latest version.</p>
-      <button
-        onClick={() => updateServiceWorker(true)}
-        className="px-3 py-1.5 rounded-full text-xs text-white cursor-pointer"
-        style={{ background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))" }}
-      >
-        Update
-      </button>
-      <button
-        onClick={() => setNeedRefresh(false)}
-        className="text-text-dim hover:text-text-muted text-xs transition-colors cursor-pointer"
-      >
-        Dismiss
-      </button>
-    </div>
-  );
+      const checkForUpdate = () => {
+        if (document.visibilityState === "visible") registration.update();
+      };
+
+      setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
+      document.addEventListener("visibilitychange", checkForUpdate);
+    },
+  });
+
+  return null;
 }
 
 export default function App() {
@@ -55,7 +45,7 @@ export default function App() {
             color: 'rgb(var(--rgb-text))',
           }}>
             <RouterProvider router={router} />
-            <UpdatePrompt />
+            <ServiceWorkerUpdater />
           </div>
         </AuthProvider>
       </ThemeProvider>
