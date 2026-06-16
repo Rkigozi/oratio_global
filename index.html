@@ -57,6 +57,29 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // Last-resort safety net: if a load-time error fires before the React app
+      // has mounted anything into #root, the user would otherwise be stuck on the
+      // blue splash background forever. Replace it with a readable message and a
+      // way to recover. Once the app mounts (#root has children) this stays out
+      // of the way — runtime errors are handled by the in-app ErrorBoundary.
+      (function () {
+        var shown = false;
+        function showFallback() {
+          var root = document.getElementById("root");
+          if (shown || !root || root.childElementCount > 0) return;
+          shown = true;
+          root.innerHTML =
+            '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;gap:16px;padding:24px;text-align:center;font-family:Inter,system-ui,sans-serif;color:#e6ecff">' +
+            '<p style="font-size:15px;margin:0">We couldn\'t load the app</p>' +
+            '<p style="font-size:13px;opacity:.7;margin:0;max-width:20rem">Something went wrong while starting up. Please reload to try again.</p>' +
+            '<button style="padding:8px 20px;border-radius:9999px;font-size:13px;color:#7c8fff;background:transparent;border:1px solid rgba(124,143,255,.3);cursor:pointer" onclick="location.reload()">Reload</button>' +
+            "</div>";
+        }
+        window.addEventListener("error", showFallback);
+        window.addEventListener("unhandledrejection", showFallback);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
