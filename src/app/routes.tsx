@@ -2,6 +2,7 @@
 import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/layout";
+import { AuthGuard } from "./components/auth-guard";
 
 const Home = lazy(() => import("./pages/home").then(m => ({ default: m.Home })));
 const Feed = lazy(() => import("./pages/feed").then(m => ({ default: m.Feed })));
@@ -40,31 +41,37 @@ function SuspenseWrapper({ Component }: { Component: React.LazyExoticComponent<(
 
 export const router = createBrowserRouter([
   { path: "/landing", element: <SuspenseWrapper Component={Landing} /> },
-  { path: "/onboarding", element: <SuspenseWrapper Component={Onboarding} /> },
   { path: "/login", element: <SuspenseWrapper Component={Login} /> },
   { path: "/reset-password", element: <SuspenseWrapper Component={ResetPassword} /> },
   { path: "/update-password", element: <SuspenseWrapper Component={UpdatePassword} /> },
   { path: "/privacy", element: <SuspenseWrapper Component={Privacy} /> },
   { path: "/terms", element: <SuspenseWrapper Component={Terms} /> },
-  { path: "/prayer/:id", element: <SuspenseWrapper Component={PrayerDetail} /> },
-  { path: "/moderate", element: <SuspenseWrapper Component={Moderate} /> },
-  { path: "/user/:name", element: <SuspenseWrapper Component={UserProfile} /> },
-  { path: "/user/:name/following", element: <SuspenseWrapper Component={UserFollowing} /> },
-  { path: "/user/:name/followers", element: <SuspenseWrapper Component={UserFollowers} /> },
 
   {
-    path: "/",
-    Component: Layout,
+    Component: AuthGuard,
     children: [
-      { index: true, element: <SuspenseWrapper Component={Home} /> },
-      { path: "feed", element: <SuspenseWrapper Component={Feed} /> },
-      { path: "submit", element: <SuspenseWrapper Component={Submit} /> },
-      { path: "profile", element: <SuspenseWrapper Component={Profile} /> },
-      { path: "profile/submitted", element: <SuspenseWrapper Component={ProfileSubmitted} /> },
-      { path: "profile/prayed", element: <SuspenseWrapper Component={ProfilePrayed} /> },
-      { path: "profile/saved", element: <SuspenseWrapper Component={ProfileSaved} /> },
-      { path: "profile/settings", element: <SuspenseWrapper Component={ProfileSettings} /> },
-      { path: "info", element: <SuspenseWrapper Component={Info} /> },
+      { path: "/onboarding", element: <SuspenseWrapper Component={Onboarding} /> },
+      { path: "/prayer/:id", element: <SuspenseWrapper Component={PrayerDetail} /> },
+      { path: "/moderate", element: <SuspenseWrapper Component={Moderate} /> },
+      { path: "/user/:name", element: <SuspenseWrapper Component={UserProfile} /> },
+      { path: "/user/:name/following", element: <SuspenseWrapper Component={UserFollowing} /> },
+      { path: "/user/:name/followers", element: <SuspenseWrapper Component={UserFollowers} /> },
+
+      {
+        path: "/",
+        Component: Layout,
+        children: [
+          { index: true, element: <SuspenseWrapper Component={Home} /> },
+          { path: "feed", element: <SuspenseWrapper Component={Feed} /> },
+          { path: "submit", element: <SuspenseWrapper Component={Submit} /> },
+          { path: "profile", element: <SuspenseWrapper Component={Profile} /> },
+          { path: "profile/submitted", element: <SuspenseWrapper Component={ProfileSubmitted} /> },
+          { path: "profile/prayed", element: <SuspenseWrapper Component={ProfilePrayed} /> },
+          { path: "profile/saved", element: <SuspenseWrapper Component={ProfileSaved} /> },
+          { path: "profile/settings", element: <SuspenseWrapper Component={ProfileSettings} /> },
+          { path: "info", element: <SuspenseWrapper Component={Info} /> },
+        ],
+      },
     ],
   },
 
