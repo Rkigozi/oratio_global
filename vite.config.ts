@@ -20,7 +20,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['icons/icon.svg'],
       manifest: {
         name: 'Oratio — Global Prayer Platform',
@@ -45,6 +45,11 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,json,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackAllowlist: [/^\/[a-z]/],
+        // Take control immediately so a new deploy replaces the old cached app
+        // without waiting for every tab to close (critical for mobile PWAs).
+        clientsClaim: true,
+        skipWaiting: true,
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

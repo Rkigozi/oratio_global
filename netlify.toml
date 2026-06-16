@@ -21,6 +21,24 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# The service worker, HTML shell, and manifest must always be revalidated so a
+# new deploy is discovered immediately. Hashed files under /assets stay
+# immutable above; these entry points must never be served stale.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
