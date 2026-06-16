@@ -4,7 +4,14 @@
 
 /* ── Bottom nav safe area (PWA standalone mode) ───────────────────── */
 .bottom-nav-safe {
-  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  /* iOS standalone PWAs (app added to the home screen) can massively
+     over-report env(safe-area-inset-bottom): on an iPhone 13 the home
+     indicator is only 34px tall, yet the inset resolves to ~90px, leaving the
+     tab bar floating high above a large empty band. Clamp the inset to the
+     real home-indicator height so the bar sits just above it — matching how
+     native iOS tab bars look. In a normal browser the inset is 0, so this
+     falls back to a small 4px breathing gap. */
+  padding-bottom: clamp(4px, env(safe-area-inset-bottom, 0px), 34px);
 }
 
 /* ── Prevent iOS Safari auto-zoom on input focus ───────────────────── */
