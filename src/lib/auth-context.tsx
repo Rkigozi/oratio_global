@@ -52,6 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         void fetchProfile(session.user.id);
       }
       setLoading(false);
+    }).catch(() => {
+      // Network/config failure — don't leave the app stuck on a loading state.
+      setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
