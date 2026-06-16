@@ -12,7 +12,7 @@ import { getMapHotspots } from "../../lib/supabase-queries";
 export function Home() {
   
   const navigate = useNavigate();
-  const { location: geoLocation, loading: geoLoading, denied: geoDenied, requestLocation } = useGeolocation();
+  const { location: geoLocation, loading: geoLoading, denied: geoDenied, error: geoError, requestLocation, resetDenied } = useGeolocation();
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
 
   // Load real prayers from Supabase for map hotspots
@@ -131,14 +131,14 @@ export function Home() {
         className="absolute bottom-16 right-4 z-[500] w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
         style={{
           background: "rgba(var(--rgb-bg), 0.8)",
-          border: "1px solid rgba(var(--rgb-accent), 0.12)",
+          border: geoDenied ? "1px solid rgba(var(--rgb-danger), 0.3)" : "1px solid rgba(var(--rgb-accent), 0.12)",
           backdropFilter: "blur(8px)",
         }}
       >
         {geoLoading ? (
           <div className="w-3.5 h-3.5 rounded-full border-2 border-accent/30 border-t-accent animate-spin" />
         ) : (
-          <Locate size={15} className={geoLocation ? "text-accent" : "text-text-dim"} />
+          <Locate size={15} className={geoLocation ? "text-accent" : geoDenied ? "text-danger" : "text-text-dim"} />
         )}
       </button>
 
@@ -186,7 +186,7 @@ export function Home() {
         )}
       </AnimatePresence>
 
-      {/* Denied error — tap the locate button to retry */}
+      {/* Location error banner */}
       <AnimatePresence>
         {geoDenied && !geoLocation && !geoLoading && (
           <motion.div
@@ -196,30 +196,45 @@ export function Home() {
             className="absolute bottom-20 left-4 right-4 z-[500] max-w-sm mx-auto"
           >
             <div
-              className="rounded-xl px-4 py-3 flex items-center gap-3"
+              className="rounded-xl px-4 py-3"
               style={{
                 background: "rgba(var(--rgb-bg), 0.92)",
-                border: "1px solid rgba(var(--rgb-accent), 0.12)",
+                border: "1px solid rgba(var(--rgb-danger), 0.2)",
                 backdropFilter: "blur(12px)",
               }}
             >
-              <MapPin size={16} className="text-text-dim flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-text text-sm font-medium mb-0.5">Location access blocked</p>
-                <p className="text-text-muted text-xs">Tap the locate button above to try again</p>
+              <div className="flex items-start gap-3">
+                <MapPin size={16} className="text-danger flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-text text-sm font-medium mb-1">Location unavailable</p>
+                  {geoError === "permission" ? (
+                    <p className="text-text-muted text-xs leading-relaxed">
+                      {/iPad|iPhone|iPod/.test(navigator.userAgent)
+                        ? "Go to Settings > Safari > Location and set to 'While Using', then reload."
+                        : /Android/.test(navigator.userAgent)
+                          ? "Tap the lock icon next to the URL, enable Location, then reload."
+                          : "Enable location access in your browser settings, then reload."
+                      }
+                    </p>
+                  ) : geoError === "timeout" ? (
+                    <p className="text-text-muted text-xs">Location request timed out. Try again in a better signal area.</p>
+                  ) : (
+                    <p className="text-text-muted text-xs">Could not get your location. Check that location services are enabled and try again.</p>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    resetDenied();
+                    void requestLocation();
+                  }}
+                  className="px-3 py-1.5 rounded-full text-xs text-white cursor-pointer flex-shrink-0"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
+                  }}
+                >
+                  Retry
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  resetDenied();
-                  void requestLocation();
-                }}
-                className="px-3 py-1.5 rounded-full text-xs text-white cursor-pointer flex-shrink-0"
-                style={{
-                  background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
-                }}
-              >
-                Try again
-              </button>
             </div>
           </motion.div>
         )}

@@ -18,34 +18,32 @@ export function useGeolocation() {
     }
     return null;
   });
-  const [denied, setDenied] = useState(() => {
-    try { return localStorage.getItem("oratio_location_denied") === "1"; }
-    catch { return false; }
-  });
+  const [denied, setDenied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const requestLocation = useCallback(async () => {
     if (loading) return null;
     setLoading(true);
+    setError(null);
 
     try {
       const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 300000,
+          timeout: 15000,
+          maximumAge: 600000,
         });
       });
 
       const { latitude: lat, longitude: lng } = pos.coords;
 
-      // Reverse geocode via Nominatim
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&accept-language=en`,
         { headers: { "User-Agent": "Oratio/1.0" } }
       );
       const data = await res.json();
       const address = data.address || {};
-      
+
       const info: LocationInfo = {
         city: address.city || address.town || address.village || address.county || "Unknown",
         country: address.country || "Unknown",
@@ -56,19 +54,27 @@ export function useGeolocation() {
       sessionStorage.setItem("oratio_location", JSON.stringify(info));
       setLocation(info);
       return info;
-    } catch {
-      localStorage.setItem("oratio_location_denied", "1");
+    } catch (err) {
+      const isPermission = err instanceof GeolocationPositionError && err.code === GeolocationPositionError.PERMISSION_DENIED;
+      const isTimeout = err instanceof GeolocationPositionError && err.code === GeolocationPositionError.TIMEOUT;
       setDenied(true);
+      setError(
+        isPermission
+          ? "permission"
+          : isTimeout
+            ? "timeout"
+            : "error"
+      );
       return null;
     } finally {
       setLoading(false);
     }
-  }, [loading, denied]);
+  }, [loading]);
 
   const resetDenied = useCallback(() => {
-    localStorage.removeItem("oratio_location_denied");
     setDenied(false);
+    setError(null);
   }, []);
 
-  return { location, loading, denied, requestLocation, resetDenied };
+  return { location, loading, denied, error, requestLocation, resetDenied };
 }
