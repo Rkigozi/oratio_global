@@ -24,7 +24,7 @@ export function useGeolocation() {
   });
 
   const requestLocation = useCallback(async () => {
-    if (loading || denied) return null;
+    if (loading) return null;
     setLoading(true);
 
     try {

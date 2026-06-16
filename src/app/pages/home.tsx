@@ -118,22 +118,31 @@ export function Home() {
           />
       </div>
 
-      {/* Back to my location button */}
-      {geoLocation && (
-        <button
-          onClick={() => setFlyTo({ lat: geoLocation.lat, lng: geoLocation.lng })}
-          className="absolute bottom-16 right-4 z-[500] w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
-          style={{
-            background: "rgba(var(--rgb-bg), 0.8)",
-            border: "1px solid rgba(var(--rgb-accent), 0.12)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          <Locate size={15} className="text-accent" />
-        </button>
-      )}
+      {/* Locate / re-centre button — always visible */}
+      <button
+        onClick={() => {
+          if (geoLocation) {
+            setFlyTo({ lat: geoLocation.lat, lng: geoLocation.lng });
+          } else {
+            if (geoDenied) resetDenied();
+            void requestLocation();
+          }
+        }}
+        className="absolute bottom-16 right-4 z-[500] w-9 h-9 rounded-full flex items-center justify-center cursor-pointer"
+        style={{
+          background: "rgba(var(--rgb-bg), 0.8)",
+          border: "1px solid rgba(var(--rgb-accent), 0.12)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        {geoLoading ? (
+          <div className="w-3.5 h-3.5 rounded-full border-2 border-accent/30 border-t-accent animate-spin" />
+        ) : (
+          <Locate size={15} className={geoLocation ? "text-accent" : "text-text-dim"} />
+        )}
+      </button>
 
-      {/* Geolocation prompt */}
+      {/* Geolocation request prompt */}
       <AnimatePresence>
         {showGeoPrompt && !geoLocation && !geoDenied && !geoLoading && (
           <motion.div
@@ -172,6 +181,45 @@ export function Home() {
                   Allow
                 </button>
               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Denied error — tap the locate button to retry */}
+      <AnimatePresence>
+        {geoDenied && !geoLocation && !geoLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute bottom-20 left-4 right-4 z-[500] max-w-sm mx-auto"
+          >
+            <div
+              className="rounded-xl px-4 py-3 flex items-center gap-3"
+              style={{
+                background: "rgba(var(--rgb-bg), 0.92)",
+                border: "1px solid rgba(var(--rgb-accent), 0.12)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <MapPin size={16} className="text-text-dim flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-text text-sm font-medium mb-0.5">Location access blocked</p>
+                <p className="text-text-muted text-xs">Tap the locate button above to try again</p>
+              </div>
+              <button
+                onClick={() => {
+                  resetDenied();
+                  void requestLocation();
+                }}
+                className="px-3 py-1.5 rounded-full text-xs text-white cursor-pointer flex-shrink-0"
+                style={{
+                  background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
+                }}
+              >
+                Try again
+              </button>
             </div>
           </motion.div>
         )}
