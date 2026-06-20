@@ -324,13 +324,46 @@ export async function getFollowingIds(): Promise<string[]> {
   return (data || []).map((r: { following_id: string }) => r.following_id);
 }
 
-export async function getFollowers(userId: string): Promise<string[]> {
+export async function getFollowers(userId: string): Promise<Array<{ id: string; username: string; display_name: string | null }>> {
   const { data } = await supabase
     .from("follows")
-    .select("follower_id")
+    .select(`
+      follower_id,
+      profiles!follower_id(username, display_name)
+    `)
     .eq("following_id", userId);
 
-  return (data || []).map((r: { follower_id: string }) => r.follower_id);
+  if (!data) return [];
+
+  return (data as Array<Record<string, unknown>>).map((row) => {
+    const profile = row.profiles as { username: string; display_name: string | null } | null;
+    return {
+      id: row.follower_id as string,
+      username: profile?.username || "unknown",
+      display_name: profile?.display_name || null,
+    };
+  });
+}
+
+export async function getFollowing(userId: string): Promise<Array<{ id: string; username: string; display_name: string | null }>> {
+  const { data } = await supabase
+    .from("follows")
+    .select(`
+      following_id,
+      profiles!following_id(username, display_name)
+    `)
+    .eq("follower_id", userId);
+
+  if (!data) return [];
+
+  return (data as Array<Record<string, unknown>>).map((row) => {
+    const profile = row.profiles as { username: string; display_name: string | null } | null;
+    return {
+      id: row.following_id as string,
+      username: profile?.username || "unknown",
+      display_name: profile?.display_name || null,
+    };
+  });
 }
 
 export async function isFollowing(followingId: string): Promise<boolean> {

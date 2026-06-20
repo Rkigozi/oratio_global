@@ -272,7 +272,7 @@ export function Home() {
                 >
                   {/* Location */}
                   <p className="text-text-muted text-xs uppercase tracking-[0.2em] mb-4">
-                    {selectedPrayer.city}, {selectedPrayer.country}
+                    {(selectedPrayer.city || "Unknown")}, {selectedPrayer.country || "Unknown"}
                   </p>
 
                   {/* Activity level */}
@@ -299,10 +299,10 @@ export function Home() {
                     className="text-text text-center font-heading mb-2"
                     style={{ fontSize: "1.15rem", fontWeight: 300 }}
                   >
-                    {selectedPrayer.prayerCount} {selectedPrayer.prayerCount === 1 ? "person praying in" : "people praying in"} {selectedPrayer.city}
+                    {(selectedPrayer.prayerCount ?? 0)} {(selectedPrayer.prayerCount ?? 0) === 1 ? "person praying in" : "people praying in"} {selectedPrayer.city || "Unknown"}
                   </p>
                   <p className="text-text-muted text-sm text-center mb-6 max-w-[260px]">
-                    People around {selectedPrayer.city} are lifting up prayers right now
+                    People around {selectedPrayer.city || "Unknown"} are lifting up prayers right now
                   </p>
 
 

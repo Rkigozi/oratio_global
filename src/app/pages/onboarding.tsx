@@ -91,7 +91,7 @@ export function Onboarding() {
           className="text-center mb-8"
         >
           <p className="text-accent text-xs tracking-[0.25em] uppercase mb-4">Welcome to</p>
-          <h1 className="font-heading font-light tracking-[0.2em] text-white mb-3" style={{ fontSize: "2.2rem" }}>
+          <h1 className="font-heading font-light tracking-[0.2em] text-text-secondary mb-3" style={{ fontSize: "2.2rem" }}>
             ORATIO
           </h1>
           <p className="text-text-muted text-sm">Create your account to begin.</p>

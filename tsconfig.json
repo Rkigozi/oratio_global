@@ -15,7 +15,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["vite/client"],
+    "types": ["vite/client", "vitest/globals"],
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
@@ -23,5 +23,6 @@
     }
   },
   "include": ["src"],
+  "exclude": ["src/**/*.test.*", "src/test/**", "shared/src/types.test.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

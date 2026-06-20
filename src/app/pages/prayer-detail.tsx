@@ -154,7 +154,8 @@ export function PrayerDetail() {
     if (!prayer) return;
     const url = `${window.location.origin}/prayer/${prayer.id}`;
     const attribution = getAttributionText(prayer);
-    const shareText = `🙏 Prayer request${attribution ? ` from ${attribution}` : ""}:\n\n"${prayer.text}"\n\n${prayer.prayerCount} ${prayer.prayerCount === 1 ? "person has" : "people have"} prayed.\n${url}`;
+    const c = prayer.prayerCount ?? 0;
+    const shareText = `🙏 Prayer request${attribution ? ` from ${attribution}` : ""}:\n\n"${prayer.text}"\n\n${c} ${c === 1 ? "person has" : "people have"} prayed.\n${url}`;
     if (navigator.share) {
       try { await navigator.share({ text: shareText }); } catch { /* ignore */ }
     } else {

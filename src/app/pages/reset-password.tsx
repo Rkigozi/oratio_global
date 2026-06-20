@@ -82,7 +82,7 @@ export function ResetPassword() {
           className="text-center mb-10"
         >
           <p className="text-accent text-xs tracking-[0.25em] uppercase mb-4">Reset Password</p>
-          <h1 className="font-heading font-light tracking-[0.2em] text-white mb-3" style={{ fontSize: "2rem" }}>
+          <h1 className="font-heading font-light tracking-[0.2em] text-text-secondary mb-3" style={{ fontSize: "2rem" }}>
             ORATIO
           </h1>
         </motion.div>

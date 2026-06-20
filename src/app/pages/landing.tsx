@@ -60,7 +60,7 @@ export function Landing() {
           className="text-center mb-16"
         >
           <div className="flex items-center justify-center gap-3 mb-6">
-            <h1 className="font-heading text-white" style={{ fontSize: "clamp(3rem, 8vw, 4.5rem)", fontWeight: 300, letterSpacing: "0.08em" }}>
+            <h1 className="font-heading text-text-secondary" style={{ fontSize: "clamp(3rem, 8vw, 4.5rem)", fontWeight: 300, letterSpacing: "0.08em" }}>
               ORATIO
             </h1>
             <span className="text-[10px] px-2 py-0.5 rounded-full mt-2"

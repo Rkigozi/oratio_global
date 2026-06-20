@@ -50,7 +50,7 @@ export function Login() {
           className="text-center mb-10"
         >
           <p className="text-accent text-xs tracking-[0.25em] uppercase mb-4">Welcome back</p>
-          <h1 className="font-heading font-light tracking-[0.2em] text-white mb-3" style={{ fontSize: "2.2rem" }}>
+          <h1 className="font-heading font-light tracking-[0.2em] text-text-secondary mb-3" style={{ fontSize: "2.2rem" }}>
             ORATIO
           </h1>
         </motion.div>
@@ -102,7 +102,7 @@ export function Login() {
             className="w-full py-4 rounded-full text-sm flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
             style={{
               background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
-              color: "rgb(var(--rgb-text))",
+              color: "#ffffff",
               boxShadow: "0 4px 28px rgba(var(--rgb-accent), 0.3)",
             }}
           >
