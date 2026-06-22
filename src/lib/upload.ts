@@ -1,18 +1,27 @@
+import { supabase } from "./supabase";
+
 export async function uploadAvatar(file: File): Promise<string | null> {
   try {
-    return await fileToDataUrl(file);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${user.id}/${Date.now()}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true });
+
+    if (error) return null;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(path);
+
+    return publicUrl;
   } catch {
     return null;
   }
-}
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 }
 
 export function getInitialAvatarUrl(username: string): string {

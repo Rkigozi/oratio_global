@@ -20,7 +20,7 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
     .select(`
       id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at, comments_enabled,
+      is_anonymous, prayer_count, comment_count, created_at, comments_enabled,
       profiles!inner(username, display_name, avatar_url)
     `)
     .not("location_lat", "is", null)
@@ -48,6 +48,7 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
       lng: (row.location_lng as number) || 0,
       category: (row.category as string) || undefined,
       createdAt: row.created_at as string,
+      commentCount: (row.comment_count as number) || 0,
       commentsEnabled: row.comments_enabled !== false,
       avatarUrl: profile.avatar_url || undefined,
     } as PrayerRequest;
@@ -62,7 +63,7 @@ export async function getFeedPrayers(): Promise<PrayerRequest[]> {
     .select(`
       id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at, comments_enabled,
+      is_anonymous, prayer_count, comment_count, created_at, comments_enabled,
       profiles!inner(username, display_name, avatar_url)
     `)
     .order("created_at", { ascending: false })
@@ -88,6 +89,7 @@ export async function getFeedPrayers(): Promise<PrayerRequest[]> {
       lng: (row.location_lng as number) || 0,
       category: (row.category as string) || undefined,
       createdAt: row.created_at as string,
+      commentCount: (row.comment_count as number) || 0,
       commentsEnabled: row.comments_enabled !== false,
       avatarUrl: profile.avatar_url || undefined,
     } as PrayerRequest;
@@ -100,7 +102,7 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
     .select(`
       id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at, comments_enabled,
+      is_anonymous, prayer_count, comment_count, created_at, comments_enabled,
       profiles!inner(username, display_name, avatar_url)
     `)
     .eq("id", prayerId)
@@ -125,6 +127,7 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
     lng: (data.location_lng as number) || 0,
     category: (data.category as string) || undefined,
     createdAt: data.created_at as string,
+    commentCount: (data.comment_count as number) || 0,
     commentsEnabled: data.comments_enabled !== false,
     avatarUrl: profile.avatar_url || undefined,
   } as PrayerRequest;
@@ -208,7 +211,7 @@ export async function togglePray(
 
 // ─── Comments ──────────────────────────────────────────────────────────
 
-export async function getComments(prayerId: string): Promise<Comment[]> {
+export async function getComments(prayerId: string, limit = 20, offset = 0): Promise<Comment[]> {
   const { data, error } = await supabase
     .from("comments")
     .select(`
@@ -216,7 +219,8 @@ export async function getComments(prayerId: string): Promise<Comment[]> {
       profiles(username, display_name)
     `)
     .eq("prayer_id", prayerId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .range(offset, offset + limit - 1);
 
   if (error || !data) {
     logError("fetch comments", error);
@@ -235,6 +239,16 @@ export async function getComments(prayerId: string): Promise<Comment[]> {
       user: profile ? { username: profile.username, display_name: profile.display_name } : null,
     } as Comment;
   });
+}
+
+export async function getCommentCount(prayerId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("comments")
+    .select("id", { count: "exact", head: true })
+    .eq("prayer_id", prayerId);
+
+  if (error || count === null) return 0;
+  return count;
 }
 
 export async function createComment(input: {
@@ -620,7 +634,7 @@ export async function getSavedPrayers(): Promise<PrayerRequest[]> {
     .select(`
       id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at, comments_enabled,
+      is_anonymous, prayer_count, comment_count, created_at, comments_enabled,
       profiles!inner(username, display_name, avatar_url)
     `)
     .in("id", savedIds)
@@ -646,6 +660,7 @@ export async function getSavedPrayers(): Promise<PrayerRequest[]> {
       lng: (row.location_lng as number) || 0,
       category: (row.category as string) || undefined,
       createdAt: row.created_at as string,
+      commentCount: (row.comment_count as number) || 0,
       commentsEnabled: row.comments_enabled !== false,
       avatarUrl: profile?.avatar_url || undefined,
     } as PrayerRequest;
@@ -697,7 +712,7 @@ export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {
       prayer_requests!inner(
         id, body, category,
         location_city, location_country, location_lat, location_lng,
-        is_anonymous, prayer_count, created_at, comments_enabled,
+        is_anonymous, prayer_count, comment_count, created_at, comments_enabled,
         profiles!inner(username, display_name, avatar_url)
       )
     `)
@@ -725,6 +740,7 @@ export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {
       lng: (prayer.location_lng as number) || 0,
       category: (prayer.category as string) || undefined,
       createdAt: prayer.created_at as string,
+      commentCount: (prayer.comment_count as number) || 0,
       commentsEnabled: prayer.comments_enabled !== false,
       avatarUrl: profile?.avatar_url || undefined,
     } as PrayerRequest;

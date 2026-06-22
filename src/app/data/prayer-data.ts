@@ -11,8 +11,9 @@ export interface PrayerRequest {
   lng: number;
   category?: string;
   createdAt?: string; // ISO timestamp
-  commentsEnabled?: boolean; // Whether comments are allowed on this prayer
-  avatarUrl?: string;  // Profile avatar URL from Supabase
+  commentsEnabled?: boolean;
+  avatarUrl?: string;
+  commentCount?: number;
 }
 
 // Get attribution text for a prayer (username > displayName > legacy name > Anonymous)

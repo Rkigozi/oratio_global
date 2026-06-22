@@ -79,7 +79,7 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick
           className="flex items-center gap-1 text-text-dim hover:text-text-muted text-xs transition-colors cursor-pointer"
         >
           <MessageCircle size={13} className={prayer.commentsEnabled === false ? "opacity-30" : ""} />
-          <span>{prayer.commentsEnabled === false ? "Off" : "Comment"}</span>
+          <span>{prayer.commentsEnabled === false ? "Off" : (prayer.commentCount ? prayer.commentCount : "Comment")}</span>
         </button>
         <button
           onClick={handlePray}

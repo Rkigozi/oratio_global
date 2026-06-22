@@ -1,21 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { uploadAvatar, getInitialAvatarUrl } from "./upload";
 
 describe("uploadAvatar", () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("converts a file to a data URL", async () => {
+  it("returns null when not authenticated (no user)", async () => {
     const file = new File(["test"], "test.png", { type: "image/png" });
     const result = await uploadAvatar(file);
-    expect(result).toMatch(/^data:image\/png;base64,/);
-  });
-
-  it("handles various file types", async () => {
-    const pngFile = new File(["fake-png-data"], "test.png", { type: "image/png" });
-    const result = await uploadAvatar(pngFile);
-    expect(result).toMatch(/^data:image\/png;base64,/);
+    expect(result).toBeNull();
   });
 });
 

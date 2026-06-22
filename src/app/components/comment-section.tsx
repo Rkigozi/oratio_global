@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo } from "../data/prayer-data";
 import { reportContent } from "../../lib/api";
-import { getComments, createComment, deleteComment } from "../../lib/supabase-queries";
+import { getComments, getCommentCount, createComment, deleteComment } from "../../lib/supabase-queries";
 import type { Comment } from "../../lib/supabase-queries";
 import { getInitialAvatarUrl } from "../../lib/upload";
 import { useAuth } from "../../lib/auth-context";
@@ -16,22 +16,45 @@ interface Props {
   onCommentCountChange: (count: number) => void;
 }
 
+const PAGE_SIZE = 20;
+
 export function CommentSection({ prayer, commentCount, onCommentCountChange }: Props) {
   const { profile } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; username: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submitRef = useRef(false);
 
   useEffect(() => {
-    getComments(prayer.id).then((data) => {
+    setLoading(true);
+    setComments([]);
+    setOffset(0);
+    Promise.all([
+      getComments(prayer.id, PAGE_SIZE, 0),
+      getCommentCount(prayer.id),
+    ]).then(([data, total]) => {
       setComments(data);
+      setHasMore(data.length < total);
+      setOffset(data.length);
       setLoading(false);
-      onCommentCountChange(data.length);
+      onCommentCountChange(total);
     });
   }, [prayer.id]);
+
+  const loadMore = () => {
+    setLoadingMore(true);
+    getComments(prayer.id, PAGE_SIZE, offset).then((data) => {
+      setComments((prev) => [...prev, ...data]);
+      setOffset((prev) => prev + data.length);
+      setHasMore(data.length === PAGE_SIZE);
+      setLoadingMore(false);
+    });
+  };
 
   const handleSubmit = useCallback(async () => {
     const text = newComment.trim();
@@ -100,6 +123,15 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
               onDelete={handleDelete}
             />
           ))}
+          {hasMore && (
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="w-full py-2 text-xs text-accent hover:text-accent transition-colors cursor-pointer disabled:opacity-50 text-center"
+            >
+              {loadingMore ? "Loading..." : `Load more comments`}
+            </button>
+          )}
         </div>
       )}
 
