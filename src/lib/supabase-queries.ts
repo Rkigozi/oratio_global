@@ -111,7 +111,7 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
     return null;
   }
 
-  const profile = (data as Record<string, unknown>).profiles as { username: string; display_name: string };
+  const profile = (data as Record<string, unknown>).profiles as { username: string; display_name: string; avatar_url: string };
   return {
     id: data.id as string,
     city: (data.location_city as string) || "Unknown",
@@ -711,7 +711,7 @@ export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {
 
   return (data as Array<Record<string, unknown>>).map((row) => {
     const prayer = row.prayer_requests as Record<string, unknown>;
-    const profile = prayer.profiles as { username: string; display_name: string } | null;
+    const profile = prayer.profiles as { username: string; display_name: string; avatar_url: string } | null;
     return {
       id: prayer.id as string,
       city: (prayer.location_city as string) || "Unknown",

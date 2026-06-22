@@ -1,1 +1,4 @@
 vite.config.ts
+src/test
+**/*.test.*
+**/*.spec.*

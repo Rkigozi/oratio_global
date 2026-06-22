@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
-import { ArrowLeft, Send, MessageCircle } from "lucide-react";
+import { ArrowLeft, Send } from "lucide-react";
 import { timeAgo } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { getInitialAvatarUrl } from "../../lib/upload";
