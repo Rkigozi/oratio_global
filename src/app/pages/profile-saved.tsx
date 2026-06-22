@@ -85,7 +85,7 @@ export function ProfileSaved() {
                       <div className="flex items-center gap-2">
                         <MapPin size={10} className="text-text-dim" />
                         <span className="text-text-dim text-[11px]">{prayer.city || "Unknown"}</span>
-                        {prayer.category && (
+                        {prayer.category && prayer.category !== "Other" && (
                           <span
                             className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider"
                             style={{
