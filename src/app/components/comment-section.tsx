@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { MessageCircle, Send, ChevronDown, X, Flag } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import type { PrayerRequest } from "../data/prayer-data";
+import { timeAgo } from "../data/prayer-data";
 import { reportContent } from "../../lib/api";
 import { getComments, createComment, deleteComment } from "../../lib/supabase-queries";
 import type { Comment } from "../../lib/supabase-queries";
@@ -15,17 +16,6 @@ interface Props {
   onCommentCountChange: (count: number) => void;
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
-
 export function CommentSection({ prayer, commentCount, onCommentCountChange }: Props) {
   const { profile } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -33,6 +23,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
   const [newComment, setNewComment] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; username: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submitRef = useRef(false);
 
   useEffect(() => {
     getComments(prayer.id).then((data) => {
@@ -44,7 +35,8 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
 
   const handleSubmit = useCallback(async () => {
     const text = newComment.trim();
-    if (!text || submitting) return;
+    if (!text || submitRef.current) return;
+    submitRef.current = true;
     setSubmitting(true);
     const comment = await createComment({
       prayer_id: prayer.id,
@@ -53,17 +45,18 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
     });
     if (comment) {
       posthog.capture("comment_added", { prayerId: prayer.id, hasParent: !!replyTo });
-      comment.user = profile ? { username: profile.username, display_name: profile.display_name } : null;
+      const newCommentObj = { ...comment, user: profile ? { username: profile.username, display_name: profile.display_name } : null };
       setComments((prev) => {
-        const updated = [...prev, comment];
+        const updated = [...prev, newCommentObj];
         onCommentCountChange(updated.length);
         return updated;
       });
+      setNewComment("");
+      setReplyTo(null);
     }
-    setNewComment("");
-    setReplyTo(null);
+    submitRef.current = false;
     setSubmitting(false);
-  }, [newComment, replyTo, prayer.id, submitting, onCommentCountChange, profile]);
+  }, [newComment, replyTo, prayer.id, onCommentCountChange, profile]);
 
   const handleDelete = async (commentId: string) => {
     const ok = await deleteComment(commentId);
@@ -134,45 +127,51 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
         )}
       </AnimatePresence>
 
-      <div className="flex gap-2 items-end">
-        <div className="relative flex-1">
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void handleSubmit();
-              }
+      {!profile ? (
+        <p className="text-text-dim text-xs text-center py-3">
+          <a href="/login" className="text-accent hover:underline">Sign in</a> to leave an encouragement.
+        </p>
+      ) : (
+        <div className="flex gap-2 items-end">
+          <div className="relative flex-1">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void handleSubmit();
+                }
+              }}
+              placeholder={replyTo ? "Write a reply..." : "Write an encouragement..."}
+              rows={1}
+              maxLength={500}
+              className="w-full rounded-xl px-3 py-2.5 text-text placeholder-text-dim text-xs focus:outline-none border border-accent/12 focus:border-accent/30 transition-colors resize-none"
+              style={{ background: "rgba(var(--rgb-surface), 0.6)", minHeight: 36 }}
+            />
+            <span className="absolute bottom-1.5 right-2.5 text-[10px] text-text-faint pointer-events-none">
+              {newComment.length}/500
+            </span>
+          </div>
+          <button
+            onClick={() => void handleSubmit()}
+            disabled={!newComment.trim() || submitting}
+            className="p-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+            style={{
+              background: newComment.trim() ? "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))" : "rgba(var(--rgb-accent), 0.06)",
+              color: newComment.trim() ? "#ffffff" : "rgb(var(--rgb-text-dim))",
+              width: 36,
+              height: 36,
             }}
-            placeholder={replyTo ? "Write a reply..." : "Write an encouragement..."}
-            rows={1}
-            maxLength={2000}
-            className="w-full rounded-xl px-3 py-2.5 text-text placeholder-text-dim text-xs focus:outline-none border border-accent/12 focus:border-accent/30 transition-colors resize-none"
-            style={{ background: "rgba(var(--rgb-surface), 0.6)", minHeight: 36 }}
-          />
-          <span className="absolute bottom-1.5 right-2.5 text-[10px] text-text-faint pointer-events-none">
-            {newComment.length}/2000
-          </span>
+          >
+            {submitting ? (
+              <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            ) : (
+              <Send size={14} />
+            )}
+          </button>
         </div>
-        <button
-          onClick={() => void handleSubmit()}
-          disabled={!newComment.trim() || submitting}
-          className="p-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
-          style={{
-            background: newComment.trim() ? "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))" : "rgba(var(--rgb-accent), 0.06)",
-            color: newComment.trim() ? "#ffffff" : "rgb(var(--rgb-text-dim))",
-            width: 36,
-            height: 36,
-          }}
-        >
-          {submitting ? (
-            <div className="w-3.5 h-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-          ) : (
-            <Send size={14} />
-          )}
-        </button>
-      </div>
+      )}
     </div>
   );
 }

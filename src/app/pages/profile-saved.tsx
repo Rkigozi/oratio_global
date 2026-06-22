@@ -64,7 +64,7 @@ export function ProfileSaved() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(i * 0.04, 0.5), duration: 0.35 }}
-                  onClick={() => setSelectedPrayer(prayer)}
+                  onClick={() => void navigate(`/prayer/${prayer.id}`)}
                   className="rounded-xl px-4 py-3.5 cursor-pointer active:bg-accent/5 transition-colors duration-150"
                   style={{
                     background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))",

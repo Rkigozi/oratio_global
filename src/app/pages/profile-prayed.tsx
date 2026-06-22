@@ -38,7 +38,7 @@ export function ProfilePrayed() {
   };
 
   const handleOpenPrayer = (prayer: PrayerRequest) => {
-    setSelectedPrayer(prayer);
+    void navigate(`/prayer/${prayer.id}`);
   };
 
   const togglePrayed = (id: string) => {
