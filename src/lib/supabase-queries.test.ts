@@ -14,6 +14,7 @@ vi.mock("./supabase", () => {
     qb.not = vi.fn().mockReturnThis();
     qb.ilike = vi.fn().mockReturnThis();
     qb.maybeSingle = vi.fn().mockReturnThis();
+    qb.range = vi.fn().mockReturnThis();
     qb.update = vi.fn().mockReturnThis();
     qb.then = vi.fn((resolve: (v: unknown) => void) => resolve({ data: null, error: null }));
     return qb;
@@ -79,6 +80,7 @@ beforeEach(() => {
   qb.not.mockReturnThis();
   qb.ilike.mockReturnThis();
   qb.maybeSingle.mockReturnThis();
+  qb.range.mockReturnThis();
   qb.update.mockReturnThis();
   qb.then.mockImplementation((resolve: (v: unknown) => void) => resolve({ data: null, error: null }));
 

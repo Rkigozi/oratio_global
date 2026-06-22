@@ -51,6 +51,11 @@ class MockQueryBuilder {
     return this;
   }
 
+  range(_from: number, _to: number) {
+    this._debug.push({ table: this._table, method: "range", args: [_from, _to] });
+    return this;
+  }
+
   single() {
     this._debug.push({ table: this._table, method: "single", args: [] });
     return this;

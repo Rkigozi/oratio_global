@@ -5,6 +5,7 @@ import type { PrayerRequest } from "../data/prayer-data";
 
 vi.mock("../../lib/supabase-queries", () => ({
   getComments: vi.fn(),
+  getCommentCount: vi.fn(),
   createComment: vi.fn(),
   deleteComment: vi.fn(),
 }));
@@ -21,7 +22,7 @@ vi.mock("../../lib/upload", () => ({
   getInitialAvatarUrl: () => "https://ui-avatars.com/api/?name=T",
 }));
 
-import { getComments, createComment } from "../../lib/supabase-queries";
+import { getComments, getCommentCount, createComment } from "../../lib/supabase-queries";
 import { useAuth } from "../../lib/auth-context";
 
 const mockPrayer: PrayerRequest = {
@@ -56,6 +57,7 @@ describe("CommentSection", () => {
 
   it("shows loading state initially", () => {
     vi.mocked(getComments).mockReturnValue(new Promise(() => {}));
+    vi.mocked(getCommentCount).mockResolvedValue(0);
 
     render(<CommentSection prayer={mockPrayer} commentCount={0} onCommentCountChange={vi.fn()} />);
     expect(document.querySelector(".animate-spin")).toBeTruthy();
@@ -63,6 +65,7 @@ describe("CommentSection", () => {
 
   it("shows empty state when no comments", async () => {
     vi.mocked(getComments).mockResolvedValue([]);
+    vi.mocked(getCommentCount).mockResolvedValue(0);
 
     render(<CommentSection prayer={mockPrayer} commentCount={0} onCommentCountChange={vi.fn()} />);
 
@@ -74,6 +77,7 @@ describe("CommentSection", () => {
     vi.mocked(getComments).mockResolvedValue([
       { id: "c1", prayer_id: "p1", user_id: "user-1", parent_id: null, body: "Great prayer!", created_at: new Date().toISOString(), user: { username: "commenter", display_name: "Commenter" } },
     ]);
+    vi.mocked(getCommentCount).mockResolvedValue(1);
 
     render(<CommentSection prayer={mockPrayer} commentCount={1} onCommentCountChange={vi.fn()} />);
 
@@ -83,6 +87,7 @@ describe("CommentSection", () => {
 
   it("allows submitting a comment", async () => {
     vi.mocked(getComments).mockResolvedValue([]);
+    vi.mocked(getCommentCount).mockResolvedValue(0);
     vi.mocked(createComment).mockResolvedValue({
       id: "c-new", prayer_id: "p1", user_id: "user-1", parent_id: null, body: "New comment", created_at: new Date().toISOString(), user: null,
     });

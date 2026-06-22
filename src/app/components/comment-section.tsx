@@ -220,7 +220,7 @@ function CommentThread({
   onDelete: (id: string) => void;
 }) {
   const { user } = useAuth();
-  const username = comment.user?.display_name || comment.user?.username || "Anonymous";
+  const username = comment.user?.username || comment.user?.display_name || "Anonymous";
   const [reported, setReported] = useState(false);
   const [showReportConfirm, setShowReportConfirm] = useState(false);
   const [showAllReplies, setShowAllReplies] = useState(false);
@@ -300,7 +300,7 @@ function CommentThread({
       {replies.length > 0 && (
         <div className="ml-9 mt-2 border-l-2 border-accent/6 pl-3 space-y-2">
           {visibleReplies.map((reply) => {
-            const replyUsername = reply.user?.display_name || reply.user?.username || "Anonymous";
+            const replyUsername = reply.user?.username || reply.user?.display_name || "Anonymous";
             return (
               <div key={reply.id}>
                 <div className="flex items-center gap-2 mb-0.5">
