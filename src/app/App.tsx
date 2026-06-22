@@ -3,29 +3,24 @@ import { router } from "./routes";
 import { AuthProvider } from "../lib/auth-context";
 import { ThemeProvider } from "../lib/theme-context";
 import { ErrorBoundary } from "./components/error-boundary";
-import { useRegisterSW } from "virtual:pwa-register/react";
+import { useEffect } from "react";
 
-// How often to ask the browser to check for a newer deploy (1 hour).
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
-// With registerType: 'autoUpdate', a new deploy is applied and the page
-// reloads automatically once detected. The browser only checks for a new
-// service worker on navigation by default, so we poll on an interval and
-// whenever the tab becomes visible again — the moment that matters most on
-// mobile, where the PWA spends most of its life backgrounded.
 function ServiceWorkerUpdater() {
-  useRegisterSW({
-    onRegisteredSW(_swUrl, registration) {
-      if (!registration) return;
-
-      const checkForUpdate = () => {
-        if (document.visibilityState === "visible") registration.update();
-      };
-
-      setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
-      document.addEventListener("visibilitychange", checkForUpdate);
-    },
-  });
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").then((registration) => {
+        const checkForUpdate = () => {
+          if (document.visibilityState === "visible") registration.update();
+        };
+        setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
+        document.addEventListener("visibilitychange", checkForUpdate);
+      }).catch(() => {
+        // SW registration can fail on some iOS browsers — not critical
+      });
+    }
+  }, []);
 
   return null;
 }
