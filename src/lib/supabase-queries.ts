@@ -359,28 +359,6 @@ export async function getFollowingIds(): Promise<string[]> {
     .filter(Boolean) as string[];
 }
 
-export async function getFollowerIds(): Promise<string[]> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data } = await supabase
-    .from("follows")
-    .select(`
-      follower_id,
-      profiles!follower_id(username)
-    `)
-    .eq("following_id", user.id);
-
-  if (!data) return [];
-
-  return (data as Array<Record<string, unknown>>)
-    .map((r) => {
-      const profile = r.profiles as { username: string } | null;
-      return profile?.username;
-    })
-    .filter(Boolean) as string[];
-}
-
 export async function getFollowers(userId: string): Promise<Array<{ id: string; username: string; display_name: string | null }>> {
   const { data } = await supabase
     .from("follows")

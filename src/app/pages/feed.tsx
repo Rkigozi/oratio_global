@@ -7,7 +7,7 @@ import type { PrayerRequest } from "../data/prayer-data";
 import { FeedCard } from "../components/feed-card";
 import { getHashtagCounts } from "../../lib/hashtags";
 import { useGeolocation } from "../../lib/use-geolocation";
-import { getFeedPrayers, searchUsers, togglePray, getFollowingIds, getFollowerIds, getMyPrayedIds, getMySavedIds } from "../../lib/supabase-queries";
+import { getFeedPrayers, searchUsers, togglePray, getFollowingIds, getMyPrayedIds, getMySavedIds } from "../../lib/supabase-queries";
 import { LoadingSpinner, ErrorState } from "../components/loading-spinner";
 import posthog from "posthog-js";
 
@@ -26,9 +26,7 @@ export function Feed() {
   const [showSaved, setShowSaved] = useState(false);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [showFollowing, setShowFollowing] = useState(false);
-  const [showFollowers, setShowFollowers] = useState(false);
   const [followingIds, setFollowingIds] = useState<string[]>([]);
-  const [followerIds, setFollowerIds] = useState<string[]>([]);
   const searchParamActive = searchParams.get("search") || "";
   const [searchQuery, setSearchQuery] = useState(searchParamActive);
   const [activeSearch, setActiveSearch] = useState(searchParamActive);
@@ -122,13 +120,7 @@ export function Feed() {
 
   // Load following list, prayed IDs, and saved IDs from Supabase
   useEffect(() => {
-    Promise.all([
-      getFollowingIds(),
-      getFollowerIds(),
-    ]).then(([following, followers]) => {
-      setFollowingIds(following);
-      setFollowerIds(followers);
-    });
+    getFollowingIds().then(setFollowingIds);
     getMyPrayedIds().then((ids) => {
       setPrayedIds(ids);
     });
@@ -234,11 +226,6 @@ export function Feed() {
       result = result.filter((p) => p.username && followingIds.includes(p.username));
     }
 
-    // Followers filter
-    if (showFollowers && followerIds.length > 0) {
-      result = result.filter((p) => p.username && followerIds.includes(p.username));
-    }
-
     // Search filter
     if (activeSearch) {
       const q = activeSearch.toLowerCase();
@@ -251,7 +238,7 @@ export function Feed() {
     }
 
     return result;
-  }, [prayers, locationCity, locationCountry, showSaved, showFollowing, showFollowers, followingIds, followerIds, activeSearch]);
+  }, [prayers, locationCity, locationCountry, showSaved, showFollowing, followingIds, activeSearch]);
 
   // Only render visible batch for infinite scroll
   const visiblePrayers = useMemo(() => {
@@ -384,20 +371,6 @@ export function Feed() {
             }}
           >
             Following
-          </button>
-
-          {/* Followers */}
-          <button
-            onClick={() => setShowFollowers(!showFollowers)}
-            className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
-            style={{
-              background: showFollowers ? "rgba(var(--rgb-accent), 0.12)" : "rgba(var(--rgb-accent), 0.04)",
-              border: showFollowers ? "1px solid rgba(var(--rgb-accent), 0.2)" : "1px solid rgba(var(--rgb-accent), 0.06)",
-              color: showFollowers ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-muted))",
-              opacity: followerIds.length === 0 ? 0.5 : 1,
-            }}
-          >
-            Followers
           </button>
 
           {/* Saved */}

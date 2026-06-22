@@ -3,7 +3,6 @@ import {
   Send,
   LogOut,
   Edit,
-  Bookmark,
   Info,
   Camera,
   Settings,
@@ -13,7 +12,7 @@ import { useNavigate } from "react-router";
 import { validateProfile } from "../../lib/validation";
 import { useAuth } from "../../lib/auth-context";
 import { uploadAvatar, getInitialAvatarUrl } from "../../lib/upload";
-import { getFollowCounts, updateProfile, getMyProfile, getMyPrayers, getMyPrayedForPrayers, getSavedPrayers } from "../../lib/supabase-queries";
+import { getFollowCounts, updateProfile, getMyProfile, getMyPrayers, getMyPrayedForPrayers } from "../../lib/supabase-queries";
 import { useGeolocation } from "../../lib/use-geolocation";
 export function Profile() {
   const navigate = useNavigate();
@@ -62,23 +61,19 @@ export function Profile() {
   const [newLocation, setNewLocation] = useState("");
   const [editError, setEditError] = useState<string>("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [showSection, setShowSection] = useState<"prayers" | "saved">("prayers");
 
   const username = profile.username || "anonymous";
   const displayName = profile.displayName || username;
 
-  const [savedCount, setSavedCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
 
   useEffect(() => {
     if (user?.id) {
-      getFollowCounts(user.id).then((counts) => setFollowingCount(counts.following));
-    }
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (user?.id) {
-      getSavedPrayers().then(p => setSavedCount(p.length));
+      getFollowCounts(user.id).then((counts) => {
+        setFollowingCount(counts.following);
+        setFollowersCount(counts.followers);
+      });
     }
   }, [user?.id]);
 
@@ -204,7 +199,7 @@ export function Profile() {
           <div className="flex justify-center gap-6 mb-6 py-3 rounded-xl"
             style={{ background: "rgba(var(--rgb-surface), 0.4)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
           >
-            <button onClick={() => setShowSection("prayers")} className="text-center cursor-pointer min-w-[50px]">
+            <button onClick={() => void navigate("/profile/submitted")} className="text-center cursor-pointer min-w-[50px]">
               <p className="text-text text-sm font-semibold">{myPrayers}</p>
               <p className="text-text-dim text-[10px]">Prayers</p>
             </button>
@@ -217,79 +212,38 @@ export function Profile() {
               <p className="text-text text-sm font-semibold">{followingCount}</p>
               <p className="text-text-dim text-[10px]">Following</p>
             </button>
-            <button onClick={() => void navigate("/profile/saved")} className="text-center cursor-pointer min-w-[50px]">
-              <p className="text-text text-sm font-semibold">{savedCount}</p>
-              <p className="text-text-dim text-[10px]">Saved</p>
+            <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/followers`)} className="text-center cursor-pointer min-w-[50px]">
+              <p className="text-text text-sm font-semibold">{followersCount}</p>
+              <p className="text-text-dim text-[10px]">Followers</p>
             </button>
           </div>
 
-          {/* Section toggle */}
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setShowSection("prayers")}
-              className="px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer"
-              style={{
-                background: showSection === "prayers" ? "rgba(var(--rgb-accent), 0.12)" : "rgba(var(--rgb-accent), 0.04)",
-                border: `1px solid ${showSection === "prayers" ? "rgba(var(--rgb-accent), 0.2)" : "rgba(var(--rgb-accent), 0.06)"}`,
-                color: showSection === "prayers" ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-muted))",
-              }}
-            >
-              <Send size={11} className="inline mr-1" />
-              My Prayers
-            </button>
-            <button
-              onClick={() => void navigate("/profile/prayed")}
-              className="px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer"
-              style={{
-                background: "rgba(var(--rgb-accent), 0.04)",
-                border: "1px solid rgba(var(--rgb-accent), 0.06)",
-                color: "rgb(var(--rgb-text-muted))",
-              }}
-            >
-              🙏 Prayed For
-            </button>
-            <button
-              onClick={() => void navigate("/profile/saved")}
-              className="px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer"
-              style={{
-                background: "rgba(var(--rgb-accent), 0.04)",
-                border: "1px solid rgba(var(--rgb-accent), 0.06)",
-                color: "rgb(var(--rgb-text-muted))",
-              }}
-            >
-              <Bookmark size={11} className="inline mr-1" />
-              Saved
-            </button>
-          </div>
-
-          {/* Prayer list */}
+          {/* My prayers summary card */}
           <div className="space-y-2">
-            {showSection === "prayers" && (
-              myPrayers > 0 ? (
-                <div
-                  onClick={() => void navigate("/profile/submitted")}
-                  className="rounded-xl px-4 py-4 cursor-pointer active:scale-[0.99] transition-transform text-center"
-                  style={{
-                    background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))",
-                    border: "1px solid rgba(var(--rgb-accent), 0.05)",
-                  }}
+            {myPrayers > 0 ? (
+              <div
+                onClick={() => void navigate("/profile/submitted")}
+                className="rounded-xl px-4 py-4 cursor-pointer active:scale-[0.99] transition-transform text-center"
+                style={{
+                  background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))",
+                  border: "1px solid rgba(var(--rgb-accent), 0.05)",
+                }}
+              >
+                <Send size={20} className="text-text-dim mx-auto mb-2" />
+                <p className="text-text text-sm font-medium">{myPrayers} prayer{myPrayers !== 1 ? "s" : ""}</p>
+                <p className="text-text-dim text-xs mt-1">Tap to view all</p>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Send size={20} className="text-text-dim mx-auto mb-2" />
+                <p className="text-text-muted text-sm mb-1">No prayers yet</p>
+                <button
+                  onClick={() => void navigate('/submit')}
+                  className="px-4 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer mt-2"
                 >
-                  <Send size={20} className="text-text-dim mx-auto mb-2" />
-                  <p className="text-text text-sm font-medium">{myPrayers} prayer{myPrayers !== 1 ? "s" : ""}</p>
-                  <p className="text-text-dim text-xs mt-1">Tap to view all</p>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Send size={20} className="text-text-dim mx-auto mb-2" />
-                  <p className="text-text-muted text-sm mb-1">No prayers yet</p>
-                  <button
-                    onClick={() => void navigate('/submit')}
-                    className="px-4 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer mt-2"
-                  >
-                    Submit Prayer
-                  </button>
-                </div>
-              )
+                  Submit Prayer
+                </button>
+              </div>
             )}
           </div>
         </div>
