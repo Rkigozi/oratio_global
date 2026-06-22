@@ -315,7 +315,7 @@ function CommentThread({
                   >
                     Reply
                   </button>
-                  {(user && reply.user_id === user.id) && (
+                  {(user && (reply.user_id === user.id || comment.user_id === user.id)) && (
                     <button
                       onClick={() => onDelete(reply.id)}
                       className="text-text-faint hover:text-danger text-[10px] transition-colors cursor-pointer"
