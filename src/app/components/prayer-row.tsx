@@ -3,7 +3,6 @@ import { motion } from "motion/react";
 import { MapPin, Trash2 } from "lucide-react";
 import type { PrayerRequest } from "../data/prayer-data";
 import { timeAgo, getAttributionText } from "../data/prayer-data";
-import { categoryColors } from "../data/prayer-data";
 import { renderHashtags } from "../../lib/hashtags";
 
 interface PrayerRowProps {
@@ -44,8 +43,6 @@ export function PrayerRow({
     if (onTogglePrayed) onTogglePrayed(prayer.id);
   };
 
-  const catColor = categoryColors[prayer.category || ""] || "#8890b5";
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -75,18 +72,6 @@ export function PrayerRow({
             <span className="text-text-dim text-[11px]">
               {prayer.city || "Unknown"}
             </span>
-            {prayer.category && prayer.category !== "Other" && (
-              <span
-                className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider"
-                style={{
-                  color: catColor,
-                  background: `${catColor}12`,
-                  border: `1px solid ${catColor}18`,
-                }}
-              >
-                {prayer.category}
-              </span>
-            )}
             {prayer.createdAt && (
               <span className="text-text-muted text-[10px] ml-auto">
                 {timeAgo(prayer.createdAt)}

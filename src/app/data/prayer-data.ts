@@ -15,15 +15,6 @@ export interface PrayerRequest {
   avatarUrl?: string;  // Profile avatar URL from Supabase
 }
 
-export const categoryColors: Record<string, string> = {
-  Health: "#67e8f9",
-  Family: "#a78bfa",
-  Career: "#fbbf24",
-  Guidance: "#7c8fff",
-  Peace: "#6ee7b7",
-  Other: "#8890b5",
-};
-
 // Get attribution text for a prayer (username > displayName > legacy name > Anonymous)
 export function getAttributionText(prayer: PrayerRequest): string {
   if (prayer.username) return prayer.username;
@@ -70,8 +61,6 @@ export const cityDatabase: Array<{
   { name: "Tokyo", country: "Japan", lat: 35.7, lng: 139.7 },
   { name: "Sydney", country: "Australia", lat: -33.9, lng: 151.2 },
 ];
-
-export const CATEGORIES: string[] = [];
 
 export function getApproximateCoordinates(cityName: string, country: string): { lat: number; lng: number } {
   const city = cityDatabase.find(c => c.name === cityName && c.country === country);

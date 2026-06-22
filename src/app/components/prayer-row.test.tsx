@@ -34,7 +34,7 @@ describe("PrayerRow", () => {
     expect(screen.getByText("London")).toBeTruthy();
   });
 
-  it("renders category badge", () => {
+  it("does not render category badge (categories removed)", () => {
     render(
       <MemoryRouter>
         <PrayerRow
@@ -46,7 +46,7 @@ describe("PrayerRow", () => {
         />
       </MemoryRouter>
     );
-    expect(screen.getByText("Health")).toBeTruthy();
+    expect(screen.queryByText("Health")).toBeNull();
   });
 
   it("shows prayer count when showCount is true", () => {

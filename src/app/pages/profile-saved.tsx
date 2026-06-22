@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Bookmark, MapPin } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
-import { timeAgo, getAttributionText, categoryColors } from "../data/prayer-data";
+import { timeAgo, getAttributionText } from "../data/prayer-data";
 import type { PrayerRequest } from "../data/prayer-data";
 import { getSavedPrayers, toggleSavePrayer } from "../../lib/supabase-queries";
 import { LoadingSpinner } from "../components/loading-spinner";
@@ -57,7 +57,6 @@ export function ProfileSaved() {
         ) : (
           <div className="space-y-2.5">
             {savedPrayers.map((prayer, i) => {
-              const catColor = categoryColors[prayer.category || ""] || "#8890b5";
               return (
                 <motion.div
                   key={prayer.id}
@@ -85,18 +84,6 @@ export function ProfileSaved() {
                       <div className="flex items-center gap-2">
                         <MapPin size={10} className="text-text-dim" />
                         <span className="text-text-dim text-[11px]">{prayer.city || "Unknown"}</span>
-                        {prayer.category && prayer.category !== "Other" && (
-                          <span
-                            className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider"
-                            style={{
-                              color: catColor,
-                              background: `${catColor}12`,
-                              border: `1px solid ${catColor}18`,
-                            }}
-                          >
-                            {prayer.category}
-                          </span>
-                        )}
                         {prayer.createdAt && (
                           <span className="text-text-muted text-[10px] ml-auto">
                             {timeAgo(prayer.createdAt)}

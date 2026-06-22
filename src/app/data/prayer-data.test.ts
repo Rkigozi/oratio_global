@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { timeAgo, getAttributionText, CATEGORIES } from "./prayer-data";
+import { timeAgo, getAttributionText } from "./prayer-data";
 import { mockFeedPrayers, mockHotspots } from "./mock-prayers";
 
 describe("timeAgo", () => {
@@ -50,11 +50,9 @@ describe("mock data", () => {
     expect(mockFeedPrayers[0]).toHaveProperty("category");
   });
 
-  it("prayers have valid categories", () => {
+  it("prayers do not have categories (categories removed)", () => {
     mockFeedPrayers.forEach((p) => {
-      if (p.category) {
-        expect(CATEGORIES).toContain(p.category);
-      }
+      expect(p.category).toBeUndefined();
     });
   });
 });

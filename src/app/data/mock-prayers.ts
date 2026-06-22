@@ -1,5 +1,5 @@
 import type { PrayerRequest } from "./prayer-data";
-import { cityDatabase, CATEGORIES, getApproximateCoordinates } from "./prayer-data";
+import { cityDatabase, getApproximateCoordinates } from "./prayer-data";
 import { generateUsernameFromDisplayName } from "../../lib/username";
 import { addHashtagsToMockData } from "../../lib/hashtags";
 
@@ -180,7 +180,7 @@ const generateFeedData = (): PrayerRequest[] => {
       const nameValue = shuffledNames[nameIdx % shuffledNames.length];
       const displayNameValue = nameValue;
       const usernameValue = nameValue ? generateUsernameFromDisplayName(nameValue) : undefined;
-      const cat = CATEGORIES[Math.floor(rand() * CATEGORIES.length)];
+      const cat = undefined;
 
       prayers.push({
         id: `feed-${id}`,
