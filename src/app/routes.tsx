@@ -46,11 +46,11 @@ export const router = createBrowserRouter([
   { path: "/update-password", element: <SuspenseWrapper Component={UpdatePassword} /> },
   { path: "/privacy", element: <SuspenseWrapper Component={Privacy} /> },
   { path: "/terms", element: <SuspenseWrapper Component={Terms} /> },
+  { path: "/onboarding", element: <SuspenseWrapper Component={Onboarding} /> },
 
   {
     Component: AuthGuard,
     children: [
-      { path: "/onboarding", element: <SuspenseWrapper Component={Onboarding} /> },
       { path: "/prayer/:id", element: <SuspenseWrapper Component={PrayerDetail} /> },
       { path: "/moderate", element: <SuspenseWrapper Component={Moderate} /> },
       { path: "/user/:name", element: <SuspenseWrapper Component={UserProfile} /> },

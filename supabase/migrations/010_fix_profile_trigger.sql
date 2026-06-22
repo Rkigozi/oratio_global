@@ -1,4 +1,6 @@
--- Auto-create profile on sign-up
+-- Fix auto-profile trigger: remove reference to dropped language_preference column
+-- Migration 008 dropped the column but the trigger still tries to insert it, causing signup to fail.
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -22,8 +24,3 @@ begin
   return new;
 end;
 $$;
-
--- Trigger the function every time a user is created
-create or replace trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();

@@ -39,6 +39,7 @@ export function Profile() {
             display_name: supabaseProfile.display_name || undefined,
             bio: supabaseProfile.bio || "",
             location: supabaseProfile.location || "",
+            photo: supabaseProfile.avatar_url || undefined,
           });
         }
       });
@@ -86,7 +87,8 @@ export function Profile() {
     if (!file) return;
     setUploadingPhoto(true);
     const url = await uploadAvatar(file);
-    if (url) {
+    if (url && user?.id) {
+      await updateProfile({ avatar_url: url });
       setProfile(prev => ({ ...prev, photo: url }));
     }
     setUploadingPhoto(false);
