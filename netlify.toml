@@ -2,6 +2,11 @@
   command = "npm run build"
   publish = "dist"
 
+# Deploy previews for PR branches
+[context.deploy-preview]
+  command = "npm run build"
+  publish = "dist"
+
 [[redirects]]
   from = "/assets/*"
   to = "/assets/:splat"
