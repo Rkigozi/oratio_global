@@ -1,128 +1,93 @@
 # Oratio v1.0 Backlog
 
-> Organized by priority within each epic.
-> Last audited: June 22, 2026
+> Production-ready status. Last updated: June 22, 2026
 
 ---
 
-## Epic: User Flows & UX Polish
+## ✅ v1.0 Launch Checklist
 
-### ✅ P0 — Completed
+### Core Product
+- [x] Landing page with sign up / sign in
+- [x] Email + Google OAuth authentication
+- [x] Prayer submission with location (manual + geo-detect)
+- [x] Global feed with infinite scroll (cursor-based pagination)
+- [x] "I Prayed" toggle on prayers
+- [x] Comments with threaded replies (one level)
+- [x] Comment pagination (20 per page, Load More)
+- [x] Live comment count on feed cards (DB trigger)
+- [x] Search prayers by text, location
+- [x] Hashtag system (clickable, trending)
+- [x] Save/bookmark prayers (cross-device via Supabase)
+- [x] Follow/unfollow users
+- [x] Following feed filter (shows prayers from people you follow)
+- [x] Profile page with stats: Prayers, Prayed, Following, Followers
+- [x] Other user profiles with their prayers
+- [x] Prayer detail page with share, report, toggle comments
+- [x] Map view with prayer hotspots (light + dark mode)
 
-| Task | Status | Notes |
-|------|--------|-------|
-| Live prayer updates | ✅ Done | CustomEvent dispatch + listen in Feed + Home |
-| Location on submit | ✅ Done | City + Country dropdown, geo auto-detect toggle |
-| Profile Saved section | ✅ Done | Stats + section toggle → `/profile/saved` |
-| Hashtag clicks | ✅ Done | PrayerDetail hashtag → Feed with `?search=` |
-| Feed duplicate header | ✅ Done | Redundant title removed |
-| Back buttons (Onboarding/Login) | ✅ Done | ArrowLeft → `/landing` on both |
-| My Prayers → full list | ✅ Done | Profile shows 5 + "View all N →" |
-| Landing page polish | ✅ Done | Google icon SVG, Create Account, scroll/padding |
-| Auth redirect removed | ✅ Done | Layout no longer gates unauthenticated users |
-| Fake email subscription | ✅ Done | Now wired to Supabase `waitlist` table |
+### Technical & Security
+- [x] Supabase backend with full RLS policies
+- [x] Auto-profile creation on signup (DB trigger)
+- [x] CSP security headers (`netlify.toml`)
+- [x] Rate limiting (10 prayers/hr, 30 comments/hr via RLS)
+- [x] Sentry error monitoring (DSN active, `logError()` utility)
+- [x] PostHog analytics (events: signup, pray, comment, search)
+- [x] Avatar upload via Supabase Storage (not base64 blobs)
+- [x] Ownership checks at app level (delete prayer/comment)
+- [x] Self-follow prevented (`followUser` + UI)
+- [x] Self-report prevented (hide report button on own content)
+- [x] CI pipeline (type-check, lint, test, build)
+- [x] Playwright E2E smoke tests
+- [x] PWA with service worker (Workbox, precache)
+- [x] HSTS + security headers
+- [x] 404 page
+- [x] Error Boundary wrapping app root
 
-### 🔴 P0 — Fix now
+### Cleanup
+- [x] Categories removed (hashtags are the replacement)
+- [x] All mock data removed from production code paths
+- [x] Sample badges removed from components
+- [x] localStorage dead code removed (`oratio_profile`, `oratio_comments_*`, `oratio_last_prayer_location`)
+- [x] Info page no longer mentions "sample data"
+- [x] `.ico` favicon present
+- [x] iOS white flash fix (background color in index.html)
+- [x] Service worker registration errors caught (no unhandled rejections)
+- [x] Moderation page works (reports UPDATE RLS policy added)
 
-| # | Task | Description | Status |
-|---|------|-------------|--------|
-| 1 | ~~Fix double back buttons~~ | PrayerDetail/UserProfile/UserList are standalone routes (not in Layout) — their back buttons are correct | ✅ Not an issue |
-| 2 | **Label mock data** | Followers/following counts still fake/hardcoded without "(sample)" label | ✅ Done — followers use real Supabase queries, prayers already labeled |
-| 3 | **Comment submit spinner** | Greys out with no feedback if API hangs | ✅ Fixed — spinner implemented |
-| 4 | **Hashtags in PrayerRow** | Was plain text, inconsistent with FeedCard | ✅ Fixed — `renderHashtags` wired |
-| 5 | **Stale text on Landing** | Says "We'll save your interest locally" but subscription now hits Supabase | ✅ Fixed |
-| 6 | **Google Translate API key in client bundle** | `VITE_GOOGLE_TRANSLATE_API_KEY` in `.env` gets inlined into built JS | ✅ Fixed — removed from `.env` |
-
-### 🟡 P1 — Important polish
-
-| # | Task | Description | Status |
-|---|------|-------------|--------|
-| 6 | **Fix report flow timing** | PrayerDetail shows confirmation before API resolves | ✅ Fixed |
-| 7 | **Comment character counter** | `maxLength` exists (2000) but no visible counter | ✅ Done — `{newComment.length}/2000` displayed in `comment-section.tsx:154-156` |
-| 8 | **Hide Delete on other's comments** | Check ownership against current profile | ✅ Done |
-| 9 | **Missing fallbacks** | `prayerCount` blank if 0/undefined in profile pages; `city` blank in PrayerDetail/profile pages | ✅ Done — handled at query layer (`supabase-queries.ts:40/46`) with `|| "Unknown"` and `|| 0` |
-| 10 | **Avatar alt text** | All avatars use descriptive alt (e.g. `alt={username}`) instead of `alt=""` | ✅ Done (descriptive is actually better for a11y) |
-
-### 🟢 P2 — Refinement
-
-| # | Task | Description | Status |
-|---|------|-------------|--------|
-| 11 | Read-more affordance | `line-clamp-2/3` has no visual indicator of truncation | ❌ Not done |
-| 12 | Bottom nav tap feedback | Missing `active:scale-95` press effect | ❌ Not done |
-| 13 | Comment count in PrayerRow | FeedCard shows it, PrayerRow doesn't | ❌ Not done |
-| 14 | Animated new comments | No fade/slide animation on new comments | ❌ Not done |
-| 15 | Info page unsubscribe | "Remove" clears local state but not DB row | ⚠️ Partial — no DELETE API call |
-| 16 | Title transitions in Header | Title swaps instantly with no crossfade | ❌ Not done |
-| 17 | Crisis resources phone numbers | All links are websites, no `tel:` numbers | ❌ Not done |
-| 18 | Apple splash screens | No `apple-touch-startup-image` tags in `index.html` | ❌ Not done |
-| 19 | Web Share Target API | Manifest missing `share_target` field | ❌ Not done |
-| 20 | CSP security headers | `netlify.toml` missing `Content-Security-Policy` | ❌ Not done |
-| 21 | `.ico` favicon fallback | PNG fallback exists, no `favicon.ico` for old browsers | ✅ Done — `public/icons/favicon.ico` exists, linked in `index.html:14` |
-
----
-
-## Epic: Backend / Supabase Migration
-
-> **Note:** Most Supabase migration work is already complete. Remaining items are cleanup/security/monitoring.
-
-### ✅ Completed
-
-| # | Task | Notes |
-|---|------|-------|
-| 1 | Supabase SDK | `@supabase/supabase-js` installed, client created, env vars wired |
-| 2 | Real auth | Email/password + Google OAuth via Supabase Auth |
-| 3 | Prayer data | `prayer_requests` table — Supabase CRUD with localStorage dual-write fallback |
-| 4 | Comments | `comments` table — Supabase CRUD, no localStorage |
-| 5 | Follows | `follows` table — Supabase CRUD, minor localStorage relic |
-| 6 | Reports | `reports` table — Supabase INSERT with localStorage fallback |
-| 7 | Real feed | Supabase-powered; `mockFeedPrayers`/`mockHotspots` are dead code |
-| 8 | Google Translate proxy | Edge function proxies to Google Translate — no key in client bundle |
-| 9 | Error Boundary | Class-based ErrorBoundary wrapping root app |
-| 10 | Real 404 page | Catch-all route → `NotFound` component |
-
-### 🔴 P0 — Still needed
-
-| # | Task | Description |
-|---|------|-------------|
-| 11 | **Remove localStorage dual-writes** | Prayer creation/follow/report still dual-write to localStorage. Clean up. |
-| 12 | **Remove dead mock data** | `mockHotspots` and `mockFeedPrayers` in `prayer-data.ts` are unused |
-| 13 | **Deprecate localStorage profile system** | `profile-data.ts` (229 lines) coexists alongside Supabase Auth |
-
-### 🟡 P1 — Monitoring & analytics
-
-| # | Task | Description | Status |
-|---|------|-------------|--------|
-| 14 | **Wire Sentry** | `@sentry/react` + `@sentry/browser` installed, `Sentry.init()` called — DSN in `.env` | ✅ Done — DSN present, `Sentry.init()` at `main.tsx:7-14`, `logError()` utility wired |
-| 15 | **Wire PostHog** | `posthog-js` installed, `posthog.init()` called — API key in `.env` | ✅ Done — key + host in `.env`, `posthog.capture()` used across components |
+### UI/UX Polish
+- [x] Dark mode with system preference sync
+- [x] Light mode map tiles (ArcGIS, CSP-allowed)
+- [x] Prayer detail shows real avatar from DB
+- [x] Feed cards show real avatar from DB
+- [x] Comments show `@username` first (like Instagram/Reddit)
+- [x] Replies show delete button for own replies
+- [x] Comment input gated behind auth ("Sign in to comment")
+- [x] Comment char limit aligned with DB (500)
+- [x] Submit error doesn't clear textarea
+- [x] Double-submit guard on comments (useRef)
 
 ---
 
-## Epic: PWA Polish
+## 📋 Pre-Launch Items (no domain needed)
 
-### ✅ Completed
+| # | Task | Why |
+|---|------|-----|
+| 1 | Check `/privacy` and `/terms` pages have real content | Legal requirement |
+| 2 | Test password reset flow end-to-end | Standard Supabase flow, quick to verify |
+| 3 | Test full signup → confirm email → submit → comment → follow | Catch any RLS/auth state issues |
+| 4 | Update OG image URL to production domain in `index.html` | Once domain is purchased |
 
-| # | Task | Notes |
-|---|------|-------|
-| 1 | Maskable PWA icons | `purpose: "maskable any"` on 192+512 PNG icons in manifest |
-| 2 | Offline fallback | `navigateFallback: '/index.html'` configured in workbox |
-| 3 | SW update prompt | `registerType: 'prompt'` + React `UpdatePrompt` component with Update/Dismiss UI |
-| 4 | HSTS header | `Strict-Transport-Security` present in `netlify.toml` |
+## 🔜 v1.1 Candidates
 
-### ❌ Not done
-
-| # | Task | Notes |
-|---|------|-------|
-| 5 | Apple splash screens | No `apple-touch-startup-image` tags in `index.html` |
-| 6 | Web Share Target API | No `share_target` in manifest |
-| 7 | CSP security headers | `Content-Security-Policy` absent from `netlify.toml` |
-| 8 | `.ico` favicon fallback | Has PNG 32x32 fallback but no `favicon.ico` | ✅ Done — `favicon.ico` exists at `public/icons/favicon.ico` |
-
----
-
-## Quick Wins — All Completed ✅
-
-All previous quick wins have been verified as done:
-- `VITE_SENTRY_DSN` and `VITE_POSTHOG_KEY` present in `.env` with real values
-- Comment char counter showing `{newComment.length}/2000` in `comment-section.tsx`
-- Fallbacks (`?? 0`, `|| "Unknown"`) handled at query layer in `supabase-queries.ts`
-- `.ico` favicon exists at `public/icons/favicon.ico`
+| # | Task | Why |
+|---|------|-----|
+| 1 | Email/push notifications | User retention |
+| 2 | Admin moderation dashboard | Currently manual Supabase |
+| 3 | Apple splash screens | iOS PWA polish |
+| 4 | Web Share Target API | Share from other apps |
+| 5 | Read-more affordance for truncated text | UX clarity |
+| 6 | Bottom nav tap feedback (`active:scale-95`) | Micro-interaction |
+| 7 | Animated new comments | UX delight |
+| 8 | Title transitions in Header | Route change smoothness |
+| 9 | Crisis resources phone numbers (`tel:` links) | Accessibility |
+| 10 | Info page unsubscribe (DELETE API) | Waitlist management |
