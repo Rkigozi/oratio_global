@@ -163,10 +163,14 @@ export async function createPrayerRequest(
 }
 
 export async function deletePrayerRequest(prayerId: string): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
   const { error } = await supabase
     .from("prayer_requests")
     .delete()
-    .eq("id", prayerId);
+    .eq("id", prayerId)
+    .eq("user_id", user.id);
 
   if (error) {
     logError("delete prayer", error);
@@ -283,10 +287,14 @@ export async function createComment(input: {
 }
 
 export async function deleteComment(commentId: string): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
   const { error } = await supabase
     .from("comments")
     .delete()
-    .eq("id", commentId);
+    .eq("id", commentId)
+    .eq("user_id", user.id);
 
   if (error) {
     logError("delete comment", error);
@@ -299,7 +307,7 @@ export async function deleteComment(commentId: string): Promise<boolean> {
 
 export async function followUser(followingId: string): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
+  if (!user || user.id === followingId) return false;
 
   const { error } = await supabase
     .from("follows")
@@ -335,10 +343,20 @@ export async function getFollowingIds(): Promise<string[]> {
 
   const { data } = await supabase
     .from("follows")
-    .select("following_id")
+    .select(`
+      following_id,
+      profiles!following_id(username)
+    `)
     .eq("follower_id", user.id);
 
-  return (data || []).map((r: { following_id: string }) => r.following_id);
+  if (!data) return [];
+
+  return (data as Array<Record<string, unknown>>)
+    .map((r) => {
+      const profile = r.profiles as { username: string } | null;
+      return profile?.username;
+    })
+    .filter(Boolean) as string[];
 }
 
 export async function getFollowers(userId: string): Promise<Array<{ id: string; username: string; display_name: string | null }>> {
