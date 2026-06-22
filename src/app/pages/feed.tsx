@@ -93,27 +93,29 @@ export function Feed() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadPrayers = useCallback(() => {
+  const loadPrayers = useCallback(async () => {
     setLoading(true);
     setError(null);
-    getFeedPrayers().then((data) => {
+    try {
+      const data = await getFeedPrayers();
       setPrayers(data);
-      setLoading(false);
-    }).catch(() => {
+    } catch {
       setError("Failed to load prayers");
-      setLoading(false);
-    });
+    }
+    setLoading(false);
   }, []);
 
   // Load prayers from Supabase on mount
   useEffect(() => {
-    loadPrayers();
+    void loadPrayers();
   }, [loadPrayers]);
   const [showWelcome, setShowWelcome] = useState(() => {
     try { return !localStorage.getItem("oratio_feed_visited"); } catch { return true; }
   });
   const [prayedIds, setPrayedIds] = useState<string[]>([]);
-  const [visibleCount, setVisibleCount] = useState(20);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const trendingHashtags = useMemo(() => getHashtagCounts(prayers), [prayers]);
@@ -139,7 +141,6 @@ export function Feed() {
         if (prev.some(p => p.id === prayer.id)) return prev;
         return [prayer, ...prev];
       });
-      setVisibleCount(20);
     };
 
     const handleRemove = (e: Event) => {
@@ -240,20 +241,24 @@ export function Feed() {
     return result;
   }, [prayers, locationCity, locationCountry, showSaved, showFollowing, followingIds, activeSearch]);
 
-  // Only render visible batch for infinite scroll
-  const visiblePrayers = useMemo(() => {
-    return filteredPrayers.slice(0, visibleCount);
-  }, [filteredPrayers, visibleCount]);
+  // All filtered prayers are rendered (server-side pagination)
+  const visiblePrayers = filteredPrayers;
 
-  // Infinite scroll - load more when sentinel enters viewport
+  // Infinite scroll — load more prayers when sentinel enters viewport
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if (!sentinel || loadingMore || !hasMore) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + 20, filteredPrayers.length));
+        if (entries[0].isIntersecting && !loadingMore && hasMore) {
+          setLoadingMore(true);
+          getFeedPrayers(cursor, 20).then((data) => {
+            if (data.length < 20) setHasMore(false);
+            if (data.length > 0) setCursor(data[data.length - 1].createdAt);
+            setPrayers((prev) => [...prev, ...data]);
+            setLoadingMore(false);
+          }).catch(() => setLoadingMore(false));
         }
       },
       { threshold: 0.1 }
@@ -261,12 +266,14 @@ export function Feed() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [filteredPrayers.length]);
+  }, [cursor, hasMore, loadingMore]);
 
-  // Reset visible count when filters change
+  // Reload prayers when filters change
   useEffect(() => {
-    setVisibleCount(20);
-  }, [locationCity, locationCountry, showSaved]);
+    setCursor(undefined);
+    setHasMore(true);
+    void loadPrayers();
+  }, [locationCity, locationCountry, showSaved, showFollowing]);
 
   const togglePrayed = useCallback((id: string) => {
     setPrayedIds((prev) => {
@@ -705,11 +712,11 @@ export function Feed() {
                      onUserClick={(u) => void navigate(`/user/${encodeURIComponent(u)}`)}
                    />
               ))}
-              {visibleCount < filteredPrayers.length ? (
+              {hasMore ? (
                 <div ref={sentinelRef} className="h-4" />
               ) : (
                 <p className="text-center text-text-faint text-[10px] pt-2 pb-1">
-                  All {filteredPrayers.length} prayers loaded
+                  All prayers loaded
                 </p>
               )}
             </>

@@ -57,8 +57,8 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
 
 // ─── Feed ──────────────────────────────────────────────────────────────
 
-export async function getFeedPrayers(): Promise<PrayerRequest[]> {
-  const { data, error } = await supabase
+export async function getFeedPrayers(cursor?: string, pageLimit = 20): Promise<PrayerRequest[]> {
+  let query = supabase
     .from("prayer_requests")
     .select(`
       id, body, category,
@@ -67,7 +67,13 @@ export async function getFeedPrayers(): Promise<PrayerRequest[]> {
       profiles!inner(username, display_name, avatar_url)
     `)
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(pageLimit);
+
+  if (cursor) {
+    query = query.lt("created_at", cursor);
+  }
+
+  const { data, error } = await query;
 
   if (error || !data) {
     logError("getFeedPrayers", error);
