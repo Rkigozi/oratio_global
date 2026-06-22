@@ -44,7 +44,7 @@ export function PrayerRow({
     if (onTogglePrayed) onTogglePrayed(prayer.id);
   };
 
-  const catColor = categoryColors[prayer.category || "Other"] || "#8890b5";
+  const catColor = prayer.category ? (categoryColors[prayer.category] || "#8890b5") : null;
 
   return (
     <motion.div

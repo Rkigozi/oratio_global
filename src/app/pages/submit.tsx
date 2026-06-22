@@ -67,7 +67,7 @@ export function Submit() {
       const validation = validatePrayerSubmission({
         text: text.trim(),
         location: "",
-        category: "Other",
+        category: undefined,
         anonymous,
       });
 
@@ -93,13 +93,12 @@ export function Submit() {
           country: country.trim() || "Unknown",
           lat: approxLat,
           lng: approxLng,
-          category: "Other",
-          name: displayNameVal,
-          displayName: displayNameVal,
-          username: displayUsername,
-          prayerCount: 0,
-          commentsEnabled,
-        });
+        name: displayNameVal,
+        displayName: displayNameVal,
+        username: displayUsername,
+        prayerCount: 0,
+        commentsEnabled,
+      });
       }
 
       const newPrayer: PrayerRequest = {
@@ -113,7 +112,6 @@ export function Submit() {
         prayerCount: 0,
         lat: approxLat,
         lng: approxLng,
-        category: "Other",
         createdAt: new Date().toISOString(),
         commentsEnabled,
       };

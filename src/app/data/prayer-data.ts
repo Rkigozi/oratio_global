@@ -70,7 +70,7 @@ export const cityDatabase: Array<{
   { name: "Sydney", country: "Australia", lat: -33.9, lng: 151.2 },
 ];
 
-export const CATEGORIES = ["Health", "Family", "Career", "Guidance", "Peace", "Other"];
+export const CATEGORIES: string[] = [];
 
 export function getApproximateCoordinates(cityName: string, country: string): { lat: number; lng: number } {
   const city = cityDatabase.find(c => c.name === cityName && c.country === country);

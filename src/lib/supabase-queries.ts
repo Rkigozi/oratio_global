@@ -46,7 +46,7 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
       prayerCount: (row.prayer_count as number) || 0,
       lat: (row.location_lat as number) || 0,
       lng: (row.location_lng as number) || 0,
-      category: (row.category as string) || "Other",
+      category: (row.category as string) || undefined,
       createdAt: row.created_at as string,
       commentsEnabled: row.comments_enabled !== false,
     } as PrayerRequest;
@@ -85,7 +85,7 @@ export async function getFeedPrayers(): Promise<PrayerRequest[]> {
       prayerCount: (row.prayer_count as number) || 0,
       lat: (row.location_lat as number) || 0,
       lng: (row.location_lng as number) || 0,
-      category: (row.category as string) || "Other",
+      category: (row.category as string) || undefined,
       createdAt: row.created_at as string,
       commentsEnabled: row.comments_enabled !== false,
     } as PrayerRequest;
@@ -121,7 +121,7 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
     prayerCount: (data.prayer_count as number) || 0,
     lat: (data.location_lat as number) || 0,
     lng: (data.location_lng as number) || 0,
-    category: (data.category as string) || "Other",
+    category: (data.category as string) || undefined,
     createdAt: data.created_at as string,
     commentsEnabled: data.comments_enabled !== false,
   } as PrayerRequest;
@@ -138,7 +138,7 @@ export async function createPrayerRequest(
     .insert({
       user_id: user.id,
       body: prayer.text,
-      category: prayer.category || "Other",
+      category: prayer.category || null,
       location_city: prayer.city,
       location_country: prayer.country,
       location_lat: prayer.lat,
@@ -542,7 +542,7 @@ export async function getUserPrayers(username: string): Promise<PrayerRequest[]>
     prayerCount: (row.prayer_count as number) || 0,
     lat: (row.location_lat as number) || 0,
     lng: (row.location_lng as number) || 0,
-    category: (row.category as string) || "Other",
+    category: (row.category as string) || undefined,
     createdAt: row.created_at as string,
     commentsEnabled: row.comments_enabled !== false,
   })) as PrayerRequest[];
@@ -641,7 +641,7 @@ export async function getSavedPrayers(): Promise<PrayerRequest[]> {
       prayerCount: (row.prayer_count as number) || 0,
       lat: (row.location_lat as number) || 0,
       lng: (row.location_lng as number) || 0,
-      category: (row.category as string) || "Other",
+      category: (row.category as string) || undefined,
       createdAt: row.created_at as string,
       commentsEnabled: row.comments_enabled !== false,
     } as PrayerRequest;
@@ -676,7 +676,7 @@ export async function getMyPrayers(): Promise<PrayerRequest[]> {
     prayerCount: (row.prayer_count as number) || 0,
     lat: (row.location_lat as number) || 0,
     lng: (row.location_lng as number) || 0,
-    category: (row.category as string) || "Other",
+    category: (row.category as string) || undefined,
     createdAt: row.created_at as string,
     commentsEnabled: row.comments_enabled !== false,
   })) as PrayerRequest[];
@@ -719,7 +719,7 @@ export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {
       prayerCount: (prayer.prayer_count as number) || 0,
       lat: (prayer.location_lat as number) || 0,
       lng: (prayer.location_lng as number) || 0,
-      category: (prayer.category as string) || "Other",
+      category: (prayer.category as string) || undefined,
       createdAt: prayer.created_at as string,
       commentsEnabled: prayer.comments_enabled !== false,
     } as PrayerRequest;

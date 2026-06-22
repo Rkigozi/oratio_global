@@ -23,8 +23,8 @@ export const prayerSchema = z.object({
     .optional()
     .default(""),
   category: z.string()
-    .min(1, { message: "Please select a category" })
-    .max(50, { message: "Category name too long" }),
+    .max(50, { message: "Category name too long" })
+    .optional(),
   anonymous: z.boolean().default(false),
 });
 

@@ -57,7 +57,7 @@ export function ProfileSaved() {
         ) : (
           <div className="space-y-2.5">
             {savedPrayers.map((prayer, i) => {
-              const catColor = categoryColors[prayer.category || "Other"] || "#8890b5";
+              const catColor = prayer.category ? (categoryColors[prayer.category] || "#8890b5") : null;
               return (
                 <motion.div
                   key={prayer.id}
