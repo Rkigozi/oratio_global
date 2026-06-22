@@ -12,12 +12,6 @@ import { useAuth } from "../../lib/auth-context";
 import { logError } from "../../lib/logger";
 import posthog from "posthog-js";
 
-function saveLastPrayerId(id: string, city: string, country: string) {
-  try {
-    localStorage.setItem("oratio_last_prayer_location", JSON.stringify({ id, city, country }));
-  } catch { /* ignore */ }
-}
-
 export function Submit() {
   const navigate = useNavigate();
   const { location: geoLocation, loading: geoLoading, denied: geoDenied, requestLocation } = useGeolocation();
@@ -120,7 +114,6 @@ export function Submit() {
         window.dispatchEvent(new CustomEvent("oratio-prayer-added", { detail: newPrayer }));
       }
 
-      saveLastPrayerId(newPrayer.id, city.trim(), country.trim());
       setLastPrayerId(newPrayer.id);
       posthog.capture("prayer_submitted", { city: city.trim(), country: country.trim(), anonymous: !displayUsername });
       setSubmitted(true);

@@ -20,32 +20,10 @@ describe("uploadAvatar", () => {
 });
 
 describe("getInitialAvatarUrl", () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
-  it("returns UI Avatars URL for unknown user", () => {
+  it("returns UI Avatars URL for a given username", () => {
     const url = getInitialAvatarUrl("testuser");
     expect(url).toContain("ui-avatars.com");
     expect(url).toContain("T");
-  });
-
-  it("returns stored photo if available", () => {
-    localStorage.setItem(
-      "oratio_profile",
-      JSON.stringify({ photo: "https://example.com/photo.jpg", username: "testuser" }),
-    );
-    const url = getInitialAvatarUrl("testuser");
-    expect(url).toBe("https://example.com/photo.jpg");
-  });
-
-  it("ignores stored photo if username does not match", () => {
-    localStorage.setItem(
-      "oratio_profile",
-      JSON.stringify({ photo: "https://example.com/photo.jpg", username: "otheruser" }),
-    );
-    const url = getInitialAvatarUrl("testuser");
-    expect(url).toContain("ui-avatars.com");
   });
 
   it("handles empty username", () => {

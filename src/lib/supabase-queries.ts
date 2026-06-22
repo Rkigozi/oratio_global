@@ -21,7 +21,7 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
       id, body, category,
       location_city, location_country, location_lat, location_lng,
       is_anonymous, prayer_count, created_at, comments_enabled,
-      profiles!inner(username, display_name)
+      profiles!inner(username, display_name, avatar_url)
     `)
     .not("location_lat", "is", null)
     .not("location_lng", "is", null)
@@ -34,7 +34,7 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
   }
 
   return data.map((row: Record<string, unknown>) => {
-    const profile = row.profiles as { username: string; display_name: string };
+    const profile = row.profiles as { username: string; display_name: string; avatar_url: string };
     return {
       id: row.id as string,
       city: (row.location_city as string) || "Unknown",
@@ -49,6 +49,7 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
       category: (row.category as string) || undefined,
       createdAt: row.created_at as string,
       commentsEnabled: row.comments_enabled !== false,
+      avatarUrl: profile.avatar_url || undefined,
     } as PrayerRequest;
   });
 }
@@ -62,7 +63,7 @@ export async function getFeedPrayers(): Promise<PrayerRequest[]> {
       id, body, category,
       location_city, location_country, location_lat, location_lng,
       is_anonymous, prayer_count, created_at, comments_enabled,
-      profiles!inner(username, display_name)
+      profiles!inner(username, display_name, avatar_url)
     `)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -73,7 +74,7 @@ export async function getFeedPrayers(): Promise<PrayerRequest[]> {
   }
 
   return data.map((row: Record<string, unknown>) => {
-    const profile = row.profiles as { username: string; display_name: string };
+    const profile = row.profiles as { username: string; display_name: string; avatar_url: string };
     return {
       id: row.id as string,
       city: (row.location_city as string) || "Unknown",
@@ -88,6 +89,7 @@ export async function getFeedPrayers(): Promise<PrayerRequest[]> {
       category: (row.category as string) || undefined,
       createdAt: row.created_at as string,
       commentsEnabled: row.comments_enabled !== false,
+      avatarUrl: profile.avatar_url || undefined,
     } as PrayerRequest;
   });
 }
@@ -99,7 +101,7 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
       id, body, category,
       location_city, location_country, location_lat, location_lng,
       is_anonymous, prayer_count, created_at, comments_enabled,
-      profiles!inner(username, display_name)
+      profiles!inner(username, display_name, avatar_url)
     `)
     .eq("id", prayerId)
     .single();
@@ -124,6 +126,7 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
     category: (data.category as string) || undefined,
     createdAt: data.created_at as string,
     commentsEnabled: data.comments_enabled !== false,
+    avatarUrl: profile.avatar_url || undefined,
   } as PrayerRequest;
 }
 
@@ -221,7 +224,7 @@ export async function getComments(prayerId: string): Promise<Comment[]> {
   }
 
   return (data as Array<Record<string, unknown>>).map((row) => {
-    const profile = row.profiles as { username: string; display_name: string } | null;
+    const profile = row.profiles as { username: string; display_name: string; avatar_url: string } | null;
     return {
       id: row.id as string,
       prayer_id: row.prayer_id as string,
@@ -618,7 +621,7 @@ export async function getSavedPrayers(): Promise<PrayerRequest[]> {
       id, body, category,
       location_city, location_country, location_lat, location_lng,
       is_anonymous, prayer_count, created_at, comments_enabled,
-      profiles!inner(username, display_name)
+      profiles!inner(username, display_name, avatar_url)
     `)
     .in("id", savedIds)
     .order("created_at", { ascending: false });
@@ -629,7 +632,7 @@ export async function getSavedPrayers(): Promise<PrayerRequest[]> {
   }
 
   return (data as Array<Record<string, unknown>>).map((row) => {
-    const profile = row.profiles as { username: string; display_name: string } | null;
+    const profile = row.profiles as { username: string; display_name: string; avatar_url: string } | null;
     return {
       id: row.id as string,
       city: (row.location_city as string) || "Unknown",
@@ -644,6 +647,7 @@ export async function getSavedPrayers(): Promise<PrayerRequest[]> {
       category: (row.category as string) || undefined,
       createdAt: row.created_at as string,
       commentsEnabled: row.comments_enabled !== false,
+      avatarUrl: profile?.avatar_url || undefined,
     } as PrayerRequest;
   });
 }
@@ -694,7 +698,7 @@ export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {
         id, body, category,
         location_city, location_country, location_lat, location_lng,
         is_anonymous, prayer_count, created_at, comments_enabled,
-        profiles!inner(username, display_name)
+        profiles!inner(username, display_name, avatar_url)
       )
     `)
     .eq("user_id", user.id)
@@ -722,6 +726,7 @@ export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {
       category: (prayer.category as string) || undefined,
       createdAt: prayer.created_at as string,
       commentsEnabled: prayer.comments_enabled !== false,
+      avatarUrl: profile?.avatar_url || undefined,
     } as PrayerRequest;
   });
 }

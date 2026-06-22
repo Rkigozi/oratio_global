@@ -16,18 +16,8 @@ interface FeedCardProps {
   onUserClick?: (username: string) => void;
 }
 
-
-function getCommentCount(prayerId: string): number {
-  try {
-    const raw = localStorage.getItem(`oratio_comments_${prayerId}`);
-    if (raw) return (JSON.parse(raw) as Array<unknown>).length;
-  } catch { /* ignore */ }
-  return 0;
-}
-
 export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick, onUserClick }: FeedCardProps) {
   const [prayed, setPrayed] = useState(hasPrayed);
-  const [commentCount] = useState(() => getCommentCount(prayer.id));
 
   useEffect(() => {
     setPrayed(hasPrayed);
@@ -57,7 +47,7 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <img
-            src={getInitialAvatarUrl(prayer.username || getAttributionText(prayer))}
+            src={prayer.avatarUrl || getInitialAvatarUrl(prayer.username || getAttributionText(prayer))}
             alt={prayer.username || "avatar"}
             className="w-5 h-5 rounded-full flex-shrink-0 object-cover cursor-pointer"
             onClick={(e) => { e.stopPropagation(); const u = prayer.username; if (u && onUserClick) onUserClick(u); }}
@@ -89,7 +79,7 @@ export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick
           className="flex items-center gap-1 text-text-dim hover:text-text-muted text-xs transition-colors cursor-pointer"
         >
           <MessageCircle size={13} className={prayer.commentsEnabled === false ? "opacity-30" : ""} />
-          <span>{prayer.commentsEnabled === false ? "Off" : (commentCount > 0 ? commentCount : "Comment")}</span>
+          <span>{prayer.commentsEnabled === false ? "Off" : "Comment"}</span>
         </button>
         <button
           onClick={handlePray}

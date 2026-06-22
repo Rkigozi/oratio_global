@@ -12,6 +12,7 @@ export interface PrayerRequest {
   category?: string;
   createdAt?: string; // ISO timestamp
   commentsEnabled?: boolean; // Whether comments are allowed on this prayer
+  avatarUrl?: string;  // Profile avatar URL from Supabase
 }
 
 export const categoryColors: Record<string, string> = {

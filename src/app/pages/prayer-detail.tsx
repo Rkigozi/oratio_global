@@ -323,7 +323,7 @@ export function PrayerDetail() {
           {/* Attribution */}
           <div className="flex items-center gap-2.5 mb-4">
             <img
-              src={getInitialAvatarUrl(getAttributionText(prayer))}
+              src={prayer.avatarUrl || getInitialAvatarUrl(getAttributionText(prayer))}
               alt={username || "User"}
               className="w-6 h-6 rounded-full object-cover flex-shrink-0 cursor-pointer"
               onClick={() => username && void navigate(`/user/${encodeURIComponent(username)}`)}

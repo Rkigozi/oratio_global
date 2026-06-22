@@ -133,19 +133,10 @@ export function UserProfile() {
   );
 }
 
-function getCommentCount(prayerId: string): number {
-  try {
-    const raw = localStorage.getItem(`oratio_comments_${prayerId}`);
-    if (raw) return (JSON.parse(raw) as Array<unknown>).length;
-  } catch { /* ignore */ }
-  return 0;
-}
-
 function PrayerCard({ prayer }: { prayer: PrayerRequest }) {
   const navigate = useNavigate();
   const [prayed, setPrayed] = useState(false);
   const [count, setCount] = useState(prayer.prayerCount);
-  const [commentCount] = useState(() => getCommentCount(prayer.id));
 
   const handlePray = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -178,12 +169,7 @@ function PrayerCard({ prayer }: { prayer: PrayerRequest }) {
             <span>🙏</span>
             <span>{count}</span>
           </button>
-          {commentCount > 0 && (
-            <span className="flex items-center gap-1 text-text-dim text-xs">
-              <MessageCircle size={11} />
-              <span>{commentCount}</span>
-            </span>
-          )}
+
         </div>
       </div>
     </div>
