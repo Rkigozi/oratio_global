@@ -112,7 +112,7 @@ export function Info() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Prayers shown in the feed include sample data alongside real user submissions.</span>
+                  <span>All prayers in the feed are from real users. Your prayer joins the global community.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>

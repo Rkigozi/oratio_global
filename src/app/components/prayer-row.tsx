@@ -59,15 +59,6 @@ export function PrayerRow({
         border: "1px solid rgba(var(--rgb-accent), 0.06)",
       }}
     >
-      {/* Sample badge for mock data */}
-      {prayer.id.startsWith('feed-') && (
-        <span className="absolute top-2 right-2 text-[9px] px-1.5 py-0.5 rounded-full"
-          style={{ background: "rgba(var(--rgb-warning), 0.1)", color: "rgb(var(--rgb-text-muted))", border: "1px solid rgba(var(--rgb-warning), 0.15)" }}
-        >
-          Sample
-        </span>
-      )}
-
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p

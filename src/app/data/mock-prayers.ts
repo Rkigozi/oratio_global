@@ -137,7 +137,7 @@ const generateHotspotData = (): PrayerRequest[] => {
 
   for (let i = 0; i < cityDatabase.length; i++) {
     const city = cityDatabase[i];
-    const activityLevel = city.weight * 30 + Math.floor(rand() * city.weight * 40);
+    const activityLevel = 100 + Math.floor(rand() * 200);
     const coords = getApproximateCoordinates(city.name, city.country);
     const nameValue = shuffledNames[i % shuffledNames.length];
     const displayNameValue = nameValue;
@@ -172,7 +172,7 @@ const generateFeedData = (): PrayerRequest[] => {
   const now = new Date("2026-05-09T12:00:00Z");
 
   for (const city of cityDatabase) {
-    const count = city.weight + Math.floor(rand() * 2);
+    const count = 1 + Math.floor(rand() * 3);
     const coords = getApproximateCoordinates(city.name, city.country);
     for (let j = 0; j < count; j++) {
       const minutesAgo = Math.floor(rand() * 2880);

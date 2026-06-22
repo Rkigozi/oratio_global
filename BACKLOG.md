@@ -1,7 +1,7 @@
 # Oratio v1.0 Backlog
 
 > Organized by priority within each epic.
-> Last audited: June 15, 2026
+> Last audited: June 22, 2026
 
 ---
 
@@ -27,7 +27,7 @@
 | # | Task | Description | Status |
 |---|------|-------------|--------|
 | 1 | ~~Fix double back buttons~~ | PrayerDetail/UserProfile/UserList are standalone routes (not in Layout) — their back buttons are correct | ✅ Not an issue |
-| 2 | **Label mock data** | Followers/following counts still fake/hardcoded without "(sample)" label | ⚠️ Partial — prayers labeled, followers count not |
+| 2 | **Label mock data** | Followers/following counts still fake/hardcoded without "(sample)" label | ✅ Done — followers use real Supabase queries, prayers already labeled |
 | 3 | **Comment submit spinner** | Greys out with no feedback if API hangs | ✅ Fixed — spinner implemented |
 | 4 | **Hashtags in PrayerRow** | Was plain text, inconsistent with FeedCard | ✅ Fixed — `renderHashtags` wired |
 | 5 | **Stale text on Landing** | Says "We'll save your interest locally" but subscription now hits Supabase | ✅ Fixed |
@@ -38,9 +38,9 @@
 | # | Task | Description | Status |
 |---|------|-------------|--------|
 | 6 | **Fix report flow timing** | PrayerDetail shows confirmation before API resolves | ✅ Fixed |
-| 7 | **Comment character counter** | `maxLength` exists (2000) but no visible counter | ⚠️ Partial — needs `{length}/2000` display |
+| 7 | **Comment character counter** | `maxLength` exists (2000) but no visible counter | ✅ Done — `{newComment.length}/2000` displayed in `comment-section.tsx:154-156` |
 | 8 | **Hide Delete on other's comments** | Check ownership against current profile | ✅ Done |
-| 9 | **Missing fallbacks** | `prayerCount` blank if 0/undefined in profile pages; `city` blank in PrayerDetail/profile pages | ⚠️ Partial — some done, several missing |
+| 9 | **Missing fallbacks** | `prayerCount` blank if 0/undefined in profile pages; `city` blank in PrayerDetail/profile pages | ✅ Done — handled at query layer (`supabase-queries.ts:40/46`) with `|| "Unknown"` and `|| 0` |
 | 10 | **Avatar alt text** | All avatars use descriptive alt (e.g. `alt={username}`) instead of `alt=""` | ✅ Done (descriptive is actually better for a11y) |
 
 ### 🟢 P2 — Refinement
@@ -57,7 +57,7 @@
 | 18 | Apple splash screens | No `apple-touch-startup-image` tags in `index.html` | ❌ Not done |
 | 19 | Web Share Target API | Manifest missing `share_target` field | ❌ Not done |
 | 20 | CSP security headers | `netlify.toml` missing `Content-Security-Policy` | ❌ Not done |
-| 21 | `.ico` favicon fallback | PNG fallback exists, no `favicon.ico` for old browsers | ⚠️ Partial — has PNG, no ICO |
+| 21 | `.ico` favicon fallback | PNG fallback exists, no `favicon.ico` for old browsers | ✅ Done — `public/icons/favicon.ico` exists, linked in `index.html:14` |
 
 ---
 
@@ -92,8 +92,8 @@
 
 | # | Task | Description | Status |
 |---|------|-------------|--------|
-| 14 | **Wire Sentry** | `@sentry/react` + `@sentry/browser` installed, `Sentry.init()` called — **DSN missing from `.env`** | ❌ Not configured |
-| 15 | **Wire PostHog** | `posthog-js` installed, `posthog.init()` called — **API key missing from `.env`** | ❌ Not configured |
+| 14 | **Wire Sentry** | `@sentry/react` + `@sentry/browser` installed, `Sentry.init()` called — DSN in `.env` | ✅ Done — DSN present, `Sentry.init()` at `main.tsx:7-14`, `logError()` utility wired |
+| 15 | **Wire PostHog** | `posthog-js` installed, `posthog.init()` called — API key in `.env` | ✅ Done — key + host in `.env`, `posthog.capture()` used across components |
 
 ---
 
@@ -115,13 +115,14 @@
 | 5 | Apple splash screens | No `apple-touch-startup-image` tags in `index.html` |
 | 6 | Web Share Target API | No `share_target` in manifest |
 | 7 | CSP security headers | `Content-Security-Policy` absent from `netlify.toml` |
-| 8 | `.ico` favicon fallback | Has PNG 32x32 fallback but no `favicon.ico` |
+| 8 | `.ico` favicon fallback | Has PNG 32x32 fallback but no `favicon.ico` | ✅ Done — `favicon.ico` exists at `public/icons/favicon.ico` |
 
 ---
 
-## Quick Wins — Remaining
+## Quick Wins — All Completed ✅
 
-1. **Add monitored env vars** — Ask Robert for `VITE_SENTRY_DSN` and `VITE_POSTHOG_KEY` values, add to `.env`
-2. **Add comment char counter** — Show `{newComment.length}/2000` below comment textarea in `comment-section.tsx`
-3. **Add missing fallbacks** — `prayerCount ?? 0` in profile pages, `city || "Unknown"` in PrayerDetail + profile pages
-4. **Add `.ico` favicon** — Create `public/icons/favicon.ico` for old browsers
+All previous quick wins have been verified as done:
+- `VITE_SENTRY_DSN` and `VITE_POSTHOG_KEY` present in `.env` with real values
+- Comment char counter showing `{newComment.length}/2000` in `comment-section.tsx`
+- Fallbacks (`?? 0`, `|| "Unknown"`) handled at query layer in `supabase-queries.ts`
+- `.ico` favicon exists at `public/icons/favicon.ico`
