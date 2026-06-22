@@ -308,6 +308,22 @@ function CommentThread({
                   <span className="text-text-dim text-[9px]">{timeAgo(reply.created_at)}</span>
                 </div>
                 <p className="text-text-dim text-sm leading-relaxed">{reply.body}</p>
+                <div className="flex items-center gap-3 mt-1">
+                  <button
+                    onClick={() => onReply(reply.id, replyUsername)}
+                    className="text-text-dim hover:text-accent text-[10px] transition-colors cursor-pointer"
+                  >
+                    Reply
+                  </button>
+                  {(user && reply.user_id === user.id) && (
+                    <button
+                      onClick={() => onDelete(reply.id)}
+                      className="text-text-faint hover:text-danger text-[10px] transition-colors cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
