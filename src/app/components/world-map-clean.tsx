@@ -58,14 +58,15 @@ export function WorldMapClean({
         maxBoundsViscosity: 0.8,
       });
 
-      // Theme-aware tile layers
-      const baseTiles = theme === "dark"
+      // Theme-aware tile layers (CartoDB for both themes)
+      const isDark = theme === "dark";
+      const baseTiles = isDark
         ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        : "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+        : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 
-      const refTiles = theme === "dark"
+      const refTiles = isDark
         ? "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
-        : "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}";
+        : "https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png";
 
       L.tileLayer(baseTiles, {
         attribution: '&copy; OpenStreetMap',
