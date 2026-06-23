@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react";
 import { useNavigate, useLocation } from "react-router";
+import { BetaBadge } from "./beta-badge";
 
 interface HeaderProps {
   showBack?: boolean;
@@ -61,15 +62,7 @@ export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
             >
               ORATIO
             </h1>
-            <span
-              className="text-[10px] px-1.5 py-0.5 rounded-full"
-              style={{
-                background: "rgba(var(--rgb-accent), 0.1)",
-                color: "rgb(var(--rgb-accent))",
-              }}
-            >
-              Beta
-            </span>
+            <BetaBadge />
           </div>
         )}
       </div>

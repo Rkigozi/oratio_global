@@ -108,7 +108,7 @@ export function Info() {
               <ul className="space-y-2 text-text-muted text-xs">
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Data is stored in <strong className="text-text-muted">this browser only</strong>. Sign in with email or Google to keep your prayers across devices.</span>
+                  <span>Your prayers and profile are saved to your account. Sign in to access them from any device.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>

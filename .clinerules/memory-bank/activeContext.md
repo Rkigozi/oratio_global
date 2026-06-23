@@ -1,40 +1,34 @@
-# Active Context - Oratio Prayer Platform
+# Active Context
 
-## Current Phase: Production Readiness (Web PWA)
+## Current Focus
+Production cleanup and hardening for v1.0 launch. All major features are complete. Remaining work is pre-launch checklist items.
 
-**Status**: Web PWA production-hardened. All data wired to Supabase. Loading/error states on all pages. Dead schema cleaned.
+## Recent Changes (June 22, 2026)
+- Removed all localStorage dead code (oratio_profile, oratio_comments, oratio_last_prayer_location)
+- Removed category system entirely (hashtags replace it)
+- Fixed CSP multi-line issue (was causing SW SecurityError on iOS Chrome)
+- Fixed comment input: maxLength 500, auth gate, error preservation
+- Added comment pagination (20 per page, Load More)
+- Added comment_count DB trigger for feed display
+- Fixed feed avatars (profile join for avatar_url)
+- Upload avatars to Supabase Storage instead of base64 DB blobs
+- Fixed profile prayers navigating to /prayer/:id (shows comments)
+- Added Followers count to profile stats (replaced Saved)
+- Fixed "Following" feed filter (was comparing UUIDs vs usernames)
+- Added cursor-based feed pagination (no more loading 100 at once)
+- Added rate limiting: 10 prayers/hr, 30 comments/hr (RLS)
+- Added Playwright E2E smoke tests
+- Added UPDATE RLS policy for reports (fixed moderation page)
+- Added ownership checks to deleteComment and deletePrayerRequest
+- Added self-follow guard
+- Added deploy preview config for Netlify
 
-## What We've Done This Session (2026-06-14)
+## Known Issues
+- OG image URLs in index.html point to oratiotest.netlify.app (needs updating when domain purchased)
+- Password reset flow not tested end-to-end
+- Privacy/terms pages need content verification
 
-### Production Hardening
-- **Loading states**: Added `LoadingSpinner` + `ErrorState` components to feed, prayer-detail, profile-saved, profile-submitted, profile-prayed
-- **Error handling**: All data-fetching pages show error + retry button on Supabase failures
-- **Sentry logging**: `logError()` utility sends to Sentry in production, replaces 27 `console.error` calls in `supabase-queries.ts`
-- **Saved prayers**: New `saved_prayers` table + migration, front-end wired to persist cross-device
-- **Prayer detail**: Save/follow actions now persist to Supabase (not just localStorage)
-- **Profile pages**: submitted, prayed, saved all query Supabase as primary source (localStorage fallback)
-
-### Schema Cleanup
-- Removed dead columns: `tags`, `is_answered`, `answered_at` from `prayer_requests`
-- Removed dead table: `push_subscriptions` (no push infra exists)
-- Removed dead column: `language_preference` from `profiles`
-- Removed dead function: `subscribe_to_waitlist()` (frontend uses direct INSERT)
-- Removed `tags` from `PrayerRequest` type and all Supabase SELECT queries
-- Removed `TAGS_BY_CATEGORY`/`ALL_TAGS` constants (only used in deleted mock data)
-- Removed unused `cities` export from `prayer-data.ts`
-- Migration: `008_schema_cleanup.sql`
-
-### Documentation
-- README updated to reflect Supabase backend, v0.2 phase, current known issues
-
-## Remaining for Launch
-- Add Sentry DSN to `.env` for crash monitoring
-- Add PostHog key to `.env` for analytics
-- Split `feed.tsx` (785 lines) into smaller components
-- Split `supabase-queries.ts` (700+ lines) by domain
-- Fix 74 pre-existing lint warnings (floating promises)
-
-## Key Documents
-- **Web Code**: `./src/` (current directory)
-- **Native App**: `./oratio-app/` (scaffolded, not built out)
-- **Memory Bank**: `.clinerules/memory-bank/`
+## Next Session
+- Pre-launch checklist (4 items in BACKLOG.md)
+- Custom domain setup
+- PostHog dashboard creation

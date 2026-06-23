@@ -4,6 +4,8 @@ import { motion } from "motion/react";
 import { Globe, Heart, MessageCircle, ArrowRight, Mail } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 import { subscribeToWaitlist } from "../../lib/supabase-queries";
+import { BetaBadge } from "../components/beta-badge";
+import { BETA } from "../config";
 
 export function Landing() {
   const navigate = useNavigate();
@@ -63,11 +65,7 @@ export function Landing() {
             <h1 className="font-heading text-text-secondary" style={{ fontSize: "clamp(3rem, 8vw, 4.5rem)", fontWeight: 300, letterSpacing: "0.08em" }}>
               ORATIO
             </h1>
-            <span className="text-[10px] px-2 py-0.5 rounded-full mt-2"
-              style={{ background: "rgba(var(--rgb-accent), 0.1)", color: "rgb(var(--rgb-accent))" }}
-            >
-              Beta
-            </span>
+            <BetaBadge className="mt-2" />
           </div>
           <p className="text-text-muted text-base md:text-lg mb-2 font-light tracking-[0.3em] uppercase">
             Pray Together. Anywhere.
@@ -192,7 +190,12 @@ export function Landing() {
         </motion.div>
 
         {/* Footer */}
-        <div className="w-full text-center mt-16 pt-6 border-t border-accent/6">
+        <div className="w-full text-center mt-16 pt-6 border-t border-accent/6 space-y-2">
+          {BETA.isBeta && (
+            <p className="text-text-dim text-[11px] font-light italic">
+              {BETA.notice}
+            </p>
+          )}
           <p className="text-text-faint text-[10px]">
             Oratio · A global Christian prayer platform
           </p>

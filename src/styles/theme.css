@@ -44,6 +44,40 @@
   --font-weight-normal: 400;
   --radius: 0.625rem;
 
+  /* ── Shadcn UI theme tokens (mapped to existing RGB variables) ── */
+  --background: rgb(var(--rgb-bg));
+  --foreground: rgb(var(--rgb-text));
+  --card: rgb(var(--rgb-surface-elevated));
+  --card-foreground: rgb(var(--rgb-text));
+  --popover: rgb(var(--rgb-overlay));
+  --popover-foreground: rgb(var(--rgb-text));
+  --primary: rgb(var(--rgb-accent));
+  --primary-foreground: #ffffff;
+  --secondary: rgb(var(--rgb-surface-hover));
+  --secondary-foreground: rgb(var(--rgb-text-secondary));
+  --muted: rgb(var(--rgb-surface));
+  --muted-foreground: rgb(var(--rgb-text-muted));
+  --accent: rgb(var(--rgb-accent));
+  --accent-foreground: #ffffff;
+  --destructive: rgb(var(--rgb-danger));
+  --destructive-foreground: #ffffff;
+  --border: rgba(var(--rgb-text-faint), 0.3);
+  --input: rgba(var(--rgb-text-faint), 0.3);
+  --ring: rgba(var(--rgb-accent), 0.5);
+  --chart-1: rgb(var(--rgb-accent));
+  --chart-2: rgb(var(--rgb-category-teal));
+  --chart-3: rgb(var(--rgb-category-orange));
+  --chart-4: rgb(var(--rgb-category-purple));
+  --chart-5: rgb(var(--rgb-category-pink));
+  --sidebar: rgb(var(--rgb-surface));
+  --sidebar-foreground: rgb(var(--rgb-text));
+  --sidebar-primary: rgb(var(--rgb-accent));
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgb(var(--rgb-accent-light));
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(var(--rgb-text-faint), 0.2);
+  --sidebar-ring: rgba(var(--rgb-accent), 0.5);
+
   /* ── CSS variables for var() use in inline styles and Leaflet ── */
   --color-bg: rgb(var(--rgb-bg));
   --color-surface: rgba(var(--rgb-surface), 0.6);
@@ -116,6 +150,36 @@
   --color-category-pink: rgb(var(--rgb-category-pink));
 
   --color-map-bg: rgb(var(--rgb-map-bg));
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
