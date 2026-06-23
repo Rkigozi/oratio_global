@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
-import { supabase } from '../services/supabase';
 
 type Theme = "dark" | "light";
 
@@ -38,6 +37,11 @@ function applyTheme(theme: Theme) {
     ?.setAttribute("content", color);
 }
 
+async function getSupabaseClient() {
+  const { supabase } = await import("../services/supabase");
+  return supabase;
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => getStoredTheme());
 
@@ -50,6 +54,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     const loadProfileTheme = async () => {
+      const supabase = await getSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -91,6 +96,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const syncThemePreference = useCallback((next: Theme) => {
     const sync = async () => {
+      const supabase = await getSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 

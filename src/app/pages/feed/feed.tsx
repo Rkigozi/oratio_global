@@ -9,7 +9,7 @@ import { getHashtagCounts } from '../../services/hashtags';
 import { useGeolocation } from '../../hooks/use-geolocation';
 import { getFeedPrayers, searchUsers, togglePray, getFollowingIds, getMyPrayedIds, getMySavedIds } from '../../services/supabase-queries';
 import { LoadingSpinner, ErrorState } from "../../components/loading-spinner";
-import posthog from "posthog-js";
+import { captureEvent } from "../../../lib/analytics";
 
 function readRecentSearches(): string[] {
   try {
@@ -70,7 +70,7 @@ export function Feed() {
     setActiveSearch(q);
     addRecentSearch(q);
     setShowRecent(false);
-    if (q) posthog.capture("search_performed", { query: q });
+    if (q) captureEvent("search_performed", { query: q });
   };
 
   const handleRecentClick = (q: string) => {

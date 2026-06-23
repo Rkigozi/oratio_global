@@ -3,7 +3,6 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Globe, Heart, MessageCircle, ArrowRight, Mail } from "lucide-react";
 import { useAuth } from '../hooks/auth-context';
-import { subscribeToWaitlist } from '../services/supabase-queries';
 import { BetaBadge } from "../components/beta-badge";
 import { BETA } from "../config";
 
@@ -15,14 +14,13 @@ export function Landing() {
 
   // Redirect to feed if already signed in
   useEffect(() => {
-    if (!loading && user) {
-      void navigate("/feed", { replace: true });
-    }
+    if (!loading && user) void navigate("/feed", { replace: true });
   }, [user, loading, navigate]);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
+    const { subscribeToWaitlist } = await import("../services/supabase-queries");
     const result = await subscribeToWaitlist(email, "landing");
     if (result === "error") return;
     setSubscribed(true);
@@ -47,7 +45,7 @@ export function Landing() {
   ];
 
   return (
-    <div className="flex flex-col min-h-dvh w-full overflow-y-auto" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto overscroll-contain" style={{ background: "rgb(var(--rgb-bg))" }}>
       {/* Ambient glow */}
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full blur-[200px] pointer-events-none opacity-15"
         style={{ background: "radial-gradient(circle, rgba(var(--rgb-accent), 0.4), transparent 70%)" }}

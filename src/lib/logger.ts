@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/react";
+import { captureException } from "./monitoring";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -48,10 +48,7 @@ export function logError(context: string, error: unknown, extra?: Record<string,
   const normalized = normalizeError(context, error);
 
   if (import.meta.env.PROD) {
-    Sentry.captureException(normalized.exception, {
-      tags: { context },
-      extra: { ...normalized.extra, ...extra },
-    });
+    captureException(normalized.exception, context, { ...normalized.extra, ...extra });
   }
 
   console.error(`[${context}]`, normalized.message, extra ?? "");

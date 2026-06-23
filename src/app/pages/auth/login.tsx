@@ -29,7 +29,7 @@ export function Login() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen w-full text-text relative overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto overscroll-contain text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(var(--rgb-accent), 0.12), transparent 70%)" }}
       />

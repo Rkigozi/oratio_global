@@ -14,7 +14,7 @@ import { getPrayerById, togglePray, toggleSavePrayer, followUser, unfollowUser, 
 import { LoadingSpinner, ErrorState } from "../../components/loading-spinner";
 import { useAuth } from '../../hooks/auth-context';
 import { logError } from "../../../lib/logger";
-import posthog from "posthog-js";
+import { captureEvent } from "../../../lib/analytics";
 
 export function PrayerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -150,14 +150,14 @@ export function PrayerDetail() {
     const newSaved = !saved;
     setSaved(newSaved);
     void toggleSavePrayer(prayer!.id, newSaved);
-    posthog.capture(newSaved ? "prayer_saved" : "prayer_unsaved", { prayerId: prayer!.id });
+    captureEvent(newSaved ? "prayer_saved" : "prayer_unsaved", { prayerId: prayer!.id });
   };
 
   const handleReport = async (reason: string) => {
     setShowReport(false);
     try {
       await reportContent({ reportable_type: "prayer", reportable_id: prayer!.id, reason });
-      posthog.capture("prayer_reported", { prayerId: prayer!.id, reason });
+      captureEvent("prayer_reported", { prayerId: prayer!.id, reason });
       setReported(true);
     } catch {
       logError("report prayer", "report failed");
@@ -189,7 +189,7 @@ export function PrayerDetail() {
         ? prev.filter((pid) => pid !== prayerId)
         : [...prev, prayerId];
       void togglePray(prayerId, !isCurrentlyPrayed);
-      posthog.capture(isCurrentlyPrayed ? "prayer_unprayed" : "prayer_prayed", { prayerId });
+      captureEvent(isCurrentlyPrayed ? "prayer_unprayed" : "prayer_prayed", { prayerId });
       return newIds;
     });
   }, []);

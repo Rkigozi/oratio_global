@@ -278,17 +278,19 @@ describe("AuthProvider", () => {
   it("subscribes to auth state changes", async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
-    expect(supabase.auth.onAuthStateChange).toHaveBeenCalled();
+    await waitFor(() => expect(supabase.auth.onAuthStateChange).toHaveBeenCalled());
     await waitFor(() => expect(result.current.loading).toBe(false));
   });
 
-  it("unsubscribes on unmount", () => {
+  it("unsubscribes on unmount", async () => {
     const unsubscribe = vi.fn();
     vi.mocked(supabase.auth.onAuthStateChange).mockReturnValue({
       data: { subscription: { unsubscribe } },
     });
 
     const { unmount } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(supabase.auth.onAuthStateChange).toHaveBeenCalled());
+
     unmount();
 
     expect(unsubscribe).toHaveBeenCalled();

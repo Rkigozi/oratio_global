@@ -10,7 +10,7 @@ import { useGeolocation } from '../../hooks/use-geolocation';
 import { createPrayerRequest, getProfilePreferences } from '../../services/supabase-queries';
 import { useAuth } from '../../hooks/auth-context';
 import { logError } from "../../../lib/logger";
-import posthog from "posthog-js";
+import { captureEvent } from "../../../lib/analytics";
 
 export function Submit() {
   const navigate = useNavigate();
@@ -125,7 +125,7 @@ export function Submit() {
       }
 
       setLastPrayerId(newPrayer.id);
-      posthog.capture("prayer_submitted", { city: city.trim(), country: country.trim(), anonymous: !displayUsername });
+      captureEvent("prayer_submitted", { city: city.trim(), country: country.trim(), anonymous: !displayUsername });
       setSubmitted(true);
     } catch (error) {
       logError("submit prayer", error);

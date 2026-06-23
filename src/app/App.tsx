@@ -32,7 +32,7 @@ export default function App() {
         <AuthProvider>
           <div style={{
             width: '100%',
-            height: '100%',
+            height: '100dvh',
             minHeight: '100dvh',
             display: 'flex',
             flexDirection: 'column',

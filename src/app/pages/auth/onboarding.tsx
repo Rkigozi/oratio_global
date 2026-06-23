@@ -38,7 +38,7 @@ export function Onboarding() {
 
   if (verificationSent) {
     return (
-      <div className="flex flex-col min-h-screen w-full text-text relative overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto overscroll-contain text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
         <div className="relative z-10 flex flex-col flex-1 justify-center px-6 max-w-sm mx-auto w-full">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -70,7 +70,7 @@ export function Onboarding() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen w-full text-text relative overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto overscroll-contain text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(var(--rgb-accent), 0.12), transparent 70%)" }}
       />

@@ -8,7 +8,7 @@ import { getComments, getCommentCount, createComment, deleteComment } from '../.
 import type { Comment } from '../../services/supabase-queries';
 import { getInitialAvatarUrl } from '../../services/upload';
 import { useAuth } from '../../hooks/auth-context';
-import posthog from "posthog-js";
+import { captureEvent } from "../../../lib/analytics";
 
 interface Props {
   prayer: PrayerRequest;
@@ -94,7 +94,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
       parent_id: replyTo?.id,
     });
     if (comment) {
-      posthog.capture("comment_added", { prayerId: prayer.id, hasParent: !!replyTo });
+      captureEvent("comment_added", { prayerId: prayer.id, hasParent: !!replyTo });
       const newCommentObj = { ...comment, user: profile ? { username: profile.username, display_name: profile.display_name } : null };
       setComments((prev) => {
         const updated = [...prev, newCommentObj];
@@ -367,4 +367,3 @@ function CommentThread({
     </div>
   );
 }
-
