@@ -3,6 +3,11 @@ import { supabase } from '../services/supabase';
 
 type Theme = "dark" | "light";
 
+const themeColors: Record<Theme, string> = {
+  dark: "#0A1A3A",
+  light: "#F8F9FC",
+};
+
 interface ThemeState {
   theme: Theme;
   toggleTheme: () => void;
@@ -22,7 +27,15 @@ function getStoredTheme(): Theme {
 }
 
 function applyTheme(theme: Theme) {
+  const color = themeColors[theme];
   document.documentElement.setAttribute("data-theme", theme);
+  document.documentElement.style.setProperty("--oratio-page-bg", color);
+  document.documentElement.style.backgroundColor = color;
+  document.body.style.backgroundColor = color;
+  document.documentElement.style.colorScheme = theme;
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", color);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

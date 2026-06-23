@@ -4,14 +4,78 @@
 
 /* ── Bottom nav safe area (PWA standalone mode) ───────────────────── */
 .bottom-nav-safe {
-  /* iOS standalone PWAs (app added to the home screen) can massively
-     over-report env(safe-area-inset-bottom): on an iPhone 13 the home
-     indicator is only 34px tall, yet the inset resolves to ~90px, leaving the
-     tab bar floating high above a large empty band. Clamp the inset to the
-     real home-indicator height so the bar sits just above it — matching how
-     native iOS tab bars look. In a normal browser the inset is 0, so this
-     falls back to a small 4px breathing gap. */
-  padding-bottom: clamp(4px, env(safe-area-inset-bottom, 0px), 34px);
+  /* Keep the tab bar in the range of familiar social apps: substantial enough
+     for the home indicator, but much slimmer than the full iOS safe area. */
+  --bottom-nav-safe-bottom: clamp(6px, env(safe-area-inset-bottom, 0px), 12px);
+  background: rgba(var(--rgb-bg), 0.96);
+  border-top: 1px solid rgba(var(--rgb-accent), 0.08);
+  backdrop-filter: blur(14px);
+  padding-bottom: var(--bottom-nav-safe-bottom);
+}
+
+.bottom-nav-inner {
+  height: 52px;
+}
+
+.bottom-nav-item {
+  min-height: 44px;
+  min-width: 44px;
+  opacity: 0.78;
+  transform: translateY(0) scale(1);
+  transition:
+    color 150ms ease,
+    opacity 150ms ease,
+    transform 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item:active {
+  transform: translateY(0) scale(0.94);
+}
+
+.bottom-nav-item-active {
+  opacity: 1;
+}
+
+.bottom-nav-icon,
+.bottom-nav-label {
+  transition:
+    color 150ms ease,
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+
+.bottom-nav-item-active .bottom-nav-icon {
+  transform: translateY(-1px);
+}
+
+.bottom-nav-item-active .bottom-nav-label {
+  font-weight: 600;
+}
+
+@media (display-mode: standalone) {
+  .bottom-nav-safe {
+    --bottom-nav-safe-bottom: clamp(2px, env(safe-area-inset-bottom, 0px), 4px);
+  }
+
+  .bottom-nav-inner {
+    height: 42px;
+  }
+
+  .bottom-nav-item {
+    min-height: 40px;
+    min-width: 42px;
+  }
+
+  .bottom-nav-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .bottom-nav-label {
+    font-size: 8.5px;
+    margin-top: 0;
+  }
 }
 
 /* ── Prevent iOS Safari auto-zoom on input focus ───────────────────── */

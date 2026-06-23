@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Oratio" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
     <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
@@ -33,6 +33,23 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem("oratio_theme");
+          if (theme !== "light" && theme !== "dark") theme = "dark";
+          var color = theme === "light" ? "#F8F9FC" : "#0A1A3A";
+          document.documentElement.setAttribute("data-theme", theme);
+          document.documentElement.style.setProperty("--oratio-page-bg", color);
+          document.documentElement.style.backgroundColor = color;
+          document.documentElement.style.colorScheme = theme;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", color);
+        } catch (e) {
+          document.documentElement.style.setProperty("--oratio-page-bg", "#0A1A3A");
+        }
+      })();
+    </script>
     <style>
       /* CSS Reset for PWA/Mobile Height Fix */
       html, body {
@@ -41,7 +58,7 @@
         width: 100%;
         height: 100%;
         overflow: hidden; /* Prevent body scrolling */
-        background: #0A1A3A; /* Prevent white flash on iOS cold start */
+        background: var(--oratio-page-bg, #0A1A3A); /* Prevent white flash on iOS cold start */
       }
       
       #root {

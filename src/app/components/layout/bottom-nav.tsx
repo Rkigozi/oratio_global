@@ -13,8 +13,8 @@ export function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bottom-nav-safe" style={{ background: "rgb(var(--rgb-bg))" }}>
-      <div className="max-w-lg mx-auto flex justify-around items-center border-t border-accent/8" style={{ height: "49px" }}>
+    <nav className="bottom-nav-safe fixed bottom-0 left-0 right-0 z-40">
+      <div className="bottom-nav-inner max-w-lg mx-auto flex justify-around items-center">
         {navItems.map((item) => {
           const isActive = item.path === '/' 
             ? location.pathname === '/'
@@ -24,20 +24,17 @@ export function BottomNav() {
             <button
               key={item.path}
               onClick={() => void navigate(item.path)}
-              className="relative flex flex-col items-center justify-center transition-all cursor-pointer"
-              style={{ minHeight: "44px", minWidth: "44px" }}
+              className={`bottom-nav-item relative flex flex-col items-center justify-center cursor-pointer ${isActive ? "bottom-nav-item-active" : ""}`}
+              aria-current={isActive ? "page" : undefined}
             >
               <Icon
                 size={20}
-                className={isActive ? "text-accent" : "text-text-muted"}
-                strokeWidth={isActive ? 2.2 : 1.8}
+                className={`bottom-nav-icon ${isActive ? "text-accent" : "text-text-muted"}`}
+                strokeWidth={isActive ? 2.35 : 1.8}
               />
-              <span className={`text-[10px] leading-none mt-0.5 ${isActive ? "text-accent" : "text-text-muted"}`}>
+              <span className={`bottom-nav-label text-[10px] leading-none mt-0.5 ${isActive ? "text-accent" : "text-text-muted"}`}>
                 {item.label}
               </span>
-              {isActive && (
-                <div className="w-1 h-1 rounded-full bg-accent absolute -bottom-0.5" style={{ boxShadow: "0 0 6px rgba(var(--rgb-accent), 0.6)" }} />
-              )}
             </button>
           );
         })}

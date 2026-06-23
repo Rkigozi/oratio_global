@@ -11,7 +11,7 @@ test("login page is accessible from landing", async ({ page }) => {
   await expect(page).toHaveURL("/login");
 });
 
-test("feed page loads for anonymous users", async ({ page }) => {
+test("feed redirects anonymous users to landing", async ({ page }) => {
   await page.goto("/feed");
-  await expect(page.getByText("Prayer")).toBeVisible();
+  await expect(page).toHaveURL("/landing");
 });
