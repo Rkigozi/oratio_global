@@ -7,6 +7,7 @@ import { Heart, ArrowRight, MapPin, Locate } from "lucide-react";
 import { Drawer } from "vaul";
 import { useGeolocation } from '../../hooks/use-geolocation';
 import { getMapHotspots } from '../../services/supabase-queries';
+import { logError } from "../../../lib/logger";
 
 
 export function Home() {
@@ -17,7 +18,20 @@ export function Home() {
 
   // Load real prayers from Supabase for map hotspots
   useEffect(() => {
-    getMapHotspots().then(setPrayers);
+    let mounted = true;
+
+    void getMapHotspots()
+      .then((hotspots) => {
+        if (mounted) setPrayers(hotspots);
+      })
+      .catch((error: unknown) => {
+        logError("load map hotspots", error);
+        if (mounted) setPrayers([]);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
    const [newPrayerId, setNewPrayerId] = useState<string | null>(null);

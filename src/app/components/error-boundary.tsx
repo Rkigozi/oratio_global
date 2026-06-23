@@ -1,6 +1,5 @@
 import { Component } from "react";
 import type { ReactNode } from "react";
-import * as Sentry from "@sentry/react";
 import { logError } from "../../lib/logger";
 
 interface Props {
@@ -24,7 +23,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
     logError("ErrorBoundary", error, { componentStack: errorInfo.componentStack });
   }
 
