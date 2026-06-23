@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, renderHook, act } from "@testing-library/react";
 import { ThemeProvider, useTheme } from "./theme-context";
 
-vi.mock("./supabase", () => ({
+vi.mock("../services/supabase", () => ({
   supabase: {
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest";
 
 vi.mock("./supabase", () => {
   const makeQb = () => {
@@ -38,6 +38,7 @@ let qb: Record<string, ReturnType<typeof vi.fn>>;
 let auth: { getUser: ReturnType<typeof vi.fn>; getSession: ReturnType<typeof vi.fn> };
 let rpc: ReturnType<typeof vi.fn>;
 let functionsInvoke: ReturnType<typeof vi.fn>;
+let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
 function setOnce(data: unknown, error: unknown = null, count?: number) {
   qb.then.mockImplementationOnce((resolve: (v: unknown) => void) =>
@@ -65,6 +66,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
   auth.getUser.mockResolvedValue({ data: { user: { id: "test-user" } }, error: null });
   auth.getSession.mockResolvedValue({ data: { session: { access_token: "t" } }, error: null });
@@ -85,6 +87,10 @@ beforeEach(() => {
   qb.then.mockImplementation((resolve: (v: unknown) => void) => resolve({ data: null, error: null }));
 
   functionsInvoke.mockResolvedValue({ error: null });
+});
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore();
 });
 
 describe("getMapHotspots", () => {
@@ -329,10 +335,13 @@ describe("unfollowUser", () => {
 });
 
 describe("getFollowingIds", () => {
-  it("returns following IDs", async () => {
-    setAlways([{ following_id: "u2" }, { following_id: "u3" }]);
+  it("returns following usernames", async () => {
+    setAlways([
+      { following_id: "u2", profiles: { username: "user2" } },
+      { following_id: "u3", profiles: { username: "user3" } },
+    ]);
     const result = await m.getFollowingIds();
-    expect(result).toEqual(["u2", "u3"]);
+    expect(result).toEqual(["user2", "user3"]);
   });
 
   it("returns empty if no user", async () => {
@@ -438,6 +447,28 @@ describe("resolveReport", () => {
   it("returns false on error", async () => {
     setAlways(null, new Error("fail"));
     expect(await m.resolveReport("r1", "dismissed")).toBe(false);
+  });
+});
+
+describe("isCurrentUserModerator", () => {
+  it("returns true for moderator profiles", async () => {
+    setAlways({ is_moderator: true });
+    expect(await m.isCurrentUserModerator()).toBe(true);
+  });
+
+  it("returns false for non-moderator profiles", async () => {
+    setAlways({ is_moderator: false });
+    expect(await m.isCurrentUserModerator()).toBe(false);
+  });
+
+  it("returns false if no user", async () => {
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    expect(await m.isCurrentUserModerator()).toBe(false);
+  });
+
+  it("returns false on lookup error", async () => {
+    setAlways(null, new Error("fail"));
+    expect(await m.isCurrentUserModerator()).toBe(false);
   });
 });
 

@@ -1,5 +1,13 @@
 const cache = new Map<string, string>();
 
+interface GoogleTranslateResponse {
+  data?: {
+    translations?: Array<{
+      translatedText?: string;
+    }>;
+  };
+}
+
 function likelySpanish(text: string): boolean {
   const spanishPattern = /[áéíóúüñ¿¡]/i;
   const commonWords = /\b(señor|dios|padre|por|para|con|los|las|que|del|tú|te|tu)\b/i;
@@ -64,8 +72,8 @@ export async function translateText(text: string, targetLang: string): Promise<s
 
     if (!res.ok) return null;
 
-    const data = await res.json();
-    const translated = data.data?.translations?.[0]?.translatedText as string;
+    const data = (await res.json()) as GoogleTranslateResponse;
+    const translated = data.data?.translations?.[0]?.translatedText;
     if (translated && translated !== text) {
       cache.set(key, translated);
       return translated;

@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router";
 import { AuthGuard } from "./auth-guard";
 
-vi.mock(".././hooks/auth-context", () => ({
+vi.mock("../../hooks/auth-context", () => ({
   useAuth: vi.fn(),
 }));
 

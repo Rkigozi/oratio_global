@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 
-vi.mock(".././hooks/auth-context", () => ({
+vi.mock("../../hooks/auth-context", () => ({
   useAuth: vi.fn(),
 }));
 
@@ -61,20 +61,24 @@ describe("Login", () => {
     fireEvent.change(screen.getByPlaceholderText("Password"), {
       target: { value: "password123" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    });
 
     await vi.waitFor(() => {
       expect(mockSignIn).toHaveBeenCalledWith("test@example.com", "password123");
     });
   });
 
-  it("shows error when email or password is empty", () => {
+  it("shows error when email or password is empty", async () => {
     render(
       <MemoryRouter>
         <Login />
       </MemoryRouter>
     );
-    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    });
     expect(screen.getByText("Enter your email and password")).toBeInTheDocument();
     expect(mockSignIn).not.toHaveBeenCalled();
   });
@@ -92,7 +96,9 @@ describe("Login", () => {
     fireEvent.change(screen.getByPlaceholderText("Password"), {
       target: { value: "wrong" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    });
 
     await vi.waitFor(() => {
       expect(screen.getByText("Invalid credentials")).toBeInTheDocument();

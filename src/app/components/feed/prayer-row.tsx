@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { MapPin, Trash2 } from "lucide-react";
 import type { PrayerRequest } from '../../services/prayer-data';
@@ -30,16 +29,10 @@ export function PrayerRow({
   showPrayedToggle = false,
   onTagClick,
 }: PrayerRowProps) {
-  const [prayed, setPrayed] = useState(hasPrayed);
-
-  useEffect(() => {
-    setPrayed(hasPrayed);
-  }, [hasPrayed, prayer.id]);
+  const prayed = hasPrayed;
 
   const handlePray = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newPrayed = !prayed;
-    setPrayed(newPrayed);
     if (onTogglePrayed) onTogglePrayed(prayer.id);
   };
 

@@ -15,11 +15,23 @@ export function ProfileSaved() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    getSavedPrayers().then((prayers) => {
-      setSavedPrayers(prayers);
-      setLoading(false);
-    });
+    let active = true;
+
+    const loadSaved = async () => {
+      setLoading(true);
+      try {
+        const prayers = await getSavedPrayers();
+        if (active) setSavedPrayers(prayers);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadSaved();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const removeSaved = (prayerId: string) => {

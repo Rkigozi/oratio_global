@@ -26,15 +26,27 @@ export function PrayerDetail() {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
-    setError(null);
-    getPrayerById(id).then((prayer) => {
-      if (prayer) setLocalPrayer(prayer);
-      setLoading(false);
-    }).catch(() => {
-      setError("Failed to load prayer");
-      setLoading(false);
-    });
+    let active = true;
+
+    const loadPrayer = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const fetchedPrayer = await getPrayerById(id);
+        if (active && fetchedPrayer) setLocalPrayer(fetchedPrayer);
+      } catch {
+        if (active) setError("Failed to load prayer");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadPrayer();
+
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const prayer = localPrayer;
@@ -43,12 +55,34 @@ export function PrayerDetail() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    getMyPrayedIds().then(setPrayedIds);
+    let active = true;
+
+    const loadPrayedIds = async () => {
+      const ids = await getMyPrayedIds();
+      if (active) setPrayedIds(ids);
+    };
+
+    void loadPrayedIds();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
     if (!prayer) return;
-    getMySavedIds().then(ids => setSaved(ids.includes(prayer.id)));
+    let active = true;
+
+    const loadSavedState = async () => {
+      const ids = await getMySavedIds();
+      if (active) setSaved(ids.includes(prayer.id));
+    };
+
+    void loadSavedState();
+
+    return () => {
+      active = false;
+    };
   }, [prayer]);
   const [translatedText, setTranslatedText] = useState<string | null>(null);
   const [translating, setTranslating] = useState(false);
@@ -72,24 +106,30 @@ export function PrayerDetail() {
   const isAuthor = prayer ? prayer.username === authProfile?.username : false;
 
   const username = prayer?.username;
-  const handleFollowToggle = () => {
+  const handleFollowToggle = async () => {
     if (!username) return;
     const newState = !following;
     setFollowing(newState);
-    getProfileByUsername(username).then((prof) => {
-      if (prof) {
-        void (newState ? followUser(prof.id) : unfollowUser(prof.id));
-      }
-    });
+    const prof = await getProfileByUsername(username);
+    if (prof) await (newState ? followUser(prof.id) : unfollowUser(prof.id));
   };
 
   useEffect(() => {
     if (!username) return;
-    getProfileByUsername(username).then((prof) => {
-      if (prof) {
-        isFollowing(prof.id).then(setFollowing);
-      }
-    });
+    let active = true;
+
+    const loadFollowingState = async () => {
+      const prof = await getProfileByUsername(username);
+      if (!prof) return;
+      const isUserFollowing = await isFollowing(prof.id);
+      if (active) setFollowing(isUserFollowing);
+    };
+
+    void loadFollowingState();
+
+    return () => {
+      active = false;
+    };
   }, [username]);
 
   const handleTranslate = async () => {
@@ -127,7 +167,11 @@ export function PrayerDetail() {
   const [commentsEnabled, setCommentsEnabled] = useState(true);
 
   useEffect(() => {
-    if (prayer) setCommentsEnabled(prayer.commentsEnabled ?? true);
+    const syncCommentsEnabled = () => {
+      if (prayer) setCommentsEnabled(prayer.commentsEnabled ?? true);
+    };
+
+    syncCommentsEnabled();
   }, [prayer]);
 
   const handleToggleComments = () => {
@@ -239,7 +283,7 @@ export function PrayerDetail() {
                   }}
                 >
                   <button
-                    onClick={() => { setShowMenu(false); handleShare(); }}
+                    onClick={() => { setShowMenu(false); void handleShare(); }}
                     className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
                   >
                     <Share2 size={12} />
@@ -336,7 +380,7 @@ export function PrayerDetail() {
             </button>
             {username && (
               <button
-                onClick={handleFollowToggle}
+                onClick={() => void handleFollowToggle()}
                 className="text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer"
                 style={{
                   background: following ? "rgba(var(--rgb-accent), 0.1)" : "rgba(var(--rgb-accent), 0.04)",

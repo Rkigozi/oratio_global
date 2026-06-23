@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { timeAgo, getAttributionText } from '../app/services/prayer-data';
-import { mockFeedPrayers, mockHotspots } from '../app/services/mock-prayers';
-import type { PrayerRequest } from '../app/services/prayer-data';
+import { timeAgo, getAttributionText } from './prayer-data';
+import { mockFeedPrayers, mockHotspots } from './mock-prayers';
+import type { PrayerRequest } from './prayer-data';
 
 // ─── Prayer Data Integrity ─────────────────────────────────────────────
 

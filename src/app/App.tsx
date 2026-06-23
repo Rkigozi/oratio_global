@@ -12,7 +12,7 @@ function ServiceWorkerUpdater() {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").then((registration) => {
         const checkForUpdate = () => {
-          if (document.visibilityState === "visible") registration.update();
+          if (document.visibilityState === "visible") void registration.update();
         };
         setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
         document.addEventListener("visibilitychange", checkForUpdate);

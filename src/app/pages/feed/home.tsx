@@ -34,6 +34,9 @@ export function Home() {
     };
   }, []);
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
+  const selectedPrayerDetails = selectedPrayer
+    ? prayers.find((prayer) => prayer.id === selectedPrayer.id) || selectedPrayer
+    : null;
    const [newPrayerId, setNewPrayerId] = useState<string | null>(null);
    const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null);
    const [showGeoPrompt, setShowGeoPrompt] = useState(true);
@@ -43,27 +46,17 @@ export function Home() {
 
   // Fly to user location when it's resolved
   useEffect(() => {
-    if (geoLocation) {
+    const updateFlyTo = () => {
+      if (!geoLocation) return;
       setFlyTo({ lat: geoLocation.lat, lng: geoLocation.lng });
-    }
+    };
+
+    updateFlyTo();
   }, [geoLocation]);
 
   const handlePrayerTap = useCallback((prayer: PrayerRequest) => {
     setSelectedPrayer(prayer);
    }, []);
-
-
-
-   // Update selectedPrayer when prayers change
-   useEffect(() => {
-     if (selectedPrayer) {
-       const updated = prayers.find(p => p.id === selectedPrayer.id);
-        if (updated && updated !== selectedPrayer) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
-          setSelectedPrayer(updated);
-        }
-     }
-   }, [prayers, selectedPrayer]);
 
    // Listen for new prayer submissions (via custom event from Submit page)
   useEffect(() => {
@@ -256,7 +249,7 @@ export function Home() {
 
       {/* Prayer Card Drawer */}
       <Drawer.Root
-        open={!!selectedPrayer}
+        open={!!selectedPrayerDetails}
         onOpenChange={(o) => !o && setSelectedPrayer(null)}
       >
         <Drawer.Portal>
@@ -277,7 +270,7 @@ export function Home() {
               <div className="w-10 h-1 rounded-full bg-accent/20" />
             </div>
             <div className="max-w-md w-full mx-auto p-6 pt-2 flex-1 overflow-auto">
-              {selectedPrayer && (
+              {selectedPrayerDetails && (
                 <motion.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -286,7 +279,7 @@ export function Home() {
                 >
                   {/* Location */}
                   <p className="text-text-muted text-xs uppercase tracking-[0.2em] mb-4">
-                    {(selectedPrayer.city || "Unknown")}, {selectedPrayer.country || "Unknown"}
+                    {(selectedPrayerDetails.city || "Unknown")}, {selectedPrayerDetails.country || "Unknown"}
                   </p>
 
                   {/* Activity level */}
@@ -313,10 +306,10 @@ export function Home() {
                     className="text-text text-center font-heading mb-2"
                     style={{ fontSize: "1.15rem", fontWeight: 300 }}
                   >
-                    {(selectedPrayer.prayerCount ?? 0)} {(selectedPrayer.prayerCount ?? 0) === 1 ? "person praying in" : "people praying in"} {selectedPrayer.city || "Unknown"}
+                    {(selectedPrayerDetails.prayerCount ?? 0)} {(selectedPrayerDetails.prayerCount ?? 0) === 1 ? "person praying in" : "people praying in"} {selectedPrayerDetails.city || "Unknown"}
                   </p>
                   <p className="text-text-muted text-sm text-center mb-6 max-w-[260px]">
-                    People around {selectedPrayer.city || "Unknown"} are lifting up prayers right now
+                    People around {selectedPrayerDetails.city || "Unknown"} are lifting up prayers right now
                   </p>
 
 
@@ -325,8 +318,8 @@ export function Home() {
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={() => {
-                      const city = selectedPrayer?.city;
-                      const country = selectedPrayer?.country;
+                      const city = selectedPrayerDetails?.city;
+                      const country = selectedPrayerDetails?.country;
                       setSelectedPrayer(null);
                        void navigate(
                          city

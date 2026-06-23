@@ -53,7 +53,7 @@ export function Terms() {
 
             <section>
               <h3 className="text-text font-medium text-sm mb-2">6. Disclaimer</h3>
-              <p>Oratio is provided "as is" without warranty. While we strive to maintain the platform, we are not liable for service interruptions or data loss.</p>
+              <p>Oratio is provided &quot;as is&quot; without warranty. While we strive to maintain the platform, we are not liable for service interruptions or data loss.</p>
             </section>
           </div>
         </div>

@@ -31,29 +31,56 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
   const submitRef = useRef(false);
 
   useEffect(() => {
-    setLoading(true);
-    setComments([]);
-    setOffset(0);
-    Promise.all([
-      getComments(prayer.id, PAGE_SIZE, 0),
-      getCommentCount(prayer.id),
-    ]).then(([data, total]) => {
-      setComments(data);
-      setHasMore(data.length < total);
-      setOffset(data.length);
-      setLoading(false);
-      onCommentCountChange(total);
-    });
-  }, [prayer.id]);
+    let active = true;
+
+    const loadInitialComments = async () => {
+      setLoading(true);
+      setComments([]);
+      setOffset(0);
+
+      try {
+        const [data, total] = await Promise.all([
+          getComments(prayer.id, PAGE_SIZE, 0),
+          getCommentCount(prayer.id),
+        ]);
+
+        if (!active) return;
+        setComments(data);
+        setHasMore(data.length < total);
+        setOffset(data.length);
+        onCommentCountChange(total);
+      } catch {
+        if (!active) return;
+        setComments([]);
+        setHasMore(false);
+        onCommentCountChange(0);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadInitialComments();
+
+    return () => {
+      active = false;
+    };
+  }, [onCommentCountChange, prayer.id]);
 
   const loadMore = () => {
-    setLoadingMore(true);
-    getComments(prayer.id, PAGE_SIZE, offset).then((data) => {
-      setComments((prev) => [...prev, ...data]);
-      setOffset((prev) => prev + data.length);
-      setHasMore(data.length === PAGE_SIZE);
-      setLoadingMore(false);
-    });
+    const load = async () => {
+      setLoadingMore(true);
+
+      try {
+        const data = await getComments(prayer.id, PAGE_SIZE, offset);
+        setComments((prev) => [...prev, ...data]);
+        setOffset((prev) => prev + data.length);
+        setHasMore(data.length === PAGE_SIZE);
+      } finally {
+        setLoadingMore(false);
+      }
+    };
+
+    void load();
   };
 
   const handleSubmit = useCallback(async () => {
@@ -120,7 +147,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
               comment={comment}
               replies={replies(comment.id)}
               onReply={(id, username) => setReplyTo({ id, username })}
-              onDelete={handleDelete}
+              onDelete={(id) => void handleDelete(id)}
             />
           ))}
           {hasMore && (
@@ -267,7 +294,7 @@ function CommentThread({
             )}
             {!reported && !(user && comment.user_id === user.id) && (
               <button
-                onClick={handleReport}
+                onClick={() => void handleReport()}
                 className="text-text-faint hover:text-warning text-[10px] transition-colors cursor-pointer"
               >
                 Report
@@ -291,7 +318,7 @@ function CommentThread({
             exit={{ opacity: 0, y: -8 }}
             className="text-warning text-[10px] ml-9 mt-1"
           >
-            Thanks for reporting — we'll review it.
+            Thanks for reporting — we&apos;ll review it.
           </motion.p>
         )}
       </AnimatePresence>
@@ -340,5 +367,4 @@ function CommentThread({
     </div>
   );
 }
-
 

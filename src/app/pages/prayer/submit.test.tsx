@@ -1,22 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import type { ComponentProps, ReactNode } from "react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 
-vi.mock(".././hooks/auth-context", () => ({
+vi.mock("../../hooks/auth-context", () => ({
   useAuth: vi.fn(),
 }));
 
-vi.mock("../../lib/supabase-queries", () => ({
+vi.mock("../../services/supabase-queries", () => ({
   createPrayerRequest: vi.fn(),
   getProfilePreferences: vi.fn(),
 }));
 
-vi.mock("../../lib/use-geolocation", () => ({
+vi.mock("../../hooks/use-geolocation", () => ({
   useGeolocation: vi.fn(),
 }));
 
 vi.mock("../../components/crisis-resources", () => ({
   CrisisResources: () => null,
+}));
+
+vi.mock("motion/react", () => ({
+  AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</>,
+  motion: {
+    div: ({
+      children,
+      initial: _initial,
+      animate: _animate,
+      exit: _exit,
+      transition: _transition,
+      ...props
+    }: ComponentProps<"div"> & Record<string, unknown>) => <div {...props}>{children}</div>,
+  },
 }));
 
 import { Submit } from "./submit";
@@ -47,12 +62,7 @@ describe("Submit", () => {
       requestLocation: vi.fn(),
       resetDenied: vi.fn(),
     });
-    vi.mocked(getProfilePreferences).mockResolvedValue({
-      notify_on_prayed: true,
-      notify_on_comment: true,
-      language: "auto",
-      comments_enabled_default: true,
-    });
+    vi.mocked(getProfilePreferences).mockReturnValue(new Promise(() => {}));
     vi.mocked(createPrayerRequest).mockResolvedValue("prayer-1");
   });
 
@@ -91,7 +101,9 @@ describe("Submit", () => {
       { target: { value: "Please heal my family and bring peace" } }
     );
 
-    fireEvent.click(screen.getByText("Submit Prayer Request"));
+    await act(async () => {
+      fireEvent.click(screen.getByText("Submit Prayer Request"));
+    });
 
     await vi.waitFor(() => {
       expect(createPrayerRequest).toHaveBeenCalled();
@@ -113,7 +125,9 @@ describe("Submit", () => {
       { target: { value: "Short" } }
     );
 
-    fireEvent.click(screen.getByText("Submit Prayer Request"));
+    await act(async () => {
+      fireEvent.click(screen.getByText("Submit Prayer Request"));
+    });
 
     await vi.waitFor(() => {
       expect(screen.getByText(/at least 10 characters/i)).toBeInTheDocument();
@@ -134,7 +148,9 @@ describe("Submit", () => {
       { target: { value: "Please heal my family and bring peace to us all" } }
     );
 
-    fireEvent.click(screen.getByText("Submit Prayer Request"));
+    await act(async () => {
+      fireEvent.click(screen.getByText("Submit Prayer Request"));
+    });
 
     await vi.waitFor(() => {
       expect(

@@ -94,13 +94,13 @@ export function Landing() {
 
           {/* Email waitlist */}
           <div className="w-full max-w-sm mx-auto">
-            <p className="text-text-dim text-xs mb-3 text-center">Get notified when Oratio launches — we'll never spam you.</p>
+            <p className="text-text-dim text-xs mb-3 text-center">Get notified when Oratio launches — we&apos;ll never spam you.</p>
             {subscribed ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                <p className="text-accent text-sm py-3 text-center">You're on the list! 🙏</p>
+                <p className="text-accent text-sm py-3 text-center">You&apos;re on the list! 🙏</p>
                 <button
                   onClick={() => { setSubscribed(false); setEmail(""); }}
                   className="text-text-dim text-[10px] hover:text-text-muted transition-colors cursor-pointer block mx-auto"
@@ -109,7 +109,7 @@ export function Landing() {
                 </button>
               </motion.div>
             ) : (
-              <form onSubmit={handleSubscribe} className="flex gap-2">
+              <form onSubmit={(e) => void handleSubscribe(e)} className="flex gap-2">
                 <input
                   type="email" value={email}
                   onChange={(e) => setEmail(e.target.value)}

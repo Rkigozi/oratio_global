@@ -27,23 +27,31 @@ function UserList({ type }: { type: "following" | "followers" }) {
 
   useEffect(() => {
     if (!username) return;
-    setLoading(true);
+    let active = true;
 
     const fetchUsers = async () => {
-      const profile = await getProfileByUsername(username);
-      if (!profile) {
-        setLoading(false);
-        return;
-      }
+      setLoading(true);
+      try {
+        const profile = await getProfileByUsername(username);
+        if (!profile) {
+          if (active) setUsers([]);
+          return;
+        }
 
-      const entries = type === "following"
-        ? await getFollowing(profile.id)
-        : await getFollowers(profile.id);
-      setUsers(entries);
-      setLoading(false);
+        const entries = type === "following"
+          ? await getFollowing(profile.id)
+          : await getFollowers(profile.id);
+        if (active) setUsers(entries);
+      } finally {
+        if (active) setLoading(false);
+      }
     };
 
     void fetchUsers();
+
+    return () => {
+      active = false;
+    };
   }, [username, type]);
 
   return (

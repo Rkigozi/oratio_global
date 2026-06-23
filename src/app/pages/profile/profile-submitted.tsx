@@ -21,11 +21,23 @@ export function ProfileSubmitted() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    getMyPrayers().then((prayers) => {
-      setMySubmitted(prayers);
-      setLoading(false);
-    });
+    let active = true;
+
+    const loadSubmitted = async () => {
+      setLoading(true);
+      try {
+        const prayers = await getMyPrayers();
+        if (active) setMySubmitted(prayers);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadSubmitted();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleOpenPrayer = (prayer: PrayerRequest) => {
@@ -265,4 +277,3 @@ export function ProfileSubmitted() {
     </div>
   );
 }
-

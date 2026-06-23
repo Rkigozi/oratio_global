@@ -457,7 +457,17 @@ export async function createReport(input: {
   return true;
 }
 
-export async function getPendingReports(): Promise<Array<Record<string, unknown>>> {
+export interface ReportRecord {
+  id: string;
+  reportable_type: "prayer" | "comment";
+  reportable_id: string;
+  reason: string;
+  status: string;
+  created_at: string;
+  reported_by: string;
+}
+
+export async function getPendingReports(): Promise<ReportRecord[]> {
   const { data, error } = await supabase
     .from("reports")
     .select("*")
@@ -468,7 +478,7 @@ export async function getPendingReports(): Promise<Array<Record<string, unknown>
     logError("fetch reports", error);
     return [];
   }
-  return data || [];
+  return (data as ReportRecord[] | null) || [];
 }
 
 export async function resolveReport(reportId: string, status: "resolved" | "dismissed"): Promise<boolean> {
@@ -482,6 +492,24 @@ export async function resolveReport(reportId: string, status: "resolved" | "dism
     return false;
   }
   return true;
+}
+
+export async function isCurrentUserModerator(): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("is_moderator")
+    .eq("id", user.id)
+    .single();
+
+  if (error || !data) {
+    logError("check moderator access", error);
+    return false;
+  }
+
+  return (data as { is_moderator?: boolean }).is_moderator === true;
 }
 
 // ─── Profiles ──────────────────────────────────────────────────────────
@@ -813,12 +841,14 @@ export async function deleteAccount(): Promise<string | null> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return "Not authenticated";
 
-  const { error } = await supabase.functions.invoke("delete-account", {
-    headers: { Authorization: `Bearer ${session.access_token}` },
-  });
+  const result = await supabase.functions.invoke<{ success?: boolean }>(
+    "delete-account",
+    { headers: { Authorization: `Bearer ${session.access_token}` } },
+  ) as { error: { message?: unknown } | null };
 
-  if (error) {
-    return error.message || "Failed to delete account";
+  if (result.error) {
+    const message = result.error.message;
+    return typeof message === "string" && message ? message : "Failed to delete account";
   }
   return null;
 }

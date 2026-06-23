@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { reportContent } from "./api";
+import { isCurrentUserModerator, reportContent } from "./api";
 
 vi.mock("./supabase-queries", () => ({
   createReport: vi.fn(),
   getPendingReports: vi.fn(),
+  isCurrentUserModerator: vi.fn(),
   resolveReport: vi.fn(),
 }));
 
-import { createReport } from "./supabase-queries";
+import { createReport, isCurrentUserModerator as supabaseIsCurrentUserModerator } from "./supabase-queries";
 
 describe("reportContent", () => {
   beforeEach(() => {
@@ -38,5 +39,17 @@ describe("reportContent", () => {
     });
     expect(result.error).toBeInstanceOf(Error);
     expect(result.error?.message).toBe("Failed to create report");
+  });
+});
+
+describe("isCurrentUserModerator", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("wraps moderator access checks", async () => {
+    vi.mocked(supabaseIsCurrentUserModerator).mockResolvedValue(true);
+    const result = await isCurrentUserModerator();
+    expect(result).toEqual({ data: true, error: null });
   });
 });

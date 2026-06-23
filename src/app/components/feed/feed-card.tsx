@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { MessageCircle } from "lucide-react";
 import type { PrayerRequest } from '../../services/prayer-data';
@@ -17,16 +16,10 @@ interface FeedCardProps {
 }
 
 export function FeedCard({ prayer, index, hasPrayed, onPrayed, onTap, onTagClick, onUserClick }: FeedCardProps) {
-  const [prayed, setPrayed] = useState(hasPrayed);
-
-  useEffect(() => {
-    setPrayed(hasPrayed);
-  }, [hasPrayed, prayer.id]);
+  const prayed = hasPrayed;
 
   const handlePray = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newPrayed = !prayed;
-    setPrayed(newPrayed);
     onPrayed(prayer.id);
   };
 

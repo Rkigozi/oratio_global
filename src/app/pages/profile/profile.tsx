@@ -29,29 +29,51 @@ export function Profile() {
 
   // Load profile from Supabase on mount
   useEffect(() => {
-    if (user?.id) {
-      getMyProfile().then((supabaseProfile) => {
-        if (supabaseProfile) {
-          setProfile({
-            username: supabaseProfile.username,
-            displayName: supabaseProfile.display_name || supabaseProfile.username,
-            display_name: supabaseProfile.display_name || undefined,
-            bio: supabaseProfile.bio || "",
-            location: supabaseProfile.location || "",
-            photo: supabaseProfile.avatar_url || undefined,
-          });
-        }
+    let active = true;
+
+    const loadProfile = async () => {
+      if (!user?.id) return;
+      const supabaseProfile = await getMyProfile();
+      if (!active || !supabaseProfile) return;
+
+      setProfile({
+        username: supabaseProfile.username,
+        displayName: supabaseProfile.display_name || supabaseProfile.username,
+        display_name: supabaseProfile.display_name || undefined,
+        bio: supabaseProfile.bio || "",
+        location: supabaseProfile.location || "",
+        photo: supabaseProfile.avatar_url || undefined,
       });
-    }
+    };
+
+    void loadProfile();
+
+    return () => {
+      active = false;
+    };
   }, [user?.id]);
   const [myPrayers, setMyPrayers] = useState<number>(0);
   const [myPrayedFor, setMyPrayedFor] = useState<number>(0);
 
   useEffect(() => {
-    if (user?.id) {
-      getMyPrayers().then(p => setMyPrayers(p.length));
-      getMyPrayedForPrayers().then(p => setMyPrayedFor(p.length));
-    }
+    let active = true;
+
+    const loadPrayerCounts = async () => {
+      if (!user?.id) return;
+      const [submitted, prayedFor] = await Promise.all([
+        getMyPrayers(),
+        getMyPrayedForPrayers(),
+      ]);
+      if (!active) return;
+      setMyPrayers(submitted.length);
+      setMyPrayedFor(prayedFor.length);
+    };
+
+    void loadPrayerCounts();
+
+    return () => {
+      active = false;
+    };
   }, [user?.id]);
 
   const [newDisplayName, setNewDisplayName] = useState("");
@@ -69,35 +91,55 @@ export function Profile() {
   const [followersCount, setFollowersCount] = useState(0);
 
   useEffect(() => {
-    if (user?.id) {
-      getFollowCounts(user.id).then((counts) => {
-        setFollowingCount(counts.following);
-        setFollowersCount(counts.followers);
-      });
-    }
+    let active = true;
+
+    const loadFollowCounts = async () => {
+      if (!user?.id) return;
+      const counts = await getFollowCounts(user.id);
+      if (!active) return;
+      setFollowingCount(counts.following);
+      setFollowersCount(counts.followers);
+    };
+
+    void loadFollowCounts();
+
+    return () => {
+      active = false;
+    };
   }, [user?.id]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadingPhoto(true);
-    const url = await uploadAvatar(file);
-    if (url && user?.id) {
-      await updateProfile({ avatar_url: url });
-      setProfile(prev => ({ ...prev, photo: url }));
+    try {
+      setUploadingPhoto(true);
+      const url = await uploadAvatar(file);
+      if (url && user?.id) {
+        await updateProfile({ avatar_url: url });
+        setProfile(prev => ({ ...prev, photo: url }));
+      }
+    } finally {
+      setUploadingPhoto(false);
     }
-    setUploadingPhoto(false);
   };
 
   // Initialize edit drawer fields
   useEffect(() => {
-    if (editOpen) {
+    const syncEditFields = () => {
+      if (!editOpen) return;
       setNewDisplayName(profile.displayName);
       setNewBio(profile.bio || "");
       setNewLocation(profile.location || "");
       setEditError('');
-    }
+    };
+
+    syncEditFields();
   }, [editOpen, profile.displayName, profile.username, profile.bio, profile.location]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    void navigate("/landing");
+  };
 
   const handleSaveProfile = () => {
     setEditError("");
@@ -159,7 +201,7 @@ export function Profile() {
               {profile.location && <p className="text-text-dim text-[10px] mb-2">📍 {profile.location}</p>}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={async () => { await signOut(); void navigate("/landing"); }}
+                  onClick={() => void handleSignOut()}
                   className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
                   style={{
                     background: "rgba(var(--rgb-accent), 0.06)",
@@ -279,14 +321,14 @@ export function Profile() {
                   <span className="text-accent text-xs">
                     {uploadingPhoto ? "Uploading..." : "Change Photo"}
                   </span>
-                  <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploadingPhoto} />
+                  <input type="file" accept="image/*" onChange={(e) => void handlePhotoUpload(e)} className="hidden" disabled={uploadingPhoto} />
                 </label>
               </div>
 
               <div className="mb-4 text-center">
                 <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-1">Username</p>
                 <p className="text-text text-sm">@{profile.username}</p>
-                <p className="text-text-dim text-[10px] mt-1">Username can't be changed at this time</p>
+                <p className="text-text-dim text-[10px] mt-1">Username can&apos;t be changed at this time</p>
               </div>
 
               <div className="mb-6">

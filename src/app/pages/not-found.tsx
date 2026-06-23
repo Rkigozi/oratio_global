@@ -11,7 +11,7 @@ export function NotFound() {
       <p className="text-accent text-4xl font-heading font-light">404</p>
       <p className="text-text-muted text-sm">Page not found</p>
       <p className="text-text-dim text-xs text-center max-w-xs">
-        This page doesn't exist or has been moved.
+        This page doesn&apos;t exist or has been moved.
       </p>
       <button
         onClick={() => void navigate("/")}

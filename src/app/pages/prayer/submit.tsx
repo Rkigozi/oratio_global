@@ -30,9 +30,19 @@ export function Submit() {
 
   // Load default comment preference from profile settings
   useEffect(() => {
-    if (user) {
-      getProfilePreferences().then((p) => setCommentsEnabled(p.comments_enabled_default));
-    }
+    let active = true;
+
+    const loadPreferences = async () => {
+      if (!user) return;
+      const prefs = await getProfilePreferences();
+      if (active) setCommentsEnabled(prefs.comments_enabled_default);
+    };
+
+    void loadPreferences();
+
+    return () => {
+      active = false;
+    };
   }, [user]);
 
   // Auto-fill location from geolocation when it resolves
@@ -156,7 +166,7 @@ export function Submit() {
               What&apos;s on your heart today?
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
               {/* Prayer text */}
               <div>
                 <label className="text-text-muted text-sm mb-2 block">

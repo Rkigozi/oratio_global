@@ -41,28 +41,37 @@ function applyTheme(theme: Theme) {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => getStoredTheme());
 
-  // Apply theme on mount
   useEffect(() => {
     applyTheme(theme);
-    // Sync to Supabase preferences if user is logged in
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        supabase
-          .from("profiles")
-          .select("preferences")
-          .eq("id", user.id)
-          .single()
-          .then(({ data }) => {
-            if (data?.preferences && typeof data.preferences === "object") {
-              const prefs = data.preferences as Record<string, unknown>;
-              if (prefs.theme === "light" || prefs.theme === "dark") {
-                setTheme(prefs.theme);
-                applyTheme(prefs.theme);
-              }
-            }
-          });
+  }, [theme]);
+
+  // Load profile preference once; localStorage still wins immediately on first paint.
+  useEffect(() => {
+    let active = true;
+
+    const loadProfileTheme = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("preferences")
+        .eq("id", user.id)
+        .single();
+
+      if (!active || !data?.preferences || typeof data.preferences !== "object") return;
+
+      const prefs = data.preferences as Record<string, unknown>;
+      if (prefs.theme === "light" || prefs.theme === "dark") {
+        setTheme(prefs.theme);
       }
-    });
+    };
+
+    void loadProfileTheme();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Listen for system theme changes
@@ -80,30 +89,34 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
+  const syncThemePreference = useCallback((next: Theme) => {
+    const sync = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("preferences")
+        .eq("id", user.id)
+        .single();
+
+      const merged = { ...((data?.preferences as Record<string, unknown>) || {}), theme: next };
+      await supabase.from("profiles").update({ preferences: merged }).eq("id", user.id);
+    };
+
+    void sync();
+  }, []);
+
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
       const next: Theme = prev === "dark" ? "light" : "dark";
-      applyTheme(next);
       try {
         localStorage.setItem("oratio_theme", next);
       } catch { /* empty */ }
-      // Sync to Supabase
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-          supabase
-            .from("profiles")
-            .select("preferences")
-            .eq("id", user.id)
-            .single()
-            .then(({ data }) => {
-              const merged = { ...((data?.preferences as Record<string, unknown>) || {}), theme: next };
-              supabase.from("profiles").update({ preferences: merged }).eq("id", user.id);
-            });
-        }
-      });
+      syncThemePreference(next);
       return next;
     });
-  }, []);
+  }, [syncThemePreference]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

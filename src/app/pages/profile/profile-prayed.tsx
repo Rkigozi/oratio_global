@@ -21,15 +21,28 @@ export function ProfilePrayed() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      getMyPrayedForPrayers(),
-      getMyPrayedIds(),
-    ]).then(([prayers, ids]) => {
-      setMyPrayed(prayers);
-      setPrayedIds(ids);
-      setLoading(false);
-    });
+    let active = true;
+
+    const loadPrayed = async () => {
+      setLoading(true);
+      try {
+        const [prayers, ids] = await Promise.all([
+          getMyPrayedForPrayers(),
+          getMyPrayedIds(),
+        ]);
+        if (!active) return;
+        setMyPrayed(prayers);
+        setPrayedIds(ids);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadPrayed();
+
+    return () => {
+      active = false;
+    };
   }, [version]);
 
   const handleTagClick = (tag: string) => {
@@ -178,4 +191,3 @@ export function ProfilePrayed() {
     </div>
   );
 }
-

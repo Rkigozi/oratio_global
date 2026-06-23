@@ -7,6 +7,16 @@ export interface LocationInfo {
   lng: number;
 }
 
+interface ReverseGeocodeResponse {
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    county?: string;
+    country?: string;
+  };
+}
+
 export function useGeolocation() {
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState<LocationInfo | null>(() => {
@@ -41,7 +51,7 @@ export function useGeolocation() {
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&accept-language=en`,
         { headers: { "User-Agent": "Oratio/1.0" } }
       );
-      const data = await res.json();
+      const data = (await res.json()) as ReverseGeocodeResponse;
       const address = data.address || {};
 
       const info: LocationInfo = {

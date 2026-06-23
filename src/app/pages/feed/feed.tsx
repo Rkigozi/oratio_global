@@ -11,6 +11,14 @@ import { getFeedPrayers, searchUsers, togglePray, getFollowingIds, getMyPrayedId
 import { LoadingSpinner, ErrorState } from "../../components/loading-spinner";
 import posthog from "posthog-js";
 
+function readRecentSearches(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem("oratio_recent_searches") || "[]") as string[];
+  } catch {
+    return [];
+  }
+}
+
 export function Feed() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,33 +39,29 @@ export function Feed() {
   const [searchQuery, setSearchQuery] = useState(searchParamActive);
   const [activeSearch, setActiveSearch] = useState(searchParamActive);
   const [showRecent, setShowRecent] = useState(false);
-  const [recentVersion, setRecentVersion] = useState(0);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => readRecentSearches());
   const [userResults, setUserResults] = useState<Array<{ username: string; display_name: string | null }>>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const recentSearches = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem("oratio_recent_searches") || "[]") as string[];
-    } catch { return []; }
-  }, [recentVersion]);
-
   const addRecentSearch = (q: string) => {
     if (!q.trim()) return;
     try {
-      const existing = JSON.parse(localStorage.getItem("oratio_recent_searches") || "[]") as string[];
+      const existing = readRecentSearches();
       const filtered = existing.filter((s) => s !== q);
       filtered.unshift(q);
-      localStorage.setItem("oratio_recent_searches", JSON.stringify(filtered.slice(0, 10)));
-      setRecentVersion((v) => v + 1);
+      const next = filtered.slice(0, 10);
+      localStorage.setItem("oratio_recent_searches", JSON.stringify(next));
+      setRecentSearches(next);
     } catch { /* ignore */ }
   };
 
   const removeRecentSearch = (q: string) => {
     try {
-      const existing = JSON.parse(localStorage.getItem("oratio_recent_searches") || "[]") as string[];
-      localStorage.setItem("oratio_recent_searches", JSON.stringify(existing.filter((s) => s !== q)));
-      setRecentVersion((v) => v + 1);
+      const existing = readRecentSearches();
+      const next = existing.filter((s) => s !== q);
+      localStorage.setItem("oratio_recent_searches", JSON.stringify(next));
+      setRecentSearches(next);
     } catch { /* ignore */ }
   };
 
@@ -87,7 +91,12 @@ export function Feed() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showRecent]);
 
-  const [showCountryFilter, setShowCountryFilter] = useState(false);
+  const locationFilterKey = `${locationCity || ""}:${locationCountry || ""}`;
+  const [openCountryFilterKey, setOpenCountryFilterKey] = useState<string | null>(null);
+  const showCountryFilter = openCountryFilterKey === locationFilterKey;
+  const setShowCountryFilter = useCallback((open: boolean) => {
+    setOpenCountryFilterKey(open ? locationFilterKey : null);
+  }, [locationFilterKey]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,10 +114,6 @@ export function Feed() {
     setLoading(false);
   }, []);
 
-  // Load prayers from Supabase on mount
-  useEffect(() => {
-    void loadPrayers();
-  }, [loadPrayers]);
   const [showWelcome, setShowWelcome] = useState(() => {
     try { return !localStorage.getItem("oratio_feed_visited"); } catch { return true; }
   });
@@ -122,13 +127,26 @@ export function Feed() {
 
   // Load following list, prayed IDs, and saved IDs from Supabase
   useEffect(() => {
-    getFollowingIds().then(setFollowingIds);
-    getMyPrayedIds().then((ids) => {
-      setPrayedIds(ids);
-    });
-    getMySavedIds().then((ids) => {
-      setSavedIds(ids);
-    });
+    let active = true;
+
+    const loadUserState = async () => {
+      const [following, prayed, saved] = await Promise.all([
+        getFollowingIds(),
+        getMyPrayedIds(),
+        getMySavedIds(),
+      ]);
+
+      if (!active) return;
+      setFollowingIds(following);
+      setPrayedIds(prayed);
+      setSavedIds(saved);
+    };
+
+    void loadUserState();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Listen for prayer addition/deletion via custom events
@@ -157,12 +175,6 @@ export function Feed() {
     };
   }, []);
 
-  // Close country filter dropdown when location changes
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShowCountryFilter(false);
-  }, [locationCity, locationCountry]);
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -174,19 +186,31 @@ export function Feed() {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showCountryFilter]);
+  }, [setShowCountryFilter, showCountryFilter]);
 
   // Search users from Supabase when query changes
   useEffect(() => {
-    if (!activeSearch) {
-      setUserResults([]);
-      return;
-    }
-    setSearchingUsers(true);
-    searchUsers(activeSearch).then((results) => {
+    let active = true;
+
+    const loadUsers = async () => {
+      if (!activeSearch) {
+        setUserResults([]);
+        setSearchingUsers(false);
+        return;
+      }
+
+      setSearchingUsers(true);
+      const results = await searchUsers(activeSearch);
+      if (!active) return;
       setUserResults(results);
       setSearchingUsers(false);
-    });
+    };
+
+    void loadUsers();
+
+    return () => {
+      active = false;
+    };
   }, [activeSearch]);
 
   const dismissWelcome = () => {
@@ -239,7 +263,7 @@ export function Feed() {
     }
 
     return result;
-  }, [prayers, locationCity, locationCountry, showSaved, showFollowing, followingIds, activeSearch]);
+  }, [prayers, locationCity, locationCountry, showSaved, savedIds, showFollowing, followingIds, activeSearch]);
 
   // All filtered prayers are rendered (server-side pagination)
   const visiblePrayers = filteredPrayers;
@@ -270,10 +294,14 @@ export function Feed() {
 
   // Reload prayers when filters change
   useEffect(() => {
-    setCursor(undefined);
-    setHasMore(true);
-    void loadPrayers();
-  }, [locationCity, locationCountry, showSaved, showFollowing]);
+    const reload = async () => {
+      setCursor(undefined);
+      setHasMore(true);
+      await loadPrayers();
+    };
+
+    void reload();
+  }, [loadPrayers, locationCity, locationCountry, showSaved, showFollowing]);
 
   const togglePrayed = useCallback((id: string) => {
     setPrayedIds((prev) => {
@@ -586,7 +614,7 @@ export function Feed() {
                 <Search size={14} className="text-accent flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-text-secondary text-sm">
-                    Searching for "<span style={{ color: "rgb(var(--rgb-accent))" }}>{activeSearch}</span>"
+                    Searching for &quot;<span style={{ color: "rgb(var(--rgb-accent))" }}>{activeSearch}</span>&quot;
                   </p>
                 </div>
                 <button
@@ -693,7 +721,7 @@ export function Feed() {
         {loading && <LoadingSpinner text="Loading prayers..." />}
 
         {/* Error state */}
-        {error && <ErrorState message={error} onRetry={loadPrayers} />}
+        {error && <ErrorState message={error} onRetry={() => void loadPrayers()} />}
 
         {/* Prayer cards */}
         {!loading && !error && (

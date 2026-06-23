@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { AuthProvider, useAuth } from "./auth-context";
 
-vi.mock("./supabase", () => {
+vi.mock("../services/supabase", () => {
   const authFns: Record<string, ReturnType<typeof vi.fn>> = {
     getUser: vi.fn(),
     getSession: vi.fn(),
@@ -43,7 +43,7 @@ vi.mock("./supabase", () => {
   };
 });
 
-import { supabase } from "./supabase";
+import { supabase } from "../services/supabase";
 
 function getQb(): Record<string, ReturnType<typeof vi.fn>> {
   return (supabase as { from: () => Record<string, ReturnType<typeof vi.fn>> }).from("x");
@@ -276,9 +276,10 @@ describe("AuthProvider", () => {
   });
 
   it("subscribes to auth state changes", async () => {
-    renderHook(() => useAuth(), { wrapper: AuthProvider });
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
     expect(supabase.auth.onAuthStateChange).toHaveBeenCalled();
+    await waitFor(() => expect(result.current.loading).toBe(false));
   });
 
   it("unsubscribes on unmount", () => {

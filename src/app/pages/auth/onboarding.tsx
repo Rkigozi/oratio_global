@@ -52,7 +52,7 @@ export function Onboarding() {
             </div>
             <h2 className="font-heading font-light text-2xl mb-3">Check Your Email</h2>
             <p className="text-text-muted text-sm mb-2">
-              We've sent a confirmation link to <strong className="text-text-secondary">{email}</strong>
+              We&apos;ve sent a confirmation link to <strong className="text-text-secondary">{email}</strong>
             </p>
             <p className="text-text-muted text-xs mb-8">
               Click the link to verify your account, then sign in.

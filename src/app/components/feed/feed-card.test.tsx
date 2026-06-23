@@ -2,9 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { FeedCard } from "./feed-card";
-import type { PrayerRequest } from '../services/prayer-data';
+import type { PrayerRequest } from '../../services/prayer-data';
 
-vi.mock("../../lib/upload", () => ({
+vi.mock("../../services/upload", () => ({
   getInitialAvatarUrl: () => "https://ui-avatars.com/api/?name=T",
 }));
 

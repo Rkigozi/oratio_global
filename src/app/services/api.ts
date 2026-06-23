@@ -1,6 +1,7 @@
 import {
   createReport as supabaseCreateReport,
   getPendingReports as supabaseGetPendingReports,
+  isCurrentUserModerator as supabaseIsCurrentUserModerator,
   resolveReport as supabaseResolveReport,
 } from "./supabase-queries";
 
@@ -21,4 +22,8 @@ export async function resolveReport(reportId: string, status: string) {
   return { error: ok ? null : new Error("Failed to resolve report") } as const;
 }
 
+export async function isCurrentUserModerator() {
+  const data = await supabaseIsCurrentUserModerator();
+  return { data, error: null } as const;
+}
 

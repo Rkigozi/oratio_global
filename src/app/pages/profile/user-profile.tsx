@@ -21,17 +21,33 @@ export function UserProfile() {
 
   useEffect(() => {
     if (!username) return;
-    Promise.all([
-      getProfileByUsername(username),
-      getUserPrayers(username),
-    ]).then(([prof, userPrayers]) => {
+    let active = true;
+
+    const loadUserProfile = async () => {
+      const [prof, userPrayers] = await Promise.all([
+        getProfileByUsername(username),
+        getUserPrayers(username),
+      ]);
+
+      if (!active) return;
       if (prof) {
         setProfile(prof);
-        getFollowCounts(prof.id).then(setFollowCounts);
-        isFollowing(prof.id).then(setFollowing);
+        const [counts, isUserFollowing] = await Promise.all([
+          getFollowCounts(prof.id),
+          isFollowing(prof.id),
+        ]);
+        if (!active) return;
+        setFollowCounts(counts);
+        setFollowing(isUserFollowing);
       }
       setPrayers(userPrayers);
-    });
+    };
+
+    void loadUserProfile();
+
+    return () => {
+      active = false;
+    };
   }, [username]);
 
   const handleFollowToggle = async () => {
@@ -81,7 +97,7 @@ export function UserProfile() {
               <h1 className="text-text font-heading text-base font-medium mb-0.5">{profile?.display_name || username}</h1>
               <p className="text-text-dim text-xs mb-1">@{username}</p>
               {!isOwnProfile && (
-                <button onClick={handleFollowToggle}
+                <button onClick={() => void handleFollowToggle()}
                   className="px-5 py-1.5 rounded-full text-xs transition-all cursor-pointer"
                   style={{
                     background: following ? "rgba(var(--rgb-accent), 0.1)" : "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
@@ -175,5 +191,4 @@ function PrayerCard({ prayer }: { prayer: PrayerRequest }) {
     </div>
   );
 }
-
 

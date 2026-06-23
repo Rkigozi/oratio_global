@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { ArrowLeft, Flag, Check, X, MessageCircle, Loader } from "lucide-react";
-import { getPendingReports, resolveReport } from '../services/api';
+import { ArrowLeft, Flag, Check, X, MessageCircle, Loader, ShieldAlert } from "lucide-react";
+import { getPendingReports, isCurrentUserModerator, resolveReport } from '../services/api';
 import { timeAgo } from '../services/prayer-data';
 
 interface Report {
@@ -18,17 +18,31 @@ export function Moderate() {
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
-  const loadReports = async () => {
+  const loadReports = useCallback(async () => {
     setLoading(true);
+    const { data: canModerate } = await isCurrentUserModerator();
+    setAuthorized(canModerate);
+
+    if (!canModerate) {
+      setReports([]);
+      setLoading(false);
+      return;
+    }
+
     const { data } = await getPendingReports();
     if (data) setReports(data as unknown as Report[]);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    void loadReports();
-  }, []);
+    const load = async () => {
+      await loadReports();
+    };
+
+    void load();
+  }, [loadReports]);
 
   const handleResolve = async (reportId: string) => {
     await resolveReport(reportId, "resolved");
@@ -68,6 +82,12 @@ export function Moderate() {
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader size={20} className="text-text-dim animate-spin" />
+          </div>
+        ) : authorized === false ? (
+          <div className="text-center py-12">
+            <ShieldAlert size={24} className="text-text-dim mx-auto mb-2" />
+            <p className="text-text-muted text-sm">Moderator access required</p>
+            <p className="text-text-dim text-xs mt-1">This area is restricted to trusted moderators.</p>
           </div>
         ) : reports.length === 0 ? (
           <div className="text-center py-12">

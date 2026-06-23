@@ -12,13 +12,13 @@ export function UpdatePassword() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const [waitingForSession, setWaitingForSession] = useState(true);
+  const [sessionCheckExpired, setSessionCheckExpired] = useState(false);
+  const waitingForSession = !user && !sessionCheckExpired;
 
   useEffect(() => {
-    if (user) setWaitingForSession(false);
-    const timer = setTimeout(() => setWaitingForSession(false), 5000);
+    const timer = setTimeout(() => setSessionCheckExpired(true), 5000);
     return () => clearTimeout(timer);
-  }, [user]);
+  }, []);
 
   const handleUpdate = async () => {
     setError("");

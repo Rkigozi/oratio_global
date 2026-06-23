@@ -189,11 +189,11 @@ export function Info() {
               }}
             >
                <p className="text-text-secondary text-sm leading-relaxed mb-3">
-                We'll save your interest locally — real email subscription coming with accounts.
+                We&apos;ll save your interest locally — real email subscription coming with accounts.
               </p>
               {subscribed ? (
                 <div className="text-center">
-                  <p className="text-accent text-sm py-2">You're on the list! 🙏</p>
+                  <p className="text-accent text-sm py-2">You&apos;re on the list! 🙏</p>
                   <button
                     onClick={() => { setSubscribed(false); setEmail(""); }}
                     className="text-text-dim text-[10px] hover:text-text-muted transition-colors cursor-pointer"
@@ -202,7 +202,7 @@ export function Info() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubscribe} className="flex gap-2">
+                <form onSubmit={(e) => void handleSubscribe(e)} className="flex gap-2">
                   <input
                     type="email"
                     value={email}

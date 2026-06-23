@@ -44,7 +44,7 @@ export function ResetPassword() {
             </div>
             <h2 className="font-heading font-light text-2xl mb-3">Check Your Email</h2>
             <p className="text-text-muted text-sm mb-2">
-              We've sent a password reset link to <strong className="text-text-secondary">{email}</strong>
+              We&apos;ve sent a password reset link to <strong className="text-text-secondary">{email}</strong>
             </p>
             <p className="text-text-muted text-xs mb-8">
               Click the link in the email to reset your password. It expires in 1 hour.
@@ -94,7 +94,7 @@ export function ResetPassword() {
           className="mb-6 space-y-4"
         >
           <p className="text-text-muted text-sm text-center mb-4">
-            Enter your email and we'll send you a reset link.
+            Enter your email and we&apos;ll send you a reset link.
           </p>
           <input type="email" value={email}
             onChange={(e) => { setEmail(e.target.value); setError(""); }}

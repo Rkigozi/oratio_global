@@ -1,24 +1,24 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { CommentSection } from "./comment-section";
-import type { PrayerRequest } from '../services/prayer-data';
+import type { PrayerRequest } from '../../services/prayer-data';
 
-vi.mock("../../lib/supabase-queries", () => ({
+vi.mock("../../services/supabase-queries", () => ({
   getComments: vi.fn(),
   getCommentCount: vi.fn(),
   createComment: vi.fn(),
   deleteComment: vi.fn(),
 }));
 
-vi.mock("../../lib/api", () => ({
+vi.mock("../../services/api", () => ({
   reportContent: vi.fn(),
 }));
 
-vi.mock(".././hooks/auth-context", () => ({
+vi.mock("../../hooks/auth-context", () => ({
   useAuth: vi.fn(),
 }));
 
-vi.mock("../../lib/upload", () => ({
+vi.mock("../../services/upload", () => ({
   getInitialAvatarUrl: () => "https://ui-avatars.com/api/?name=T",
 }));
 
@@ -100,6 +100,10 @@ describe("CommentSection", () => {
     fireEvent.change(textarea, { target: { value: "New comment" } });
     // The send button has no accessible text (just icon). Click it by its role.
     const sendBtn = screen.getAllByRole("button").find(b => b.querySelector("svg.lucide-send"));
-    if (sendBtn) fireEvent.click(sendBtn);
+    if (sendBtn) {
+      await act(async () => {
+        fireEvent.click(sendBtn);
+      });
+    }
   });
 });

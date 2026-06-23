@@ -21,12 +21,12 @@ const AuthContext = createContext<AuthState>({
   user: null,
   profile: null,
   loading: true,
-  signUp: async () => null,
-  signIn: async () => null,
-  signInWithGoogle: async () => {},
-  signOut: async () => {},
-  resetPassword: async () => null,
-  updatePassword: async () => null,
+  signUp: () => Promise.resolve(null),
+  signIn: () => Promise.resolve(null),
+  signInWithGoogle: () => Promise.resolve(),
+  signOut: () => Promise.resolve(),
+  resetPassword: () => Promise.resolve(null),
+  updatePassword: () => Promise.resolve(null),
   needsEmailVerification: false,
 });
 

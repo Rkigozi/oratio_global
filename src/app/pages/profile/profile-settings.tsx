@@ -49,14 +49,24 @@ export function ProfileSettings() {
   };
 
   useEffect(() => {
-    if (user) {
-      getProfilePreferences().then((p) => {
-        setPrefs(p);
-        setLoading(false);
-      });
-    } else {
-      setLoading(false);
-    }
+    let active = true;
+
+    const loadPreferences = async () => {
+      setLoading(true);
+      try {
+        if (!user) return;
+        const profilePrefs = await getProfilePreferences();
+        if (active) setPrefs(profilePrefs);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    void loadPreferences();
+
+    return () => {
+      active = false;
+    };
   }, [user]);
 
   const update = (key: keyof ProfilePreferences, value: boolean | string) => {
@@ -64,7 +74,7 @@ export function ProfileSettings() {
     const updated = { ...prefs, [key]: value };
     setPrefs(updated);
     setSaving(true);
-    updateProfilePreferences({ [key]: value }).finally(() => setSaving(false));
+    void updateProfilePreferences({ [key]: value }).finally(() => setSaving(false));
   };
 
   if (loading) {
