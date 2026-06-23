@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ArrowLeft, Flag, Check, X, MessageCircle, Loader } from "lucide-react";
-import { getPendingReports, resolveReport } from "../../lib/api";
-import { timeAgo } from "../data/prayer-data";
+import { getPendingReports, resolveReport } from '../services/api';
+import { timeAgo } from '../services/prayer-data';
 
 interface Report {
   id: string;

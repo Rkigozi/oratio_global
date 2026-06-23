@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Globe, Heart, MessageCircle, ArrowRight, Mail } from "lucide-react";
-import { useAuth } from "../../lib/auth-context";
-import { subscribeToWaitlist } from "../../lib/supabase-queries";
+import { useAuth } from '../hooks/auth-context';
+import { subscribeToWaitlist } from '../services/supabase-queries';
 import { BetaBadge } from "../components/beta-badge";
 import { BETA } from "../config";
 

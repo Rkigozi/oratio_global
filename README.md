@@ -37,7 +37,7 @@ node node_modules/vite/bin/vite.js
 ```
 
 ### Additional Resources
-- **Quick Start Guide**: See [QUICK-START.md](QUICK-START.md) for detailed commands
+- **Quick Start Guide**: See [QUICK-START.md](docs/QUICK-START.md) for detailed commands
 - **Development Aliases**: Source `.oratio-aliases` for convenient shortcuts
 - **Port**: Default 5173 (or next available)
 

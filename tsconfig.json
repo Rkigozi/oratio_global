@@ -23,6 +23,6 @@
     }
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.*", "src/test/**", "shared/src/types.test.ts"],
+  "exclude": ["src/**/*.test.*", "src/test/**"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

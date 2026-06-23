@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import type { PrayerRequest } from "../data/prayer-data";
+import type { PrayerRequest } from '../services/prayer-data';
 import L from "leaflet";
-import { useTheme } from "../../lib/theme-context";
+import { useTheme } from '../hooks/theme-context';
 // Leaflet CSS is imported in src/styles/index.css
 
 // ── Main component ──────────────────────────────────────────────────

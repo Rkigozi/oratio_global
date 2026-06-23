@@ -1,7 +1,7 @@
 import { RouterProvider } from "react-router";
 import { router } from "./routes";
-import { AuthProvider } from "../lib/auth-context";
-import { ThemeProvider } from "../lib/theme-context";
+import { AuthProvider } from './hooks/auth-context';
+import { ThemeProvider } from './hooks/theme-context';
 import { ErrorBoundary } from "./components/error-boundary";
 import { useEffect } from "react";
 
