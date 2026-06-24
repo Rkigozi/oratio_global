@@ -7,6 +7,7 @@
   /* Keep the tab bar in the range of familiar social apps: substantial enough
      for the home indicator, but much slimmer than the full iOS safe area. */
   --bottom-nav-safe-bottom: clamp(6px, env(safe-area-inset-bottom, 0px), 12px);
+  --bottom-nav-content-shift: 3px;
   background: rgba(var(--rgb-bg), 0.96);
   border-top: 1px solid rgba(var(--rgb-accent), 0.08);
   backdrop-filter: blur(14px);
@@ -21,7 +22,7 @@
   min-height: 44px;
   min-width: 44px;
   opacity: 0.78;
-  transform: translateY(0) scale(1);
+  transform: translateY(var(--bottom-nav-content-shift)) scale(1);
   transition:
     color 150ms ease,
     opacity 150ms ease,
@@ -30,7 +31,7 @@
 }
 
 .bottom-nav-item:active {
-  transform: translateY(0) scale(0.94);
+  transform: translateY(var(--bottom-nav-content-shift)) scale(0.94);
 }
 
 .bottom-nav-item-active {
@@ -46,7 +47,7 @@
 }
 
 .bottom-nav-item-active .bottom-nav-icon {
-  transform: translateY(-1px);
+  transform: translateY(0);
 }
 
 .bottom-nav-item-active .bottom-nav-label {
@@ -56,6 +57,7 @@
 @media (display-mode: standalone) {
   .bottom-nav-safe {
     --bottom-nav-safe-bottom: clamp(2px, env(safe-area-inset-bottom, 0px), 4px);
+    --bottom-nav-content-shift: 3px;
   }
 
   .bottom-nav-inner {
@@ -74,7 +76,7 @@
 
   .bottom-nav-label {
     font-size: 8.5px;
-    margin-top: 0;
+    margin-top: 1px;
   }
 }
 
