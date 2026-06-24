@@ -42,7 +42,17 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,json,woff2}'],
+        // Keep the install/update path light. Oratio is a networked social app,
+        // so lazy route chunks should load on demand instead of being precached
+        // during the first browser/PWA visit.
+        globPatterns: [
+          'index.html',
+          'registerSW.js',
+          'manifest.webmanifest',
+          'icons/*.{svg,png,ico}',
+          'assets/*.css',
+          'assets/index-*.js',
+        ],
         navigateFallback: '/index.html',
         navigateFallbackAllowlist: [/^\/[a-z]/],
         // Take control immediately so a new deploy replaces the old cached app
