@@ -13,6 +13,7 @@ vi.mock("./supabase", () => {
     qb.in = vi.fn().mockReturnThis();
     qb.not = vi.fn().mockReturnThis();
     qb.ilike = vi.fn().mockReturnThis();
+    qb.or = vi.fn().mockReturnThis();
     qb.maybeSingle = vi.fn().mockReturnThis();
     qb.range = vi.fn().mockReturnThis();
     qb.update = vi.fn().mockReturnThis();
@@ -81,11 +82,13 @@ beforeEach(() => {
   qb.in.mockReturnThis();
   qb.not.mockReturnThis();
   qb.ilike.mockReturnThis();
+  qb.or.mockReturnThis();
   qb.maybeSingle.mockReturnThis();
   qb.range.mockReturnThis();
   qb.update.mockReturnThis();
   qb.then.mockImplementation((resolve: (v: unknown) => void) => resolve({ data: null, error: null }));
 
+  rpc.mockResolvedValue({ error: null });
   functionsInvoke.mockResolvedValue({ error: null });
 });
 
@@ -310,100 +313,184 @@ describe("deleteComment", () => {
   });
 });
 
-describe("followUser", () => {
-  it("inserts follow on success", async () => {
+describe("sendPrayerCircleInvite", () => {
+  it("inserts an invite on success", async () => {
     setAlways(null);
-    expect(await m.followUser("target")).toBe(true);
+    expect(await m.sendPrayerCircleInvite("target", "Please keep praying with me")).toBe(true);
+    expect(qb.insert).toHaveBeenCalledWith({
+      requester_id: "test-user",
+      recipient_id: "target",
+      message: "Please keep praying with me",
+    });
   });
 
   it("returns false if no user", async () => {
     auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-    expect(await m.followUser("target")).toBe(false);
+    expect(await m.sendPrayerCircleInvite("target")).toBe(false);
+  });
+
+  it("returns false for self-invites", async () => {
+    expect(await m.sendPrayerCircleInvite("test-user")).toBe(false);
   });
 });
 
-describe("unfollowUser", () => {
-  it("deletes follow on success", async () => {
-    setAlways(null);
-    expect(await m.unfollowUser("target")).toBe(true);
+describe("cancelPrayerCircleInvite", () => {
+  it("calls the cancel invite RPC", async () => {
+    expect(await m.cancelPrayerCircleInvite("invite-1")).toBe(true);
+    expect(rpc).toHaveBeenCalledWith("cancel_prayer_circle_invite", {
+      p_invite_id: "invite-1",
+    });
   });
 
   it("returns false if no user", async () => {
     auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-    expect(await m.unfollowUser("target")).toBe(false);
+    expect(await m.cancelPrayerCircleInvite("invite-1")).toBe(false);
   });
 });
 
-describe("getFollowingIds", () => {
-  it("returns following usernames", async () => {
+describe("respondToPrayerCircleInvite", () => {
+  it("calls the response RPC", async () => {
+    expect(await m.respondToPrayerCircleInvite("invite-1", "accepted")).toBe(true);
+    expect(rpc).toHaveBeenCalledWith("respond_to_prayer_circle_invite", {
+      p_invite_id: "invite-1",
+      p_status: "accepted",
+    });
+  });
+
+  it("returns false if no user", async () => {
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    expect(await m.respondToPrayerCircleInvite("invite-1", "declined")).toBe(false);
+  });
+});
+
+describe("removeFromPrayerCircle", () => {
+  it("deletes a mutual connection on success", async () => {
+    setAlways(null);
+    expect(await m.removeFromPrayerCircle("target")).toBe(true);
+    expect(qb.or).toHaveBeenCalledWith(
+      "and(user_a_id.eq.test-user,user_b_id.eq.target),and(user_a_id.eq.target,user_b_id.eq.test-user)",
+    );
+  });
+
+  it("returns false if no user", async () => {
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    expect(await m.removeFromPrayerCircle("target")).toBe(false);
+  });
+});
+
+describe("getPrayerCircleStatus", () => {
+  it("returns connected when a connection exists", async () => {
+    setOnce({ id: "connection-1" });
+    expect(await m.getPrayerCircleStatus("target")).toEqual({ state: "connected" });
+  });
+
+  it("returns pending_sent when the current user sent the invite", async () => {
+    setOnce(null);
+    setOnce({ id: "invite-1", requester_id: "test-user", recipient_id: "target" });
+    expect(await m.getPrayerCircleStatus("target")).toEqual({
+      state: "pending_sent",
+      inviteId: "invite-1",
+    });
+  });
+
+  it("returns pending_received when the other user sent the invite", async () => {
+    setOnce(null);
+    setOnce({ id: "invite-2", requester_id: "target", recipient_id: "test-user" });
+    expect(await m.getPrayerCircleStatus("target")).toEqual({
+      state: "pending_received",
+      inviteId: "invite-2",
+    });
+  });
+
+  it("returns none when no relationship exists", async () => {
+    setOnce(null);
+    setOnce(null);
+    expect(await m.getPrayerCircleStatus("target")).toEqual({ state: "none" });
+  });
+
+  it("returns self for the current user", async () => {
+    expect(await m.getPrayerCircleStatus("test-user")).toEqual({ state: "self" });
+  });
+});
+
+describe("getPrayerCircleUsernames", () => {
+  it("returns usernames for both sides of mutual connections", async () => {
     setAlways([
-      { following_id: "u2", profiles: { username: "user2" } },
-      { following_id: "u3", profiles: { username: "user3" } },
+      { user_a_id: "test-user", user_b_id: "u2", user_b: { username: "mary" } },
+      { user_a_id: "u3", user_b_id: "test-user", user_a: { username: "john" } },
     ]);
-    const result = await m.getFollowingIds();
-    expect(result).toEqual(["user2", "user3"]);
+    expect(await m.getPrayerCircleUsernames()).toEqual(["mary", "john"]);
   });
 
   it("returns empty if no user", async () => {
     auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-    expect(await m.getFollowingIds()).toEqual([]);
+    expect(await m.getPrayerCircleUsernames()).toEqual([]);
   });
 });
 
-describe("getFollowers", () => {
-  it("returns follower profiles", async () => {
-    setAlways([{ follower_id: "u2", profiles: { username: "follower1", display_name: "Follower One" } }]);
-    const result = await m.getFollowers("u1");
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("u2");
-    expect(result[0].username).toBe("follower1");
-    expect(result[0].display_name).toBe("Follower One");
-  });
-
-  it("returns empty array when no followers", async () => {
-    setAlways(null);
-    expect(await m.getFollowers("u1")).toEqual([]);
-  });
-});
-
-describe("getFollowing", () => {
-  it("returns following profiles", async () => {
-    setAlways([{ following_id: "u3", profiles: { username: "following1", display_name: "Following One" } }]);
-    const result = await m.getFollowing("u1");
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("u3");
-    expect(result[0].username).toBe("following1");
-    expect(result[0].display_name).toBe("Following One");
-  });
-
-  it("returns empty array when not following anyone", async () => {
-    setAlways(null);
-    expect(await m.getFollowing("u1")).toEqual([]);
+describe("getPrayerCircle", () => {
+  it("returns mutual circle profiles", async () => {
+    setAlways([
+      {
+        user_a_id: "test-user",
+        user_b_id: "u2",
+        created_at: "2024-01-01",
+        user_b: { id: "u2", username: "mary", display_name: "Mary", avatar_url: null },
+      },
+      {
+        user_a_id: "u3",
+        user_b_id: "test-user",
+        created_at: "2024-01-02",
+        user_a: { id: "u3", username: "john", display_name: "John", avatar_url: "avatar.png" },
+      },
+    ]);
+    const result = await m.getPrayerCircle();
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({ id: "u2", username: "mary", connected_at: "2024-01-01" });
+    expect(result[1]).toMatchObject({ id: "u3", username: "john", connected_at: "2024-01-02" });
   });
 });
 
-describe("isFollowing", () => {
-  it("returns true when following", async () => {
-    setAlways({ id: 1 });
-    expect(await m.isFollowing("target")).toBe(true);
+describe("getPrayerCircleInvites", () => {
+  it("splits incoming and outgoing pending invites", async () => {
+    setAlways([
+      {
+        id: "incoming-1",
+        requester_id: "u2",
+        recipient_id: "test-user",
+        message: "Can we keep praying?",
+        created_at: "2024-01-01",
+        requester: { id: "u2", username: "mary", display_name: "Mary", avatar_url: null },
+        recipient: { id: "test-user", username: "me", display_name: "Me", avatar_url: null },
+      },
+      {
+        id: "outgoing-1",
+        requester_id: "test-user",
+        recipient_id: "u3",
+        message: null,
+        created_at: "2024-01-02",
+        requester: { id: "test-user", username: "me", display_name: "Me", avatar_url: null },
+        recipient: { id: "u3", username: "john", display_name: "John", avatar_url: null },
+      },
+    ]);
+
+    const result = await m.getPrayerCircleInvites();
+    expect(result.incoming).toHaveLength(1);
+    expect(result.incoming[0].requester.username).toBe("mary");
+    expect(result.outgoing).toHaveLength(1);
+    expect(result.outgoing[0].recipient.username).toBe("john");
   });
 
-  it("returns false when not following", async () => {
-    setAlways(null);
-    expect(await m.isFollowing("target")).toBe(false);
-  });
-
-  it("returns false if no user", async () => {
+  it("returns empty invite lists if no user", async () => {
     auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-    expect(await m.isFollowing("target")).toBe(false);
+    expect(await m.getPrayerCircleInvites()).toEqual({ incoming: [], outgoing: [] });
   });
 });
 
-describe("getFollowCounts", () => {
-  it("returns follower and following counts", async () => {
-    setAlways<unknown>(null, null, 5);
-    const result = await m.getFollowCounts("uid1");
-    expect(result).toEqual({ followers: 5, following: 5 });
+describe("getPrayerCircleCount", () => {
+  it("returns the mutual circle count", async () => {
+    setAlways(null, null, 5);
+    expect(await m.getPrayerCircleCount("uid1")).toBe(5);
   });
 });
 

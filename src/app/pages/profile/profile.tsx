@@ -6,13 +6,14 @@ import {
   Info,
   Camera,
   Settings,
+  Users,
 } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
 import { validateProfile } from "../../../lib/validation";
 import { useAuth } from '../../hooks/auth-context';
 import { uploadAvatar, getInitialAvatarUrl } from '../../services/upload';
-import { getFollowCounts, updateProfile, getMyProfile, getMyPrayers, getMyPrayedForPrayers } from '../../services/supabase-queries';
+import { getPrayerCircleCount, updateProfile, getMyProfile, getMyPrayers, getMyPrayedForPrayers } from '../../services/supabase-queries';
 import { useGeolocation } from '../../hooks/use-geolocation';
 export function Profile() {
   const navigate = useNavigate();
@@ -87,21 +88,19 @@ export function Profile() {
   const username = profile.username || "anonymous";
   const displayName = profile.displayName || username;
 
-  const [followingCount, setFollowingCount] = useState(0);
-  const [followersCount, setFollowersCount] = useState(0);
+  const [circleCount, setCircleCount] = useState(0);
 
   useEffect(() => {
     let active = true;
 
-    const loadFollowCounts = async () => {
+    const loadCircleCount = async () => {
       if (!user?.id) return;
-      const counts = await getFollowCounts(user.id);
+      const count = await getPrayerCircleCount(user.id);
       if (!active) return;
-      setFollowingCount(counts.following);
-      setFollowersCount(counts.followers);
+      setCircleCount(count);
     };
 
-    void loadFollowCounts();
+    void loadCircleCount();
 
     return () => {
       active = false;
@@ -171,7 +170,7 @@ export function Profile() {
     <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
       <div className="relative z-10 px-5 overflow-y-auto overflow-x-hidden flex-1 h-full pt-24 pb-28">
         <div className="max-w-md mx-auto">
-          {/* Profile header — Instagram style */}
+          {/* Profile header */}
           <div className="flex items-start gap-4 mb-6">
             <div className="relative flex-shrink-0">
               <img
@@ -250,15 +249,26 @@ export function Profile() {
               <p className="text-text-dim text-[10px]">Prayed</p>
             </button>
             <div className="w-px bg-accent/10" />
-            <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/following`)} className="text-center cursor-pointer min-w-[50px]">
-              <p className="text-text text-sm font-semibold">{followingCount}</p>
-              <p className="text-text-dim text-[10px]">Following</p>
-            </button>
-            <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/followers`)} className="text-center cursor-pointer min-w-[50px]">
-              <p className="text-text text-sm font-semibold">{followersCount}</p>
-              <p className="text-text-dim text-[10px]">Followers</p>
+            <button onClick={() => void navigate("/profile/circle")} className="text-center cursor-pointer min-w-[70px]">
+              <p className="text-text text-sm font-semibold">{circleCount}</p>
+              <p className="text-text-dim text-[10px]">Prayer Circle</p>
             </button>
           </div>
+
+          <button
+            onClick={() => void navigate("/profile/circle")}
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-6 text-left cursor-pointer active:scale-[0.99] transition-transform"
+            style={{
+              background: "linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))",
+              border: "1px solid rgba(var(--rgb-accent), 0.08)",
+            }}
+          >
+            <Users size={18} className="text-accent flex-shrink-0" />
+            <div>
+              <p className="text-text text-sm font-medium">Prayer Circle</p>
+              <p className="text-text-dim text-xs mt-0.5">A quieter place for people you keep praying with.</p>
+            </div>
+          </button>
 
           {/* My prayers summary card */}
           <div className="space-y-2">

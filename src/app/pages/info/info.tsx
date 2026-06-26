@@ -16,8 +16,8 @@ import { subscribeToWaitlist } from '../../services/supabase-queries';
 const roadmapItems = [
   {
     icon: Users,
-    label: "Community Profiles",
-    desc: "Bios, locations, follower lists, and mutual connections — build your prayer community.",
+    label: "Prayer Circles",
+    desc: "Mutual, request-based connections for people you want to keep praying with over time.",
     status: "next" as const,
   },
   {

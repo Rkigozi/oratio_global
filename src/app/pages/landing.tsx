@@ -40,7 +40,7 @@ export function Landing() {
     {
       icon: MessageCircle,
       title: "Encourage & Connect",
-      desc: "Leave a comment, follow someone's journey, build real community through prayer.",
+      desc: "Leave encouragement, pray for anyone, and invite people into a mutual Prayer Circle.",
     },
   ];
 

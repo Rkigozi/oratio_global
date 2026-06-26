@@ -42,7 +42,7 @@
 - [ ] Feed loads prayers from Supabase (not blank)
 - [ ] Each card shows: avatar, username, prayer text, location, time ago, pray count
 - [ ] **Infinite scroll** — scroll to bottom, more prayers load automatically
-- [ ] **Filter pills** work: All | Near Me | Following | Saved | Country
+- [ ] **Filter pills** work: All | Near Me | Prayer Circle | Saved | Country
 - [ ] **Search** — type a keyword, hashtag, city, or country → feed filters
 - [ ] **Recent searches** — previously searched terms shown as quick taps
 - [ ] **Trending hashtags** — scrollable row above feed
@@ -74,7 +74,8 @@
 - [ ] **Save bookmark** — from menu → icon fills, prayer appears in Profile → Saved
 - [ ] **Share** — from menu → native share sheet (mobile) or clipboard copy (desktop)
 - [ ] **Translate** — if prayer is in another language, "Translate" option in menu
-- [ ] **Follow/Unfollow** — tap Follow on author → button changes to "Following"
+- [ ] **Prayer Circle invite** — tap Invite on author → button changes to "Invite sent"
+- [ ] If the author has invited you first, tap Accept → state changes to "In Circle"
 - [ ] **Report** — from menu → select reason → "Reported" confirmation
 
 ---
@@ -94,7 +95,8 @@
 ## 6. Profile
 
 - [ ] Tap Profile tab → shows your avatar, display name, username, bio, location
-- [ ] Stats row: Prayers | Prayed For | Followers | Following | Saved
+- [ ] Stats row: Prayers | Prayed | Prayer Circle
+- [ ] Tap Prayer Circle → `/profile/circle` shows incoming invites, outgoing invites, and accepted people
 - [ ] **Edit profile** — tap edit → change photo, display name, bio, location
 - [ ] **Submitted prayers** — shows first 5 with "View all N →" link
 - [ ] **Section toggle** — Submitted / Prayed For / Saved — each shows correct list
@@ -107,11 +109,10 @@
 ## 7. User Profile (Other)
 
 - [ ] Tap a username anywhere → `/user/:name` shows their profile
-- [ ] Stats: prayers count, followers, following
-- [ ] Follow/Unfollow button works
+- [ ] Stats: prayers count and mutual Prayer Circle context
+- [ ] Prayer Circle button works: Invite, Invite sent/cancel, Accept, Decline, In Prayer Circle
 - [ ] List of their prayers — tap one → `/prayer/:id`
-- [ ] Tap Followers → `/user/:name/followers` — list of users
-- [ ] Tap Following → `/user/:name/following` — list of users
+- [ ] No public follower/following counts or lists are shown
 
 ---
 

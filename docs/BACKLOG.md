@@ -18,9 +18,9 @@
 - [x] Search prayers by text, location
 - [x] Hashtag system (clickable, trending)
 - [x] Save/bookmark prayers (cross-device via Supabase)
-- [x] Follow/unfollow users
-- [x] Following feed filter (shows prayers from people you follow)
-- [x] Profile page with stats: Prayers, Prayed, Following, Followers
+- [x] Mutual Prayer Circle invites with accept/decline/cancel
+- [x] Prayer Circle feed filter (shows prayers from accepted circle connections)
+- [x] Profile page with stats: Prayers, Prayed, Prayer Circle
 - [x] Other user profiles with their prayers
 - [x] Prayer detail page with share, report, toggle comments
 - [x] Map view with prayer hotspots (light + dark mode)
@@ -34,7 +34,7 @@
 - [x] PostHog analytics (events: signup, pray, comment, search)
 - [x] Avatar upload via Supabase Storage (not base64 blobs)
 - [x] Ownership checks at app level (delete prayer/comment)
-- [x] Self-follow prevented (`followUser` + UI)
+- [x] Self-invite prevented (`sendPrayerCircleInvite` + UI)
 - [x] Self-report prevented (hide report button on own content)
 - [x] CI pipeline (type-check, lint, test, build)
 - [x] Playwright E2E smoke tests
@@ -74,7 +74,7 @@
 |---|------|-----|
 | 1 | Check `/privacy` and `/terms` pages have real content | Legal requirement |
 | 2 | Test password reset flow end-to-end | Standard Supabase flow, quick to verify |
-| 3 | Test full signup → confirm email → submit → comment → follow | Catch any RLS/auth state issues |
+| 3 | Test full signup → confirm email → submit → comment → Prayer Circle invite | Catch any RLS/auth state issues |
 | 4 | Update OG image URL to production domain in `index.html` | Once domain is purchased |
 
 ## 🔜 v1.1 Candidates

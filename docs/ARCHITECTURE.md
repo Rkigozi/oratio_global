@@ -55,14 +55,13 @@ graph LR
         PD["/prayer/:id"]
         M["/moderate"]
         UP2["/user/:name"]
-        UF["/user/:name/following"]
-        UFR["/user/:name/followers"]
     end
     subgraph AppShell["App Shell (Layout → Header + BottomNav)"]
         H["/ (Home - Map)"]
         F["/feed"]
         S["/submit"]
         P["/profile"]
+        PC["/profile/circle"]
         PS["/profile/submitted"]
         PP["/profile/prayed"]
         PV["/profile/saved"]
@@ -107,7 +106,7 @@ flowchart LR
 | Submit Prayer | Supabase INSERT | localStorage | Dispatches event |
 | Map Hotspots | Supabase `prayer_requests` | — | Custom event |
 | Comments | Supabase `comments` | — | — |
-| Follows | Supabase `follows` | localStorage | — |
+| Prayer Circle | Supabase `prayer_circle_invites`, `prayer_circle_connections` | — | — |
 | Reports | Supabase `reports` | localStorage | — |
 | Saved Prayers | Supabase `saved_prayers` | localStorage | — |
 | Profile | Supabase `profiles` | localStorage | — |
@@ -252,10 +251,19 @@ erDiagram
         text body
         timestamp created_at
     }
-    follows {
+    prayer_circle_invites {
         uuid id PK
-        uuid follower_id FK
-        uuid following_id FK
+        uuid requester_id FK
+        uuid recipient_id FK
+        text status
+        text message
+        timestamp created_at
+    }
+    prayer_circle_connections {
+        uuid id PK
+        uuid user_a_id FK
+        uuid user_b_id FK
+        uuid accepted_invite_id FK
         timestamp created_at
     }
     saved_prayers {
@@ -284,8 +292,10 @@ erDiagram
     prayer_requests ||--o{ comments : ""
     prayer_requests ||--o{ saved_prayers : ""
     profiles ||--o{ prayer_requests : ""
-    profiles ||--o{ follows : "follower"
-    profiles ||--o{ follows : "following"
+    profiles ||--o{ prayer_circle_invites : "requester"
+    profiles ||--o{ prayer_circle_invites : "recipient"
+    profiles ||--o{ prayer_circle_connections : "user_a"
+    profiles ||--o{ prayer_circle_connections : "user_b"
 ```
 
 ---
@@ -298,7 +308,6 @@ erDiagram
 | `oratio_saved` | Saved prayer IDs | `string[]` |
 | `oratio_submitted` | Submitted prayer IDs | `string[]` |
 | `oratio_submitted_prayers` | Full submitted prayer objects | `PrayerRequest[]` |
-| `oratio_following` | Followed usernames | `string[]` |
 | `oratio_reports` | Offline report fallback | `Report[]` |
 | `oratio_profile` | Legacy profile data | `UserProfile` |
 | `oratio_theme` | Dark/light preference | `"dark" \| "light"` |
@@ -429,7 +438,7 @@ src/
 │   │   ├── profile-settings.tsx    # Settings (285 lines)
 │   │   ├── prayer-detail.tsx       # Full prayer view (489 lines)
 │   │   ├── user-profile.tsx        # Other user's profile (200 lines)
-│   │   ├── user-list.tsx           # Followers/following (101 lines)
+│   │   ├── prayer-circle.tsx       # Mutual Prayer Circle invites/connections
 │   │   ├── moderate.tsx            # Moderation dashboard (136 lines)
 │   │   ├── info.tsx                # Beta info (250 lines)
 │   │   ├── terms.tsx               # Terms of service (63 lines)
@@ -453,7 +462,8 @@ src/
 | `prayer_requests` | Everyone | Authenticated | Owner only | Owner only |
 | `prayer_interactions` | Everyone | Own | — | Own |
 | `comments` | Everyone | Authenticated | — | Own |
-| `follows` | Everyone | Own | — | Own |
+| `prayer_circle_invites` | Participants | Requester | RPC only | RPC only |
+| `prayer_circle_connections` | Participants | RPC only | — | Participants |
 | `saved_prayers` | Own | Own | — | Own |
 | `reports` | Everyone | Authenticated | Mod Only | — |
 | `waitlist` | — | Anyone | — | — |

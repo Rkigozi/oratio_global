@@ -7,13 +7,13 @@
 
 ## Executive Summary
 
-Oratio is a production-ready PWA (Progressive Web App) — a global Christian prayer platform. The codebase has been through a full audit and cleanup cycle. Supabase backend is fully integrated. Monitoring (Sentry + PostHog) is live. 50 tests pass. Build, types, and lint all green.
+Oratio is a production-ready PWA (Progressive Web App) — a global Christian prayer platform. The codebase has been through a full audit and cleanup cycle. Supabase backend is fully integrated. Monitoring (Sentry + PostHog) is live. 249 tests pass. Build, types, lint, and dependency audit are green.
 
 ### What's Been Done (April–June 2026)
 
 | Area | Status |
 |------|--------|
-| Supabase migration (auth, prayers, comments, follows, reports, feed) | ✅ Complete |
+| Supabase migration (auth, prayers, comments, Prayer Circle, reports, feed) | ✅ Complete |
 | Google OAuth + Email/Password auth | ✅ Complete |
 | Edge Function for translation (API key server-side) | ✅ Complete |
 | Error Boundary (root-level, Sentry-connected) | ✅ Complete |
@@ -26,10 +26,10 @@ Oratio is a production-ready PWA (Progressive Web App) — a global Christian pr
 | PostHog analytics (8 custom events) | ✅ Live |
 | Dark/light theme | ✅ Complete |
 | Responsive mobile-first design | ✅ Complete |
-| Testing (50 tests, Vitest + Testing Library) | ✅ Passing |
-| Production build | ✅ Passing (2.7s build time) |
+| Testing (249 tests, Vitest + Testing Library) | ✅ Passing |
+| Production build | ✅ Passing |
 | TypeScript strict mode | ✅ Zero errors |
-| ESLint | ✅ 95 warnings (mostly hooks patterns, no errors) |
+| ESLint | ✅ Zero warnings/errors |
 
 ---
 
@@ -52,7 +52,7 @@ Oratio is a production-ready PWA (Progressive Web App) — a global Christian pr
 | Analytics | PostHog (EU) | `posthog-js` |
 | PWA | vite-plugin-pwa | Workbox, generateSW mode |
 | Deployment | Netlify | Auto-deploy from git, SPA redirects |
-| Testing | Vitest + Testing Library + happy-dom | 50 tests, 4 test files |
+| Testing | Vitest + Testing Library + happy-dom | 249 tests, 23 test files |
 
 ---
 
@@ -77,14 +77,14 @@ dist/ (production build)       68 precached entries, ~1.5 MB total
 ## Architecture
 
 ### Routes
-- **Public** (no layout): `/landing`, `/onboarding`, `/login`, `/reset-password`, `/update-password`, `/privacy`, `/terms`, `/prayer/:id`, `/moderate`, `/user/:name`, `/user/:name/following`, `/user/:name/followers`
-- **App shell** (Header + BottomNav): `/` (map), `/feed`, `/submit`, `/profile`, `/profile/submitted`, `/profile/prayed`, `/profile/saved`, `/profile/settings`, `/info`
+- **Public** (no layout): `/landing`, `/onboarding`, `/login`, `/reset-password`, `/update-password`, `/privacy`, `/terms`, `/prayer/:id`, `/moderate`, `/user/:name`
+- **App shell** (Header + BottomNav): `/` (map), `/feed`, `/submit`, `/profile`, `/profile/circle`, `/profile/submitted`, `/profile/prayed`, `/profile/saved`, `/profile/settings`, `/info`
 - **Catch-all**: `*` → 404 page
 
 All routes are code-split via `React.lazy()`.
 
 ### Data Flow
-- Primary: **Supabase** (8 tables: profiles, prayer_requests, prayer_interactions, comments, follows, saved_prayers, reports, waitlist)
+- Primary: **Supabase** (core tables include profiles, prayer_requests, prayer_interactions, comments, prayer_circle_invites, prayer_circle_connections, saved_prayers, reports, waitlist)
 - Fallback: **localStorage** (16 keys, mostly for optimistic updates and legacy compatibility)
 - Real-time: **CustomEvents** (`oratio-prayer-added`, `oratio-prayer-removed`) dispatched on `window`
 - Mock data: `prayer-data.ts` generates deterministic test data from a 26-city database (only used in tests, tree-shaken from production)
@@ -110,7 +110,8 @@ Total: ~14 production dependencies, ~20 dev dependencies.
 | `prayer_requests` | Prayer submissions with location | SELECT: all, INSERT: auth'd, DELETE: owner |
 | `prayer_interactions` | "I prayed" tracking | SELECT: all, INSERT/DELETE: own |
 | `comments` | Threaded comments on prayers | SELECT: all, INSERT: auth'd, DELETE: own |
-| `follows` | Follow relationships | SELECT: all, INSERT/DELETE: own |
+| `prayer_circle_invites` | Mutual Prayer Circle requests | SELECT: participants, INSERT: requester, UPDATE: RPC |
+| `prayer_circle_connections` | Accepted Prayer Circle relationships | SELECT/DELETE: participants |
 | `saved_prayers` | Bookmarked prayers | SELECT/INSERT/DELETE: own |
 | `reports` | Content moderation reports | INSERT: all, SELECT: own, UPDATE: mod |
 | `waitlist` | Email waitlist signups | INSERT: all |

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, MapPin, X, MoreHorizontal, Share2, Flag, Bookmark, MessageCircle } from "lucide-react";
+import { ArrowLeft, Check, Clock, MapPin, X, MoreHorizontal, Share2, Flag, Bookmark, MessageCircle, UserPlus } from "lucide-react";
 import { timeAgo, getAttributionText } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { CommentSection } from "../../components/comments/comment-section";
@@ -10,7 +10,20 @@ import { getInitialAvatarUrl } from '../../services/upload';
 import { reportContent } from '../../services/api';
 import { renderHashtags } from '../../services/hashtags';
 import { translateText, needsTranslation, detectLanguage } from '../../services/translate';
-import { getPrayerById, togglePray, toggleSavePrayer, followUser, unfollowUser, getProfileByUsername, isFollowing, toggleCommentsEnabled, getMyPrayedIds, getMySavedIds } from '../../services/supabase-queries';
+import {
+  getPrayerById,
+  togglePray,
+  toggleSavePrayer,
+  getProfileByUsername,
+  getPrayerCircleStatus,
+  sendPrayerCircleInvite,
+  cancelPrayerCircleInvite,
+  respondToPrayerCircleInvite,
+  toggleCommentsEnabled,
+  getMyPrayedIds,
+  getMySavedIds,
+  type PrayerCircleStatus,
+} from '../../services/supabase-queries';
 import { LoadingSpinner, ErrorState } from "../../components/loading-spinner";
 import { useAuth } from '../../hooks/auth-context';
 import { logError } from "../../../lib/logger";
@@ -101,36 +114,56 @@ export function PrayerDetail() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showMenu]);
   const [reported, setReported] = useState(false);
-  const [following, setFollowing] = useState(false);
+  const [circleStatus, setCircleStatus] = useState<PrayerCircleStatus>({ state: "none" });
+  const [circleBusy, setCircleBusy] = useState(false);
   const { profile: authProfile } = useAuth();
   const isAuthor = prayer ? prayer.username === authProfile?.username : false;
 
   const username = prayer?.username;
-  const handleFollowToggle = async () => {
-    if (!username) return;
-    const newState = !following;
-    setFollowing(newState);
+  const handleCircleInvite = async () => {
+    if (!username || isAuthor) return;
+    setCircleBusy(true);
     const prof = await getProfileByUsername(username);
-    if (prof) await (newState ? followUser(prof.id) : unfollowUser(prof.id));
+    if (prof) {
+      const ok = await sendPrayerCircleInvite(prof.id);
+      if (ok) setCircleStatus(await getPrayerCircleStatus(prof.id));
+    }
+    setCircleBusy(false);
+  };
+
+  const handleCancelCircleInvite = async () => {
+    if (!username || !circleStatus.inviteId) return;
+    setCircleBusy(true);
+    const ok = await cancelPrayerCircleInvite(circleStatus.inviteId);
+    if (ok) setCircleStatus({ state: "none" });
+    setCircleBusy(false);
+  };
+
+  const handleAcceptCircleInvite = async () => {
+    if (!circleStatus.inviteId) return;
+    setCircleBusy(true);
+    const ok = await respondToPrayerCircleInvite(circleStatus.inviteId, "accepted");
+    if (ok) setCircleStatus({ state: "connected" });
+    setCircleBusy(false);
   };
 
   useEffect(() => {
-    if (!username) return;
+    if (!username || isAuthor) return;
     let active = true;
 
-    const loadFollowingState = async () => {
+    const loadCircleState = async () => {
       const prof = await getProfileByUsername(username);
       if (!prof) return;
-      const isUserFollowing = await isFollowing(prof.id);
-      if (active) setFollowing(isUserFollowing);
+      const status = await getPrayerCircleStatus(prof.id);
+      if (active) setCircleStatus(status);
     };
 
-    void loadFollowingState();
+    void loadCircleState();
 
     return () => {
       active = false;
     };
-  }, [username]);
+  }, [isAuthor, username]);
 
   const handleTranslate = async () => {
     if (!prayer || translating) return;
@@ -378,18 +411,15 @@ export function PrayerDetail() {
             >
               {getAttributionText(prayer)}
             </button>
-            {username && (
-              <button
-                onClick={() => void handleFollowToggle()}
-                className="text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer"
-                style={{
-                  background: following ? "rgba(var(--rgb-accent), 0.1)" : "rgba(var(--rgb-accent), 0.04)",
-                  border: `1px solid ${following ? "rgba(var(--rgb-accent), 0.2)" : "rgba(var(--rgb-accent), 0.08)"}`,
-                  color: following ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-dim))",
-                }}
-              >
-                {following ? "Following" : "Follow"}
-              </button>
+            {username && !isAuthor && (
+              <PrayerCircleMiniButton
+                username={username}
+                status={circleStatus}
+                busy={circleBusy}
+                onInvite={() => void handleCircleInvite()}
+                onCancel={() => void handleCancelCircleInvite()}
+                onAccept={() => void handleAcceptCircleInvite()}
+              />
             )}
           </div>
 
@@ -505,5 +535,82 @@ export function PrayerDetail() {
         document.body
       )}
     </div>
+  );
+}
+
+function PrayerCircleMiniButton({
+  username,
+  status,
+  busy,
+  onInvite,
+  onCancel,
+  onAccept,
+}: {
+  username: string;
+  status: PrayerCircleStatus;
+  busy: boolean;
+  onInvite: () => void;
+  onCancel: () => void;
+  onAccept: () => void;
+}) {
+  if (status.state === "connected") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full text-accent bg-accent/10 border border-accent/15">
+        <Check size={11} />
+        In Circle
+      </span>
+    );
+  }
+
+  if (status.state === "pending_sent") {
+    return (
+      <button
+        onClick={onCancel}
+        disabled={busy}
+        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer disabled:opacity-60"
+        style={{
+          background: "rgba(var(--rgb-accent), 0.08)",
+          border: "1px solid rgba(var(--rgb-accent), 0.16)",
+          color: "rgb(var(--rgb-accent))",
+        }}
+        aria-label={`Cancel Prayer Circle invite to @${username}`}
+      >
+        <Clock size={11} />
+        Invite sent
+      </button>
+    );
+  }
+
+  if (status.state === "pending_received") {
+    return (
+      <button
+        onClick={onAccept}
+        disabled={busy}
+        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer disabled:opacity-60"
+        style={{
+          background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
+          color: "rgb(var(--rgb-text))",
+        }}
+      >
+        <Check size={11} />
+        Accept invite
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={onInvite}
+      disabled={busy}
+      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer disabled:opacity-60"
+      style={{
+        background: "rgba(var(--rgb-accent), 0.04)",
+        border: "1px solid rgba(var(--rgb-accent), 0.08)",
+        color: "rgb(var(--rgb-text-dim))",
+      }}
+    >
+      <UserPlus size={11} />
+      Invite @{username}
+    </button>
   );
 }

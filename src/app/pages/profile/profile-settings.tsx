@@ -223,7 +223,7 @@ export function ProfileSettings() {
                   </div>
                 </div>
                 <p className="text-text-muted text-xs mb-5 leading-relaxed">
-                  All your prayers, comments, follows, and saved prayers will be permanently deleted. Your username will be released for others to use.
+                  All your prayers, comments, Prayer Circle connections, and saved prayers will be permanently deleted. Your username will be released for others to use.
                 </p>
                 {deleteError && (
                   <p className="text-danger text-xs mb-3 text-center">{deleteError}</p>

@@ -1,23 +1,32 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Check, Clock, Send, UserPlus, Users, X } from "lucide-react";
 import { timeAgo } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { getInitialAvatarUrl } from '../../services/upload';
 import { useAuth } from '../../hooks/auth-context';
-import { getProfileByUsername, getUserPrayers, followUser, unfollowUser, isFollowing, getFollowCounts, togglePray } from '../../services/supabase-queries';
+import {
+  getProfileByUsername,
+  getUserPrayers,
+  getPrayerCircleStatus,
+  respondToPrayerCircleInvite,
+  sendPrayerCircleInvite,
+  cancelPrayerCircleInvite,
+  togglePray,
+  type PrayerCircleStatus,
+} from '../../services/supabase-queries';
 
 export function UserProfile() {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
+  const { profile: currentProfile } = useAuth();
   const username = name ? decodeURIComponent(name) : "";
-  const [following, setFollowing] = useState(false);
+  const [circleStatus, setCircleStatus] = useState<PrayerCircleStatus>({ state: "none" });
+  const [circleBusy, setCircleBusy] = useState(false);
   const [profile, setProfile] = useState<{ id: string; username: string; display_name: string | null; avatar_url: string | null; created_at: string } | null>(null);
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
-  const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
 
-  const isOwnProfile = currentUser?.user_metadata?.username === username;
+  const isOwnProfile = currentProfile?.username === username;
 
   useEffect(() => {
     if (!username) return;
@@ -32,13 +41,9 @@ export function UserProfile() {
       if (!active) return;
       if (prof) {
         setProfile(prof);
-        const [counts, isUserFollowing] = await Promise.all([
-          getFollowCounts(prof.id),
-          isFollowing(prof.id),
-        ]);
+        const status = await getPrayerCircleStatus(prof.id);
         if (!active) return;
-        setFollowCounts(counts);
-        setFollowing(isUserFollowing);
+        setCircleStatus(status);
       }
       setPrayers(userPrayers);
     };
@@ -50,21 +55,33 @@ export function UserProfile() {
     };
   }, [username]);
 
-  const handleFollowToggle = async () => {
+  const handleInvite = async () => {
     if (!profile) return;
-    if (following) {
-      const ok = await unfollowUser(profile.id);
-      if (ok) {
-        setFollowing(false);
-        setFollowCounts((prev) => ({ ...prev, followers: Math.max(0, prev.followers - 1) }));
-      }
-    } else {
-      const ok = await followUser(profile.id);
-      if (ok) {
-        setFollowing(true);
-        setFollowCounts((prev) => ({ ...prev, followers: prev.followers + 1 }));
-      }
+    setCircleBusy(true);
+    const ok = await sendPrayerCircleInvite(profile.id);
+    if (ok) {
+      const status = await getPrayerCircleStatus(profile.id);
+      setCircleStatus(status);
     }
+    setCircleBusy(false);
+  };
+
+  const handleCancelInvite = async () => {
+    if (!profile || !circleStatus.inviteId) return;
+    setCircleBusy(true);
+    const ok = await cancelPrayerCircleInvite(circleStatus.inviteId);
+    if (ok) setCircleStatus({ state: "none" });
+    setCircleBusy(false);
+  };
+
+  const handleRespond = async (response: "accepted" | "declined") => {
+    if (!profile || !circleStatus.inviteId) return;
+    setCircleBusy(true);
+    const ok = await respondToPrayerCircleInvite(circleStatus.inviteId, response);
+    if (ok) {
+      setCircleStatus(response === "accepted" ? { state: "connected" } : { state: "none" });
+    }
+    setCircleBusy(false);
   };
 
   if (!username) {
@@ -97,36 +114,37 @@ export function UserProfile() {
               <h1 className="text-text font-heading text-base font-medium mb-0.5">{profile?.display_name || username}</h1>
               <p className="text-text-dim text-xs mb-1">@{username}</p>
               {!isOwnProfile && (
-                <button onClick={() => void handleFollowToggle()}
-                  className="px-5 py-1.5 rounded-full text-xs transition-all cursor-pointer"
-                  style={{
-                    background: following ? "rgba(var(--rgb-accent), 0.1)" : "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
-                    border: following ? "1px solid rgba(var(--rgb-accent), 0.2)" : "none",
-                    color: following ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text))",
-                  }}
-                >
-                  {following ? "Following" : "Follow"}
-                </button>
+                <CircleAction
+                  username={username}
+                  status={circleStatus}
+                  busy={circleBusy}
+                  onInvite={() => void handleInvite()}
+                  onCancel={() => void handleCancelInvite()}
+                  onAccept={() => void handleRespond("accepted")}
+                  onDecline={() => void handleRespond("declined")}
+                />
               )}
             </div>
           </div>
 
-          {/* Stats row */}
-          <div className="flex justify-around mb-6 py-3 rounded-xl"
+          {/* Prayer presence row */}
+          <div className="flex items-center gap-4 mb-6 py-3 px-4 rounded-xl"
             style={{ background: "rgba(var(--rgb-surface), 0.4)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
           >
             <div className="text-center">
               <p className="text-text text-sm font-medium">{prayers.length}</p>
-              <p className="text-text-dim text-[10px]">Prayers</p>
+              <p className="text-text-dim text-[10px]">Shared prayers</p>
             </div>
-            <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/followers`)} className="text-center cursor-pointer">
-              <p className="text-text text-sm font-medium">{followCounts.followers}</p>
-              <p className="text-text-dim text-[10px]">Followers</p>
-            </button>
-            <button onClick={() => void navigate(`/user/${encodeURIComponent(username)}/following`)} className="text-center cursor-pointer">
-              <p className="text-text text-sm font-medium">{followCounts.following}</p>
-              <p className="text-text-dim text-[10px]">Following</p>
-            </button>
+            <div className="w-px self-stretch bg-accent/10" />
+            <div className="flex-1">
+              <div className="flex items-center gap-1.5 text-text-muted text-xs">
+                <Users size={12} />
+                <span>Prayer Circle is mutual</span>
+              </div>
+              <p className="text-text-dim text-[10px] mt-1 leading-relaxed">
+                Pray for anyone. Keep praying with a few.
+              </p>
+            </div>
           </div>
 
           {/* Prayers header */}
@@ -146,6 +164,91 @@ export function UserProfile() {
         </div>
       </div>
     </div>
+  );
+}
+
+function CircleAction({
+  username,
+  status,
+  busy,
+  onInvite,
+  onCancel,
+  onAccept,
+  onDecline,
+}: {
+  username: string;
+  status: PrayerCircleStatus;
+  busy: boolean;
+  onInvite: () => void;
+  onCancel: () => void;
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  if (status.state === "connected") {
+    return (
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-accent bg-accent/10 border border-accent/15">
+        <Check size={12} />
+        <span>In Prayer Circle</span>
+      </div>
+    );
+  }
+
+  if (status.state === "pending_sent") {
+    return (
+      <button
+        onClick={onCancel}
+        disabled={busy}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer disabled:opacity-60"
+        style={{
+          background: "rgba(var(--rgb-accent), 0.08)",
+          border: "1px solid rgba(var(--rgb-accent), 0.16)",
+          color: "rgb(var(--rgb-accent))",
+        }}
+        aria-label={`Cancel Prayer Circle invite to @${username}`}
+      >
+        <Clock size={12} />
+        <span>Invite sent</span>
+      </button>
+    );
+  }
+
+  if (status.state === "pending_received") {
+    return (
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={onAccept}
+          disabled={busy}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs text-text cursor-pointer disabled:opacity-60"
+          style={{ background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))" }}
+        >
+          <Check size={12} />
+          <span>Accept</span>
+        </button>
+        <button
+          onClick={onDecline}
+          disabled={busy}
+          className="w-7 h-7 rounded-full flex items-center justify-center text-text-dim bg-accent/6 border border-accent/10 cursor-pointer disabled:opacity-60"
+          aria-label={`Decline Prayer Circle invite from @${username}`}
+        >
+          <X size={12} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={onInvite}
+      disabled={busy}
+      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs transition-all cursor-pointer disabled:opacity-60"
+      style={{
+        background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
+        color: "rgb(var(--rgb-text))",
+      }}
+    >
+      <UserPlus size={12} />
+      <span>Invite to Prayer Circle</span>
+    </button>
   );
 }
 
@@ -191,4 +294,3 @@ function PrayerCard({ prayer }: { prayer: PrayerRequest }) {
     </div>
   );
 }
-

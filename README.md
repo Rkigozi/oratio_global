@@ -54,7 +54,7 @@ node node_modules/vite/bin/vite.js
 - **Prayer Feed**: Filterable feed with trending prayers, categories, search
 - **Submit Prayers**: Simple form with location, category, optional name
 - **User Profiles**: Track submitted prayers, prayed-for prayers, answered prayers
-- **Community Interactions**: "I Prayed" button, following users, sharing
+- **Community Interactions**: "I Prayed" button, mutual Prayer Circle invites, sharing
 - **Privacy-First**: No exact location storage (city/country only)
 
 ## Technology Stack
@@ -71,7 +71,7 @@ node node_modules/vite/bin/vite.js
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+ and npm/yarn/pnpm
+- Node.js 20+ and npm/yarn/pnpm
 - Modern browser with ES2022 support
 
 ### Installation
@@ -137,10 +137,10 @@ Oratio_Prototype_MVP/
 - ✅ Input validation (Zod schemas)
 - ✅ Privacy-first (approximate coordinates only)
 - ✅ Fonts loaded (DM Sans + Sora)
-- ✅ 41+ unit tests (validation, hashtags, data integrity)
+- ✅ 249 unit tests (validation, hashtags, data integrity, Supabase flows)
 
 ### v0.2 — Feedback & Hardening (Current)
-1. **Completed**: Supabase backend integration (map, feed, prayers, comments, follows, reports, auth)
+1. **Completed**: Supabase backend integration (map, feed, prayers, comments, Prayer Circle, reports, auth)
 2. **Completed**: Saved prayers persistence (cross-device)
 3. **Completed**: Sentry + PostHog monitoring
 4. **Completed**: CI/CD pipeline

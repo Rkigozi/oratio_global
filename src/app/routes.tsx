@@ -23,8 +23,7 @@ const Info = lazy(() => import("./pages/info/info").then(m => ({ default: m.Info
 const PrayerDetail = lazy(() => import("./pages/prayer/prayer-detail").then(m => ({ default: m.PrayerDetail })));
 const Moderate = lazy(() => import("./pages/moderate").then(m => ({ default: m.Moderate })));
 const UserProfile = lazy(() => import("./pages/profile/user-profile").then(m => ({ default: m.UserProfile })));
-const UserFollowing = lazy(() => import("./pages/profile/user-list").then(m => ({ default: m.UserFollowing })));
-const UserFollowers = lazy(() => import("./pages/profile/user-list").then(m => ({ default: m.UserFollowers })));
+const PrayerCircle = lazy(() => import("./pages/profile/prayer-circle").then(m => ({ default: m.PrayerCircle })));
 const NotFound = lazy(() => import("./pages/not-found").then(m => ({ default: m.NotFound })));
 
 function SuspenseWrapper({ Component }: { Component: React.LazyExoticComponent<() => React.ReactNode> }) {
@@ -54,8 +53,6 @@ export const router = createBrowserRouter([
       { path: "/prayer/:id", element: <SuspenseWrapper Component={PrayerDetail} /> },
       { path: "/moderate", element: <SuspenseWrapper Component={Moderate} /> },
       { path: "/user/:name", element: <SuspenseWrapper Component={UserProfile} /> },
-      { path: "/user/:name/following", element: <SuspenseWrapper Component={UserFollowing} /> },
-      { path: "/user/:name/followers", element: <SuspenseWrapper Component={UserFollowers} /> },
 
       {
         path: "/",
@@ -65,6 +62,7 @@ export const router = createBrowserRouter([
           { path: "feed", element: <SuspenseWrapper Component={Feed} /> },
           { path: "submit", element: <SuspenseWrapper Component={Submit} /> },
           { path: "profile", element: <SuspenseWrapper Component={Profile} /> },
+          { path: "profile/circle", element: <SuspenseWrapper Component={PrayerCircle} /> },
           { path: "profile/submitted", element: <SuspenseWrapper Component={ProfileSubmitted} /> },
           { path: "profile/prayed", element: <SuspenseWrapper Component={ProfilePrayed} /> },
           { path: "profile/saved", element: <SuspenseWrapper Component={ProfileSaved} /> },

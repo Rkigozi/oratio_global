@@ -10,6 +10,7 @@ build/
 out/
 .next/
 .server/
+outputs/
 
 # Environment variables
 .env

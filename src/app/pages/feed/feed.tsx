@@ -7,7 +7,7 @@ import type { PrayerRequest } from '../../services/prayer-data';
 import { FeedCard } from "../../components/feed/feed-card";
 import { getHashtagCounts } from '../../services/hashtags';
 import { useGeolocation } from '../../hooks/use-geolocation';
-import { getFeedPrayers, searchUsers, togglePray, getFollowingIds, getMyPrayedIds, getMySavedIds } from '../../services/supabase-queries';
+import { getFeedPrayers, searchUsers, togglePray, getPrayerCircleUsernames, getMyPrayedIds, getMySavedIds } from '../../services/supabase-queries';
 import { LoadingSpinner, ErrorState } from "../../components/loading-spinner";
 import { captureEvent } from "../../../lib/analytics";
 
@@ -33,8 +33,8 @@ export function Feed() {
 
   const [showSaved, setShowSaved] = useState(false);
   const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [showFollowing, setShowFollowing] = useState(false);
-  const [followingIds, setFollowingIds] = useState<string[]>([]);
+  const [showPrayerCircle, setShowPrayerCircle] = useState(false);
+  const [prayerCircleUsernames, setPrayerCircleUsernames] = useState<string[]>([]);
   const searchParamActive = searchParams.get("search") || "";
   const [searchQuery, setSearchQuery] = useState(searchParamActive);
   const [activeSearch, setActiveSearch] = useState(searchParamActive);
@@ -125,19 +125,19 @@ export function Feed() {
 
   const trendingHashtags = useMemo(() => getHashtagCounts(prayers), [prayers]);
 
-  // Load following list, prayed IDs, and saved IDs from Supabase
+  // Load Prayer Circle list, prayed IDs, and saved IDs from Supabase
   useEffect(() => {
     let active = true;
 
     const loadUserState = async () => {
-      const [following, prayed, saved] = await Promise.all([
-        getFollowingIds(),
+      const [circleUsernames, prayed, saved] = await Promise.all([
+        getPrayerCircleUsernames(),
         getMyPrayedIds(),
         getMySavedIds(),
       ]);
 
       if (!active) return;
-      setFollowingIds(following);
+      setPrayerCircleUsernames(circleUsernames);
       setPrayedIds(prayed);
       setSavedIds(saved);
     };
@@ -246,9 +246,9 @@ export function Feed() {
       result = result.filter((p) => savedIds.includes(p.id));
     }
 
-    // Following filter
-    if (showFollowing && followingIds.length > 0) {
-      result = result.filter((p) => p.username && followingIds.includes(p.username));
+    // Prayer Circle filter
+    if (showPrayerCircle && prayerCircleUsernames.length > 0) {
+      result = result.filter((p) => p.username && prayerCircleUsernames.includes(p.username));
     }
 
     // Search filter
@@ -263,7 +263,7 @@ export function Feed() {
     }
 
     return result;
-  }, [prayers, locationCity, locationCountry, showSaved, savedIds, showFollowing, followingIds, activeSearch]);
+  }, [prayers, locationCity, locationCountry, showSaved, savedIds, showPrayerCircle, prayerCircleUsernames, activeSearch]);
 
   // All filtered prayers are rendered (server-side pagination)
   const visiblePrayers = filteredPrayers;
@@ -301,7 +301,7 @@ export function Feed() {
     };
 
     void reload();
-  }, [loadPrayers, locationCity, locationCountry, showSaved, showFollowing]);
+  }, [loadPrayers, locationCity, locationCountry, showSaved, showPrayerCircle]);
 
   const togglePrayed = useCallback((id: string) => {
     setPrayedIds((prev) => {
@@ -357,12 +357,12 @@ export function Feed() {
         <div className="px-5 mb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
           {/* All */}
           <button
-            onClick={() => { setSearchParams({}); setShowSaved(false); }}
+            onClick={() => { setSearchParams({}); setShowSaved(false); setShowPrayerCircle(false); }}
             className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
             style={{
-              background: !hasLocationFilter && !showSaved ? "rgba(var(--rgb-accent), 0.12)" : "rgba(var(--rgb-accent), 0.04)",
-              border: !hasLocationFilter && !showSaved ? "1px solid rgba(var(--rgb-accent), 0.2)" : "1px solid rgba(var(--rgb-accent), 0.06)",
-              color: !hasLocationFilter && !showSaved ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-muted))",
+              background: !hasLocationFilter && !showSaved && !showPrayerCircle ? "rgba(var(--rgb-accent), 0.12)" : "rgba(var(--rgb-accent), 0.04)",
+              border: !hasLocationFilter && !showSaved && !showPrayerCircle ? "1px solid rgba(var(--rgb-accent), 0.2)" : "1px solid rgba(var(--rgb-accent), 0.06)",
+              color: !hasLocationFilter && !showSaved && !showPrayerCircle ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-muted))",
             }}
           >
             All
@@ -394,18 +394,18 @@ export function Feed() {
             </button>
           )}
 
-          {/* Following */}
+          {/* Prayer Circle */}
           <button
-            onClick={() => setShowFollowing(!showFollowing)}
+            onClick={() => setShowPrayerCircle(!showPrayerCircle)}
             className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
             style={{
-              background: showFollowing ? "rgba(var(--rgb-accent), 0.12)" : "rgba(var(--rgb-accent), 0.04)",
-              border: showFollowing ? "1px solid rgba(var(--rgb-accent), 0.2)" : "1px solid rgba(var(--rgb-accent), 0.06)",
-              color: showFollowing ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-muted))",
-              opacity: followingIds.length === 0 ? 0.5 : 1,
+              background: showPrayerCircle ? "rgba(var(--rgb-accent), 0.12)" : "rgba(var(--rgb-accent), 0.04)",
+              border: showPrayerCircle ? "1px solid rgba(var(--rgb-accent), 0.2)" : "1px solid rgba(var(--rgb-accent), 0.06)",
+              color: showPrayerCircle ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-muted))",
+              opacity: prayerCircleUsernames.length === 0 ? 0.5 : 1,
             }}
           >
-            Following
+            Prayer Circle
           </button>
 
           {/* Saved */}
