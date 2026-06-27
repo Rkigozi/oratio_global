@@ -36,9 +36,11 @@
     <script>
       (function () {
         try {
-          var theme = localStorage.getItem("oratio_theme");
-          if (theme !== "light" && theme !== "dark") theme = "dark";
-          var color = theme === "light" ? "#F8F9FC" : "#0A1A3A";
+          var mode = localStorage.getItem("oratio_theme");
+          if (mode !== "system" && mode !== "light" && mode !== "dark") mode = "system";
+          var systemLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+          var theme = mode === "system" ? (systemLight ? "light" : "dark") : mode;
+          var color = theme === "light" ? "#F0F3F9" : "#0A1A3A";
           document.documentElement.setAttribute("data-theme", theme);
           document.documentElement.style.setProperty("--oratio-page-bg", color);
           document.documentElement.style.backgroundColor = color;

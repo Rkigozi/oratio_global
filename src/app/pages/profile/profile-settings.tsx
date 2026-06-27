@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Bell, Globe, MessageCircle, Shield, Trash2, AlertTriangle, Sun, Moon } from "lucide-react";
+import { Bell, Globe, MessageCircle, Shield, Trash2, AlertTriangle, Sun, Moon, Monitor } from "lucide-react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
 import { useAuth } from '../../hooks/auth-context';
-import { useTheme } from '../../hooks/theme-context';
+import { useTheme, type ThemeMode } from '../../hooks/theme-context';
 import {
   getProfilePreferences,
   updateProfilePreferences,
@@ -23,12 +23,22 @@ const languages = [
   { value: "it", label: "Italian" },
 ];
 
+const appearanceOptions: Array<{
+  value: ThemeMode;
+  label: string;
+  icon: typeof Monitor;
+}> = [
+  { value: "system", label: "System", icon: Monitor },
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+];
+
 export function ProfileSettings() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [prefs, setPrefs] = useState<ProfilePreferences | null>(null);
   const [loading, setLoading] = useState(true);
-  const { theme, toggleTheme } = useTheme();
+  const { themeMode, setThemeMode } = useTheme();
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -94,15 +104,34 @@ export function ProfileSettings() {
           {/* Appearance */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
-              {theme === "dark" ? <Sun size={14} className="text-text-dim" /> : <Moon size={14} className="text-text-dim" />}
+              <Monitor size={14} className="text-text-dim" />
               <p className="text-text-muted text-xs uppercase tracking-[0.15em]">Appearance</p>
             </div>
-            <ToggleRow
-              icon={theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
-              label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              enabled={theme === "light"}
-              onChange={toggleTheme}
-            />
+            <div
+              className="grid grid-cols-3 gap-1 rounded-xl border border-accent/8 p-1"
+              style={{ background: "rgba(var(--rgb-surface), 0.5)" }}
+            >
+              {appearanceOptions.map(({ value, label, icon: Icon }) => {
+                const active = themeMode === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setThemeMode(value)}
+                    className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all"
+                    style={{
+                      background: active ? "rgba(var(--rgb-accent), 0.16)" : "transparent",
+                      color: active ? "rgb(var(--rgb-text))" : "rgb(var(--rgb-text-muted))",
+                      boxShadow: active ? "0 4px 14px rgba(var(--rgb-accent-dark), 0.12)" : "none",
+                    }}
+                    aria-pressed={active}
+                  >
+                    <Icon size={13} />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Notifications */}

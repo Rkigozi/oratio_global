@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 
 type Theme = "dark" | "light";
+export type ThemeMode = Theme | "system";
 
 const themeColors: Record<Theme, string> = {
   dark: "#0A1A3A",
@@ -9,20 +10,43 @@ const themeColors: Record<Theme, string> = {
 
 interface ThemeState {
   theme: Theme;
+  themeMode: ThemeMode;
+  setThemeMode: (themeMode: ThemeMode) => void;
   toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeState>({
   theme: "dark",
+  themeMode: "system",
+  setThemeMode: () => {},
   toggleTheme: () => {},
 });
 
-function getStoredTheme(): Theme {
+function isThemeMode(value: unknown): value is ThemeMode {
+  return value === "system" || value === "light" || value === "dark";
+}
+
+function getSystemTheme(): Theme {
   try {
-    const stored = localStorage.getItem("oratio_theme");
-    if (stored === "light" || stored === "dark") return stored;
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: light)").matches) {
+      return "light";
+    }
   } catch { /* empty */ }
   return "dark";
+}
+
+function getStoredThemeMode(): ThemeMode {
+  try {
+    const stored = localStorage.getItem("oratio_theme");
+    if (isThemeMode(stored)) return stored;
+  } catch { /* empty */ }
+  return "system";
+}
+
+function storeThemeMode(themeMode: ThemeMode) {
+  try {
+    localStorage.setItem("oratio_theme", themeMode);
+  } catch { /* empty */ }
 }
 
 function applyTheme(theme: Theme) {
@@ -43,7 +67,9 @@ async function getSupabaseClient() {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => getStoredTheme());
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => getStoredThemeMode());
+  const [systemTheme, setSystemTheme] = useState<Theme>(() => getSystemTheme());
+  const theme: Theme = themeMode === "system" ? systemTheme : themeMode;
 
   useEffect(() => {
     applyTheme(theme);
@@ -67,8 +93,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (!active || !data?.preferences || typeof data.preferences !== "object") return;
 
       const prefs = data.preferences as Record<string, unknown>;
-      if (prefs.theme === "light" || prefs.theme === "dark") {
-        setTheme(prefs.theme);
+      if (isThemeMode(prefs.theme)) {
+        setThemeModeState(prefs.theme);
+        storeThemeMode(prefs.theme);
       }
     };
 
@@ -81,20 +108,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Listen for system theme changes
   useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+
     const mq = window.matchMedia("(prefers-color-scheme: light)");
     const handler = (e: MediaQueryListEvent) => {
-      // Only apply system theme if user hasn't set a preference
-      if (!localStorage.getItem("oratio_theme")) {
-        const t: Theme = e.matches ? "light" : "dark";
-        setTheme(t);
-        applyTheme(t);
-      }
+      setSystemTheme(e.matches ? "light" : "dark");
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  const syncThemePreference = useCallback((next: Theme) => {
+  const syncThemePreference = useCallback((next: ThemeMode) => {
     const sync = async () => {
       const supabase = await getSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -113,19 +137,24 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     void sync();
   }, []);
 
+  const setThemeMode = useCallback((next: ThemeMode) => {
+    setThemeModeState(next);
+    storeThemeMode(next);
+    syncThemePreference(next);
+  }, [syncThemePreference]);
+
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const next: Theme = prev === "dark" ? "light" : "dark";
-      try {
-        localStorage.setItem("oratio_theme", next);
-      } catch { /* empty */ }
+    setThemeModeState((prev) => {
+      const currentTheme: Theme = prev === "system" ? getSystemTheme() : prev;
+      const next: Theme = currentTheme === "dark" ? "light" : "dark";
+      storeThemeMode(next);
       syncThemePreference(next);
       return next;
     });
   }, [syncThemePreference]);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, themeMode, setThemeMode, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

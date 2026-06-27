@@ -18,20 +18,34 @@ vi.mock("../services/supabase", () => ({
 }));
 
 describe("ThemeProvider", () => {
+  const matchMediaMock = vi.fn();
+
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.removeAttribute("data-theme");
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: matchMediaMock,
+    });
+    matchMediaMock.mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
     vi.clearAllMocks();
   });
 
-  it("provides default dark theme", () => {
+  it("defaults to system mode with resolved dark theme", () => {
     const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+    expect(result.current.themeMode).toBe("system");
     expect(result.current.theme).toBe("dark");
   });
 
-  it("reads stored theme from localStorage", () => {
+  it("reads stored theme mode from localStorage", () => {
     localStorage.setItem("oratio_theme", "light");
     const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+    expect(result.current.themeMode).toBe("light");
     expect(result.current.theme).toBe("light");
   });
 
@@ -48,6 +62,7 @@ describe("ThemeProvider", () => {
       result.current.toggleTheme();
     });
 
+    expect(result.current.themeMode).toBe("light");
     expect(result.current.theme).toBe("light");
     expect(localStorage.getItem("oratio_theme")).toBe("light");
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
@@ -62,12 +77,28 @@ describe("ThemeProvider", () => {
       result.current.toggleTheme();
     });
 
+    expect(result.current.themeMode).toBe("dark");
     expect(result.current.theme).toBe("dark");
     expect(localStorage.getItem("oratio_theme")).toBe("dark");
   });
 
+  it("can explicitly follow the light system theme", () => {
+    matchMediaMock.mockImplementation((query: string) => ({
+      matches: query === "(prefers-color-scheme: light)",
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+
+    const { result } = renderHook(() => useTheme(), { wrapper: ThemeProvider });
+
+    expect(result.current.themeMode).toBe("system");
+    expect(result.current.theme).toBe("light");
+  });
+
   it("returns default theme when used outside provider", () => {
     const { result } = renderHook(() => useTheme());
+    expect(result.current.themeMode).toBe("system");
     expect(result.current.theme).toBe("dark");
   });
 });
