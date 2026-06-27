@@ -468,7 +468,12 @@ export function Profile() {
                   Cancel
                 </button>
                 <button onClick={handleSaveProfile}
-                  className="flex-1 py-3.5 rounded-full text-sm text-white bg-[linear-gradient(135deg,var(--rgb-accent),var(--rgb-accent-dark))] cursor-pointer"
+                  className="flex-1 py-3.5 rounded-full text-sm font-semibold cursor-pointer active:scale-[0.98] transition-transform"
+                  style={{
+                    background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
+                    color: "#fff",
+                    boxShadow: "0 10px 24px rgba(var(--rgb-accent), 0.24)",
+                  }}
                 >
                   Save Changes
                 </button>
