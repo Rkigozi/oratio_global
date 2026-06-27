@@ -15,17 +15,22 @@ import { useAuth } from '../../hooks/auth-context';
 import { uploadAvatar, getInitialAvatarUrl } from '../../services/upload';
 import { getPrayerCircleCount, updateProfile, getMyProfile, getMyPrayers, getMyPrayedForPrayers } from '../../services/supabase-queries';
 import { useGeolocation } from '../../hooks/use-geolocation';
+
+type ProfileDetails = {
+  username: string;
+  displayName: string;
+  display_name?: string;
+  bio?: string;
+  location?: string;
+  photo?: string;
+};
+
 export function Profile() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const [profile, setProfile] = useState<{
-    username: string;
-    displayName: string;
-    display_name?: string;
-    bio?: string;
-    location?: string;
-    photo?: string;
-  }>({ username: "", displayName: "" });
+  const [profile, setProfile] = useState<ProfileDetails | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
   // Load profile from Supabase on mount
@@ -33,9 +38,26 @@ export function Profile() {
     let active = true;
 
     const loadProfile = async () => {
-      if (!user?.id) return;
+      await Promise.resolve();
+      if (!active) return;
+
+      if (!user?.id) {
+        setProfile(null);
+        setProfileLoading(false);
+        return;
+      }
+
+      setProfileLoading(true);
+      setProfileLoadFailed(false);
       const supabaseProfile = await getMyProfile();
-      if (!active || !supabaseProfile) return;
+      if (!active) return;
+
+      if (!supabaseProfile) {
+        setProfile(null);
+        setProfileLoadFailed(true);
+        setProfileLoading(false);
+        return;
+      }
 
       setProfile({
         username: supabaseProfile.username,
@@ -45,6 +67,7 @@ export function Profile() {
         location: supabaseProfile.location || "",
         photo: supabaseProfile.avatar_url || undefined,
       });
+      setProfileLoading(false);
     };
 
     void loadProfile();
@@ -85,8 +108,8 @@ export function Profile() {
   const [editError, setEditError] = useState<string>("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const username = profile.username || "anonymous";
-  const displayName = profile.displayName || username;
+  const username = profile?.username || "";
+  const displayName = profile?.displayName || username;
 
   const [circleCount, setCircleCount] = useState(0);
 
@@ -115,7 +138,7 @@ export function Profile() {
       const url = await uploadAvatar(file);
       if (url && user?.id) {
         await updateProfile({ avatar_url: url });
-        setProfile(prev => ({ ...prev, photo: url }));
+        setProfile(prev => prev ? ({ ...prev, photo: url }) : prev);
       }
     } finally {
       setUploadingPhoto(false);
@@ -125,7 +148,7 @@ export function Profile() {
   // Initialize edit drawer fields
   useEffect(() => {
     const syncEditFields = () => {
-      if (!editOpen) return;
+      if (!editOpen || !profile) return;
       setNewDisplayName(profile.displayName);
       setNewBio(profile.bio || "");
       setNewLocation(profile.location || "");
@@ -133,7 +156,7 @@ export function Profile() {
     };
 
     syncEditFields();
-  }, [editOpen, profile.displayName, profile.username, profile.bio, profile.location]);
+  }, [editOpen, profile]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -141,6 +164,7 @@ export function Profile() {
   };
 
   const handleSaveProfile = () => {
+    if (!profile) return;
     setEditError("");
     const trimmedDisplayName = newDisplayName.trim();
 
@@ -162,9 +186,37 @@ export function Profile() {
       });
     }
 
-    setProfile(prev => ({ ...prev, displayName: trimmedDisplayName || prev.username, bio: newBio.trim(), location: newLocation.trim() }));
+    setProfile(prev => prev ? ({
+      ...prev,
+      displayName: trimmedDisplayName || prev.username,
+      bio: newBio.trim(),
+      location: newLocation.trim(),
+    }) : prev);
     setEditOpen(false);
   };
+
+  if (profileLoading) {
+    return <ProfileLoadingState />;
+  }
+
+  if (profileLoadFailed || !profile) {
+    return (
+      <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
+        <div className="relative z-10 px-5 overflow-y-auto overflow-x-hidden flex-1 h-full pt-24 pb-28">
+          <div className="max-w-md mx-auto text-center py-16">
+            <p className="text-text-muted text-sm mb-2">We could not load your profile.</p>
+            <p className="text-text-dim text-xs mb-5">Please refresh and try again.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
@@ -425,6 +477,50 @@ export function Profile() {
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
+    </div>
+  );
+}
+
+function ProfileLoadingState() {
+  return (
+    <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div className="relative z-10 px-5 overflow-y-auto overflow-x-hidden flex-1 h-full pt-24 pb-28">
+        <div className="max-w-md mx-auto">
+          <div className="flex items-start gap-4 mb-6 animate-pulse">
+            <div className="w-20 h-20 rounded-full bg-accent/10 flex-shrink-0" />
+            <div className="flex-1 min-w-0 pt-1">
+              <div className="h-5 w-36 rounded-full bg-accent/10 mb-2" />
+              <div className="h-3 w-24 rounded-full bg-accent/8 mb-4" />
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-accent/8" />
+                <div className="w-10 h-10 rounded-full bg-accent/8" />
+                <div className="w-10 h-10 rounded-full bg-accent/8" />
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="flex justify-center gap-6 mb-6 py-3 rounded-xl animate-pulse"
+            style={{ background: "rgba(var(--rgb-surface), 0.4)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
+          >
+            <div className="h-8 w-12 rounded-lg bg-accent/8" />
+            <div className="h-8 w-12 rounded-lg bg-accent/8" />
+            <div className="w-px bg-accent/10" />
+            <div className="h-8 w-20 rounded-lg bg-accent/8" />
+          </div>
+
+          <div
+            className="w-full rounded-xl px-4 py-3 mb-6 animate-pulse"
+            style={{
+              background: "linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))",
+              border: "1px solid rgba(var(--rgb-accent), 0.08)",
+            }}
+          >
+            <div className="h-4 w-32 rounded-full bg-accent/10 mb-2" />
+            <div className="h-3 w-56 rounded-full bg-accent/8" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
