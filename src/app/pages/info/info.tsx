@@ -8,7 +8,7 @@ import {
   Globe,
   Bell,
   Users,
-  LogIn,
+  Smartphone,
   Mail,
 } from "lucide-react";
 import { subscribeToWaitlist } from '../../services/supabase-queries';
@@ -16,15 +16,15 @@ import { subscribeToWaitlist } from '../../services/supabase-queries';
 const roadmapItems = [
   {
     icon: Users,
-    label: "Prayer Circles",
-    desc: "Mutual, request-based connections for people you want to keep praying with over time.",
-    status: "next" as const,
+    label: "Prayer Circle",
+    desc: "Mutual, request-based connections are live in beta. Invite, accept, decline, or remove at any time.",
+    status: "live" as const,
   },
   {
-    icon: LogIn,
-    label: "Cross-Device Accounts",
-    desc: "Sign in across devices with Supabase auth — no more localStorage boundaries.",
-    status: "planned" as const,
+    icon: Smartphone,
+    label: "PWA Polish",
+    desc: "We are testing the home-screen app experience, startup feel, navigation, and light/dark mode clarity.",
+    status: "qa" as const,
   },
   {
     icon: Bell,
@@ -47,7 +47,8 @@ const roadmapItems = [
 ];
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; text: string; label: string }> = {
-    next: { bg: "rgba(var(--rgb-accent), 0.12)", text: "rgb(var(--rgb-accent))", label: "Next" },
+    live: { bg: "rgba(var(--rgb-success), 0.12)", text: "rgb(var(--rgb-success))", label: "Live Beta" },
+    qa: { bg: "rgba(var(--rgb-accent), 0.12)", text: "rgb(var(--rgb-accent))", label: "In QA" },
     planned: { bg: "rgba(167,139,250,0.12)", text: "#a78bfa", label: "Planned" },
     future: { bg: "rgba(var(--rgb-success), 0.1)", text: "rgb(var(--rgb-success))", label: "Future" },
   };
@@ -103,20 +104,20 @@ export function Info() {
               }}
             >
               <p className="text-text-secondary text-sm leading-relaxed mb-3">
-                You&apos;re using the Oratio beta — a working version of the app built for real use. We&apos;re still improving, so things may evolve.
+                You&apos;re using the Oratio V1 beta — a working release of the app built for real prayer, real feedback, and careful smoke testing.
               </p>
               <ul className="space-y-2 text-text-muted text-xs">
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Your prayers and profile are saved to your account. Sign in to access them from any device.</span>
+                  <span>Your prayers, profile, saved prayers, and Prayer Circle are saved to your account.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>All prayers in the feed are from real users. Your prayer joins the global community.</span>
+                  <span>Prayer Circle is mutual. People only appear there after an invite is accepted.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Your feedback shapes what comes next — share it with us.</span>
+                  <span>Some details may change while we test performance, PWA behaviour, and release readiness.</span>
                 </li>
               </ul>
             </div>
@@ -133,7 +134,7 @@ export function Info() {
             <div className="flex items-center gap-2 mb-4">
               <Route size={16} className="text-accent" />
               <h2 className="text-text font-heading text-sm font-light">
-                What&apos;s Coming Next
+                What We&apos;re Testing
               </h2>
             </div>
             <div className="space-y-2.5">
@@ -189,11 +190,11 @@ export function Info() {
               }}
             >
                <p className="text-text-secondary text-sm leading-relaxed mb-3">
-                We&apos;ll save your interest locally — real email subscription coming with accounts.
+                Leave your email and we&apos;ll keep you updated as Oratio moves from beta toward launch.
               </p>
               {subscribed ? (
                 <div className="text-center">
-                  <p className="text-accent text-sm py-2">You&apos;re on the list! 🙏</p>
+                  <p className="text-accent text-sm py-2">You&apos;re on the list.</p>
                   <button
                     onClick={() => { setSubscribed(false); setEmail(""); }}
                     className="text-text-dim text-[10px] hover:text-text-muted transition-colors cursor-pointer"

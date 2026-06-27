@@ -14,6 +14,12 @@
   padding-bottom: var(--bottom-nav-safe-bottom);
 }
 
+[data-theme="light"] .bottom-nav-safe {
+  background: rgba(var(--rgb-surface-elevated), 0.94);
+  border-top-color: rgba(var(--rgb-text-faint), 0.34);
+  box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.06);
+}
+
 .bottom-nav-inner {
   height: 52px;
 }

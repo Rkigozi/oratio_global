@@ -95,27 +95,27 @@
 
 /* ── Light theme ── */
 [data-theme="light"] {
-  --rgb-bg: 248, 249, 252;
-  --rgb-surface: 255, 255, 255;
-  --rgb-surface-hover: 243, 244, 248;
+  --rgb-bg: 240, 243, 249;
+  --rgb-surface: 252, 253, 255;
+  --rgb-surface-hover: 233, 237, 246;
   --rgb-surface-elevated: 255, 255, 255;
   --rgb-overlay: 255, 255, 255;
 
-  --rgb-text: 30, 30, 40;
-  --rgb-text-secondary: 70, 72, 90;
-  --rgb-text-muted: 120, 125, 145;
-  --rgb-text-dim: 160, 165, 180;
-  --rgb-text-faint: 200, 204, 215;
+  --rgb-text: 24, 27, 42;
+  --rgb-text-secondary: 54, 59, 78;
+  --rgb-text-muted: 86, 94, 118;
+  --rgb-text-dim: 112, 122, 146;
+  --rgb-text-faint: 160, 169, 190;
 
-  --rgb-accent: 80, 100, 220;
-  --rgb-accent-dark: 60, 78, 190;
-  --rgb-accent-light: 110, 128, 240;
+  --rgb-accent: 72, 92, 214;
+  --rgb-accent-dark: 54, 72, 184;
+  --rgb-accent-light: 103, 124, 236;
 
   --rgb-danger: 220, 60, 60;
   --rgb-warning: 200, 150, 20;
   --rgb-success: 50, 180, 130;
 
-  --rgb-map-bg: 232, 236, 240;
+  --rgb-map-bg: 226, 232, 240;
 }
 
 /* ── Tailwind v4 theme variables ── */

@@ -4,7 +4,7 @@ type Theme = "dark" | "light";
 
 const themeColors: Record<Theme, string> = {
   dark: "#0A1A3A",
-  light: "#F8F9FC",
+  light: "#F0F3F9",
 };
 
 interface ThemeState {
