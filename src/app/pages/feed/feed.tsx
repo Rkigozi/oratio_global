@@ -101,6 +101,9 @@ export function Feed() {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
 
   const loadPrayers = useCallback(async () => {
     setLoading(true);
@@ -108,6 +111,8 @@ export function Feed() {
     try {
       const data = await getFeedPrayers();
       setPrayers(data);
+      setCursor(data.length > 0 ? data[data.length - 1].createdAt : undefined);
+      setHasMore(data.length >= 20);
     } catch {
       setError("Failed to load prayers");
     }
@@ -118,9 +123,6 @@ export function Feed() {
     try { return !localStorage.getItem("oratio_feed_visited"); } catch { return true; }
   });
   const [prayedIds, setPrayedIds] = useState<string[]>([]);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const trendingHashtags = useMemo(() => getHashtagCounts(prayers), [prayers]);
@@ -280,7 +282,10 @@ export function Feed() {
           getFeedPrayers(cursor, 20).then((data) => {
             if (data.length < 20) setHasMore(false);
             if (data.length > 0) setCursor(data[data.length - 1].createdAt);
-            setPrayers((prev) => [...prev, ...data]);
+            setPrayers((prev) => {
+              const existingIds = new Set(prev.map((prayer) => prayer.id));
+              return [...prev, ...data.filter((prayer) => !existingIds.has(prayer.id))];
+            });
             setLoadingMore(false);
           }).catch(() => setLoadingMore(false));
         }

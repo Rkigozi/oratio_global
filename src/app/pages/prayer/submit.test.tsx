@@ -166,6 +166,65 @@ describe("Submit", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows an error instead of success when saving fails", async () => {
+    vi.mocked(createPrayerRequest).mockResolvedValueOnce(null);
+
+    render(
+      <MemoryRouter>
+        <Submit />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(
+      screen.getByPlaceholderText(/share what's on your heart/i),
+      { target: { value: "Please heal my family and bring peace to us all" } }
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Submit Prayer Request"));
+    });
+
+    await vi.waitFor(() => {
+      expect(screen.getByText(/couldn't save this prayer/i)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText("Prayer Request Submitted")).not.toBeInTheDocument();
+  });
+
+  it("uses approximate coordinates for manually entered locations", async () => {
+    render(
+      <MemoryRouter>
+        <Submit />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByLabelText(/auto-detect/i));
+    fireEvent.change(screen.getByPlaceholderText("City"), {
+      target: { value: "London" },
+    });
+    fireEvent.change(screen.getByDisplayValue("Country"), {
+      target: { value: "United Kingdom" },
+    });
+    fireEvent.change(
+      screen.getByPlaceholderText(/share what's on your heart/i),
+      { target: { value: "Please heal my family and bring peace to us all" } }
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Submit Prayer Request"));
+    });
+
+    await vi.waitFor(() => {
+      expect(createPrayerRequest).toHaveBeenCalled();
+    });
+
+    const callArg = vi.mocked(createPrayerRequest).mock.calls[0][0];
+    expect(callArg.city).toBe("London");
+    expect(callArg.country).toBe("United Kingdom");
+    expect(callArg.lat).not.toBe(0);
+    expect(callArg.lng).not.toBe(0);
+  });
+
   it("toggles anonymous mode", () => {
     render(
       <MemoryRouter>

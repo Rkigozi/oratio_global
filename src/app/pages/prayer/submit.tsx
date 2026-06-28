@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Send, Check, Share2, MapPin, RefreshCw, Loader } from "lucide-react";
-import { countries } from '../../services/prayer-data';
+import { countries, getApproximateCoordinates } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { useNavigate } from "react-router";
 import { validatePrayerSubmission, sanitizePrayerText } from "../../../lib/validation";
@@ -27,6 +27,23 @@ export function Submit() {
   const [useAutoLocation, setUseAutoLocation] = useState(true);
 
   const { user, profile } = useAuth();
+
+  const getSubmissionCoordinates = () => {
+    if (useAutoLocation && geoLocation) {
+      return {
+        lat: Math.round(geoLocation.lat * 10) / 10,
+        lng: Math.round(geoLocation.lng * 10) / 10,
+      };
+    }
+
+    const cityValue = city.trim();
+    const countryValue = country.trim();
+    if (cityValue || countryValue) {
+      return getApproximateCoordinates(cityValue || "Unknown", countryValue || "Unknown");
+    }
+
+    return { lat: 0, lng: 0 };
+  };
 
   // Load default comment preference from profile settings
   useEffect(() => {
@@ -80,33 +97,40 @@ export function Submit() {
         return;
       }
 
+      if (!user) {
+        setErrors({ general: "Please sign in again before submitting a prayer." });
+        return;
+      }
+
       const sanitizedText = sanitizePrayerText(text.trim());
       const displayUsername = anonymous ? undefined : (profile?.username || user?.email || undefined);
       const displayNameVal = anonymous ? undefined : (profile?.display_name || undefined);
 
-      // Round to ~11km (0.1°) for privacy
-      const approxLat = geoLocation?.lat ? Math.round(geoLocation.lat * 10) / 10 : 0;
-      const approxLng = geoLocation?.lng ? Math.round(geoLocation.lng * 10) / 10 : 0;
+      const { lat, lng } = getSubmissionCoordinates();
 
       // Submit to Supabase
-      let supabaseId: string | null = null;
-      if (user) {
-        supabaseId = await createPrayerRequest({
-          text: sanitizedText,
-          city: city.trim() || "Unknown",
-          country: country.trim() || "Unknown",
-          lat: approxLat,
-          lng: approxLng,
+      const supabaseId = await createPrayerRequest({
+        text: sanitizedText,
+        city: city.trim() || "Unknown",
+        country: country.trim() || "Unknown",
+        lat,
+        lng,
         name: displayNameVal,
         displayName: displayNameVal,
         username: displayUsername,
         prayerCount: 0,
         commentsEnabled,
       });
+
+      if (!supabaseId) {
+        setErrors({
+          general: "We couldn't save this prayer. Please wait a moment and try again.",
+        });
+        return;
       }
 
       const newPrayer: PrayerRequest = {
-        id: supabaseId || `new-${Date.now()}`,
+        id: supabaseId,
         city: city.trim() || "Unknown",
         country: country.trim() || "Unknown",
         text: sanitizedText,
@@ -114,8 +138,8 @@ export function Submit() {
         displayName: displayNameVal,
         username: displayUsername,
         prayerCount: 0,
-        lat: approxLat,
-        lng: approxLng,
+        lat,
+        lng,
         createdAt: new Date().toISOString(),
         commentsEnabled,
       };
@@ -137,6 +161,7 @@ export function Submit() {
   const resetForm = () => {
     setText("");
     setAnonymous(false);
+    setErrors({});
     setSubmitted(false);
   };
 
@@ -348,6 +373,12 @@ export function Submit() {
               </div>
 
               {/* Submit button */}
+              {errors.general && (
+                <p className="text-danger text-xs text-center leading-relaxed" role="alert">
+                  {errors.general}
+                </p>
+              )}
+
               <button
                 type="submit"
                 disabled={!text.trim() || submitting}
