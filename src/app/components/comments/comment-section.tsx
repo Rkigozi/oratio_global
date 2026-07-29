@@ -94,14 +94,20 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
     let active = true;
     let refreshTimer: number | undefined;
 
-    const unsubscribe = subscribeToPrayerCommentChanges(prayer.id, () => {
-      if (refreshTimer) window.clearTimeout(refreshTimer);
+    let unsubscribe = () => {};
 
-      refreshTimer = window.setTimeout(() => {
-        if (!active) return;
-        void loadComments(Math.max(PAGE_SIZE, loadedLimitRef.current));
-      }, 250);
-    });
+    try {
+      unsubscribe = subscribeToPrayerCommentChanges(prayer.id, () => {
+        if (refreshTimer) window.clearTimeout(refreshTimer);
+
+        refreshTimer = window.setTimeout(() => {
+          if (!active) return;
+          void loadComments(Math.max(PAGE_SIZE, loadedLimitRef.current));
+        }, 250);
+      });
+    } catch {
+      // Realtime comments are enhancement-only; initial load and manual refresh still work.
+    }
 
     return () => {
       active = false;

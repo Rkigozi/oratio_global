@@ -26,6 +26,7 @@ import {
   createComment,
   updateComment,
   deleteComment,
+  subscribeToPrayerCommentChanges,
 } from '../../services/supabase-queries';
 import { useAuth } from '../../hooks/auth-context';
 
@@ -75,6 +76,18 @@ describe('CommentSection', () => {
 
     const text = await screen.findByText(/No comments yet/);
     expect(text).toBeTruthy();
+  });
+
+  it('still renders when realtime comments fail to subscribe', async () => {
+    vi.mocked(getComments).mockResolvedValue([]);
+    vi.mocked(getCommentCount).mockResolvedValue(0);
+    vi.mocked(subscribeToPrayerCommentChanges).mockImplementationOnce(() => {
+      throw new Error('Realtime unavailable');
+    });
+
+    render(<CommentSection prayer={mockPrayer} commentCount={0} onCommentCountChange={vi.fn()} />);
+
+    expect(await screen.findByText(/No comments yet/)).toBeTruthy();
   });
 
   it('renders comments', async () => {

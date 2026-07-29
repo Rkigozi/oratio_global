@@ -452,23 +452,28 @@ export function subscribeToPrayerCommentChanges(
   prayerId: string,
   onChange: () => void
 ): () => void {
-  const channel = supabase
-    .channel(`comments:${prayerId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'comments',
-        filter: `prayer_id=eq.${prayerId}`,
-      },
-      onChange
-    )
-    .subscribe();
+  try {
+    const channel = supabase
+      .channel(`comments:${prayerId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comments',
+          filter: `prayer_id=eq.${prayerId}`,
+        },
+        onChange
+      )
+      .subscribe();
 
-  return () => {
-    void supabase.removeChannel(channel);
-  };
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  } catch (error) {
+    logError('subscribe comments realtime', error);
+    return () => {};
+  }
 }
 
 // ─── Prayer Circle ─────────────────────────────────────────────────────

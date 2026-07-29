@@ -1,4 +1,8 @@
 import type { ReactNode } from 'react';
+import {
+  isModuleScriptLoadError,
+  recoverFromModuleScriptLoadError,
+} from '../lib/pwa-recovery';
 
 type RouteComponent = () => ReactNode;
 type RouteLoader = () => Promise<{ default: RouteComponent }>;
@@ -92,15 +96,25 @@ const routeLoadersByPath = new Map<string, RouteLoader>([
   ['/onboarding', loadOnboarding],
 ]);
 
-const authenticatedPreloadLoaders = [loadHome, loadFeed, loadSubmit, loadProfile, loadUpdates];
+const authenticatedPreloadLoaders = [
+  loadHome,
+  loadFeed,
+  loadSubmit,
+  loadProfile,
+  loadUpdates,
+  loadPrayerDetail,
+];
 const publicPreloadLoaders = [loadLanding, loadLogin, loadOnboarding, loadResetPassword];
 
 function preloadRouteLoader(loader: RouteLoader) {
   const cached = preloadCache.get(loader);
   if (cached) return cached;
 
-  const request = loader().catch(() => {
+  const request = loader().catch((error: unknown) => {
     preloadCache.delete(loader);
+    if (isModuleScriptLoadError(error)) {
+      void recoverFromModuleScriptLoadError(error);
+    }
     return undefined;
   });
   preloadCache.set(loader, request);
