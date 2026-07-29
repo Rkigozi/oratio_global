@@ -42,6 +42,29 @@ describe("validatePrayerSubmission", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("allows emoji in prayer text", () => {
+    const result = validatePrayerSubmission({
+      text: "Please pray for peace 🙏🏾 ❤️‍🔥",
+      location: "London, UK",
+      category: "Peace",
+      anonymous: false,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects angle brackets in prayer text", () => {
+    const result = validatePrayerSubmission({
+      text: "Please pray <script>alert(1)</script> 🙏",
+      location: "London, UK",
+      category: "Health",
+      anonymous: false,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.errors?.text).toBe("Remove angle brackets from your prayer");
+  });
 });
 
 describe("sanitizePrayerText", () => {
@@ -51,6 +74,10 @@ describe("sanitizePrayerText", () => {
 
   it("trims whitespace", () => {
     expect(sanitizePrayerText("  Pray for me  ")).toBe("Pray for me");
+  });
+
+  it("keeps emoji sequences", () => {
+    expect(sanitizePrayerText("Please pray 🙏🏾 ❤️‍🔥")).toBe("Please pray 🙏🏾 ❤️‍🔥");
   });
 
   it("limits to 500 characters", () => {

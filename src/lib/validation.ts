@@ -4,18 +4,25 @@ import { z, ZodError } from 'zod';
  * Validation schemas for Oratio Prayer Platform
  * 
  * Security requirements:
- * - Prevent XSS attacks by restricting input characters
+ * - Prevent XSS attacks by stripping HTML and blocking angle brackets
  * - Enforce reasonable length limits
  * - Validate all user inputs before processing
  */
+
+const PRAYER_TEXT_PATTERN = /^[\p{L}\p{N}\p{M}\p{P}\p{S}\p{Z}\n\r\t\u200D]+$/u;
+const DISALLOWED_PRAYER_TEXT_PATTERN = /[^\p{L}\p{N}\p{M}\p{P}\p{S}\p{Z}\n\r\t\u200D]/gu;
+const ANGLE_BRACKET_PATTERN = /[<>]/;
 
 // Prayer submission schema
 export const prayerSchema = z.object({
   text: z.string()
     .min(10, { message: "Prayer must be at least 10 characters" })
     .max(500, { message: "Prayer cannot exceed 500 characters" })
-    .regex(/^[\p{L}\p{N}\p{P}\p{Z}]+$/u, { 
-      message: "Only letters, numbers, spaces, and punctuation allowed"
+    .regex(PRAYER_TEXT_PATTERN, {
+      message: "Only letters, numbers, spaces, punctuation, and emoji allowed"
+    })
+    .refine((value) => !ANGLE_BRACKET_PATTERN.test(value), {
+      message: "Remove angle brackets from your prayer",
     })
     .trim(),
   location: z.string()
@@ -53,9 +60,10 @@ export const profileSchema = z.object({
 export function sanitizePrayerText(text: string): string {
   // Remove any HTML tags
   const withoutHtml = text.replace(/<[^>]*>/g, '');
+  const withoutAngleBrackets = withoutHtml.replace(/[<>]/g, '');
   
   // Limit to safe characters (same as validation regex)
-  const safeText = withoutHtml.replace(/[^\p{L}\p{N}\p{P}\p{Z}]/gu, '');
+  const safeText = withoutAngleBrackets.replace(DISALLOWED_PRAYER_TEXT_PATTERN, '');
   
   // Trim and limit length
   return safeText.trim().slice(0, 500);
