@@ -8,8 +8,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { getUnreadActivityCount } from '../services/supabase-queries';
-import { supabase } from '../services/supabase';
 import { useAuth } from './auth-context';
 
 const ACTIVITY_UPDATED_EVENT = 'oratio-activity-updated';
@@ -47,9 +45,14 @@ export function ActivityUpdatesProvider({ children }: { children: ReactNode }) {
       return latestCountRef.current;
     }
 
-    const count = await getUnreadActivityCount();
-    setCount(count);
-    return count;
+    try {
+      const { getUnreadActivityCount } = await import('../services/supabase-queries');
+      const count = await getUnreadActivityCount();
+      setCount(count);
+      return count;
+    } catch {
+      return latestCountRef.current;
+    }
   }, [setCount, userId]);
 
   useEffect(() => {
@@ -70,6 +73,9 @@ export function ActivityUpdatesProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!userId) return;
 
+    let cancelled = false;
+    let removeRealtimeChannel: (() => void) | undefined;
+
     const refreshWhenVisible = () => {
       if (document.visibilityState === 'visible') void refreshUnreadCount();
     };
@@ -81,30 +87,46 @@ export function ActivityUpdatesProvider({ children }: { children: ReactNode }) {
 
     const intervalId = window.setInterval(refreshWhenVisible, ACTIVITY_POLL_INTERVAL_MS);
 
-    const channel = supabase
-      .channel(`activity-events:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'activity_events',
-          filter: `recipient_user_id=eq.${userId}`,
-        },
-        () => {
-          void refreshUnreadCount();
-        }
-      )
-      .subscribe((status) => {
-        if (String(status) === 'SUBSCRIBED') void refreshUnreadCount();
-      });
+    const setupRealtime = async () => {
+      try {
+        const { supabase } = await import('../services/supabase');
+        if (cancelled) return;
+
+        const channel = supabase
+          .channel(`activity-events:${userId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'activity_events',
+              filter: `recipient_user_id=eq.${userId}`,
+            },
+            () => {
+              void refreshUnreadCount();
+            }
+          )
+          .subscribe((status) => {
+            if (String(status) === 'SUBSCRIBED') void refreshUnreadCount();
+          });
+
+        removeRealtimeChannel = () => {
+          void supabase.removeChannel(channel);
+        };
+      } catch {
+        // Realtime is enhancement-only. Focus/visibility polling still keeps updates fresh.
+      }
+    };
+
+    void setupRealtime();
 
     return () => {
+      cancelled = true;
       window.removeEventListener(ACTIVITY_UPDATED_EVENT, refresh);
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
       window.clearInterval(intervalId);
-      void supabase.removeChannel(channel);
+      removeRealtimeChannel?.();
     };
   }, [refreshUnreadCount, userId]);
 
