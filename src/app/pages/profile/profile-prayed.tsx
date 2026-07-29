@@ -162,6 +162,7 @@ export function ProfilePrayed() {
                     </div>
                     {selectedPrayer.createdAt && (
                       <p className="text-text-muted text-[11px] mb-5 text-center">
+                        {selectedPrayer.editedAt ? "Edited · " : ""}
                         {timeAgo(selectedPrayer.createdAt)}
                       </p>
                     )}

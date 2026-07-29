@@ -8,29 +8,34 @@
 ## 1. Auth Flow
 
 ### 1.1 Landing Page
+
 - [ ] Open the app → see landing page with ORATIO branding, features, waitlist
 - [ ] "Create Account" button → navigates to `/onboarding`
 - [ ] "Sign in" link → navigates to `/login`
 
 ### 1.2 Sign Up (Email)
+
 - [ ] On `/onboarding`, enter email + password + username → tap "Create Account"
 - [ ] If email confirmation required → see verification screen with "Didn't get it?" resend
 - [ ] If no confirmation → lands on `/` (Home/Feed)
 - [ ] Check Supabase `profiles` table → row auto-created with username
 
 ### 1.3 Sign In
+
 - [ ] On `/login`, enter email + password → tap "Sign In" → lands on `/feed`
 - [ ] Wrong password → error message shown
 - [ ] Unregistered email → error message shown
 - [ ] "Forgot password?" → navigates to `/reset-password`
 
 ### 1.4 Google OAuth
+
 - [ ] On `/onboarding` or `/login`, tap "Continue with Google"
 - [ ] Google popup appears → authenticate
 - [ ] Redirected back to app → signed in
 - [ ] Sign out from Profile → lands on Landing page
 
 ### 1.5 Password Reset
+
 - [ ] `/reset-password` → enter email → "Check your email" confirmation
 - [ ] Click reset link → lands on `/update-password`
 - [ ] Enter new password + confirm → redirects to `/feed`
@@ -43,6 +48,7 @@
 - [ ] Each card shows: avatar, username, prayer text, location, time ago, pray count
 - [ ] **Infinite scroll** — scroll to bottom, more prayers load automatically
 - [ ] **Filter pills** work: All | Near Me | Prayer Circle | Saved | Country
+- [ ] **Prayer Circle** shows only prayers intentionally shared to Prayer Circle
 - [ ] **Search** — type a keyword, hashtag, city, or country → feed filters
 - [ ] **Recent searches** — previously searched terms shown as quick taps
 - [ ] **Trending hashtags** — scrollable row above feed
@@ -52,6 +58,9 @@
 ---
 
 ## 3. Submit Prayer
+
+- [ ] Choose **Public** → prayer appears in the public feed/map
+- [ ] Choose **Prayer Circle** → prayer appears in Circle Prayers and stays out of the public map
 
 - [ ] Tap Submit tab in bottom nav → `/submit`
 - [ ] Type prayer text (10-500 chars) → character counter visible
@@ -86,8 +95,8 @@
 - [ ] Type a comment → tap Send → appears immediately with your avatar
 - [ ] **Reply** — tap reply on a comment → textarea shows "Write a reply..."
 - [ ] **Character counter** — `{n}/2000` below textarea
-- [ ] **Delete** — only your own comments show delete button
-- [ ] **Report** — only other's comments show report option
+- [ ] **Delete** — your own comments show Delete; prayer authors can Remove comments on their own prayer
+- [ ] **Report** — comments you cannot delete show report option
 - [ ] Comments count updates in feed card after adding
 
 ---
@@ -123,6 +132,7 @@
 - [ ] Zoom in/out works
 - [ ] Bottom drawer shows city prayer activity
 - [ ] "View Prayers" → navigates to Feed with city filter
+- [ ] No "Unknown, Unknown" hotspot appears on the map
 
 ---
 
@@ -140,7 +150,7 @@
 ## 10. Edge Cases
 
 - [ ] **Empty states** — Feed with no prayers shows empty message
-- [ ] **No location** — prayers without location show "Unknown"
+- [ ] **No location** — prayers without location can show "Unknown" in non-map views, but do not create map hotspots
 - [ ] **Rapid tap** — tapping Pray repeatedly doesn't double-count
 - [ ] **Offline** — service worker serves app shell
 - [ ] **404** — navigate to `/nonexistent` → 404 page with "Go home" button

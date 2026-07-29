@@ -82,6 +82,38 @@ describe("useGeolocation", () => {
     expect(cached).toBeTruthy();
   });
 
+  it("normalizes county-level London geocoding", async () => {
+    mockGeolocation((success) => {
+      success({
+        coords: {
+          latitude: 51.52,
+          longitude: -0.12,
+          accuracy: 100,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null,
+        },
+        timestamp: Date.now(),
+      } as GeolocationPosition);
+    });
+
+    mockFetch({
+      address: { county: "Greater London", country: "England" },
+    });
+
+    const { result } = renderHook(() => useGeolocation());
+
+    await act(async () => {
+      await result.current.requestLocation();
+    });
+
+    expect(result.current.location).toMatchObject({
+      city: "London",
+      country: "United Kingdom",
+    });
+  });
+
   it("handles permission denied", async () => {
     mockGeolocation((_success, error) => {
       if (error) {

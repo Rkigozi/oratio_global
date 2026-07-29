@@ -1,17 +1,34 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router";
-import { motion, AnimatePresence } from "motion/react";
-import { createPortal } from "react-dom";
-import { ArrowLeft, Check, Clock, MapPin, X, MoreHorizontal, Share2, Flag, Bookmark, MessageCircle, UserPlus } from "lucide-react";
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router';
+import { motion, AnimatePresence } from 'motion/react';
+import { createPortal } from 'react-dom';
+import {
+  ArrowLeft,
+  Check,
+  Clock,
+  MapPin,
+  X,
+  MoreHorizontal,
+  Share2,
+  Flag,
+  Bookmark,
+  MessageCircle,
+  UserPlus,
+  Pencil,
+  Loader,
+  Users,
+} from 'lucide-react';
 import { timeAgo, getAttributionText } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
-import { CommentSection } from "../../components/comments/comment-section";
-import { getInitialAvatarUrl } from '../../services/upload';
+import { CommentSection } from '../../components/comments/comment-section';
 import { reportContent } from '../../services/api';
 import { renderHashtags } from '../../services/hashtags';
 import { translateText, needsTranslation, detectLanguage } from '../../services/translate';
+import { validatePrayerSubmission, sanitizePrayerText } from '../../../lib/validation';
+import { AvatarImage } from '../../components/avatar-image';
 import {
   getPrayerById,
+  updatePrayerRequest,
   togglePray,
   toggleSavePrayer,
   getProfileByUsername,
@@ -24,10 +41,10 @@ import {
   getMySavedIds,
   type PrayerCircleStatus,
 } from '../../services/supabase-queries';
-import { LoadingSpinner, ErrorState } from "../../components/loading-spinner";
+import { LoadingSpinner, ErrorState } from '../../components/loading-spinner';
 import { useAuth } from '../../hooks/auth-context';
-import { logError } from "../../../lib/logger";
-import { captureEvent } from "../../../lib/analytics";
+import { logError } from '../../../lib/logger';
+import { captureEvent } from '../../../lib/analytics';
 
 export function PrayerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -49,7 +66,7 @@ export function PrayerDetail() {
         const fetchedPrayer = await getPrayerById(id);
         if (active && fetchedPrayer) setLocalPrayer(fetchedPrayer);
       } catch {
-        if (active) setError("Failed to load prayer");
+        if (active) setError('Failed to load prayer');
       } finally {
         if (active) setLoading(false);
       }
@@ -110,14 +127,87 @@ export function PrayerDetail() {
         setShowMenu(false);
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [showMenu]);
   const [reported, setReported] = useState(false);
-  const [circleStatus, setCircleStatus] = useState<PrayerCircleStatus>({ state: "none" });
+  const [circleStatus, setCircleStatus] = useState<PrayerCircleStatus>({ state: 'none' });
   const [circleBusy, setCircleBusy] = useState(false);
-  const { profile: authProfile } = useAuth();
-  const isAuthor = prayer ? prayer.username === authProfile?.username : false;
+  const { profile: authProfile, user } = useAuth();
+  const isAuthor = prayer
+    ? prayer.authorId
+      ? prayer.authorId === user?.id
+      : prayer.username === authProfile?.username
+    : false;
+  const [showEdit, setShowEdit] = useState(false);
+  const [editText, setEditText] = useState('');
+  const [editError, setEditError] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const openEditPrayer = () => {
+    if (!prayer) return;
+    setEditText(prayer.text);
+    setEditError('');
+    setShowEdit(true);
+  };
+
+  const handleSavePrayerEdit = async () => {
+    if (!prayer || savingEdit) return;
+
+    const trimmed = editText.trim();
+    const validation = validatePrayerSubmission({
+      text: trimmed,
+      location: '',
+      category: prayer.category,
+      anonymous: !prayer.username,
+    });
+
+    if (!validation.success) {
+      setEditError(validation.errors?.text || 'Prayer update is not valid.');
+      return;
+    }
+
+    const sanitizedText = sanitizePrayerText(trimmed);
+    if (sanitizedText === prayer.text) {
+      setShowEdit(false);
+      return;
+    }
+
+    setSavingEdit(true);
+    setEditError('');
+    const updated = await updatePrayerRequest(prayer.id, sanitizedText);
+    setSavingEdit(false);
+
+    if (!updated) {
+      setEditError("We couldn't save your update. Please try again.");
+      return;
+    }
+
+    setLocalPrayer((prev) =>
+      prev
+        ? {
+            ...prev,
+            text: updated.text,
+            editedAt: updated.editedAt,
+          }
+        : prev
+    );
+    setTranslatedText(null);
+    setShowEdit(false);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('oratio-prayer-updated', {
+          detail: {
+            prayerId: prayer.id,
+            text: updated.text,
+            editedAt: updated.editedAt,
+          },
+        })
+      );
+    }
+    captureEvent('prayer_edited', { prayerId: prayer.id });
+  };
 
   const username = prayer?.username;
   const handleCircleInvite = async () => {
@@ -135,15 +225,15 @@ export function PrayerDetail() {
     if (!username || !circleStatus.inviteId) return;
     setCircleBusy(true);
     const ok = await cancelPrayerCircleInvite(circleStatus.inviteId);
-    if (ok) setCircleStatus({ state: "none" });
+    if (ok) setCircleStatus({ state: 'none' });
     setCircleBusy(false);
   };
 
   const handleAcceptCircleInvite = async () => {
     if (!circleStatus.inviteId) return;
     setCircleBusy(true);
-    const ok = await respondToPrayerCircleInvite(circleStatus.inviteId, "accepted");
-    if (ok) setCircleStatus({ state: "connected" });
+    const ok = await respondToPrayerCircleInvite(circleStatus.inviteId, 'accepted');
+    if (ok) setCircleStatus({ state: 'connected' });
     setCircleBusy(false);
   };
 
@@ -167,33 +257,43 @@ export function PrayerDetail() {
 
   const handleTranslate = async () => {
     if (!prayer || translating) return;
-    if (translatedText) { setTranslatedText(null); return; }
+    if (translatedText) {
+      setTranslatedText(null);
+      return;
+    }
     setTranslating(true);
     const result = await translateText(prayer.text, userLang);
     if (result) setTranslatedText(result);
     setTranslating(false);
   };
 
-  const userLang = navigator.language.split("-")[0] || "en";
+  const userLang = navigator.language.split('-')[0] || 'en';
   const showTranslate = prayer ? needsTranslation(prayer.text, userLang) : false;
-  const sourceLang = prayer && translatedText ? detectLanguage(prayer.text) : "";
-  const langName: Record<string, string> = { es: "Spanish", fr: "French", pt: "Portuguese", de: "German", it: "Italian", en: "English" };
+  const sourceLang = prayer && translatedText ? detectLanguage(prayer.text) : '';
+  const langName: Record<string, string> = {
+    es: 'Spanish',
+    fr: 'French',
+    pt: 'Portuguese',
+    de: 'German',
+    it: 'Italian',
+    en: 'English',
+  };
 
   const toggleSave = () => {
     const newSaved = !saved;
     setSaved(newSaved);
     void toggleSavePrayer(prayer!.id, newSaved);
-    captureEvent(newSaved ? "prayer_saved" : "prayer_unsaved", { prayerId: prayer!.id });
+    captureEvent(newSaved ? 'prayer_saved' : 'prayer_unsaved', { prayerId: prayer!.id });
   };
 
   const handleReport = async (reason: string) => {
     setShowReport(false);
     try {
-      await reportContent({ reportable_type: "prayer", reportable_id: prayer!.id, reason });
-      captureEvent("prayer_reported", { prayerId: prayer!.id, reason });
+      await reportContent({ reportable_type: 'prayer', reportable_id: prayer!.id, reason });
+      captureEvent('prayer_reported', { prayerId: prayer!.id, reason });
       setReported(true);
     } catch {
-      logError("report prayer", "report failed");
+      logError('report prayer', 'report failed');
     }
   };
 
@@ -222,7 +322,7 @@ export function PrayerDetail() {
         ? prev.filter((pid) => pid !== prayerId)
         : [...prev, prayerId];
       void togglePray(prayerId, !isCurrentlyPrayed);
-      captureEvent(isCurrentlyPrayed ? "prayer_unprayed" : "prayer_prayed", { prayerId });
+      captureEvent(isCurrentlyPrayed ? 'prayer_unprayed' : 'prayer_prayed', { prayerId });
       return newIds;
     });
   }, []);
@@ -232,17 +332,28 @@ export function PrayerDetail() {
     const url = `${window.location.origin}/prayer/${prayer.id}`;
     const attribution = getAttributionText(prayer);
     const c = prayer.prayerCount ?? 0;
-    const shareText = `🙏 Prayer request${attribution ? ` from ${attribution}` : ""}:\n\n"${prayer.text}"\n\n${c} ${c === 1 ? "person has" : "people have"} prayed.\n${url}`;
+    const shareText = `🙏 Prayer request${attribution ? ` from ${attribution}` : ''}:\n\n"${prayer.text}"\n\n${c} ${c === 1 ? 'person has' : 'people have'} prayed.\n${url}`;
     if (navigator.share) {
-      try { await navigator.share({ text: shareText }); } catch { /* ignore */ }
+      try {
+        await navigator.share({ text: shareText });
+      } catch {
+        /* ignore */
+      }
     } else {
-      try { await navigator.clipboard.writeText(shareText); } catch { /* ignore */ }
+      try {
+        await navigator.clipboard.writeText(shareText);
+      } catch {
+        /* ignore */
+      }
     }
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div
+        className="flex flex-col items-center justify-center h-full w-full"
+        style={{ background: 'rgb(var(--rgb-bg))' }}
+      >
         <LoadingSpinner text="Loading prayer..." />
       </div>
     );
@@ -250,10 +361,29 @@ export function PrayerDetail() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full" style={{ background: "rgb(var(--rgb-bg))" }}>
-        <ErrorState message={error} onRetry={() => { setLoading(true); setError(null); if (id) getPrayerById(id).then((p) => { if (p) setLocalPrayer(p); setLoading(false); }).catch(() => { setError("Failed to load prayer"); setLoading(false); }); }} />
+      <div
+        className="flex flex-col items-center justify-center h-full w-full"
+        style={{ background: 'rgb(var(--rgb-bg))' }}
+      >
+        <ErrorState
+          message={error}
+          onRetry={() => {
+            setLoading(true);
+            setError(null);
+            if (id)
+              getPrayerById(id)
+                .then((p) => {
+                  if (p) setLocalPrayer(p);
+                  setLoading(false);
+                })
+                .catch(() => {
+                  setError('Failed to load prayer');
+                  setLoading(false);
+                });
+          }}
+        />
         <button
-          onClick={() => void navigate("/feed")}
+          onClick={() => void navigate('/feed')}
           className="mt-2 px-5 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer"
         >
           Back to Feed
@@ -264,10 +394,13 @@ export function PrayerDetail() {
 
   if (!prayer) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div
+        className="flex flex-col items-center justify-center h-full w-full"
+        style={{ background: 'rgb(var(--rgb-bg))' }}
+      >
         <p className="text-text-muted text-sm mb-4">Prayer not found</p>
         <button
-          onClick={() => void navigate("/feed")}
+          onClick={() => void navigate('/feed')}
           className="px-5 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer"
         >
           Back to Feed
@@ -279,13 +412,14 @@ export function PrayerDetail() {
   return (
     <div
       className="w-full h-full flex flex-col overflow-hidden"
-      style={{ background: "rgb(var(--rgb-bg))" }}
+      style={{ background: 'rgb(var(--rgb-bg))' }}
     >
       {/* Header with back button + menu */}
       <div
         className="flex-shrink-0 pt-[max(1.5rem,env(safe-area-inset-top))] pb-2 px-4"
         style={{
-          background: "linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98), rgba(var(--rgb-bg), 0))",
+          background:
+            'linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98), rgba(var(--rgb-bg), 0))',
         }}
       >
         <div className="flex items-center justify-between mt-12">
@@ -311,45 +445,74 @@ export function PrayerDetail() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   className="absolute right-0 top-full mt-1 w-36 rounded-xl border border-accent/10 overflow-hidden z-30"
                   style={{
-                    background: "rgba(var(--rgb-surface), 0.98)",
-                    backdropFilter: "blur(16px)",
+                    background: 'rgba(var(--rgb-surface), 0.98)',
+                    backdropFilter: 'blur(16px)',
                   }}
                 >
+                  {prayer.audience !== 'circle' && (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        void handleShare();
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
+                    >
+                      <Share2 size={12} />
+                      Share
+                    </button>
+                  )}
                   <button
-                    onClick={() => { setShowMenu(false); void handleShare(); }}
+                    onClick={() => {
+                      setShowMenu(false);
+                      toggleSave();
+                    }}
                     className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
                   >
-                    <Share2 size={12} />
-                    Share
-                  </button>
-                  <button
-                    onClick={() => { setShowMenu(false); toggleSave(); }}
-                    className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
-                  >
-                    <Bookmark size={12} fill={saved ? "#c5cdff" : "none"} />
-                    {saved ? "Saved" : "Save"}
+                    <Bookmark size={12} fill={saved ? '#c5cdff' : 'none'} />
+                    {saved ? 'Saved' : 'Save'}
                   </button>
                   {showTranslate && (
                     <button
-                      onClick={() => { setShowMenu(false); void handleTranslate(); }}
+                      onClick={() => {
+                        setShowMenu(false);
+                        void handleTranslate();
+                      }}
                       className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
                     >
                       <span className="text-[10px]">🌐</span>
-                      {translating ? "Translating..." : translatedText ? "Original" : "Translate"}
+                      {translating ? 'Translating...' : translatedText ? 'Original' : 'Translate'}
                     </button>
                   )}
                   {isAuthor && (
                     <button
-                      onClick={() => { setShowMenu(false); handleToggleComments(); }}
+                      onClick={() => {
+                        setShowMenu(false);
+                        openEditPrayer();
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
+                    >
+                      <Pencil size={12} />
+                      Edit prayer
+                    </button>
+                  )}
+                  {isAuthor && (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        handleToggleComments();
+                      }}
                       className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
                     >
                       <MessageCircle size={12} />
-                      {commentsEnabled ? "Turn off comments" : "Turn on comments"}
+                      {commentsEnabled ? 'Turn off comments' : 'Turn on comments'}
                     </button>
                   )}
                   {!reported && (
                     <button
-                      onClick={() => { setShowMenu(false); setShowReport(true); }}
+                      onClick={() => {
+                        setShowMenu(false);
+                        setShowReport(true);
+                      }}
                       className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
                     >
                       <Flag size={12} />
@@ -370,12 +533,23 @@ export function PrayerDetail() {
           <div className="flex items-center gap-2 mb-1">
             <MapPin size={12} className="text-text-dim" />
             <p className="text-text-muted text-xs uppercase tracking-[0.15em]">
-              {prayer.city || "Unknown"}, {prayer.country}
+              {prayer.city || 'Unknown'}, {prayer.country}
             </p>
           </div>
           {prayer.createdAt && (
-            <p className="text-text-muted text-[11px] mb-5">
+            <p className="text-text-muted text-[11px] mb-5 flex items-center gap-2">
               {timeAgo(prayer.createdAt)}
+              {prayer.audience === 'circle' && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-accent/10 bg-accent/6 px-2 py-0.5 text-[10px] text-text-dim">
+                  <Users size={10} />
+                  Prayer Circle
+                </span>
+              )}
+              {prayer.editedAt && (
+                <span className="rounded-full border border-accent/10 bg-accent/6 px-2 py-0.5 text-[10px] text-text-dim">
+                  Edited
+                </span>
+              )}
             </p>
           )}
 
@@ -385,11 +559,12 @@ export function PrayerDetail() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             className="text-text font-heading mb-2"
-            style={{ fontSize: "1.2rem", lineHeight: 1.8, fontWeight: 300 }}
+            style={{ fontSize: '1.2rem', lineHeight: 1.8, fontWeight: 300 }}
           >
-            {translatedText || renderHashtags(prayer.text, (tag) => {
-              void navigate(`/feed?search=${encodeURIComponent(tag)}`);
-            })}
+            {translatedText ||
+              renderHashtags(prayer.text, (tag) => {
+                void navigate(`/feed?search=${encodeURIComponent(tag)}`);
+              })}
           </motion.p>
           {translatedText && sourceLang && (
             <p className="text-text-dim text-[10px] mb-6">
@@ -399,10 +574,11 @@ export function PrayerDetail() {
 
           {/* Attribution */}
           <div className="flex items-center gap-2.5 mb-4">
-            <img
-              src={prayer.avatarUrl || getInitialAvatarUrl(getAttributionText(prayer))}
-              alt={username || "User"}
-              className="w-6 h-6 rounded-full object-cover flex-shrink-0 cursor-pointer"
+            <AvatarImage
+              src={prayer.avatarUrl}
+              name={username || getAttributionText(prayer)}
+              alt={username || 'User'}
+              className="h-6 w-6 flex-shrink-0 cursor-pointer text-[10px]"
               onClick={() => username && void navigate(`/user/${encodeURIComponent(username)}`)}
             />
             <button
@@ -436,11 +612,16 @@ export function PrayerDetail() {
             <span
               className="inline-block w-1.5 h-1.5 rounded-full"
               style={{
-                background: "rgb(var(--rgb-accent))",
-                boxShadow: "0 0 6px rgba(var(--rgb-accent), 0.5)",
+                background: 'rgb(var(--rgb-accent))',
+                boxShadow: '0 0 6px rgba(var(--rgb-accent), 0.5)',
               }}
             />
-            <span>{(() => { const c = (prayer.prayerCount ?? 0) + (isPrayed ? 1 : 0); return `${c} ${c === 1 ? "person prayed" : "people prayed"}`; })()}</span>
+            <span>
+              {(() => {
+                const c = (prayer.prayerCount ?? 0) + (isPrayed ? 1 : 0);
+                return `${c} ${c === 1 ? 'person prayed' : 'people prayed'}`;
+              })()}
+            </span>
           </div>
 
           {/* Pray button */}
@@ -451,16 +632,16 @@ export function PrayerDetail() {
               className="flex items-center gap-2.5 px-8 py-3 rounded-full text-sm transition-all duration-500 cursor-pointer"
               style={{
                 background: isPrayed
-                  ? "rgba(var(--rgb-accent), 0.12)"
-                  : "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
-                color: isPrayed ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text))",
+                  ? 'rgba(var(--rgb-accent), 0.12)'
+                  : 'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
+                color: isPrayed ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text))',
                 boxShadow: isPrayed
-                  ? "none"
-                  : "0 4px 24px rgba(var(--rgb-accent), 0.25), 0 0 0 1px rgba(var(--rgb-accent), 0.1)",
+                  ? 'none'
+                  : '0 4px 24px rgba(var(--rgb-accent), 0.25), 0 0 0 1px rgba(var(--rgb-accent), 0.1)',
               }}
             >
               <span className="text-base">🙏</span>
-              {isPrayed ? "Prayed for this" : "Pray for this"}
+              {isPrayed ? 'Prayed for this' : 'Pray for this'}
             </motion.button>
           </div>
 
@@ -491,13 +672,92 @@ export function PrayerDetail() {
       {/* Report dialog */}
       {createPortal(
         <AnimatePresence>
+          {showEdit && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-6"
+              style={{ background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)' }}
+              onClick={() => setShowEdit(false)}
+            >
+              <motion.div
+                initial={{ y: 24, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 24, opacity: 0 }}
+                className="w-full max-w-md rounded-t-2xl p-5 sm:rounded-2xl border border-accent/10"
+                style={{ background: 'rgba(var(--rgb-surface), 0.98)' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-text-secondary text-sm">Edit prayer</p>
+                  <button
+                    onClick={() => setShowEdit(false)}
+                    className="h-9 w-9 rounded-full flex items-center justify-center text-text-faint hover:text-text-muted hover:bg-accent/8 transition-colors cursor-pointer"
+                    aria-label="Close edit prayer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <textarea
+                  value={editText}
+                  onChange={(e) => {
+                    setEditText(e.target.value);
+                    setEditError('');
+                  }}
+                  rows={6}
+                  maxLength={500}
+                  className="w-full rounded-xl px-4 py-3 text-text placeholder-text-dim text-sm focus:outline-none border border-accent/12 resize-none"
+                  style={{
+                    background: 'rgba(var(--rgb-bg), 0.35)',
+                    lineHeight: 1.7,
+                  }}
+                />
+                <div className="mt-2 flex items-center gap-3">
+                  {editError ? (
+                    <p className="text-danger text-xs flex-1">{editError}</p>
+                  ) : (
+                    <p className="text-text-dim text-xs flex-1">Update wording for clarity.</p>
+                  )}
+                  <p
+                    className={`text-xs ${editText.length > 500 || editText.trim().length < 10 ? 'text-danger' : 'text-text-dim'}`}
+                  >
+                    {editText.length}/500
+                  </p>
+                </div>
+                <div className="mt-5 flex gap-3">
+                  <button
+                    onClick={() => setShowEdit(false)}
+                    className="flex-1 rounded-full border border-accent/12 px-4 py-3 text-sm text-text-muted transition-colors hover:bg-accent/6 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => void handleSavePrayerEdit()}
+                    disabled={savingEdit}
+                    className="flex-1 rounded-full px-4 py-3 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
+                      color: 'rgb(var(--rgb-text))',
+                    }}
+                  >
+                    <span className="inline-flex items-center justify-center gap-2">
+                      {savingEdit && <Loader size={14} className="animate-spin" />}
+                      {savingEdit ? 'Saving...' : 'Save update'}
+                    </span>
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
           {showReport && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-6"
-              style={{ background: "rgba(0, 0, 0, 0.7)", backdropFilter: "blur(4px)" }}
+              style={{ background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)' }}
               onClick={() => setShowReport(false)}
             >
               <motion.div
@@ -505,7 +765,7 @@ export function PrayerDetail() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.92, opacity: 0 }}
                 className="w-full max-w-sm rounded-2xl p-5 border border-accent/10"
-                style={{ background: "rgba(var(--rgb-surface), 0.98)" }}
+                style={{ background: 'rgba(var(--rgb-surface), 0.98)' }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -518,7 +778,12 @@ export function PrayerDetail() {
                   </button>
                 </div>
                 <div className="flex flex-col gap-2">
-                  {["Spam or fake", "Upsetting or graphic", "Harmful or unsafe", "Something else"].map((reason) => (
+                  {[
+                    'Spam or fake',
+                    'Upsetting or graphic',
+                    'Harmful or unsafe',
+                    'Something else',
+                  ].map((reason) => (
                     <button
                       key={reason}
                       onClick={() => void handleReport(reason)}
@@ -553,7 +818,7 @@ function PrayerCircleMiniButton({
   onCancel: () => void;
   onAccept: () => void;
 }) {
-  if (status.state === "connected") {
+  if (status.state === 'connected') {
     return (
       <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full text-accent bg-accent/10 border border-accent/15">
         <Check size={11} />
@@ -562,16 +827,16 @@ function PrayerCircleMiniButton({
     );
   }
 
-  if (status.state === "pending_sent") {
+  if (status.state === 'pending_sent') {
     return (
       <button
         onClick={onCancel}
         disabled={busy}
         className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer disabled:opacity-60"
         style={{
-          background: "rgba(var(--rgb-accent), 0.08)",
-          border: "1px solid rgba(var(--rgb-accent), 0.16)",
-          color: "rgb(var(--rgb-accent))",
+          background: 'rgba(var(--rgb-accent), 0.08)',
+          border: '1px solid rgba(var(--rgb-accent), 0.16)',
+          color: 'rgb(var(--rgb-accent))',
         }}
         aria-label={`Cancel Prayer Circle invite to @${username}`}
       >
@@ -581,15 +846,16 @@ function PrayerCircleMiniButton({
     );
   }
 
-  if (status.state === "pending_received") {
+  if (status.state === 'pending_received') {
     return (
       <button
         onClick={onAccept}
         disabled={busy}
         className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer disabled:opacity-60"
         style={{
-          background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
-          color: "rgb(var(--rgb-text))",
+          background:
+            'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
+          color: 'rgb(var(--rgb-text))',
         }}
       >
         <Check size={11} />
@@ -604,9 +870,9 @@ function PrayerCircleMiniButton({
       disabled={busy}
       className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer disabled:opacity-60"
       style={{
-        background: "rgba(var(--rgb-accent), 0.04)",
-        border: "1px solid rgba(var(--rgb-accent), 0.08)",
-        color: "rgb(var(--rgb-text-dim))",
+        background: 'rgba(var(--rgb-accent), 0.04)',
+        border: '1px solid rgba(var(--rgb-accent), 0.08)',
+        color: 'rgb(var(--rgb-text-dim))',
       }}
     >
       <UserPlus size={11} />

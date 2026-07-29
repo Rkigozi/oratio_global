@@ -133,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     const supabase = await getSupabaseClient();
     await supabase.auth.signOut();
+    captureEvent("user_signed_out");
     setUser(null);
     setProfile(null);
   };
@@ -142,12 +143,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/update-password`,
     });
+    if (!error) captureEvent("password_reset_requested");
     return error?.message || null;
   };
 
   const updatePassword = async (password: string): Promise<string | null> => {
     const supabase = await getSupabaseClient();
     const { error } = await supabase.auth.updateUser({ password });
+    if (!error) captureEvent("password_updated");
     return error?.message || null;
   };
 

@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router";
 import { ArrowLeft, Check, Clock, Send, UserPlus, Users, X } from "lucide-react";
 import { timeAgo } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
-import { getInitialAvatarUrl } from '../../services/upload';
 import { useAuth } from '../../hooks/auth-context';
+import { AvatarImage } from "../../components/avatar-image";
 import {
   getProfileByUsername,
   getUserPrayers,
@@ -109,7 +109,12 @@ export function UserProfile() {
         <div className="max-w-md mx-auto">
           {/* Profile header */}
           <div className="flex items-start gap-4 mb-6 mt-4">
-            <img src={profile?.avatar_url || getInitialAvatarUrl(profile?.display_name || username)} alt={profile?.display_name || username || "User"} className="w-20 h-20 rounded-full object-cover flex-shrink-0" />
+            <AvatarImage
+              src={profile?.avatar_url}
+              name={profile?.display_name || username || "User"}
+              alt={profile?.display_name || username || "User"}
+              className="h-20 w-20 flex-shrink-0 text-2xl"
+            />
             <div className="flex-1 min-w-0 pt-1">
               <h1 className="text-text font-heading text-base font-medium mb-0.5">{profile?.display_name || username}</h1>
               <p className="text-text-dim text-xs mb-1">@{username}</p>

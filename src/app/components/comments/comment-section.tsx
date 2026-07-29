@@ -1,14 +1,19 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { MessageCircle, Send, ChevronDown, X, Flag } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { MessageCircle, Send, ChevronDown, X, Flag } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { timeAgo } from '../../services/prayer-data';
 import { reportContent } from '../../services/api';
-import { getComments, getCommentCount, createComment, deleteComment } from '../../services/supabase-queries';
+import {
+  getComments,
+  getCommentCount,
+  createComment,
+  deleteComment,
+} from '../../services/supabase-queries';
 import type { Comment } from '../../services/supabase-queries';
-import { getInitialAvatarUrl } from '../../services/upload';
 import { useAuth } from '../../hooks/auth-context';
-import { captureEvent } from "../../../lib/analytics";
+import { captureEvent } from '../../../lib/analytics';
+import { AvatarImage } from '../avatar-image';
 
 interface Props {
   prayer: PrayerRequest;
@@ -19,13 +24,13 @@ interface Props {
 const PAGE_SIZE = 20;
 
 export function CommentSection({ prayer, commentCount, onCommentCountChange }: Props) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
-  const [newComment, setNewComment] = useState("");
+  const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<{ id: string; username: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submitRef = useRef(false);
@@ -94,14 +99,21 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
       parent_id: replyTo?.id,
     });
     if (comment) {
-      captureEvent("comment_added", { prayerId: prayer.id, hasParent: !!replyTo });
-      const newCommentObj = { ...comment, user: profile ? { username: profile.username, display_name: profile.display_name } : null };
+      captureEvent('comment_added', { prayerId: prayer.id, hasParent: !!replyTo });
+      const newCommentObj = comment.user
+        ? comment
+        : {
+            ...comment,
+            user: profile
+              ? { username: profile.username, display_name: profile.display_name, avatar_url: null }
+              : null,
+          };
       setComments((prev) => {
         const updated = [...prev, newCommentObj];
         onCommentCountChange(updated.length);
         return updated;
       });
-      setNewComment("");
+      setNewComment('');
       setReplyTo(null);
     }
     submitRef.current = false;
@@ -112,13 +124,18 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
     const ok = await deleteComment(commentId);
     if (ok) {
       setComments((prev) => {
-        const filtered = prev.filter((c) => c.id !== commentId);
+        const filtered = prev.filter((c) => c.id !== commentId && c.parent_id !== commentId);
         onCommentCountChange(filtered.length);
         return filtered;
       });
     }
   };
 
+  const canModerateComments =
+    !!user &&
+    (prayer.authorId
+      ? prayer.authorId === user.id
+      : !!prayer.username && prayer.username === profile?.username);
   const topLevel = comments.filter((c) => !c.parent_id);
   const replies = (parentId: string) => comments.filter((c) => c.parent_id === parentId);
 
@@ -148,6 +165,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
               replies={replies(comment.id)}
               onReply={(id, username) => setReplyTo({ id, username })}
               onDelete={(id) => void handleDelete(id)}
+              canModerateComments={canModerateComments}
             />
           ))}
           {hasMore && (
@@ -156,7 +174,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
               disabled={loadingMore}
               className="w-full py-2 text-xs text-accent hover:text-accent transition-colors cursor-pointer disabled:opacity-50 text-center"
             >
-              {loadingMore ? "Loading..." : `Load more comments`}
+              {loadingMore ? 'Loading...' : `Load more comments`}
             </button>
           )}
         </div>
@@ -166,15 +184,13 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
         {replyTo && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
+            animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
             <div className="flex items-center gap-2 mb-2 px-1">
               <ChevronDown size={10} className="text-text-dim transform -rotate-90" />
-              <span className="text-text-dim text-[10px]">
-                Replying to @{replyTo.username}
-              </span>
+              <span className="text-text-dim text-[10px]">Replying to @{replyTo.username}</span>
               <button
                 onClick={() => setReplyTo(null)}
                 className="text-text-faint hover:text-text-muted transition-colors cursor-pointer ml-auto"
@@ -188,7 +204,10 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
 
       {!profile ? (
         <p className="text-text-dim text-xs text-center py-3">
-          <a href="/login" className="text-accent hover:underline">Sign in</a> to leave an encouragement.
+          <a href="/login" className="text-accent hover:underline">
+            Sign in
+          </a>{' '}
+          to leave an encouragement.
         </p>
       ) : (
         <div className="flex gap-2 items-end">
@@ -197,16 +216,16 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   void handleSubmit();
                 }
               }}
-              placeholder={replyTo ? "Write a reply..." : "Write an encouragement..."}
+              placeholder={replyTo ? 'Write a reply...' : 'Write an encouragement...'}
               rows={1}
               maxLength={500}
               className="w-full rounded-xl px-3 py-2.5 text-text placeholder-text-dim text-xs focus:outline-none border border-accent/12 focus:border-accent/30 transition-colors resize-none"
-              style={{ background: "rgba(var(--rgb-surface), 0.6)", minHeight: 36 }}
+              style={{ background: 'rgba(var(--rgb-surface), 0.6)', minHeight: 36 }}
             />
             <span className="absolute bottom-1.5 right-2.5 text-[10px] text-text-faint pointer-events-none">
               {newComment.length}/500
@@ -217,8 +236,10 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
             disabled={!newComment.trim() || submitting}
             className="p-2.5 rounded-xl transition-all duration-200 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
             style={{
-              background: newComment.trim() ? "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))" : "rgba(var(--rgb-accent), 0.06)",
-              color: newComment.trim() ? "#ffffff" : "rgb(var(--rgb-text-dim))",
+              background: newComment.trim()
+                ? 'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))'
+                : 'rgba(var(--rgb-accent), 0.06)',
+              color: newComment.trim() ? '#ffffff' : 'rgb(var(--rgb-text-dim))',
               width: 36,
               height: 36,
             }}
@@ -240,20 +261,26 @@ function CommentThread({
   replies,
   onReply,
   onDelete,
+  canModerateComments,
 }: {
   comment: Comment;
   replies: Comment[];
   onReply: (id: string, username: string) => void;
   onDelete: (id: string) => void;
+  canModerateComments: boolean;
 }) {
   const { user } = useAuth();
-  const username = comment.user?.username || comment.user?.display_name || "Anonymous";
+  const username = comment.user?.username || comment.user?.display_name || 'Anonymous';
   const [reported, setReported] = useState(false);
   const [showReportConfirm, setShowReportConfirm] = useState(false);
   const [showAllReplies, setShowAllReplies] = useState(false);
 
   const handleReport = async () => {
-    await reportContent({ reportable_type: "comment", reportable_id: comment.id, reason: "Upsetting or harmful" });
+    await reportContent({
+      reportable_type: 'comment',
+      reportable_id: comment.id,
+      reason: 'Upsetting or harmful',
+    });
     setReported(true);
     setShowReportConfirm(true);
     setTimeout(() => setShowReportConfirm(false), 2000);
@@ -261,15 +288,17 @@ function CommentThread({
 
   const visibleReplies = showAllReplies ? replies : replies.slice(0, 1);
   const hiddenCount = replies.length - 1;
+  const isOwnComment = !!user && comment.user_id === user.id;
+  const canDeleteComment = isOwnComment || canModerateComments;
 
   return (
     <div>
       <div className="flex gap-2.5">
-        {/* Avatar */}
-        <img
-          src={getInitialAvatarUrl(username)}
-          alt={username || "User"}
-          className="w-7 h-7 rounded-full flex-shrink-0 mt-0.5 object-cover"
+        <AvatarImage
+          src={comment.user?.avatar_url}
+          name={username}
+          alt={username || 'User'}
+          className="h-7 w-7 flex-shrink-0 mt-0.5 text-[10px]"
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
@@ -284,15 +313,18 @@ function CommentThread({
             >
               Reply
             </button>
-            {user && comment.user_id === user.id && (
+            {canDeleteComment && (
               <button
                 onClick={() => onDelete(comment.id)}
+                aria-label={
+                  isOwnComment ? `Delete comment by ${username}` : `Remove comment by ${username}`
+                }
                 className="text-text-faint hover:text-danger text-[10px] transition-colors cursor-pointer"
               >
-                Delete
+                {isOwnComment ? 'Delete' : 'Remove'}
               </button>
             )}
-            {!reported && !(user && comment.user_id === user.id) && (
+            {!reported && !canDeleteComment && (
               <button
                 onClick={() => void handleReport()}
                 className="text-text-faint hover:text-warning text-[10px] transition-colors cursor-pointer"
@@ -327,29 +359,46 @@ function CommentThread({
       {replies.length > 0 && (
         <div className="ml-9 mt-2 border-l-2 border-accent/6 pl-3 space-y-2">
           {visibleReplies.map((reply) => {
-            const replyUsername = reply.user?.username || reply.user?.display_name || "Anonymous";
+            const replyUsername = reply.user?.username || reply.user?.display_name || 'Anonymous';
+            const isOwnReply = !!user && reply.user_id === user.id;
+            const canDeleteReply = isOwnReply || canModerateComments;
             return (
-              <div key={reply.id}>
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-text-muted text-[10px] font-medium">@{replyUsername}</span>
-                  <span className="text-text-dim text-[9px]">{timeAgo(reply.created_at)}</span>
-                </div>
-                <p className="text-text-dim text-sm leading-relaxed">{reply.body}</p>
-                <div className="flex items-center gap-3 mt-1">
-                  <button
-                    onClick={() => onReply(reply.id, replyUsername)}
-                    className="text-text-dim hover:text-accent text-[10px] transition-colors cursor-pointer"
-                  >
-                    Reply
-                  </button>
-                  {(user && reply.user_id === user.id) && (
+              <div key={reply.id} className="flex gap-2">
+                <AvatarImage
+                  src={reply.user?.avatar_url}
+                  name={replyUsername}
+                  alt={replyUsername || 'User'}
+                  className="h-5 w-5 flex-shrink-0 mt-0.5 text-[8px]"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-text-muted text-[10px] font-medium">
+                      @{replyUsername}
+                    </span>
+                    <span className="text-text-dim text-[9px]">{timeAgo(reply.created_at)}</span>
+                  </div>
+                  <p className="text-text-dim text-sm leading-relaxed">{reply.body}</p>
+                  <div className="flex items-center gap-3 mt-1">
                     <button
-                      onClick={() => onDelete(reply.id)}
-                      className="text-text-faint hover:text-danger text-[10px] transition-colors cursor-pointer"
+                      onClick={() => onReply(reply.id, replyUsername)}
+                      className="text-text-dim hover:text-accent text-[10px] transition-colors cursor-pointer"
                     >
-                      Delete
+                      Reply
                     </button>
-                  )}
+                    {canDeleteReply && (
+                      <button
+                        onClick={() => onDelete(reply.id)}
+                        aria-label={
+                          isOwnReply
+                            ? `Delete reply by ${replyUsername}`
+                            : `Remove reply by ${replyUsername}`
+                        }
+                        className="text-text-faint hover:text-danger text-[10px] transition-colors cursor-pointer"
+                      >
+                        {isOwnReply ? 'Delete' : 'Remove'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -359,7 +408,7 @@ function CommentThread({
               onClick={() => setShowAllReplies(true)}
               className="text-accent text-[10px] hover:text-accent transition-colors cursor-pointer"
             >
-              View {hiddenCount} more {hiddenCount === 1 ? "reply" : "replies"}
+              View {hiddenCount} more {hiddenCount === 1 ? 'reply' : 'replies'}
             </button>
           )}
         </div>

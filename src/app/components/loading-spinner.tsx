@@ -1,6 +1,38 @@
 import { motion } from "motion/react";
+import { useEffect, useState } from "react";
 
-export function LoadingSpinner({ text = "Loading..." }: { text?: string }) {
+interface LoadingSpinnerProps {
+  text?: string | null;
+  delayMs?: number;
+}
+
+export function useDelayedVisibility(delayMs = 180) {
+  const [visible, setVisible] = useState(delayMs <= 0);
+
+  useEffect(() => {
+    if (delayMs <= 0) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setVisible(true);
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [delayMs]);
+
+  return visible;
+}
+
+export function LoadingSpinner({ text = "Loading...", delayMs = 180 }: LoadingSpinnerProps) {
+  const visible = useDelayedVisibility(delayMs);
+
+  if (!visible) {
+    return <div aria-hidden="true" className="py-16" />;
+  }
+
   return (
     <div className="flex flex-col items-center justify-center py-16">
       <motion.div
@@ -8,7 +40,27 @@ export function LoadingSpinner({ text = "Loading..." }: { text?: string }) {
         animate={{ rotate: 360 }}
         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
       />
-      <p className="text-text-muted text-xs mt-3">{text}</p>
+      {text && <p className="text-text-muted text-xs mt-3">{text}</p>}
+    </div>
+  );
+}
+
+export function FullPageLoadingSpinner({ delayMs = 180 }: { delayMs?: number }) {
+  const visible = useDelayedVisibility(delayMs);
+
+  return (
+    <div
+      className="flex h-full w-full items-center justify-center"
+      style={{ background: "rgb(var(--rgb-bg))" }}
+      aria-busy={visible ? "true" : undefined}
+    >
+      {visible && (
+        <div
+          aria-label="Loading"
+          role="status"
+          className="h-6 w-6 rounded-full border-2 border-accent/20 border-t-accent animate-spin"
+        />
+      )}
     </div>
   );
 }

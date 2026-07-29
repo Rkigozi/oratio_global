@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router";
 import { AuthGuard } from "./auth-guard";
 
@@ -10,6 +10,10 @@ vi.mock("../../hooks/auth-context", () => ({
 import { useAuth } from '../../hooks/auth-context';
 
 describe("AuthGuard", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: "user-1" },
@@ -59,6 +63,7 @@ describe("AuthGuard", () => {
   });
 
   it("shows loading spinner while auth loads", () => {
+    vi.useFakeTimers();
     vi.mocked(useAuth).mockReturnValue({
       user: null, loading: true,
       profile: null, signUp: vi.fn(), signIn: vi.fn(), signInWithGoogle: vi.fn(),
@@ -70,6 +75,12 @@ describe("AuthGuard", () => {
         <AuthGuard />
       </MemoryRouter>
     );
+
+    expect(container.querySelector(".animate-spin")).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(180);
+    });
 
     expect(container.querySelector(".animate-spin")).toBeTruthy();
   });

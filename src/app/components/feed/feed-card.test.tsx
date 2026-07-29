@@ -1,30 +1,30 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
-import { FeedCard } from "./feed-card";
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
+import { FeedCard } from './feed-card';
 import type { PrayerRequest } from '../../services/prayer-data';
 
-vi.mock("../../services/upload", () => ({
-  getInitialAvatarUrl: () => "https://ui-avatars.com/api/?name=T",
+vi.mock('../../services/upload', () => ({
+  getInitialAvatarUrl: () => 'https://ui-avatars.com/api/?name=T',
 }));
 
 const mockPrayer: PrayerRequest = {
-  id: "p1",
-  city: "London",
-  country: "UK",
-  text: "Praying for peace #peace",
-  username: "testuser",
-  displayName: "Test User",
+  id: 'p1',
+  city: 'London',
+  country: 'UK',
+  text: 'Praying for peace #peace',
+  username: 'testuser',
+  displayName: 'Test User',
   prayerCount: 5,
   lat: 51.5,
   lng: -0.1,
-  category: "Peace",
+  category: 'Peace',
   createdAt: new Date().toISOString(),
   commentsEnabled: true,
 };
 
-describe("FeedCard", () => {
-  it("renders prayer text and attribution", () => {
+describe('FeedCard', () => {
+  it('renders prayer text and attribution', () => {
     render(
       <MemoryRouter>
         <FeedCard
@@ -37,10 +37,10 @@ describe("FeedCard", () => {
       </MemoryRouter>
     );
     expect(screen.getByText(/Praying for peace/)).toBeTruthy();
-    expect(screen.getByText("testuser")).toBeTruthy();
+    expect(screen.getByText('testuser')).toBeTruthy();
   });
 
-  it("shows pray button with count", () => {
+  it('shows pray button with count', () => {
     render(
       <MemoryRouter>
         <FeedCard
@@ -52,10 +52,40 @@ describe("FeedCard", () => {
         />
       </MemoryRouter>
     );
-    expect(screen.getByText("5")).toBeTruthy();
+    expect(screen.getByText('5')).toBeTruthy();
   });
 
-  it("calls onPrayed when pray button clicked", () => {
+  it('shows an edited label for edited prayers', () => {
+    render(
+      <MemoryRouter>
+        <FeedCard
+          prayer={{ ...mockPrayer, editedAt: new Date().toISOString() }}
+          index={0}
+          hasPrayed={false}
+          onPrayed={vi.fn()}
+          onTap={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.getByText('Edited')).toBeTruthy();
+  });
+
+  it('labels Circle prayers', () => {
+    render(
+      <MemoryRouter>
+        <FeedCard
+          prayer={{ ...mockPrayer, audience: 'circle' }}
+          index={0}
+          hasPrayed={false}
+          onPrayed={vi.fn()}
+          onTap={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.getByText('Circle')).toBeTruthy();
+  });
+
+  it('calls onPrayed when pray button clicked', () => {
     const onPrayed = vi.fn();
     render(
       <MemoryRouter>
@@ -69,11 +99,11 @@ describe("FeedCard", () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByText("Pray"));
-    expect(onPrayed).toHaveBeenCalledWith("p1");
+    fireEvent.click(screen.getByText('Pray'));
+    expect(onPrayed).toHaveBeenCalledWith('p1');
   });
 
-  it("calls onTap when card is clicked", () => {
+  it('calls onTap when card is clicked', () => {
     const onTap = vi.fn();
     render(
       <MemoryRouter>
@@ -91,7 +121,7 @@ describe("FeedCard", () => {
     expect(onTap).toHaveBeenCalledWith(mockPrayer);
   });
 
-  it("shows Comment button when comments are enabled", () => {
+  it('shows Comment button when comments are enabled', () => {
     render(
       <MemoryRouter>
         <FeedCard
@@ -103,10 +133,10 @@ describe("FeedCard", () => {
         />
       </MemoryRouter>
     );
-    expect(screen.getByText("Comment")).toBeTruthy();
+    expect(screen.getByText('Comment')).toBeTruthy();
   });
 
-  it("shows Off when comments are disabled", () => {
+  it('shows Off when comments are disabled', () => {
     render(
       <MemoryRouter>
         <FeedCard
@@ -118,10 +148,10 @@ describe("FeedCard", () => {
         />
       </MemoryRouter>
     );
-    expect(screen.getByText("Off")).toBeTruthy();
+    expect(screen.getByText('Off')).toBeTruthy();
   });
 
-  it("calls onUserClick when username is clicked", () => {
+  it('calls onUserClick when username is clicked', () => {
     const onUserClick = vi.fn();
     render(
       <MemoryRouter>
@@ -136,7 +166,7 @@ describe("FeedCard", () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByText("testuser"));
-    expect(onUserClick).toHaveBeenCalledWith("testuser");
+    fireEvent.click(screen.getByText('testuser'));
+    expect(onUserClick).toHaveBeenCalledWith('testuser');
   });
 });

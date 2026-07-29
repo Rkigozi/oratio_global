@@ -1,26 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ComponentProps, ReactNode } from "react";
-import { act, render, screen, fireEvent } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { ComponentProps, ReactNode } from 'react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 
-vi.mock("../../hooks/auth-context", () => ({
+vi.mock('../../hooks/auth-context', () => ({
   useAuth: vi.fn(),
 }));
 
-vi.mock("../../services/supabase-queries", () => ({
+vi.mock('../../services/supabase-queries', () => ({
   createPrayerRequest: vi.fn(),
   getProfilePreferences: vi.fn(),
 }));
 
-vi.mock("../../hooks/use-geolocation", () => ({
+vi.mock('../../hooks/use-geolocation', () => ({
   useGeolocation: vi.fn(),
 }));
 
-vi.mock("../../components/crisis-resources", () => ({
+vi.mock('../../components/crisis-resources', () => ({
   CrisisResources: () => null,
 }));
 
-vi.mock("motion/react", () => ({
+vi.mock('motion/react', () => ({
   AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</>,
   motion: {
     div: ({
@@ -30,21 +30,21 @@ vi.mock("motion/react", () => ({
       exit: _exit,
       transition: _transition,
       ...props
-    }: ComponentProps<"div"> & Record<string, unknown>) => <div {...props}>{children}</div>,
+    }: ComponentProps<'div'> & Record<string, unknown>) => <div {...props}>{children}</div>,
   },
 }));
 
-import { Submit } from "./submit";
+import { Submit } from './submit';
 import { useAuth } from '../../hooks/auth-context';
 import { createPrayerRequest, getProfilePreferences } from '../../services/supabase-queries';
 import { useGeolocation } from '../../hooks/use-geolocation';
 
-describe("Submit", () => {
+describe('Submit', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: "user-1", email: "test@example.com" } as any,
-      profile: { username: "testuser", display_name: "Test User" },
+      user: { id: 'user-1', email: 'test@example.com' } as any,
+      profile: { username: 'testuser', display_name: 'Test User' },
       loading: false,
       signUp: vi.fn(),
       signIn: vi.fn(),
@@ -63,46 +63,48 @@ describe("Submit", () => {
       resetDenied: vi.fn(),
     });
     vi.mocked(getProfilePreferences).mockReturnValue(new Promise(() => {}));
-    vi.mocked(createPrayerRequest).mockResolvedValue("prayer-1");
+    vi.mocked(createPrayerRequest).mockResolvedValue('prayer-1');
   });
 
-  it("renders textarea, anonymous toggle, and submit button", () => {
+  it('renders textarea, anonymous toggle, and submit button', () => {
     render(
       <MemoryRouter>
         <Submit />
       </MemoryRouter>
     );
-    expect(
-      screen.getByPlaceholderText(/share what's on your heart/i)
-    ).toBeInTheDocument();
-    expect(screen.getByText("Submit Prayer Request")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/share what's on your heart/i)).toBeInTheDocument();
+    expect(screen.getByText('Submit Prayer Request')).toBeInTheDocument();
     expect(screen.getByText(/submitting as testuser/i)).toBeInTheDocument();
+    expect(screen.getByText('Who should see this?')).toBeInTheDocument();
+    expect(screen.getByText('Public')).toBeInTheDocument();
+    expect(screen.getByText('Prayer Circle')).toBeInTheDocument();
   });
 
-  it("renders location section with auto-detect toggle", () => {
+  it('renders location section with auto-detect toggle', () => {
     render(
       <MemoryRouter>
         <Submit />
       </MemoryRouter>
     );
-    expect(screen.getByText("Your Location")).toBeInTheDocument();
+    expect(screen.getByText('Your Location')).toBeInTheDocument();
     expect(screen.getByLabelText(/auto-detect/i)).toBeInTheDocument();
   });
 
-  it("calls createPrayerRequest on valid submit", async () => {
+  it('calls createPrayerRequest on valid submit', async () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
     render(
       <MemoryRouter>
         <Submit />
       </MemoryRouter>
     );
 
-    fireEvent.change(
-      screen.getByPlaceholderText(/share what's on your heart/i),
-      { target: { value: "Please heal my family and bring peace" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
+      target: { value: 'Please heal my family and bring peace' },
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText("Submit Prayer Request"));
+      fireEvent.click(screen.getByText('Submit Prayer Request'));
     });
 
     await vi.waitFor(() => {
@@ -110,23 +112,64 @@ describe("Submit", () => {
     });
 
     const callArg = vi.mocked(createPrayerRequest).mock.calls[0][0];
-    expect(callArg.text).toContain("Please heal my family");
+    expect(callArg.text).toContain('Please heal my family');
+    expect(callArg.audience).toBe('public');
+
+    const prayerEvent = dispatchSpy.mock.calls.find(
+      ([event]) => event instanceof CustomEvent && event.type === 'oratio-prayer-added'
+    )?.[0] as CustomEvent<{ authorId?: string; audience?: string }> | undefined;
+    expect(prayerEvent?.detail.authorId).toBe('user-1');
+    expect(prayerEvent?.detail.audience).toBe('public');
+
+    await vi.waitFor(() => {
+      expect(screen.getByText('Prayer Request Submitted')).toBeInTheDocument();
+    });
+
+    dispatchSpy.mockRestore();
   });
 
-  it("shows validation error when prayer text is too short", async () => {
+  it('submits to Prayer Circle when selected', async () => {
     render(
       <MemoryRouter>
         <Submit />
       </MemoryRouter>
     );
 
-    fireEvent.change(
-      screen.getByPlaceholderText(/share what's on your heart/i),
-      { target: { value: "Short" } }
-    );
+    fireEvent.click(screen.getByRole('button', { name: /Prayer Circle/i }));
+    fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
+      target: { value: 'Please pray with me through this quiet season' },
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText("Submit Prayer Request"));
+      fireEvent.click(screen.getByText('Submit Prayer Request'));
+    });
+
+    await vi.waitFor(() => {
+      expect(createPrayerRequest).toHaveBeenCalled();
+    });
+
+    const callArg = vi.mocked(createPrayerRequest).mock.calls[0][0];
+    expect(callArg.audience).toBe('circle');
+
+    await vi.waitFor(() => {
+      expect(screen.getByText('View Circle Prayers')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Share prayer link')).not.toBeInTheDocument();
+  });
+
+  it('shows validation error when prayer text is too short', async () => {
+    render(
+      <MemoryRouter>
+        <Submit />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
+      target: { value: 'Short' },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit Prayer Request'));
     });
 
     await vi.waitFor(() => {
@@ -136,37 +179,30 @@ describe("Submit", () => {
     expect(createPrayerRequest).not.toHaveBeenCalled();
   });
 
-  it("shows success message after submission", async () => {
+  it('shows success message after submission', async () => {
     render(
       <MemoryRouter>
         <Submit />
       </MemoryRouter>
     );
 
-    fireEvent.change(
-      screen.getByPlaceholderText(/share what's on your heart/i),
-      { target: { value: "Please heal my family and bring peace to us all" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
+      target: { value: 'Please heal my family and bring peace to us all' },
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText("Submit Prayer Request"));
+      fireEvent.click(screen.getByText('Submit Prayer Request'));
     });
 
     await vi.waitFor(() => {
-      expect(
-        screen.getByText("Prayer Request Submitted")
-      ).toBeInTheDocument();
+      expect(screen.getByText('Prayer Request Submitted')).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByText("View in Feed")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Submit Another Request")
-    ).toBeInTheDocument();
+    expect(screen.getByText('View in Feed')).toBeInTheDocument();
+    expect(screen.getByText('Submit Another Request')).toBeInTheDocument();
   });
 
-  it("shows an error instead of success when saving fails", async () => {
+  it('shows an error instead of success when saving fails', async () => {
     vi.mocked(createPrayerRequest).mockResolvedValueOnce(null);
 
     render(
@@ -175,23 +211,22 @@ describe("Submit", () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(
-      screen.getByPlaceholderText(/share what's on your heart/i),
-      { target: { value: "Please heal my family and bring peace to us all" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
+      target: { value: 'Please heal my family and bring peace to us all' },
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText("Submit Prayer Request"));
+      fireEvent.click(screen.getByText('Submit Prayer Request'));
     });
 
     await vi.waitFor(() => {
       expect(screen.getByText(/couldn't save this prayer/i)).toBeInTheDocument();
     });
 
-    expect(screen.queryByText("Prayer Request Submitted")).not.toBeInTheDocument();
+    expect(screen.queryByText('Prayer Request Submitted')).not.toBeInTheDocument();
   });
 
-  it("uses approximate coordinates for manually entered locations", async () => {
+  it('uses approximate coordinates for manually entered locations', async () => {
     render(
       <MemoryRouter>
         <Submit />
@@ -199,19 +234,18 @@ describe("Submit", () => {
     );
 
     fireEvent.click(screen.getByLabelText(/auto-detect/i));
-    fireEvent.change(screen.getByPlaceholderText("City"), {
-      target: { value: "London" },
+    fireEvent.change(screen.getByPlaceholderText('City'), {
+      target: { value: 'London' },
     });
-    fireEvent.change(screen.getByDisplayValue("Country"), {
-      target: { value: "United Kingdom" },
+    fireEvent.change(screen.getByDisplayValue('Country'), {
+      target: { value: 'United Kingdom' },
     });
-    fireEvent.change(
-      screen.getByPlaceholderText(/share what's on your heart/i),
-      { target: { value: "Please heal my family and bring peace to us all" } }
-    );
+    fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
+      target: { value: 'Please heal my family and bring peace to us all' },
+    });
 
     await act(async () => {
-      fireEvent.click(screen.getByText("Submit Prayer Request"));
+      fireEvent.click(screen.getByText('Submit Prayer Request'));
     });
 
     await vi.waitFor(() => {
@@ -219,13 +253,13 @@ describe("Submit", () => {
     });
 
     const callArg = vi.mocked(createPrayerRequest).mock.calls[0][0];
-    expect(callArg.city).toBe("London");
-    expect(callArg.country).toBe("United Kingdom");
+    expect(callArg.city).toBe('London');
+    expect(callArg.country).toBe('United Kingdom');
     expect(callArg.lat).not.toBe(0);
     expect(callArg.lng).not.toBe(0);
   });
 
-  it("toggles anonymous mode", () => {
+  it('toggles anonymous mode', () => {
     render(
       <MemoryRouter>
         <Submit />
@@ -234,8 +268,8 @@ describe("Submit", () => {
 
     expect(screen.getByText(/submitting as testuser/i)).toBeInTheDocument();
 
-    const section = screen.getByText(/submitting as/i).closest("div")!.parentElement!;
-    const toggle = section.querySelector("button")!;
+    const section = screen.getByText(/submitting as/i).closest('div')!.parentElement!;
+    const toggle = section.querySelector('button')!;
     fireEvent.click(toggle);
 
     expect(screen.getByText(/submitting anonymously/i)).toBeInTheDocument();

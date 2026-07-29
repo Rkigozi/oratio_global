@@ -35,23 +35,23 @@ export default defineConfig({
         start_url: '/',
         categories: ['religion', 'spirituality', 'lifestyle'],
         icons: [
-          { src: '/icons/icon.svg', sizes: '512x512', type: 'image/svg+xml' },
-          { src: '/icons/icon-180.png', sizes: '180x180', type: 'image/png' },
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable any' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable any' },
+          { src: '/icons/icon.svg?v=oratio-wordmark-2', sizes: '512x512', type: 'image/svg+xml' },
+          { src: '/icons/icon-180.png?v=oratio-wordmark-2', sizes: '180x180', type: 'image/png' },
+          { src: '/icons/icon-192.png?v=oratio-wordmark-2', sizes: '192x192', type: 'image/png', purpose: 'maskable any' },
+          { src: '/icons/icon-512.png?v=oratio-wordmark-2', sizes: '512x512', type: 'image/png', purpose: 'maskable any' },
         ],
       },
       workbox: {
-        // Keep the install/update path light. Oratio is a networked social app,
-        // so lazy route chunks should load on demand instead of being precached
-        // during the first browser/PWA visit.
+        // Keep the installed PWA internally consistent across deploys. Route
+        // chunks are hashed, so precaching every JS asset prevents the app shell
+        // from asking for a lazy route file that disappeared after a new deploy.
         globPatterns: [
           'index.html',
           'registerSW.js',
           'manifest.webmanifest',
           'icons/*.{svg,png,ico}',
           'assets/*.css',
-          'assets/index-*.js',
+          'assets/*.js',
         ],
         navigateFallback: '/index.html',
         navigateFallbackAllowlist: [/^\/[a-z]/],

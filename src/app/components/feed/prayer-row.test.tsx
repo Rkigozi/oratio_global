@@ -64,6 +64,21 @@ describe("PrayerRow", () => {
     expect(screen.getByText("3")).toBeTruthy();
   });
 
+  it("shows edited text next to the timestamp for edited prayers", () => {
+    render(
+      <MemoryRouter>
+        <PrayerRow
+          prayer={{ ...mockPrayer, editedAt: new Date().toISOString() }}
+          index={0}
+          showCount={false}
+          canManage={false}
+          onTap={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.getByText(/Edited/)).toBeTruthy();
+  });
+
   it("shows delete button when canManage is true", () => {
     render(
       <MemoryRouter>

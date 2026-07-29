@@ -1,16 +1,46 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { LoadingSpinner, ErrorState } from "./loading-spinner";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { LoadingSpinner, ErrorState, FullPageLoadingSpinner } from "./loading-spinner";
 
 describe("LoadingSpinner", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("renders with default text", () => {
-    render(<LoadingSpinner />);
+    render(<LoadingSpinner delayMs={0} />);
     expect(screen.getByText("Loading...")).toBeTruthy();
   });
 
   it("renders with custom text", () => {
-    render(<LoadingSpinner text="Fetching prayers..." />);
+    render(<LoadingSpinner text="Fetching prayers..." delayMs={0} />);
     expect(screen.getByText("Fetching prayers...")).toBeTruthy();
+  });
+
+  it("waits briefly before showing the loading state", () => {
+    vi.useFakeTimers();
+
+    render(<LoadingSpinner text="Fetching prayers..." />);
+    expect(screen.queryByText("Fetching prayers...")).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(180);
+    });
+
+    expect(screen.getByText("Fetching prayers...")).toBeTruthy();
+  });
+
+  it("uses the same delay for full-page route loading", () => {
+    vi.useFakeTimers();
+
+    render(<FullPageLoadingSpinner />);
+    expect(screen.queryByRole("status", { name: "Loading" })).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(180);
+    });
+
+    expect(screen.getByRole("status", { name: "Loading" })).toBeTruthy();
   });
 });
 

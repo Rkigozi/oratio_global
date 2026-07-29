@@ -98,6 +98,7 @@ export function ProfileSaved() {
                         <span className="text-text-dim text-[11px]">{prayer.city || "Unknown"}</span>
                         {prayer.createdAt && (
                           <span className="text-text-muted text-[10px] ml-auto">
+                            {prayer.editedAt ? "Edited · " : ""}
                             {timeAgo(prayer.createdAt)}
                           </span>
                         )}
@@ -153,6 +154,7 @@ export function ProfileSaved() {
                     </div>
                     {selectedPrayer.createdAt && (
                       <p className="text-text-muted text-[11px] mb-5 text-center">
+                        {selectedPrayer.editedAt ? "Edited · " : ""}
                         {timeAgo(selectedPrayer.createdAt)}
                       </p>
                     )}

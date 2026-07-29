@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { AuthProvider, useAuth } from "./auth-context";
 
+vi.mock("../../lib/analytics", () => ({
+  captureEvent: vi.fn(),
+}));
+
 vi.mock("../services/supabase", () => {
   const authFns: Record<string, ReturnType<typeof vi.fn>> = {
     getUser: vi.fn(),
@@ -44,6 +48,7 @@ vi.mock("../services/supabase", () => {
 });
 
 import { supabase } from "../services/supabase";
+import { captureEvent } from "../../lib/analytics";
 
 function getQb(): Record<string, ReturnType<typeof vi.fn>> {
   return (supabase as { from: () => Record<string, ReturnType<typeof vi.fn>> }).from("x");
@@ -247,6 +252,7 @@ describe("AuthProvider", () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.profile).toBeNull();
+    expect(captureEvent).toHaveBeenCalledWith("user_signed_out");
   });
 
   it("resetPassword returns null on success", async () => {
@@ -260,6 +266,7 @@ describe("AuthProvider", () => {
     });
 
     expect(error).toBeNull();
+    expect(captureEvent).toHaveBeenCalledWith("password_reset_requested");
   });
 
   it("updatePassword returns null on success", async () => {
@@ -273,6 +280,7 @@ describe("AuthProvider", () => {
     });
 
     expect(error).toBeNull();
+    expect(captureEvent).toHaveBeenCalledWith("password_updated");
   });
 
   it("subscribes to auth state changes", async () => {

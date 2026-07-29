@@ -42,7 +42,7 @@ export function UpdatePassword() {
 
   if (waitingForSession) {
     return (
-      <div className="flex h-full min-h-0 w-full flex-col items-center justify-center overflow-y-auto overscroll-contain" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div className="auth-page-scroll flex w-full flex-col items-center justify-center" style={{ background: "rgb(var(--rgb-bg))" }}>
         <Loader size={20} className="animate-spin text-accent mb-4" />
         <p className="text-text-muted text-sm">Verifying your reset link...</p>
       </div>
@@ -51,7 +51,7 @@ export function UpdatePassword() {
 
   if (!user && !waitingForSession) {
     return (
-      <div className="flex h-full min-h-0 w-full flex-col items-center justify-center overflow-y-auto overscroll-contain px-6" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div className="auth-page-scroll flex w-full flex-col items-center justify-center px-6" style={{ background: "rgb(var(--rgb-bg))" }}>
         <div className="text-center max-w-sm">
           <div className="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center"
             style={{ background: "rgba(var(--rgb-danger), 0.1)" }}
@@ -75,7 +75,7 @@ export function UpdatePassword() {
 
   if (done) {
     return (
-      <div className="flex h-full min-h-0 w-full flex-col items-center justify-center overflow-y-auto overscroll-contain px-6" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div className="auth-page-scroll flex w-full flex-col items-center justify-center px-6" style={{ background: "rgb(var(--rgb-bg))" }}>
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -101,7 +101,7 @@ export function UpdatePassword() {
   }
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto overscroll-contain text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <div className="auth-page-scroll flex w-full flex-col text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(var(--rgb-accent), 0.12), transparent 70%)" }}
       />

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { ArrowLeft, LogIn, Loader } from "lucide-react";
+import { LogIn, Loader } from "lucide-react";
 import { useAuth } from '../../hooks/auth-context';
+import { AuthBackButton } from "../../components/auth/auth-back-button";
+import { PasswordInput } from "../../components/auth/password-input";
 
 export function Login() {
   const navigate = useNavigate();
@@ -29,18 +31,12 @@ export function Login() {
   };
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto overscroll-contain text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <div className="auth-page-scroll flex w-full flex-col text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(var(--rgb-accent), 0.12), transparent 70%)" }}
       />
 
-      <button
-        onClick={() => void navigate("/landing")}
-        className="absolute top-6 left-4 z-20 flex items-center gap-1.5 text-text-muted hover:text-text-muted transition-colors cursor-pointer"
-      >
-        <ArrowLeft size={16} />
-        <span className="text-xs">Back</span>
-      </button>
+      <AuthBackButton onClick={() => void navigate("/landing")} />
 
       <div className="relative z-10 flex flex-col flex-1 justify-center px-6 max-w-sm mx-auto w-full">
         <motion.div
@@ -74,15 +70,13 @@ export function Login() {
               borderColor: error ? 'rgb(var(--rgb-danger))' : 'rgba(var(--rgb-accent), 0.12)',
             }}
           />
-          <input type="password" value={password}
-            onChange={(e) => { setPassword(e.target.value); setError(""); }}
+          <PasswordInput
+            value={password}
+            onChange={(nextPassword) => { setPassword(nextPassword); setError(""); }}
             onKeyDown={(e) => e.key === "Enter" && void handleLogin()}
             placeholder="Password"
-            className="w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border transition-colors text-center"
-            style={{
-              background: "rgba(var(--rgb-surface), 0.6)",
-              borderColor: error ? 'rgb(var(--rgb-danger))' : 'rgba(var(--rgb-accent), 0.12)',
-            }}
+            autoComplete="current-password"
+            hasError={Boolean(error)}
           />
           {error && <p className="text-danger text-xs text-center">{error}</p>}
           <button

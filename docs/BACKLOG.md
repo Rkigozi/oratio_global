@@ -7,6 +7,7 @@
 ## ✅ v1.0 Launch Checklist
 
 ### Core Product
+
 - [x] Landing page with sign up / sign in
 - [x] Email + Google OAuth authentication
 - [x] Prayer submission with location (manual + geo-detect)
@@ -19,13 +20,14 @@
 - [x] Hashtag system (clickable, trending)
 - [x] Save/bookmark prayers (cross-device via Supabase)
 - [x] Mutual Prayer Circle invites with accept/decline/cancel
-- [x] Prayer Circle feed filter (shows prayers from accepted circle connections)
+- [x] Prayer Circle feed filter with Circle-only prayer visibility
 - [x] Profile page with stats: Prayers, Prayed, Prayer Circle
 - [x] Other user profiles with their prayers
 - [x] Prayer detail page with share, report, toggle comments
 - [x] Map view with prayer hotspots (light + dark mode)
 
 ### Technical & Security
+
 - [x] Supabase backend with full RLS policies
 - [x] Auto-profile creation on signup (DB trigger)
 - [x] CSP security headers (`netlify.toml`)
@@ -44,6 +46,7 @@
 - [x] Error Boundary wrapping app root
 
 ### Cleanup
+
 - [x] Categories removed (hashtags are the replacement)
 - [x] All mock data removed from production code paths
 - [x] Sample badges removed from components
@@ -55,6 +58,7 @@
 - [x] Moderation page works (reports UPDATE RLS policy added)
 
 ### UI/UX Polish
+
 - [x] Dark mode with system preference sync
 - [x] Light mode map tiles (ArcGIS, CSP-allowed)
 - [x] Prayer detail shows real avatar from DB
@@ -70,24 +74,24 @@
 
 ## 📋 Pre-Launch Items (no domain needed)
 
-| # | Task | Why |
-|---|------|-----|
-| 1 | Check `/privacy` and `/terms` pages have real content | Legal requirement |
-| 2 | Test password reset flow end-to-end | Standard Supabase flow, quick to verify |
-| 3 | Test full signup → confirm email → submit → comment → Prayer Circle invite | Catch any RLS/auth state issues |
-| 4 | Update OG image URL to production domain in `index.html` | Once domain is purchased |
+| #   | Task                                                                       | Why                                     |
+| --- | -------------------------------------------------------------------------- | --------------------------------------- |
+| 1   | Check `/privacy` and `/terms` pages have real content                      | Legal requirement                       |
+| 2   | Test password reset flow end-to-end                                        | Standard Supabase flow, quick to verify |
+| 3   | Test full signup → confirm email → submit → comment → Prayer Circle invite | Catch any RLS/auth state issues         |
+| 4   | Update OG image URL to production domain in `index.html`                   | Once domain is purchased                |
 
 ## 🔜 v1.1 Candidates
 
-| # | Task | Why |
-|---|------|-----|
-| 1 | Email/push notifications | User retention |
-| 2 | Admin moderation dashboard | Currently manual Supabase |
-| 3 | Apple splash screens | iOS PWA polish |
-| 4 | Web Share Target API | Share from other apps |
-| 5 | Read-more affordance for truncated text | UX clarity |
-| 6 | Bottom nav tap feedback (`active:scale-95`) | Micro-interaction |
-| 7 | Animated new comments | UX delight |
-| 8 | Title transitions in Header | Route change smoothness |
-| 9 | Crisis resources phone numbers (`tel:` links) | Accessibility |
-| 10 | Info page unsubscribe (DELETE API) | Waitlist management |
+| #   | Task                                          | Why                       |
+| --- | --------------------------------------------- | ------------------------- |
+| 1   | Email/push notifications                      | User retention            |
+| 2   | Admin moderation dashboard                    | Currently manual Supabase |
+| 3   | Apple splash screens                          | iOS PWA polish            |
+| 4   | Web Share Target API                          | Share from other apps     |
+| 5   | Read-more affordance for truncated text       | UX clarity                |
+| 6   | Bottom nav tap feedback (`active:scale-95`)   | Micro-interaction         |
+| 7   | Animated new comments                         | UX delight                |
+| 8   | Title transitions in Header                   | Route change smoothness   |
+| 9   | Crisis resources phone numbers (`tel:` links) | Accessibility             |
+| 10  | Info page unsubscribe (DELETE API)            | Waitlist management       |

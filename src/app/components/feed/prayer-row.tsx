@@ -67,6 +67,7 @@ export function PrayerRow({
             </span>
             {prayer.createdAt && (
               <span className="text-text-muted text-[10px] ml-auto">
+                {prayer.editedAt ? "Edited · " : ""}
                 {timeAgo(prayer.createdAt)}
               </span>
             )}

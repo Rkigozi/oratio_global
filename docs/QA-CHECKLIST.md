@@ -3,6 +3,7 @@
 ## Authentication
 
 ### Sign Up
+
 - [ ] Landing page loads with "Start Praying" and "I already have an account" buttons
 - [ ] Tap "Start Praying" → Onboarding page shows Google + Email options
 - [ ] Google sign-up redirects to Google, comes back to `/`
@@ -11,6 +12,7 @@
 - [ ] Signscreen shows onboarding only for first-time users
 
 ### Sign In
+
 - [ ] Tap "I already have an account" → Login page shows email + password + Google
 - [ ] Email sign-in works with correct credentials
 - [ ] Google sign-in works
@@ -18,6 +20,7 @@
 - [ ] Sign-in with unregistered email shows error
 
 ### Sign Out
+
 - [ ] Profile page → "Sign Out" → redirects to landing page
 - [ ] After sign-out, navigating to `/` redirects to landing
 
@@ -26,6 +29,7 @@
 ## Feed
 
 ### Core
+
 - [ ] Feed loads with 20 prayers initially
 - [ ] Scrolling loads more (infinite scroll)
 - [ ] Prayer cards show: avatar, username, text, comment button, pray button
@@ -34,6 +38,7 @@
 - [ ] Each prayer shows correct time ago
 
 ### Search
+
 - [ ] Search bar is present
 - [ ] Type query → press Enter → prayers filtered
 - [ ] Tap a trending hashtag → feed filtered by that hashtag
@@ -43,28 +48,33 @@
 - [ ] Search banner shows active search
 
 ### Filters
+
 - [ ] "All" filter pill resets all filters
 - [ ] "Near Me" filters by geolocation country (if allowed)
 - [ ] "Saved" filter shows only saved prayers
 - [ ] "Country" dropdown opens country list
 - [ ] Selecting a country filters prayers
-- [ ] Filter banner shows when location filter is active
+- [ ] Location filter updates the section title; use "All" or filter pills to reset
 
 ### Pray Interaction
+
 - [ ] Tap 🙏 button → count increments, state toggles to "Prayed"
 - [ ] Tap again → count decrements, toggles back to "Pray"
 - [ ] Count persists on page reload (localStorage)
 
 ### Comments
+
 - [ ] Tap "Comment" button → navigates to prayer detail page
 - [ ] Comment section loads below prayer
 - [ ] Type comment → press Enter → comment appears
 - [ ] Reply to a comment → reply appears under parent
 - [ ] "View X replies" shows for 2+ replies
-- [ ] Delete comment → comment removed, counter updates
+- [ ] Delete your own comment → comment removed, counter updates
+- [ ] Prayer author can remove another user's comment from their prayer
 - [ ] Report comment → shows "Thanks for reporting"
 
 ### Save
+
 - [ ] Tap prayer → detail page → ⋯ → "Save" → returns to feed → "Saved" filter shows it
 - [ ] Tap "Saved" again → unsaves
 
@@ -104,6 +114,7 @@
 - [ ] Gold circle markers appear on cities
 - [ ] Tap marker → drawer opens with city info
 - [ ] "View Prayers" navigates to feed filtered by city
+- [ ] No "Unknown, Unknown" marker or drawer appears
 - [ ] Geolocation prompt appears on first visit
 - [ ] "Allow" → flies to your location
 - [ ] Locate button (crosshair) appears bottom-right when location known
@@ -192,8 +203,8 @@
 
 **Run:** `npm test`
 **Expected:** 50 tests passing
-**Current:** _____ passing
+**Current:** **\_** passing
 
-**QA Sign-off:** ____________________
-**Date:** ____________________
-**Notes:** ____________________
+**QA Sign-off:** **\*\*\*\***\_\_\_\_**\*\*\*\***
+**Date:** **\*\*\*\***\_\_\_\_**\*\*\*\***
+**Notes:** **\*\*\*\***\_\_\_\_**\*\*\*\***

@@ -4,6 +4,14 @@ import L from "leaflet";
 import { useTheme } from '../hooks/theme-context';
 // Leaflet CSS is imported in src/styles/index.css
 
+interface NearbyPrayerArea {
+   lat: number;
+   lng: number;
+   city: string;
+   country: string;
+   markerId?: string;
+ }
+
 // ── Main component ──────────────────────────────────────────────────
 interface WorldMapCleanProps {
    prayers: PrayerRequest[];
@@ -12,6 +20,7 @@ interface WorldMapCleanProps {
    prayedId?: string | null;
    newPrayerId?: string | null;
    flyTo?: { lat: number; lng: number } | null;
+   nearbyArea?: NearbyPrayerArea | null;
    showCityLabels?: boolean;
  }
 
@@ -22,6 +31,7 @@ export function WorldMapClean({
    prayedId,
    newPrayerId,
    flyTo,
+   nearbyArea,
    showCityLabels = false,
  }: WorldMapCleanProps) {
    const containerRef = useRef<HTMLDivElement>(null);
@@ -121,9 +131,43 @@ export function WorldMapClean({
     // Use a single renderer for all circles
     const renderer = L.canvas({ padding: 0.5 });
 
+    if (nearbyArea) {
+      const areaRadius = zoom <= 4 ? 18 : zoom <= 7 ? 24 : 30;
+
+      L.circleMarker([nearbyArea.lat, nearbyArea.lng], {
+        renderer,
+        radius: areaRadius,
+        color: "rgba(124,143,255,0.42)",
+        fillColor: "rgba(124,143,255,0.08)",
+        fillOpacity: 1,
+        weight: 1.5,
+        interactive: false,
+      }).addTo(group);
+
+      if (zoom >= 5) {
+        const labelAnchor = L.circleMarker([nearbyArea.lat, nearbyArea.lng], {
+          renderer,
+          radius: 0,
+          opacity: 0,
+          fillOpacity: 0,
+          interactive: false,
+        }).addTo(group);
+
+        labelAnchor.bindTooltip("Near you", {
+          permanent: true,
+          direction: 'top',
+          className: 'nearby-area-tooltip',
+          offset: [0, -areaRadius],
+          opacity: 1,
+        }).openTooltip();
+      }
+    }
+
     for (const prayer of prayers) {
       // Prayer intensity (0-1 scale)
-      const intensity = Math.min(prayer.prayerCount / 250, 1);
+      const activityScore = Math.max(prayer.prayerCount, (prayer.requestCount ?? 1) * 8);
+      const intensity = Math.min(activityScore / 250, 1);
+      const isNearbyArea = nearbyArea?.markerId === prayer.id;
       
       // Size scaling with zoom - larger sizes for better tap accuracy at higher zooms
       let innerRadius: number;
@@ -166,6 +210,18 @@ export function WorldMapClean({
         }).addTo(group);
       }
 
+      if (isNearbyArea) {
+        L.circleMarker([prayer.lat, prayer.lng], {
+          renderer,
+          radius: outerRadius + 8,
+          color: "rgba(124,143,255,0.34)",
+          fillColor: "rgba(124,143,255,0.08)",
+          fillOpacity: 1,
+          weight: 1.5,
+          interactive: false,
+        }).addTo(group);
+      }
+
       const innerCore = L.circleMarker(
         [prayer.lat, prayer.lng],
         {
@@ -195,7 +251,7 @@ export function WorldMapClean({
        
         innerCore.addTo(group);
     }
-   }, [prayers, showCityLabels]);
+   }, [nearbyArea, prayers, showCityLabels]);
 
    // Update markers when prayers, ready, or zoom changes
    useEffect(() => {

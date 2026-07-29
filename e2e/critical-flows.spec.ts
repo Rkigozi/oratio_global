@@ -22,18 +22,24 @@ test.describe("Critical Flows", () => {
     await expect(page.getByText("Create Account")).toBeVisible();
   });
 
-  test("feed page loads prayer cards", async ({ page }) => {
-    await page.goto("/feed");
-    await expect(page.getByText("Prayers Around the World")).toBeVisible();
+  test("anonymous users cannot access private app routes", async ({ page }) => {
+    const privateRoutes = [
+      "/",
+      "/feed",
+      "/submit",
+      "/profile",
+      "/profile/settings",
+      "/profile/circle",
+      "/moderate",
+    ];
+
+    for (const route of privateRoutes) {
+      await page.goto(route);
+      await expect(page).toHaveURL(/\/landing|\/login/);
+    }
   });
 
-  test("can search in feed", async ({ page }) => {
-    await page.goto("/feed");
-    const searchInput = page.getByPlaceholder("Search prayers...");
-    await expect(searchInput).toBeVisible();
-  });
-
-  test("profile page shows stats for logged out user", async ({ page }) => {
+  test("anonymous users are redirected from profile", async ({ page }) => {
     await page.goto("/profile");
     await expect(page).toHaveURL(/\/landing|\/login/);
   });

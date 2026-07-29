@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
-import { useNavigate } from "react-router";
-import { ArrowLeft, Check, Clock, UserMinus, Users, X } from "lucide-react";
-import { timeAgo } from "../../services/prayer-data";
-import { getInitialAvatarUrl } from "../../services/upload";
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router';
+import { ArrowLeft, Check, Clock, UserMinus, Users, X } from 'lucide-react';
+import { timeAgo } from '../../services/prayer-data';
+import { AvatarImage } from '../../components/avatar-image';
 import {
   cancelPrayerCircleInvite,
   getPrayerCircle,
@@ -12,7 +12,7 @@ import {
   respondToPrayerCircleInvite,
   type PrayerCircleInvite,
   type PrayerCircleUser,
-} from "../../services/supabase-queries";
+} from '../../services/supabase-queries';
 
 export function PrayerCircle() {
   const navigate = useNavigate();
@@ -24,10 +24,7 @@ export function PrayerCircle() {
 
   const loadCircle = async () => {
     setLoading(true);
-    const [users, invites] = await Promise.all([
-      getPrayerCircle(),
-      getPrayerCircleInvites(),
-    ]);
+    const [users, invites] = await Promise.all([getPrayerCircle(), getPrayerCircleInvites()]);
     setCircle(users);
     setIncoming(invites.incoming);
     setOutgoing(invites.outgoing);
@@ -38,10 +35,7 @@ export function PrayerCircle() {
     let isMounted = true;
 
     const loadInitialCircle = async () => {
-      const [users, invites] = await Promise.all([
-        getPrayerCircle(),
-        getPrayerCircleInvites(),
-      ]);
+      const [users, invites] = await Promise.all([getPrayerCircle(), getPrayerCircleInvites()]);
 
       if (!isMounted) return;
       setCircle(users);
@@ -57,7 +51,7 @@ export function PrayerCircle() {
     };
   }, []);
 
-  const respond = async (inviteId: string, response: "accepted" | "declined") => {
+  const respond = async (inviteId: string, response: 'accepted' | 'declined') => {
     setBusyId(inviteId);
     await respondToPrayerCircleInvite(inviteId, response);
     await loadCircle();
@@ -79,10 +73,13 @@ export function PrayerCircle() {
   };
 
   return (
-    <div className="w-full min-h-dvh flex flex-col" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <div className="w-full min-h-dvh flex flex-col" style={{ background: 'rgb(var(--rgb-bg))' }}>
       <div
         className="flex-shrink-0 pt-[max(1.5rem,env(safe-area-inset-top))] pb-2 px-4"
-        style={{ background: "linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98), rgba(var(--rgb-bg), 0))" }}
+        style={{
+          background:
+            'linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98), rgba(var(--rgb-bg), 0))',
+        }}
       >
         <div className="flex items-center gap-3 mt-12">
           <button
@@ -100,15 +97,26 @@ export function PrayerCircle() {
         <div className="max-w-md mx-auto">
           <div
             className="rounded-xl px-4 py-4 mb-5"
-            style={{ background: "rgba(var(--rgb-surface), 0.4)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
+            style={{
+              background: 'rgba(var(--rgb-surface), 0.4)',
+              border: '1px solid rgba(var(--rgb-accent), 0.06)',
+            }}
           >
             <div className="flex items-center gap-2 text-text text-sm font-medium">
               <Users size={16} className="text-accent" />
-              <span>Pray for anyone. Keep praying with a few.</span>
+              <span>Keep close to people you pray with.</span>
             </div>
             <p className="text-text-dim text-xs mt-2 leading-relaxed">
-              Prayer Circle is mutual. People only appear here after an invite is accepted.
+              Prayer Circle is mutual. It is for people you intentionally allow into a closer prayer
+              space.
             </p>
+            <button
+              onClick={() => void navigate('/feed?circle=1')}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-accent/15 bg-accent/6 px-3 py-2 text-xs text-accent transition-colors hover:bg-accent/10 cursor-pointer"
+            >
+              <Users size={13} />
+              View Circle Prayers
+            </button>
           </div>
 
           {loading ? (
@@ -129,16 +137,19 @@ export function PrayerCircle() {
                         actions={
                           <>
                             <button
-                              onClick={() => void respond(invite.id, "accepted")}
+                              onClick={() => void respond(invite.id, 'accepted')}
                               disabled={busyId === invite.id}
                               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs text-text cursor-pointer disabled:opacity-60"
-                              style={{ background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))" }}
+                              style={{
+                                background:
+                                  'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
+                              }}
                             >
                               <Check size={12} />
                               Accept
                             </button>
                             <button
-                              onClick={() => void respond(invite.id, "declined")}
+                              onClick={() => void respond(invite.id, 'declined')}
                               disabled={busyId === invite.id}
                               className="w-8 h-8 rounded-full flex items-center justify-center text-text-dim bg-accent/6 border border-accent/10 cursor-pointer disabled:opacity-60"
                               aria-label={`Decline invite from @${invite.requester.username}`}
@@ -180,7 +191,7 @@ export function PrayerCircle() {
               )}
 
               <section>
-                <SectionTitle label="In your Prayer Circle" />
+                <SectionTitle label="People in your Prayer Circle" />
                 {circle.length > 0 ? (
                   <div className="space-y-2">
                     {circle.map((person) => (
@@ -189,19 +200,26 @@ export function PrayerCircle() {
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-accent/4 transition-colors"
                       >
                         <button
-                          onClick={() => void navigate(`/user/${encodeURIComponent(person.username)}`)}
+                          onClick={() =>
+                            void navigate(`/user/${encodeURIComponent(person.username)}`)
+                          }
                           className="flex min-w-0 flex-1 items-center gap-3 text-left cursor-pointer"
                         >
-                          <img
-                            src={person.avatar_url || getInitialAvatarUrl(person.display_name || person.username)}
-                            alt={person.display_name || person.username || "User"}
-                            className="w-10 h-10 rounded-full object-cover"
+                          <AvatarImage
+                            src={person.avatar_url}
+                            name={person.display_name || person.username || 'User'}
+                            alt={person.display_name || person.username || 'User'}
+                            className="h-10 w-10 text-sm"
                           />
                           <span className="flex-1 min-w-0">
-                            <span className="block text-text text-sm font-medium truncate">{person.display_name || person.username}</span>
+                            <span className="block text-text text-sm font-medium truncate">
+                              {person.display_name || person.username}
+                            </span>
                             <span className="block text-text-dim text-xs truncate">
                               @{person.username}
-                              {person.connected_at ? ` · joined ${timeAgo(person.connected_at)}` : ""}
+                              {person.connected_at
+                                ? ` · joined ${timeAgo(person.connected_at)}`
+                                : ''}
                             </span>
                           </span>
                         </button>
@@ -219,9 +237,10 @@ export function PrayerCircle() {
                 ) : (
                   <div className="text-center py-12">
                     <Users size={24} className="text-text-dim mx-auto mb-3" />
-                    <p className="text-text-muted text-sm mb-1">Your Prayer Circle is quiet for now</p>
+                    <p className="text-text-muted text-sm mb-1">No Prayer Circle connections yet</p>
                     <p className="text-text-dim text-xs leading-relaxed max-w-xs mx-auto">
-                      Invite someone from a prayer or profile when you want to keep praying with them over time.
+                      Invite someone from a prayer or profile when you want to pray with them more
+                      closely over time.
                     </p>
                   </div>
                 )}
@@ -258,24 +277,28 @@ function InviteRow({
   return (
     <div
       className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-      style={{ background: "rgba(var(--rgb-surface), 0.32)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
+      style={{
+        background: 'rgba(var(--rgb-surface), 0.32)',
+        border: '1px solid rgba(var(--rgb-accent), 0.06)',
+      }}
     >
-      <img
-        src={person.avatar_url || getInitialAvatarUrl(person.display_name || person.username)}
-        alt={person.display_name || person.username || "User"}
-        className="w-10 h-10 rounded-full object-cover"
+      <AvatarImage
+        src={person.avatar_url}
+        name={person.display_name || person.username || 'User'}
+        alt={person.display_name || person.username || 'User'}
+        className="h-10 w-10 text-sm"
       />
       <div className="flex-1 min-w-0">
-        <p className="text-text text-sm font-medium truncate">{person.display_name || person.username}</p>
+        <p className="text-text text-sm font-medium truncate">
+          {person.display_name || person.username}
+        </p>
         <p className="text-text-dim text-xs truncate">{detail}</p>
         <p className="text-text-faint text-[10px] mt-0.5">
           <Clock size={10} className="inline mr-1" />
           {timeAgo(invite.created_at)}
         </p>
       </div>
-      <div className={`flex items-center gap-1.5 ${busy ? "opacity-60" : ""}`}>
-        {actions}
-      </div>
+      <div className={`flex items-center gap-1.5 ${busy ? 'opacity-60' : ''}`}>{actions}</div>
     </div>
   );
 }

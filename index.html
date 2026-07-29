@@ -9,13 +9,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Oratio" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
-    <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
-    <link rel="mask-icon" href="/icons/icon.svg" color="#7c8fff" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg?v=oratio-wordmark-2" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=oratio-wordmark-2" />
+    <link rel="icon" type="image/x-icon" href="/icons/favicon.ico?v=oratio-wordmark-2" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png?v=oratio-wordmark-2" />
+    <link rel="mask-icon" href="/icons/icon.svg?v=oratio-wordmark-2" color="#7c8fff" />
     <meta name="msapplication-TileColor" content="#0A1A3A" />
-    <meta name="msapplication-TileImage" content="/icons/icon-180.png" />
+    <meta name="msapplication-TileImage" content="/icons/icon-180.png?v=oratio-wordmark-2" />
     <meta name="description" content="Oratio is a global Christian prayer platform. Share prayer needs, pray for others, and experience the power of a worldwide prayer community." />
     <meta property="og:title" content="Oratio - Pray Together. Anywhere." />
     <meta property="og:description" content="A global Christian prayer platform. Share your needs, pray for others, and experience the power of a worldwide prayer community." />
@@ -52,6 +52,107 @@
         }
       })();
     </script>
+    <script>
+      // Install before Vite injects the production module script. If startup
+      // fails, React cannot mount its own error boundary yet.
+      (function () {
+        var shown = false;
+        var moduleScriptPatterns = [
+          /importing a module script failed/i,
+          /failed to fetch dynamically imported module/i,
+          /error loading dynamically imported module/i,
+          /module script load failed/i,
+          /chunkloaderror/i,
+          /loading chunk \d+ failed/i
+        ];
+
+        function errorText(error) {
+          if (!error) return "";
+          if (typeof error === "string") return error;
+          if (error.message) return error.message;
+          if (error.reason) return errorText(error.reason);
+          if (error.error) return errorText(error.error);
+          try {
+            return String(error);
+          } catch (e) {
+            return "";
+          }
+        }
+
+        function isModuleScriptError(error) {
+          var text = errorText(error);
+          return moduleScriptPatterns.some(function (pattern) {
+            return pattern.test(text);
+          });
+        }
+
+        function recoverStartup() {
+          var tasks = [];
+          if ("serviceWorker" in navigator) {
+            tasks.push(
+              navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                return Promise.all(registrations.map(function (registration) {
+                  return registration.unregister();
+                }));
+              })
+            );
+          }
+          if ("caches" in window) {
+            tasks.push(
+              window.caches.keys().then(function (keys) {
+                return Promise.all(keys.map(function (key) {
+                  return window.caches.delete(key);
+                }));
+              })
+            );
+          }
+
+          Promise.allSettled(tasks).finally(function () {
+            window.location.reload();
+          });
+        }
+
+        function renderFallback(event) {
+          var root = document.getElementById("root");
+          if (!root) {
+            window.setTimeout(function () {
+              renderFallback(event);
+            }, 0);
+            return;
+          }
+          if (shown || root.childElementCount > 0) return;
+          shown = true;
+
+          var isModuleError = isModuleScriptError(event);
+          var isOffline = navigator.onLine === false;
+          var title = isOffline
+            ? "You're offline"
+            : isModuleError
+              ? "Oratio needs a refresh"
+              : "We couldn't load the app";
+          var detail = isOffline
+            ? "Reconnect to the internet, then reload Oratio."
+            : isModuleError
+              ? "The installed app has an older file cached. Repair and reload to open the latest version."
+              : "Something went wrong while starting up. Please reload to try again.";
+          var action = isModuleError && !isOffline ? "Repair and reload" : "Reload";
+          var click = isModuleError && !isOffline
+            ? "window.__oratioStartupRecover()"
+            : "location.reload()";
+
+          root.innerHTML =
+            '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;gap:16px;padding:24px;text-align:center;font-family:Inter,system-ui,sans-serif;color:#e6ecff">' +
+            '<p style="font-size:15px;margin:0">' + title + '</p>' +
+            '<p style="font-size:13px;opacity:.7;margin:0;max-width:20rem">' + detail + '</p>' +
+            '<button style="padding:8px 20px;border-radius:9999px;font-size:13px;color:#7c8fff;background:transparent;border:1px solid rgba(124,143,255,.3);cursor:pointer" onclick="' + click + '">' + action + '</button>' +
+            "</div>";
+        }
+
+        window.__oratioStartupRecover = recoverStartup;
+        window.addEventListener("error", renderFallback);
+        window.addEventListener("unhandledrejection", renderFallback);
+      })();
+    </script>
     <style>
       /* CSS Reset for PWA/Mobile Height Fix */
       html, body {
@@ -76,29 +177,6 @@
 
   <body>
     <div id="root"></div>
-    <script>
-      // Last-resort safety net: if a load-time error fires before the React app
-      // has mounted anything into #root, the user would otherwise be stuck on the
-      // blue splash background forever. Replace it with a readable message and a
-      // way to recover. Once the app mounts (#root has children) this stays out
-      // of the way — runtime errors are handled by the in-app ErrorBoundary.
-      (function () {
-        var shown = false;
-        function showFallback() {
-          var root = document.getElementById("root");
-          if (shown || !root || root.childElementCount > 0) return;
-          shown = true;
-          root.innerHTML =
-            '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;gap:16px;padding:24px;text-align:center;font-family:Inter,system-ui,sans-serif;color:#e6ecff">' +
-            '<p style="font-size:15px;margin:0">We couldn\'t load the app</p>' +
-            '<p style="font-size:13px;opacity:.7;margin:0;max-width:20rem">Something went wrong while starting up. Please reload to try again.</p>' +
-            '<button style="padding:8px 20px;border-radius:9999px;font-size:13px;color:#7c8fff;background:transparent;border:1px solid rgba(124,143,255,.3);cursor:pointer" onclick="location.reload()">Reload</button>' +
-            "</div>";
-        }
-        window.addEventListener("error", showFallback);
-        window.addEventListener("unhandledrejection", showFallback);
-      })();
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

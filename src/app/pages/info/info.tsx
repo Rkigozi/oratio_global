@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import { motion } from "motion/react";
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { motion } from 'motion/react';
 import {
   Info as InfoIcon,
   Route,
@@ -10,47 +10,55 @@ import {
   Users,
   Smartphone,
   Mail,
-} from "lucide-react";
+} from 'lucide-react';
 import { subscribeToWaitlist } from '../../services/supabase-queries';
 
 const roadmapItems = [
   {
     icon: Users,
-    label: "Prayer Circle",
-    desc: "Mutual, request-based connections are live in beta. Invite, accept, decline, or remove at any time.",
-    status: "live" as const,
+    label: 'Prayer Circle',
+    desc: 'A closer mutual space for prayer requests shared with people you intentionally accept.',
+    status: 'live' as const,
   },
   {
     icon: Smartphone,
-    label: "PWA Polish",
-    desc: "We are testing the home-screen app experience, startup feel, navigation, and light/dark mode clarity.",
-    status: "qa" as const,
+    label: 'PWA Polish',
+    desc: 'We are testing the home-screen app experience, startup feel, navigation, and light/dark mode clarity.',
+    status: 'qa' as const,
   },
   {
     icon: Bell,
-    label: "Push Notifications",
-    desc: "Get notified when someone prays for or comments on your prayer.",
-    status: "planned" as const,
+    label: 'Push Notifications',
+    desc: 'Get notified when someone prays for or comments on your prayer.',
+    status: 'planned' as const,
   },
   {
     icon: Shield,
-    label: "Moderation & Safety",
-    desc: "Better reporting tools, content moderation, and safety features.",
-    status: "planned" as const,
+    label: 'Moderation & Safety',
+    desc: 'Better reporting tools, content moderation, and safety features.',
+    status: 'planned' as const,
   },
   {
     icon: Globe,
-    label: "Native Mobile App",
-    desc: "Oratio for iOS and Android — the full experience as a real installed app.",
-    status: "future" as const,
+    label: 'Native Mobile App',
+    desc: 'Oratio for iOS and Android — the full experience as a real installed app.',
+    status: 'future' as const,
   },
 ];
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, { bg: string; text: string; label: string }> = {
-    live: { bg: "rgba(var(--rgb-success), 0.12)", text: "rgb(var(--rgb-success))", label: "Live Beta" },
-    qa: { bg: "rgba(var(--rgb-accent), 0.12)", text: "rgb(var(--rgb-accent))", label: "In QA" },
-    planned: { bg: "rgba(167,139,250,0.12)", text: "#a78bfa", label: "Planned" },
-    future: { bg: "rgba(var(--rgb-success), 0.1)", text: "rgb(var(--rgb-success))", label: "Future" },
+    live: {
+      bg: 'rgba(var(--rgb-success), 0.12)',
+      text: 'rgb(var(--rgb-success))',
+      label: 'Live Beta',
+    },
+    qa: { bg: 'rgba(var(--rgb-accent), 0.12)', text: 'rgb(var(--rgb-accent))', label: 'In QA' },
+    planned: { bg: 'rgba(167,139,250,0.12)', text: '#a78bfa', label: 'Planned' },
+    future: {
+      bg: 'rgba(var(--rgb-success), 0.1)',
+      text: 'rgb(var(--rgb-success))',
+      label: 'Future',
+    },
   };
   const s = styles[status] || styles.planned;
   return (
@@ -66,24 +74,20 @@ function StatusBadge({ status }: { status: string }) {
 export function Info() {
   const navigate = useNavigate();
   const [subscribed, setSubscribed] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    const result = await subscribeToWaitlist(email, "info");
-    if (result === "error") return;
+    const result = await subscribeToWaitlist(email, 'info');
+    if (result === 'error') return;
     setSubscribed(true);
   };
 
   return (
-    <div
-      className="w-full h-full flex flex-col"
-      style={{ background: "rgb(var(--rgb-bg))" }}
-    >
+    <div className="w-full h-full flex flex-col" style={{ background: 'rgb(var(--rgb-bg))' }}>
       <div className="flex-1 px-4 pb-28 overflow-y-auto pt-24">
         <div className="max-w-md mx-auto space-y-8">
-
           {/* ── Beta notice ── */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -92,38 +96,44 @@ export function Info() {
           >
             <div className="flex items-center gap-2 mb-4">
               <InfoIcon size={16} className="text-accent" />
-              <h2 className="text-text font-heading text-sm font-light">
-                Beta Notice
-              </h2>
+              <h2 className="text-text font-heading text-sm font-light">Beta Notice</h2>
             </div>
             <div
               className="rounded-xl p-4 border"
               style={{
-                background: "rgba(var(--rgb-accent), 0.04)",
-                borderColor: "rgba(var(--rgb-accent), 0.08)",
+                background: 'rgba(var(--rgb-accent), 0.04)',
+                borderColor: 'rgba(var(--rgb-accent), 0.08)',
               }}
             >
               <p className="text-text-secondary text-sm leading-relaxed mb-3">
-                You&apos;re using the Oratio V1 beta — a working release of the app built for real prayer, real feedback, and careful smoke testing.
+                You&apos;re using the Oratio V1 beta — a working release of the app built for real
+                prayer, real feedback, and careful smoke testing.
               </p>
               <ul className="space-y-2 text-text-muted text-xs">
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Your prayers, profile, saved prayers, and Prayer Circle are saved to your account.</span>
+                  <span>
+                    Your prayers, profile, saved prayers, and Prayer Circle are saved to your
+                    account.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Prayer Circle is mutual. People only appear there after an invite is accepted.</span>
+                  <span>
+                    Prayer Circle is mutual. You can share a prayer publicly or with accepted Circle
+                    connections only.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Some details may change while we test performance, PWA behaviour, and release readiness.</span>
+                  <span>
+                    Some details may change while we test performance, PWA behaviour, and release
+                    readiness.
+                  </span>
                 </li>
               </ul>
             </div>
           </motion.div>
-
-
 
           {/* ── Roadmap ── */}
           <motion.div
@@ -133,9 +143,7 @@ export function Info() {
           >
             <div className="flex items-center gap-2 mb-4">
               <Route size={16} className="text-accent" />
-              <h2 className="text-text font-heading text-sm font-light">
-                What We&apos;re Testing
-              </h2>
+              <h2 className="text-text font-heading text-sm font-light">What We&apos;re Testing</h2>
             </div>
             <div className="space-y-2.5">
               {roadmapItems.map((item, i) => (
@@ -146,13 +154,14 @@ export function Info() {
                   transition={{ delay: 0.25 + i * 0.05, duration: 0.35 }}
                   className="rounded-xl px-4 py-3.5 flex items-start gap-3"
                   style={{
-                    background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))",
-                    border: "1px solid rgba(var(--rgb-accent), 0.06)",
+                    background:
+                      'linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))',
+                    border: '1px solid rgba(var(--rgb-accent), 0.06)',
                   }}
                 >
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                    style={{ background: "rgba(var(--rgb-accent), 0.06)" }}
+                    style={{ background: 'rgba(var(--rgb-accent), 0.06)' }}
                   >
                     <item.icon size={14} className="text-text-muted" />
                   </div>
@@ -168,8 +177,6 @@ export function Info() {
             </div>
           </motion.div>
 
-
-
           {/* ── Stay Updated ── */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -178,25 +185,27 @@ export function Info() {
           >
             <div className="flex items-center gap-2 mb-4">
               <Mail size={16} className="text-accent" />
-              <h2 className="text-text font-heading text-sm font-light">
-                Stay Updated
-              </h2>
+              <h2 className="text-text font-heading text-sm font-light">Stay Updated</h2>
             </div>
             <div
               className="rounded-xl p-4 border"
               style={{
-                background: "rgba(var(--rgb-accent), 0.04)",
-                borderColor: "rgba(var(--rgb-accent), 0.08)",
+                background: 'rgba(var(--rgb-accent), 0.04)',
+                borderColor: 'rgba(var(--rgb-accent), 0.08)',
               }}
             >
-               <p className="text-text-secondary text-sm leading-relaxed mb-3">
-                Leave your email and we&apos;ll keep you updated as Oratio moves from beta toward launch.
+              <p className="text-text-secondary text-sm leading-relaxed mb-3">
+                Leave your email and we&apos;ll keep you updated as Oratio moves from beta toward
+                launch.
               </p>
               {subscribed ? (
                 <div className="text-center">
                   <p className="text-accent text-sm py-2">You&apos;re on the list.</p>
                   <button
-                    onClick={() => { setSubscribed(false); setEmail(""); }}
+                    onClick={() => {
+                      setSubscribed(false);
+                      setEmail('');
+                    }}
                     className="text-text-dim text-[10px] hover:text-text-muted transition-colors cursor-pointer"
                   >
                     Remove
@@ -211,12 +220,15 @@ export function Info() {
                     placeholder="your@email.com"
                     required
                     className="flex-1 min-w-0 rounded-xl px-4 py-2.5 text-text placeholder-text-dim text-xs focus:outline-none border border-accent/12"
-                    style={{ background: "rgba(var(--rgb-surface), 0.6)" }}
+                    style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
                   />
                   <button
                     type="submit"
                     className="px-5 py-2.5 rounded-xl text-xs text-white cursor-pointer transition-all active:scale-95"
-                    style={{ background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))" }}
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
+                    }}
                   >
                     Save
                   </button>
@@ -228,14 +240,14 @@ export function Info() {
           {/* ── Footer links ── */}
           <div className="flex items-center justify-center gap-4 pb-2">
             <button
-              onClick={() => void navigate("/privacy")}
+              onClick={() => void navigate('/privacy')}
               className="text-text-dim hover:text-text-muted text-[10px] transition-colors cursor-pointer"
             >
               Privacy Policy
             </button>
             <span className="text-text-faint text-[10px]">·</span>
             <button
-              onClick={() => void navigate("/terms")}
+              onClick={() => void navigate('/terms')}
               className="text-text-dim hover:text-text-muted text-[10px] transition-colors cursor-pointer"
             >
               Terms of Service

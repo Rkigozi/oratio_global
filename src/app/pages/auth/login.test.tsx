@@ -70,6 +70,23 @@ describe("Login", () => {
     });
   });
 
+  it("toggles password visibility", () => {
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>
+    );
+
+    const passwordInput = screen.getByPlaceholderText("Password") as HTMLInputElement;
+    expect(passwordInput.type).toBe("password");
+
+    fireEvent.click(screen.getByLabelText("Show password"));
+    expect(passwordInput.type).toBe("text");
+
+    fireEvent.click(screen.getByLabelText("Hide password"));
+    expect(passwordInput.type).toBe("password");
+  });
+
   it("shows error when email or password is empty", async () => {
     render(
       <MemoryRouter>

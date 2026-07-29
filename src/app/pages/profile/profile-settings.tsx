@@ -52,9 +52,10 @@ export function ProfileSettings() {
       setDeleteError(err);
       setDeleting(false);
     } else {
-      // Account deleted — sign out and redirect
-      await signOut();
-      void navigate("/landing");
+      // The auth user is gone server-side; clear any local session state and leave the protected app.
+      await signOut().catch(() => {});
+      setShowDeleteConfirm(false);
+      void navigate("/landing", { replace: true });
     }
   };
 

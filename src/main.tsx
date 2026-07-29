@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./app/App.tsx";
 import { initAnalytics } from "./lib/analytics";
 import { initMonitoring } from "./lib/monitoring";
+import { installModuleScriptRecovery } from "./lib/pwa-recovery";
 import "./styles/index.css";
 
 type IdleWindow = Window &
@@ -18,6 +19,8 @@ function runWhenIdle(callback: () => void) {
 
   globalThis.setTimeout(callback, 1200);
 }
+
+installModuleScriptRecovery();
 
 createRoot(document.getElementById("root")!).render(<App />);
 

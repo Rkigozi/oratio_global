@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Send,
   LogOut,
@@ -12,8 +12,17 @@ import { Drawer } from "vaul";
 import { useNavigate } from "react-router";
 import { validateProfile } from "../../../lib/validation";
 import { useAuth } from '../../hooks/auth-context';
-import { uploadAvatar, getInitialAvatarUrl } from '../../services/upload';
-import { getPrayerCircleCount, updateProfile, getMyProfile, getMyPrayers, getMyPrayedForPrayers } from '../../services/supabase-queries';
+import { uploadAvatar } from '../../services/upload';
+import { AvatarImage } from "../../components/avatar-image";
+import {
+  getPrayerCircleCount,
+  getProfilePreferences,
+  updateProfile,
+  updateProfilePreferences,
+  getMyProfile,
+  getMyPrayers,
+  getMyPrayedForPrayers,
+} from '../../services/supabase-queries';
 import { useGeolocation } from '../../hooks/use-geolocation';
 
 type ProfileDetails = {
@@ -24,6 +33,10 @@ type ProfileDetails = {
   location?: string;
   photo?: string;
 };
+
+function formatDetectedLocation(location: { city: string; country: string }) {
+  return [location.city, location.country].filter(Boolean).join(", ");
+}
 
 export function Profile() {
   const navigate = useNavigate();
@@ -102,16 +115,47 @@ export function Profile() {
 
   const [newDisplayName, setNewDisplayName] = useState("");
   const { location: geoLocation, loading: geoLoading, denied: geoDenied, requestLocation } = useGeolocation();
+  const requestLocationRef = useRef(requestLocation);
   const [useAutoLocation, setUseAutoLocation] = useState(false);
+  const [profileLocationMode, setProfileLocationMode] = useState<"manual" | "auto">("manual");
   const [newBio, setNewBio] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [editError, setEditError] = useState<string>("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoUploadStatus, setPhotoUploadStatus] = useState("");
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const username = profile?.username || "";
   const displayName = profile?.displayName || username;
+  const avatarSource = avatarPreviewUrl || profile?.photo;
 
   const [circleCount, setCircleCount] = useState(0);
+  const detectingAutoLocation = useAutoLocation && geoLoading && !geoLocation;
+
+  useEffect(() => {
+    requestLocationRef.current = requestLocation;
+  }, [requestLocation]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadProfilePreferences = async () => {
+      if (!user?.id) {
+        setProfileLocationMode("manual");
+        return;
+      }
+
+      const prefs = await getProfilePreferences();
+      if (active) setProfileLocationMode(prefs.profile_location_mode);
+    };
+
+    void loadProfilePreferences();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     let active = true;
@@ -130,18 +174,64 @@ export function Profile() {
     };
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!avatarPreviewUrl) return;
+    return () => URL.revokeObjectURL(avatarPreviewUrl);
+  }, [avatarPreviewUrl]);
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
     const file = e.target.files?.[0];
     if (!file) return;
+
+    setEditError("");
+    setPhotoUploadStatus("Checking photo...");
+    setAvatarPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+
     try {
       setUploadingPhoto(true);
-      const url = await uploadAvatar(file);
-      if (url && user?.id) {
-        await updateProfile({ avatar_url: url });
-        setProfile(prev => prev ? ({ ...prev, photo: url }) : prev);
+      const result = await uploadAvatar(file, {
+        onStatusChange: (status) => {
+          setPhotoUploadStatus({
+            checking: "Checking photo...",
+            converting: "Converting iPhone photo...",
+            preparing: "Preparing photo...",
+            uploading: "Uploading photo...",
+          }[status]);
+        },
+      });
+
+      if (result.error !== null) {
+        setEditError(result.error);
+        setAvatarPreviewUrl(null);
+        return;
       }
+
+      const avatarUrl = result.url;
+
+      if (!user?.id) {
+        setEditError("Please sign in again before changing your photo.");
+        setAvatarPreviewUrl(null);
+        return;
+      }
+
+      setPhotoUploadStatus("Saving photo...");
+      const saved = await updateProfile({ avatar_url: avatarUrl });
+      if (!saved) {
+        setEditError("We uploaded your photo, but couldn't save it to your profile. Please try again.");
+        setAvatarPreviewUrl(null);
+        return;
+      }
+
+      setProfile(prev => prev ? ({ ...prev, photo: avatarUrl }) : prev);
     } finally {
       setUploadingPhoto(false);
+      setPhotoUploadStatus("");
+      setAvatarPreviewUrl(null);
+      input.value = "";
     }
   };
 
@@ -152,19 +242,38 @@ export function Profile() {
       setNewDisplayName(profile.displayName);
       setNewBio(profile.bio || "");
       setNewLocation(profile.location || "");
+      setUseAutoLocation(profileLocationMode === "auto");
       setEditError('');
+      if (profileLocationMode === "auto") void requestLocationRef.current();
     };
 
     syncEditFields();
-  }, [editOpen, profile]);
+  }, [editOpen, profile, profileLocationMode]);
+
+  useEffect(() => {
+    if (!useAutoLocation || !geoLocation) return;
+    setNewLocation(formatDetectedLocation(geoLocation));
+  }, [geoLocation, useAutoLocation]);
 
   const handleSignOut = async () => {
     await signOut();
     void navigate("/landing");
   };
 
-  const handleSaveProfile = () => {
-    if (!profile) return;
+  const handleAutoLocationToggle = () => {
+    const next = !useAutoLocation;
+    setUseAutoLocation(next);
+    setEditError("");
+
+    if (next) {
+      void requestLocation().then((detected) => {
+        if (detected) setNewLocation(formatDetectedLocation(detected));
+      });
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profile || savingProfile) return;
     setEditError("");
     const trimmedDisplayName = newDisplayName.trim();
 
@@ -178,21 +287,51 @@ export function Profile() {
       return;
     }
 
-    if (user?.id) {
-      void updateProfile({
-        display_name: trimmedDisplayName || undefined,
-        bio: newBio.trim() || undefined,
-        location: newLocation.trim() || undefined,
-      });
+    if (!user?.id) return;
+
+    let locationToSave = newLocation.trim();
+    if (useAutoLocation) {
+      const detected = geoLocation ?? await requestLocation();
+      if (!detected) {
+        setEditError(
+          geoDenied
+            ? "Allow location access in your browser, then try again."
+            : "We couldn't detect your location. Try again or switch off auto-detect."
+        );
+        return;
+      }
+      locationToSave = formatDetectedLocation(detected);
     }
 
-    setProfile(prev => prev ? ({
-      ...prev,
-      displayName: trimmedDisplayName || prev.username,
-      bio: newBio.trim(),
-      location: newLocation.trim(),
-    }) : prev);
-    setEditOpen(false);
+    setSavingProfile(true);
+    try {
+      const [profileSaved, preferencesSaved] = await Promise.all([
+        updateProfile({
+          display_name: trimmedDisplayName || undefined,
+          bio: newBio.trim() || undefined,
+          location: locationToSave || undefined,
+        }),
+        updateProfilePreferences({
+          profile_location_mode: useAutoLocation ? "auto" : "manual",
+        }),
+      ]);
+
+      if (!profileSaved || !preferencesSaved) {
+        setEditError("We couldn't save your changes. Please try again.");
+        return;
+      }
+
+      setProfile(prev => prev ? ({
+        ...prev,
+        displayName: trimmedDisplayName || prev.username,
+        bio: newBio.trim(),
+        location: locationToSave,
+      }) : prev);
+      setProfileLocationMode(useAutoLocation ? "auto" : "manual");
+      setEditOpen(false);
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   if (profileLoading) {
@@ -225,10 +364,11 @@ export function Profile() {
           {/* Profile header */}
           <div className="flex items-start gap-4 mb-6">
             <div className="relative flex-shrink-0">
-              <img
-                src={profile.photo || getInitialAvatarUrl(username)}
+              <AvatarImage
+                src={avatarSource}
+                name={displayName || username}
                 alt={username || "User"}
-                className="w-20 h-20 rounded-full object-cover"
+                className="h-20 w-20 text-2xl"
               />
               <button
                 onClick={() => setEditOpen(true)}
@@ -369,21 +509,28 @@ export function Profile() {
 
               {/* Photo upload */}
               <div className="flex justify-center mb-6">
-                <label className="flex flex-col items-center gap-2 cursor-pointer">
+                <label className={`flex flex-col items-center gap-2 ${uploadingPhoto ? "cursor-wait" : "cursor-pointer"}`}>
                   <div className="relative">
-                    <img
-                      src={profile.photo || getInitialAvatarUrl(username)}
+                    <AvatarImage
+                      src={avatarSource}
+                      name={displayName || username}
                       alt={username || "User"}
-                      className="w-16 h-16 rounded-full object-cover"
+                      className="h-16 w-16 text-xl"
                     />
-                    <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center" aria-hidden="true">
                       <Camera size={16} className="text-white" />
                     </div>
                   </div>
-                  <span className="text-accent text-xs">
-                    {uploadingPhoto ? "Uploading..." : "Change Photo"}
+                  <span className="text-accent text-xs" aria-live="polite">
+                    {uploadingPhoto ? photoUploadStatus || "Uploading photo..." : "Change Photo"}
                   </span>
-                  <input type="file" accept="image/*" onChange={(e) => void handlePhotoUpload(e)} className="hidden" disabled={uploadingPhoto} />
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                    onChange={(e) => void handlePhotoUpload(e)}
+                    className="hidden"
+                    disabled={uploadingPhoto}
+                  />
                 </label>
               </div>
 
@@ -397,12 +544,11 @@ export function Profile() {
                 <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">Display Name</p>
                 <input type="text" value={newDisplayName}
                   onChange={(e) => { setNewDisplayName(e.target.value); setEditError(''); }}
-                  onKeyDown={(e) => e.key === "Enter" && handleSaveProfile()}
+                  onKeyDown={(e) => e.key === "Enter" && void handleSaveProfile()}
                   placeholder="Leave empty to use username"
                   className={`w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-danger' : 'border-accent/12'}`}
                   style={{ background: "rgba(var(--rgb-surface), 0.6)" }}
                 />
-                {editError && <p className="text-danger text-xs text-center mt-2">{editError}</p>}
               </div>
 
               <div className="mb-4">
@@ -423,7 +569,7 @@ export function Profile() {
                   <p className="text-text-muted text-xs uppercase tracking-[0.15em]">Location</p>
                   <button
                     type="button"
-                    onClick={() => { setUseAutoLocation(!useAutoLocation); if (!useAutoLocation) void requestLocation(); }}
+                    onClick={handleAutoLocationToggle}
                     className="relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
                     style={{ background: useAutoLocation ? "rgba(var(--rgb-accent), 0.35)" : "rgba(var(--rgb-accent), 0.12)" }}
                     aria-label="Auto-detect location"
@@ -461,21 +607,23 @@ export function Profile() {
                 )}
               </div>
 
+              {editError && <p className="text-danger text-xs text-center mb-3">{editError}</p>}
+
               <div className="flex gap-3">
                 <button onClick={() => setEditOpen(false)}
                   className="flex-1 py-3.5 rounded-full text-sm text-text-muted bg-accent/6 border border-accent/10 cursor-pointer"
                 >
                   Cancel
                 </button>
-                <button onClick={handleSaveProfile}
-                  className="flex-1 py-3.5 rounded-full text-sm font-semibold cursor-pointer active:scale-[0.98] transition-transform"
+                <button onClick={() => void handleSaveProfile()} disabled={savingProfile || detectingAutoLocation || uploadingPhoto}
+                  className="flex-1 py-3.5 rounded-full text-sm font-semibold cursor-pointer active:scale-[0.98] transition-transform disabled:opacity-60"
                   style={{
                     background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
                     color: "#fff",
                     boxShadow: "0 10px 24px rgba(var(--rgb-accent), 0.24)",
                   }}
                 >
-                  Save Changes
+                  {uploadingPhoto ? "Uploading photo..." : savingProfile ? "Saving..." : detectingAutoLocation ? "Detecting..." : "Save Changes"}
                 </button>
               </div>
             </div>

@@ -1,6 +1,14 @@
-import { supabase } from "./supabase";
-import type { PrayerRequest } from './prayer-data';
-import { logError } from "../../lib/logger";
+import { supabase } from './supabase';
+import {
+  getPrayerLocationKey,
+  hasMappablePrayerLocation,
+  normalizePrayerLocation,
+  type PrayerRequest,
+} from './prayer-data';
+import { logError } from '../../lib/logger';
+
+export type PrayerAudience = 'public' | 'circle';
+export type FeedAudienceMode = PrayerAudience;
 
 export interface Comment {
   id: string;
@@ -9,10 +17,10 @@ export interface Comment {
   parent_id: string | null;
   body: string;
   created_at: string;
-  user?: { username: string; display_name: string } | null;
+  user?: { username: string; display_name: string | null; avatar_url: string | null } | null;
 }
 
-export type PrayerCircleState = "none" | "pending_sent" | "pending_received" | "connected" | "self";
+export type PrayerCircleState = 'none' | 'pending_sent' | 'pending_received' | 'connected' | 'self';
 
 export interface PrayerCircleStatus {
   state: PrayerCircleState;
@@ -37,174 +45,247 @@ export interface PrayerCircleInvite {
   recipient: PrayerCircleUser;
 }
 
+type PrayerProfileRow = {
+  username?: string | null;
+  display_name?: string | null;
+  avatar_url?: string | null;
+};
+
+type MapHotspotTotalRow = Record<string, unknown>;
+type RpcResponse<T> = {
+  data: T | null;
+  error: unknown;
+};
+
+function mapPrayerRequest(
+  row: Record<string, unknown>,
+  profileOverride?: PrayerProfileRow | null
+): PrayerRequest {
+  const profile =
+    profileOverride ?? ((row.profiles as PrayerProfileRow | null | undefined) || null);
+  const isAnonymous = row.is_anonymous === true;
+  const attribution = profile?.display_name || profile?.username || undefined;
+  const location = normalizePrayerLocation(
+    (row.location_city as string | null) || 'Unknown',
+    (row.location_country as string | null) || 'Unknown'
+  );
+
+  return {
+    id: row.id as string,
+    city: location.city,
+    country: location.country,
+    text: row.body as string,
+    audience: (row.audience as PrayerAudience | null) || 'public',
+    name: isAnonymous ? undefined : attribution,
+    displayName: isAnonymous ? undefined : attribution,
+    username: isAnonymous ? undefined : profile?.username || undefined,
+    prayerCount: (row.prayer_count as number) || 0,
+    lat: (row.location_lat as number) || 0,
+    lng: (row.location_lng as number) || 0,
+    category: (row.category as string) || undefined,
+    createdAt: row.created_at as string,
+    editedAt: (row.edited_at as string | null) || undefined,
+    commentCount: (row.comment_count as number) || 0,
+    commentsEnabled: row.comments_enabled !== false,
+    avatarUrl: isAnonymous ? undefined : profile?.avatar_url || undefined,
+    authorId: (row.user_id as string | null) || undefined,
+  };
+}
+
+function mapHotspotTotal(row: Record<string, unknown>): PrayerRequest {
+  const location = normalizePrayerLocation(
+    (row.location_city as string | null) || 'Unknown',
+    (row.location_country as string | null) || 'Unknown'
+  );
+
+  return {
+    id: `location:${getPrayerLocationKey(location.city, location.country)}`,
+    city: location.city,
+    country: location.country,
+    text: '',
+    prayerCount: Number(row.prayer_count || 0),
+    requestCount: Number(row.request_count || 0),
+    lat: Number(row.location_lat || 0),
+    lng: Number(row.location_lng || 0),
+    createdAt: row.latest_created_at as string,
+  };
+}
+
 // ─── Map Hotspots ──────────────────────────────────────────────────────
 
 export async function getMapHotspots(): Promise<PrayerRequest[]> {
+  const aggregateResult = (await supabase.rpc('get_map_hotspot_totals')) as unknown as RpcResponse<
+    MapHotspotTotalRow[]
+  >;
+
+  if (!aggregateResult.error && aggregateResult.data) {
+    return aggregateResult.data.map(mapHotspotTotal).filter(hasMappablePrayerLocation);
+  }
+
   const { data, error } = await supabase
-    .from("prayer_requests")
-    .select(`
-      id, body, category,
+    .from('prayer_requests')
+    .select(
+      `
+      id, user_id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, comment_count, created_at, comments_enabled,
+      is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled,
       profiles!inner(username, display_name, avatar_url)
-    `)
-    .not("location_lat", "is", null)
-    .not("location_lng", "is", null)
-    .order("created_at", { ascending: false })
+    `
+    )
+    .eq('audience', 'public')
+    .not('location_lat', 'is', null)
+    .not('location_lng', 'is', null)
+    .order('created_at', { ascending: false })
     .limit(200);
 
   if (error || !data) {
-    logError("getMapHotspots", error);
+    logError('getMapHotspots', error);
     return [];
   }
 
-  return data.map((row: Record<string, unknown>) => {
-    const profile = row.profiles as { username: string; display_name: string; avatar_url: string };
-    return {
-      id: row.id as string,
-      city: (row.location_city as string) || "Unknown",
-      country: (row.location_country as string) || "Unknown",
-      text: row.body as string,
-      name: row.is_anonymous ? undefined : (profile.display_name || profile.username),
-      displayName: row.is_anonymous ? undefined : (profile.display_name || profile.username),
-      username: row.is_anonymous ? undefined : profile.username,
-      prayerCount: (row.prayer_count as number) || 0,
-      lat: (row.location_lat as number) || 0,
-      lng: (row.location_lng as number) || 0,
-      category: (row.category as string) || undefined,
-      createdAt: row.created_at as string,
-      commentCount: (row.comment_count as number) || 0,
-      commentsEnabled: row.comments_enabled !== false,
-      avatarUrl: profile.avatar_url || undefined,
-    } as PrayerRequest;
-  });
+  return data
+    .map((row: Record<string, unknown>) => mapPrayerRequest(row))
+    .filter(hasMappablePrayerLocation);
 }
 
 // ─── Feed ──────────────────────────────────────────────────────────────
 
-export async function getFeedPrayers(cursor?: string, pageLimit = 20): Promise<PrayerRequest[]> {
+export async function getFeedPrayers(
+  cursor?: string,
+  pageLimit = 20,
+  audienceMode: FeedAudienceMode = 'public'
+): Promise<PrayerRequest[]> {
   let query = supabase
-    .from("prayer_requests")
-    .select(`
-      id, body, category,
+    .from('prayer_requests')
+    .select(
+      `
+      id, user_id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, comment_count, created_at, comments_enabled,
+      is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled,
       profiles!inner(username, display_name, avatar_url)
-    `)
-    .order("created_at", { ascending: false })
+    `
+    )
+    .order('created_at', { ascending: false })
     .limit(pageLimit);
 
+  if (audienceMode === 'circle') {
+    query = query.eq('audience', 'circle');
+  } else {
+    query = query.eq('audience', 'public');
+  }
+
   if (cursor) {
-    query = query.lt("created_at", cursor);
+    query = query.lt('created_at', cursor);
   }
 
   const { data, error } = await query;
 
   if (error || !data) {
-    logError("getFeedPrayers", error);
+    logError('getFeedPrayers', error);
     return [];
   }
 
-  return data.map((row: Record<string, unknown>) => {
-    const profile = row.profiles as { username: string; display_name: string; avatar_url: string };
-    return {
-      id: row.id as string,
-      city: (row.location_city as string) || "Unknown",
-      country: (row.location_country as string) || "Unknown",
-      text: row.body as string,
-      name: row.is_anonymous ? undefined : (profile.display_name || profile.username),
-      displayName: row.is_anonymous ? undefined : (profile.display_name || profile.username),
-      username: row.is_anonymous ? undefined : profile.username,
-      prayerCount: (row.prayer_count as number) || 0,
-      lat: (row.location_lat as number) || 0,
-      lng: (row.location_lng as number) || 0,
-      category: (row.category as string) || undefined,
-      createdAt: row.created_at as string,
-      commentCount: (row.comment_count as number) || 0,
-      commentsEnabled: row.comments_enabled !== false,
-      avatarUrl: profile.avatar_url || undefined,
-    } as PrayerRequest;
-  });
+  return data.map((row: Record<string, unknown>) => mapPrayerRequest(row));
 }
 
 export async function getPrayerById(prayerId: string): Promise<PrayerRequest | null> {
   const { data, error } = await supabase
-    .from("prayer_requests")
-    .select(`
-      id, body, category,
+    .from('prayer_requests')
+    .select(
+      `
+      id, user_id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, comment_count, created_at, comments_enabled,
+      is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled,
       profiles!inner(username, display_name, avatar_url)
-    `)
-    .eq("id", prayerId)
+    `
+    )
+    .eq('id', prayerId)
     .single();
 
   if (error || !data) {
-    logError("fetch prayer", error);
+    logError('fetch prayer', error);
     return null;
   }
 
-  const profile = (data as Record<string, unknown>).profiles as { username: string; display_name: string; avatar_url: string };
-  return {
-    id: data.id as string,
-    city: (data.location_city as string) || "Unknown",
-    country: (data.location_country as string) || "Unknown",
-    text: data.body as string,
-    name: data.is_anonymous ? undefined : (profile.display_name || profile.username),
-    displayName: data.is_anonymous ? undefined : (profile.display_name || profile.username),
-    username: data.is_anonymous ? undefined : profile.username,
-    prayerCount: (data.prayer_count as number) || 0,
-    lat: (data.location_lat as number) || 0,
-    lng: (data.location_lng as number) || 0,
-    category: (data.category as string) || undefined,
-    createdAt: data.created_at as string,
-    commentCount: (data.comment_count as number) || 0,
-    commentsEnabled: data.comments_enabled !== false,
-    avatarUrl: profile.avatar_url || undefined,
-  } as PrayerRequest;
+  return mapPrayerRequest(data as Record<string, unknown>);
 }
 
 export async function createPrayerRequest(
-  prayer: Omit<PrayerRequest, "id" | "createdAt">
+  prayer: Omit<PrayerRequest, 'id' | 'createdAt'>
 ): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
+  const location = normalizePrayerLocation(prayer.city, prayer.country);
+
   const { data, error } = await supabase
-    .from("prayer_requests")
+    .from('prayer_requests')
     .insert({
       user_id: user.id,
       body: prayer.text,
       category: prayer.category || null,
-      location_city: prayer.city,
-      location_country: prayer.country,
+      audience: prayer.audience || 'public',
+      location_city: location.city,
+      location_country: location.country,
       location_lat: prayer.lat,
       location_lng: prayer.lng,
       is_anonymous: !prayer.username,
       comments_enabled: prayer.commentsEnabled ?? true,
     })
-    .select("id")
+    .select('id')
     .single();
 
   if (error) {
-    logError("create prayer", error);
+    logError('create prayer', error);
     return null;
   }
   return (data as { id: string }).id;
 }
 
+export async function updatePrayerRequest(
+  prayerId: string,
+  body: string
+): Promise<{ text: string; editedAt: string } | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('prayer_requests')
+    .update({ body })
+    .eq('id', prayerId)
+    .eq('user_id', user.id)
+    .select('body, edited_at')
+    .single();
+
+  if (error || !data) {
+    logError('update prayer', error);
+    return null;
+  }
+
+  return {
+    text: data.body as string,
+    editedAt: data.edited_at as string,
+  };
+}
+
 export async function deletePrayerRequest(prayerId: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
   const { error } = await supabase
-    .from("prayer_requests")
+    .from('prayer_requests')
     .delete()
-    .eq("id", prayerId)
-    .eq("user_id", user.id);
+    .eq('id', prayerId)
+    .eq('user_id', user.id);
 
   if (error) {
-    logError("delete prayer", error);
+    logError('delete prayer', error);
     return false;
   }
   return true;
@@ -212,75 +293,88 @@ export async function deletePrayerRequest(prayerId: string): Promise<boolean> {
 
 // ─── Prayer Interactions ("I Prayed") ─────────────────────────────────
 
-export async function togglePray(
-  prayerId: string,
-  prayed: boolean
-): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+export async function togglePray(prayerId: string, prayed: boolean): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
   if (prayed) {
     const { error } = await supabase
-      .from("prayer_interactions")
+      .from('prayer_interactions')
       .insert({ user_id: user.id, prayer_id: prayerId });
     if (error) {
-      logError("add prayer interaction", error);
+      logError('add prayer interaction', error);
       return false;
     }
-    await supabase.rpc("increment_prayer_count", { p_prayer_id: prayerId });
+    await supabase.rpc('increment_prayer_count', { p_prayer_id: prayerId });
   } else {
     const { error } = await supabase
-      .from("prayer_interactions")
+      .from('prayer_interactions')
       .delete()
-      .eq("user_id", user.id)
-      .eq("prayer_id", prayerId);
+      .eq('user_id', user.id)
+      .eq('prayer_id', prayerId);
     if (error) {
-      logError("remove prayer interaction", error);
+      logError('remove prayer interaction', error);
       return false;
     }
-    await supabase.rpc("decrement_prayer_count", { p_prayer_id: prayerId });
+    await supabase.rpc('decrement_prayer_count', { p_prayer_id: prayerId });
   }
   return true;
 }
 
-
 // ─── Comments ──────────────────────────────────────────────────────────
+
+function mapComment(row: Record<string, unknown>): Comment {
+  const profile = row.profiles as {
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
+
+  return {
+    id: row.id as string,
+    prayer_id: row.prayer_id as string,
+    user_id: row.user_id as string,
+    parent_id: (row.parent_id as string) || null,
+    body: row.body as string,
+    created_at: row.created_at as string,
+    user: profile
+      ? {
+          username: profile.username,
+          display_name: profile.display_name,
+          avatar_url: profile.avatar_url,
+        }
+      : null,
+  };
+}
 
 export async function getComments(prayerId: string, limit = 20, offset = 0): Promise<Comment[]> {
   const { data, error } = await supabase
-    .from("comments")
-    .select(`
+    .from('comments')
+    .select(
+      `
       id, prayer_id, user_id, parent_id, body, created_at,
-      profiles(username, display_name)
-    `)
-    .eq("prayer_id", prayerId)
-    .order("created_at", { ascending: true })
+      profiles(username, display_name, avatar_url)
+    `
+    )
+    .eq('prayer_id', prayerId)
+    .order('created_at', { ascending: true })
     .range(offset, offset + limit - 1);
 
   if (error || !data) {
-    logError("fetch comments", error);
+    logError('fetch comments', error);
     return [];
   }
 
-  return (data as Array<Record<string, unknown>>).map((row) => {
-    const profile = row.profiles as { username: string; display_name: string; avatar_url: string } | null;
-    return {
-      id: row.id as string,
-      prayer_id: row.prayer_id as string,
-      user_id: row.user_id as string,
-      parent_id: (row.parent_id as string) || null,
-      body: row.body as string,
-      created_at: row.created_at as string,
-      user: profile ? { username: profile.username, display_name: profile.display_name } : null,
-    } as Comment;
-  });
+  return (data as Array<Record<string, unknown>>).map(mapComment);
 }
 
 export async function getCommentCount(prayerId: string): Promise<number> {
   const { count, error } = await supabase
-    .from("comments")
-    .select("id", { count: "exact", head: true })
-    .eq("prayer_id", prayerId);
+    .from('comments')
+    .select('id', { count: 'exact', head: true })
+    .eq('prayer_id', prayerId);
 
   if (error || count === null) return 0;
   return count;
@@ -291,44 +385,42 @@ export async function createComment(input: {
   body: string;
   parent_id?: string | null;
 }): Promise<Comment | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
-    .from("comments")
+    .from('comments')
     .insert({
       prayer_id: input.prayer_id,
       user_id: user.id,
       body: input.body,
       parent_id: input.parent_id || null,
     })
-    .select("id, prayer_id, user_id, parent_id, body, created_at")
+    .select(
+      'id, prayer_id, user_id, parent_id, body, created_at, profiles(username, display_name, avatar_url)'
+    )
     .single();
 
   if (error || !data) {
-    logError("create comment", error);
+    logError('create comment', error);
     return null;
   }
 
-  return {
-    ...(data as Comment),
-    parent_id: (data as Record<string, unknown>).parent_id as string | null,
-    user: null,
-  };
+  return mapComment(data as Record<string, unknown>);
 }
 
 export async function deleteComment(commentId: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
-  const { error } = await supabase
-    .from("comments")
-    .delete()
-    .eq("id", commentId)
-    .eq("user_id", user.id);
+  const { error } = await supabase.from('comments').delete().eq('id', commentId);
 
   if (error) {
-    logError("delete comment", error);
+    logError('delete comment', error);
     return false;
   }
   return true;
@@ -340,119 +432,143 @@ function mapCircleProfile(profile: unknown, fallbackId: string): PrayerCircleUse
   const p = profile as Partial<PrayerCircleUser> | null;
   return {
     id: p?.id || fallbackId,
-    username: p?.username || "unknown",
+    username: p?.username || 'unknown',
     display_name: p?.display_name || null,
     avatar_url: p?.avatar_url || null,
   };
 }
 
-export async function sendPrayerCircleInvite(recipientId: string, message?: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+export async function sendPrayerCircleInvite(
+  recipientId: string,
+  message?: string
+): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user || user.id === recipientId) return false;
 
-  const { error } = await supabase
-    .from("prayer_circle_invites")
-    .insert({
-      requester_id: user.id,
-      recipient_id: recipientId,
-      message: message?.trim() || null,
-    });
+  const { error } = await supabase.from('prayer_circle_invites').insert({
+    requester_id: user.id,
+    recipient_id: recipientId,
+    message: message?.trim() || null,
+  });
 
   if (error) {
-    logError("send prayer circle invite", error);
+    logError('send prayer circle invite', error);
     return false;
   }
   return true;
 }
 
 export async function cancelPrayerCircleInvite(inviteId: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
-  const { error } = await supabase.rpc("cancel_prayer_circle_invite", {
+  const { error } = await supabase.rpc('cancel_prayer_circle_invite', {
     p_invite_id: inviteId,
   });
 
   if (error) {
-    logError("cancel prayer circle invite", error);
+    logError('cancel prayer circle invite', error);
     return false;
   }
   return true;
 }
 
-export async function respondToPrayerCircleInvite(inviteId: string, response: "accepted" | "declined"): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+export async function respondToPrayerCircleInvite(
+  inviteId: string,
+  response: 'accepted' | 'declined'
+): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
-  const { error } = await supabase.rpc("respond_to_prayer_circle_invite", {
+  const { error } = await supabase.rpc('respond_to_prayer_circle_invite', {
     p_invite_id: inviteId,
     p_status: response,
   });
 
   if (error) {
-    logError("respond to prayer circle invite", error);
+    logError('respond to prayer circle invite', error);
     return false;
   }
   return true;
 }
 
 export async function removeFromPrayerCircle(otherUserId: string): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user || user.id === otherUserId) return false;
 
   const { error } = await supabase
-    .from("prayer_circle_connections")
+    .from('prayer_circle_connections')
     .delete()
-    .or(`and(user_a_id.eq.${user.id},user_b_id.eq.${otherUserId}),and(user_a_id.eq.${otherUserId},user_b_id.eq.${user.id})`);
+    .or(
+      `and(user_a_id.eq.${user.id},user_b_id.eq.${otherUserId}),and(user_a_id.eq.${otherUserId},user_b_id.eq.${user.id})`
+    );
 
   if (error) {
-    logError("remove from prayer circle", error);
+    logError('remove from prayer circle', error);
     return false;
   }
   return true;
 }
 
 export async function getPrayerCircleStatus(otherUserId: string): Promise<PrayerCircleStatus> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { state: "none" };
-  if (user.id === otherUserId) return { state: "self" };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { state: 'none' };
+  if (user.id === otherUserId) return { state: 'self' };
 
   const { data: connection } = await supabase
-    .from("prayer_circle_connections")
-    .select("id")
-    .or(`and(user_a_id.eq.${user.id},user_b_id.eq.${otherUserId}),and(user_a_id.eq.${otherUserId},user_b_id.eq.${user.id})`)
+    .from('prayer_circle_connections')
+    .select('id')
+    .or(
+      `and(user_a_id.eq.${user.id},user_b_id.eq.${otherUserId}),and(user_a_id.eq.${otherUserId},user_b_id.eq.${user.id})`
+    )
     .maybeSingle();
 
-  if (connection) return { state: "connected" };
+  if (connection) return { state: 'connected' };
 
   const { data: invite } = await supabase
-    .from("prayer_circle_invites")
-    .select("id, requester_id, recipient_id")
-    .eq("status", "pending")
-    .or(`and(requester_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(requester_id.eq.${otherUserId},recipient_id.eq.${user.id})`)
+    .from('prayer_circle_invites')
+    .select('id, requester_id, recipient_id')
+    .eq('status', 'pending')
+    .or(
+      `and(requester_id.eq.${user.id},recipient_id.eq.${otherUserId}),and(requester_id.eq.${otherUserId},recipient_id.eq.${user.id})`
+    )
     .maybeSingle();
 
-  if (!invite) return { state: "none" };
+  if (!invite) return { state: 'none' };
 
   const row = invite as { id: string; requester_id: string; recipient_id: string };
   return {
-    state: row.requester_id === user.id ? "pending_sent" : "pending_received",
+    state: row.requester_id === user.id ? 'pending_sent' : 'pending_received',
     inviteId: row.id,
   };
 }
 
 export async function getPrayerCircleUsernames(): Promise<string[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data } = await supabase
-    .from("prayer_circle_connections")
-    .select(`
+    .from('prayer_circle_connections')
+    .select(
+      `
       user_a_id,
       user_b_id,
       user_a:profiles!user_a_id(username),
       user_b:profiles!user_b_id(username)
-    `)
+    `
+    )
     .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
 
   if (!data) return [];
@@ -466,21 +582,49 @@ export async function getPrayerCircleUsernames(): Promise<string[]> {
     .filter(Boolean) as string[];
 }
 
-export async function getPrayerCircle(): Promise<PrayerCircleUser[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+export async function getPrayerCircleMemberIds(includeSelf = false): Promise<string[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data } = await supabase
-    .from("prayer_circle_connections")
-    .select(`
+    .from('prayer_circle_connections')
+    .select('user_a_id, user_b_id')
+    .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`);
+
+  if (!data) return includeSelf ? [user.id] : [];
+
+  const ids = new Set<string>();
+  if (includeSelf) ids.add(user.id);
+
+  (data as Array<Record<string, unknown>>).forEach((row) => {
+    const otherId = row.user_a_id === user.id ? row.user_b_id : row.user_a_id;
+    if (typeof otherId === 'string') ids.add(otherId);
+  });
+
+  return Array.from(ids);
+}
+
+export async function getPrayerCircle(): Promise<PrayerCircleUser[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from('prayer_circle_connections')
+    .select(
+      `
       user_a_id,
       user_b_id,
       created_at,
       user_a:profiles!user_a_id(id, username, display_name, avatar_url),
       user_b:profiles!user_b_id(id, username, display_name, avatar_url)
-    `)
+    `
+    )
     .or(`user_a_id.eq.${user.id},user_b_id.eq.${user.id}`)
-    .order("created_at", { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (!data) return [];
 
@@ -494,13 +638,19 @@ export async function getPrayerCircle(): Promise<PrayerCircleUser[]> {
   });
 }
 
-export async function getPrayerCircleInvites(): Promise<{ incoming: PrayerCircleInvite[]; outgoing: PrayerCircleInvite[] }> {
-  const { data: { user } } = await supabase.auth.getUser();
+export async function getPrayerCircleInvites(): Promise<{
+  incoming: PrayerCircleInvite[];
+  outgoing: PrayerCircleInvite[];
+}> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { incoming: [], outgoing: [] };
 
   const { data, error } = await supabase
-    .from("prayer_circle_invites")
-    .select(`
+    .from('prayer_circle_invites')
+    .select(
+      `
       id,
       requester_id,
       recipient_id,
@@ -508,13 +658,14 @@ export async function getPrayerCircleInvites(): Promise<{ incoming: PrayerCircle
       created_at,
       requester:profiles!requester_id(id, username, display_name, avatar_url),
       recipient:profiles!recipient_id(id, username, display_name, avatar_url)
-    `)
-    .eq("status", "pending")
+    `
+    )
+    .eq('status', 'pending')
     .or(`requester_id.eq.${user.id},recipient_id.eq.${user.id}`)
-    .order("created_at", { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error || !data) {
-    logError("get prayer circle invites", error);
+    logError('get prayer circle invites', error);
     return { incoming: [], outgoing: [] };
   }
 
@@ -538,8 +689,8 @@ export async function getPrayerCircleInvites(): Promise<{ incoming: PrayerCircle
 
 export async function getPrayerCircleCount(userId: string): Promise<number> {
   const { count } = await supabase
-    .from("prayer_circle_connections")
-    .select("id", { count: "exact", head: true })
+    .from('prayer_circle_connections')
+    .select('id', { count: 'exact', head: true })
     .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`);
 
   return count ?? 0;
@@ -548,14 +699,16 @@ export async function getPrayerCircleCount(userId: string): Promise<number> {
 // ─── Reports ───────────────────────────────────────────────────────────
 
 export async function createReport(input: {
-  reportable_type: "prayer" | "comment";
+  reportable_type: 'prayer' | 'comment';
   reportable_id: string;
   reason: string;
 }): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
-  const { error } = await supabase.from("reports").insert({
+  const { error } = await supabase.from('reports').insert({
     reportable_type: input.reportable_type,
     reportable_id: input.reportable_id,
     reported_by: user.id,
@@ -563,7 +716,7 @@ export async function createReport(input: {
   });
 
   if (error) {
-    logError("create report", error);
+    logError('create report', error);
     return false;
   }
   return true;
@@ -571,53 +724,145 @@ export async function createReport(input: {
 
 export interface ReportRecord {
   id: string;
-  reportable_type: "prayer" | "comment";
+  reportable_type: 'prayer' | 'comment';
   reportable_id: string;
   reason: string;
-  status: string;
+  status: ReportStatus;
   created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  moderator_note: string | null;
   reported_by: string;
+  reporter_profile: ReportProfile | null;
+  resolver_profile: ReportProfile | null;
+}
+
+export type ReportStatus = 'pending' | 'resolved' | 'dismissed';
+export type ReportStatusFilter = ReportStatus | 'all';
+
+export interface ReportProfile {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+}
+
+type ReportRow = {
+  id: string;
+  reportable_type: 'prayer' | 'comment';
+  reportable_id: string;
+  reason: string;
+  status: ReportStatus;
+  created_at: string;
+  resolved_at?: string | null;
+  resolved_by?: string | null;
+  moderator_note?: string | null;
+  reported_by: string;
+};
+
+function mapReportProfile(row: Record<string, unknown>): ReportProfile {
+  return {
+    id: row.id as string,
+    username: (row.username as string | null) ?? null,
+    display_name: (row.display_name as string | null) ?? null,
+  };
+}
+
+export async function getReports(status: ReportStatusFilter = 'pending'): Promise<ReportRecord[]> {
+  let query = supabase.from('reports').select('*').order('created_at', { ascending: false });
+
+  if (status !== 'all') {
+    query = query.eq('status', status);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    logError('fetch reports', error);
+    return [];
+  }
+
+  const reports = (data as ReportRow[] | null) || [];
+  const profileIds = Array.from(
+    new Set(
+      reports
+        .flatMap((report) => [report.reported_by, report.resolved_by])
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+
+  const profilesById = new Map<string, ReportProfile>();
+
+  if (profileIds.length > 0) {
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, display_name')
+      .in('id', profileIds);
+
+    if (profilesError) {
+      logError('fetch report profiles', profilesError);
+    } else {
+      (profiles as Array<Record<string, unknown>> | null)?.forEach((profile) => {
+        const mapped = mapReportProfile(profile);
+        profilesById.set(mapped.id, mapped);
+      });
+    }
+  }
+
+  return reports.map((report) => ({
+    ...report,
+    resolved_at: report.resolved_at ?? null,
+    resolved_by: report.resolved_by ?? null,
+    moderator_note: report.moderator_note ?? null,
+    reporter_profile: profilesById.get(report.reported_by) ?? null,
+    resolver_profile: report.resolved_by ? (profilesById.get(report.resolved_by) ?? null) : null,
+  }));
 }
 
 export async function getPendingReports(): Promise<ReportRecord[]> {
-  const { data, error } = await supabase
-    .from("reports")
-    .select("*")
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    logError("fetch reports", error);
-    return [];
-  }
-  return (data as ReportRecord[] | null) || [];
+  return getReports('pending');
 }
 
-export async function resolveReport(reportId: string, status: "resolved" | "dismissed"): Promise<boolean> {
+export async function resolveReport(
+  reportId: string,
+  status: Exclude<ReportStatus, 'pending'>,
+  moderatorNote?: string
+): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
   const { error } = await supabase
-    .from("reports")
-    .update({ status, resolved_at: new Date().toISOString() })
-    .eq("id", reportId);
+    .from('reports')
+    .update({
+      status,
+      resolved_at: new Date().toISOString(),
+      resolved_by: user.id,
+      moderator_note: moderatorNote ?? null,
+    })
+    .eq('id', reportId);
 
   if (error) {
-    logError("resolve report", error);
+    logError('resolve report', error);
     return false;
   }
   return true;
 }
 
 export async function isCurrentUserModerator(): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
   const { data, error } = await supabase
-    .from("profiles")
-    .select("is_moderator")
-    .eq("id", user.id)
+    .from('profiles')
+    .select('is_moderator')
+    .eq('id', user.id)
     .single();
 
   if (error || !data) {
-    logError("check moderator access", error);
+    logError('check moderator access', error);
     return false;
   }
 
@@ -632,16 +877,15 @@ export async function updateProfile(data: {
   location?: string;
   avatar_url?: string;
 }): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
-  const { error } = await supabase
-    .from("profiles")
-    .update(data)
-    .eq("id", user.id);
+  const { error } = await supabase.from('profiles').update(data).eq('id', user.id);
 
   if (error) {
-    logError("update profile", error);
+    logError('update profile', error);
     return false;
   }
   return true;
@@ -656,17 +900,19 @@ export async function getMyProfile(): Promise<{
   location: string | null;
   created_at: string;
 } | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { data, error } = await supabase
-    .from("profiles")
-    .select("id, username, display_name, avatar_url, bio, location, created_at")
-    .eq("id", user.id)
+    .from('profiles')
+    .select('id, username, display_name, avatar_url, bio, location, created_at')
+    .eq('id', user.id)
     .single();
 
   if (error || !data) {
-    logError("fetch my profile", error);
+    logError('fetch my profile', error);
     return null;
   }
   return data;
@@ -680,13 +926,13 @@ export async function getProfileByUsername(username: string): Promise<{
   created_at: string;
 } | null> {
   const { data, error } = await supabase
-    .from("profiles")
-    .select("id, username, display_name, avatar_url, created_at")
-    .eq("username", username)
+    .from('profiles')
+    .select('id, username, display_name, avatar_url, created_at')
+    .eq('username', username)
     .single();
 
   if (error || !data) {
-    logError("fetch profile", error);
+    logError('fetch profile', error);
     return null;
   }
   return data;
@@ -697,47 +943,37 @@ export async function getUserPrayers(username: string): Promise<PrayerRequest[]>
   if (!profile) return [];
 
   const { data, error } = await supabase
-    .from("prayer_requests")
-    .select(`
-      id, body, category,
+    .from('prayer_requests')
+    .select(
+      `
+      id, user_id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at, comments_enabled
-    `)
-    .eq("user_id", profile.id)
-    .order("created_at", { ascending: false })
+      is_anonymous, audience, prayer_count, created_at, edited_at, comments_enabled
+    `
+    )
+    .eq('user_id', profile.id)
+    .order('created_at', { ascending: false })
     .limit(50);
 
   if (error || !data) {
-    logError("fetch user prayers", error);
+    logError('fetch user prayers', error);
     return [];
   }
 
-  return (data as Array<Record<string, unknown>>).map((row) => ({
-    id: row.id as string,
-    city: (row.location_city as string) || "Unknown",
-    country: (row.location_country as string) || "Unknown",
-    text: row.body as string,
-    name: row.is_anonymous ? undefined : (profile.display_name || profile.username),
-    displayName: row.is_anonymous ? undefined : (profile.display_name || profile.username),
-    username: row.is_anonymous ? undefined : profile.username,
-    prayerCount: (row.prayer_count as number) || 0,
-    lat: (row.location_lat as number) || 0,
-    lng: (row.location_lng as number) || 0,
-    category: (row.category as string) || undefined,
-    createdAt: row.created_at as string,
-    commentsEnabled: row.comments_enabled !== false,
-  })) as PrayerRequest[];
+  return (data as Array<Record<string, unknown>>).map((row) => mapPrayerRequest(row, profile));
 }
 
-export async function searchUsers(query: string): Promise<Array<{ username: string; display_name: string | null }>> {
+export async function searchUsers(
+  query: string
+): Promise<Array<{ username: string; display_name: string | null }>> {
   const { data, error } = await supabase
-    .from("profiles")
-    .select("username, display_name")
-    .ilike("username", `%${query}%`)
+    .from('profiles')
+    .select('username, display_name')
+    .ilike('username', `%${query}%`)
     .limit(20);
 
   if (error || !data) {
-    logError("search users", error);
+    logError('search users', error);
     return [];
   }
   return data;
@@ -745,29 +981,28 @@ export async function searchUsers(query: string): Promise<Array<{ username: stri
 
 // ─── Saved Prayers ─────────────────────────────────────────────────────
 
-export async function toggleSavePrayer(
-  prayerId: string,
-  save: boolean
-): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+export async function toggleSavePrayer(prayerId: string, save: boolean): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
   if (save) {
     const { error } = await supabase
-      .from("saved_prayers")
+      .from('saved_prayers')
       .insert({ user_id: user.id, prayer_id: prayerId });
     if (error) {
-      logError("save prayer", error);
+      logError('save prayer', error);
       return false;
     }
   } else {
     const { error } = await supabase
-      .from("saved_prayers")
+      .from('saved_prayers')
       .delete()
-      .eq("user_id", user.id)
-      .eq("prayer_id", prayerId);
+      .eq('user_id', user.id)
+      .eq('prayer_id', prayerId);
     if (error) {
-      logError("unsave prayer", error);
+      logError('unsave prayer', error);
       return false;
     }
   }
@@ -775,139 +1010,103 @@ export async function toggleSavePrayer(
 }
 
 export async function getSavedPrayerIds(): Promise<string[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data } = await supabase
-    .from("saved_prayers")
-    .select("prayer_id")
-    .eq("user_id", user.id);
+  const { data } = await supabase.from('saved_prayers').select('prayer_id').eq('user_id', user.id);
 
   return (data || []).map((r: { prayer_id: string }) => r.prayer_id);
 }
 
 export async function getSavedPrayers(): Promise<PrayerRequest[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const savedIds = await getSavedPrayerIds();
   if (savedIds.length === 0) return [];
 
   const { data, error } = await supabase
-    .from("prayer_requests")
-    .select(`
-      id, body, category,
+    .from('prayer_requests')
+    .select(
+      `
+      id, user_id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, comment_count, created_at, comments_enabled,
+      is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled,
       profiles!inner(username, display_name, avatar_url)
-    `)
-    .in("id", savedIds)
-    .order("created_at", { ascending: false });
+    `
+    )
+    .in('id', savedIds)
+    .order('created_at', { ascending: false });
 
   if (error || !data) {
-    logError("fetch saved prayers", error);
+    logError('fetch saved prayers', error);
     return [];
   }
 
-  return (data as Array<Record<string, unknown>>).map((row) => {
-    const profile = row.profiles as { username: string; display_name: string; avatar_url: string } | null;
-    return {
-      id: row.id as string,
-      city: (row.location_city as string) || "Unknown",
-      country: (row.location_country as string) || "Unknown",
-      text: row.body as string,
-      name: row.is_anonymous ? undefined : (profile?.display_name || profile?.username),
-      displayName: row.is_anonymous ? undefined : (profile?.display_name || profile?.username),
-      username: row.is_anonymous ? undefined : profile?.username,
-      prayerCount: (row.prayer_count as number) || 0,
-      lat: (row.location_lat as number) || 0,
-      lng: (row.location_lng as number) || 0,
-      category: (row.category as string) || undefined,
-      createdAt: row.created_at as string,
-      commentCount: (row.comment_count as number) || 0,
-      commentsEnabled: row.comments_enabled !== false,
-      avatarUrl: profile?.avatar_url || undefined,
-    } as PrayerRequest;
-  });
+  return (data as Array<Record<string, unknown>>).map((row) => mapPrayerRequest(row));
 }
 
 export async function getMyPrayers(): Promise<PrayerRequest[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
-    .from("prayer_requests")
-    .select(`
-      id, body, category,
+    .from('prayer_requests')
+    .select(
+      `
+      id, user_id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, prayer_count, created_at, comments_enabled
-    `)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
+      is_anonymous, audience, prayer_count, created_at, edited_at, comments_enabled
+    `
+    )
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
     .limit(50);
 
   if (error || !data) {
-    logError("fetch my prayers", error);
+    logError('fetch my prayers', error);
     return [];
   }
 
-  return (data as Array<Record<string, unknown>>).map((row) => ({
-    id: row.id as string,
-    city: (row.location_city as string) || "Unknown",
-    country: (row.location_country as string) || "Unknown",
-    text: row.body as string,
-    prayerCount: (row.prayer_count as number) || 0,
-    lat: (row.location_lat as number) || 0,
-    lng: (row.location_lng as number) || 0,
-    category: (row.category as string) || undefined,
-    createdAt: row.created_at as string,
-    commentsEnabled: row.comments_enabled !== false,
-  })) as PrayerRequest[];
+  return (data as Array<Record<string, unknown>>).map((row) => mapPrayerRequest(row));
 }
 
 export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
-    .from("prayer_interactions")
-    .select(`
+    .from('prayer_interactions')
+    .select(
+      `
       prayer_id,
       prayer_requests!inner(
-        id, body, category,
+        id, user_id, body, category,
         location_city, location_country, location_lat, location_lng,
-        is_anonymous, prayer_count, comment_count, created_at, comments_enabled,
+        is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled,
         profiles!inner(username, display_name, avatar_url)
       )
-    `)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    `
+    )
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
 
   if (error || !data) {
-    logError("fetch prayed-for prayers", error);
+    logError('fetch prayed-for prayers', error);
     return [];
   }
 
   return (data as Array<Record<string, unknown>>).map((row) => {
     const prayer = row.prayer_requests as Record<string, unknown>;
-    const profile = prayer.profiles as { username: string; display_name: string; avatar_url: string } | null;
-    return {
-      id: prayer.id as string,
-      city: (prayer.location_city as string) || "Unknown",
-      country: (prayer.location_country as string) || "Unknown",
-      text: prayer.body as string,
-      name: prayer.is_anonymous ? undefined : (profile?.display_name || profile?.username),
-      displayName: prayer.is_anonymous ? undefined : (profile?.display_name || profile?.username),
-      username: prayer.is_anonymous ? undefined : profile?.username,
-      prayerCount: (prayer.prayer_count as number) || 0,
-      lat: (prayer.location_lat as number) || 0,
-      lng: (prayer.location_lng as number) || 0,
-      category: (prayer.category as string) || undefined,
-      createdAt: prayer.created_at as string,
-      commentCount: (prayer.comment_count as number) || 0,
-      commentsEnabled: prayer.comments_enabled !== false,
-      avatarUrl: profile?.avatar_url || undefined,
-    } as PrayerRequest;
+    return mapPrayerRequest(prayer);
   });
 }
 
@@ -915,33 +1114,28 @@ export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {
 
 export async function subscribeToWaitlist(
   email: string,
-  source: "landing" | "info" = "landing"
-): Promise<"subscribed" | "exists" | "error"> {
-  const { error } = await supabase
-    .from("waitlist")
-    .insert({ email, source });
+  source: 'landing' | 'info' = 'landing'
+): Promise<'subscribed' | 'exists' | 'error'> {
+  const { error } = await supabase.from('waitlist').insert({ email, source });
 
-  if (!error) return "subscribed";
+  if (!error) return 'subscribed';
 
-  if (error.code === "23505") return "exists";
+  if (error.code === '23505') return 'exists';
 
-  logError("subscribe", error);
-  return "error";
+  logError('subscribe', error);
+  return 'error';
 }
 
 // ─── Comments Toggle ──────────────────────────────────────────────────
 
-export async function toggleCommentsEnabled(
-  prayerId: string,
-  enabled: boolean
-): Promise<boolean> {
+export async function toggleCommentsEnabled(prayerId: string, enabled: boolean): Promise<boolean> {
   const { error } = await supabase
-    .from("prayer_requests")
+    .from('prayer_requests')
     .update({ comments_enabled: enabled })
-    .eq("id", prayerId);
+    .eq('id', prayerId);
 
   if (error) {
-    logError("toggle comments", error);
+    logError('toggle comments', error);
     return false;
   }
   return true;
@@ -949,35 +1143,63 @@ export async function toggleCommentsEnabled(
 
 // ─── Account Deletion ─────────────────────────────────────────────────
 
+type DeleteAccountResponse = {
+  success?: boolean;
+  error?: string;
+};
+
+type DeleteAccountInvokeResult = {
+  data: DeleteAccountResponse | null;
+  error: { message?: unknown } | null;
+};
+
 export async function deleteAccount(): Promise<string | null> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return "Not authenticated";
+  try {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+    if (sessionError) {
+      logError('delete account session', sessionError);
+      return 'Please sign in again before deleting your account.';
+    }
+    if (!session) return 'Not authenticated';
 
-  const result = await supabase.functions.invoke<{ success?: boolean }>(
-    "delete-account",
-    { headers: { Authorization: `Bearer ${session.access_token}` } },
-  ) as { error: { message?: unknown } | null };
+    const result = (await supabase.functions.invoke<DeleteAccountResponse>('delete-account', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })) as unknown as DeleteAccountInvokeResult;
 
-  if (result.error) {
-    const message = result.error.message;
-    return typeof message === "string" && message ? message : "Failed to delete account";
+    if (result.error) {
+      const message = result.error.message;
+      return typeof message === 'string' && message
+        ? message
+        : "We couldn't delete your account. Please check your connection and try again.";
+    }
+
+    if (result.data?.error) return result.data.error;
+    if (result.data?.success === false) return 'Failed to delete account';
+    return null;
+  } catch (error) {
+    logError('delete account', error);
+    return "We couldn't delete your account. Please check your connection and try again.";
   }
-  return null;
 }
 
 // ─── Prayer Interactions for current user ────────────────────────────
 
 export async function getMyPrayedIds(): Promise<string[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
-    .from("prayer_interactions")
-    .select("prayer_id")
-    .eq("user_id", user.id);
+    .from('prayer_interactions')
+    .select('prayer_id')
+    .eq('user_id', user.id);
 
   if (error || !data) {
-    logError("fetch prayed IDs", error);
+    logError('fetch prayed IDs', error);
     return [];
   }
 
@@ -985,16 +1207,18 @@ export async function getMyPrayedIds(): Promise<string[]> {
 }
 
 export async function getMySavedIds(): Promise<string[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
-    .from("saved_prayers")
-    .select("prayer_id")
-    .eq("user_id", user.id);
+    .from('saved_prayers')
+    .select('prayer_id')
+    .eq('user_id', user.id);
 
   if (error || !data) {
-    logError("fetch saved IDs", error);
+    logError('fetch saved IDs', error);
     return [];
   }
 
@@ -1008,49 +1232,62 @@ export interface ProfilePreferences {
   notify_on_comment: boolean;
   language: string;
   comments_enabled_default: boolean;
+  profile_location_mode: 'manual' | 'auto';
 }
 
 const defaultPreferences: ProfilePreferences = {
   notify_on_prayed: true,
   notify_on_comment: true,
-  language: "auto",
+  language: 'auto',
   comments_enabled_default: true,
+  profile_location_mode: 'manual',
 };
 
 export async function getProfilePreferences(): Promise<ProfilePreferences> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return defaultPreferences;
 
   const { data, error } = await supabase
-    .from("profiles")
-    .select("preferences")
-    .eq("id", user.id)
+    .from('profiles')
+    .select('preferences')
+    .eq('id', user.id)
     .single();
 
   if (error || !data) {
-    logError("fetch preferences", error);
+    logError('fetch preferences', error);
     return defaultPreferences;
   }
 
-  return { ...defaultPreferences, ...((data.preferences as Partial<ProfilePreferences>) || {}) };
+  const merged = {
+    ...defaultPreferences,
+    ...((data.preferences as Partial<ProfilePreferences>) || {}),
+  };
+  return {
+    ...merged,
+    profile_location_mode: merged.profile_location_mode === 'auto' ? 'auto' : 'manual',
+  };
 }
 
 export async function updateProfilePreferences(
   prefs: Partial<ProfilePreferences>
 ): Promise<boolean> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return false;
 
   const current = await getProfilePreferences();
   const merged = { ...current, ...prefs };
 
   const { error } = await supabase
-    .from("profiles")
+    .from('profiles')
     .update({ preferences: merged })
-    .eq("id", user.id);
+    .eq('id', user.id);
 
   if (error) {
-    logError("update preferences", error);
+    logError('update preferences', error);
     return false;
   }
   return true;

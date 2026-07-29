@@ -1,5 +1,6 @@
 import { Globe, Heart, PenLine, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
+import { preloadRoutePath } from "../../route-loaders";
 
 const navItems = [
   { path: "/", label: "Map", icon: Globe },
@@ -23,6 +24,9 @@ export function BottomNav() {
           return (
             <button
               key={item.path}
+              onFocus={() => preloadRoutePath(item.path)}
+              onPointerEnter={() => preloadRoutePath(item.path)}
+              onTouchStart={() => preloadRoutePath(item.path)}
               onClick={() => void navigate(item.path)}
               className={`bottom-nav-item relative flex flex-col items-center justify-center cursor-pointer ${isActive ? "bottom-nav-item-active" : ""}`}
               aria-current={isActive ? "page" : undefined}

@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { normalizePrayerLocation } from "../services/prayer-data";
 
 export interface LocationInfo {
   city: string;
@@ -22,7 +23,10 @@ export function useGeolocation() {
   const [location, setLocation] = useState<LocationInfo | null>(() => {
     try {
       const cached = sessionStorage.getItem("oratio_location");
-      if (cached) return JSON.parse(cached) as LocationInfo;
+      if (cached) {
+        const parsed = JSON.parse(cached) as LocationInfo;
+        return { ...parsed, ...normalizePrayerLocation(parsed.city, parsed.country) };
+      }
     } catch {
       // ignore
     }
@@ -34,6 +38,7 @@ export function useGeolocation() {
   const requestLocation = useCallback(async () => {
     if (loading) return null;
     setLoading(true);
+    setDenied(false);
     setError(null);
 
     try {
@@ -53,10 +58,14 @@ export function useGeolocation() {
       );
       const data = (await res.json()) as ReverseGeocodeResponse;
       const address = data.address || {};
+      const location = normalizePrayerLocation(
+        address.city || address.town || address.village || address.county || "Unknown",
+        address.country || "Unknown"
+      );
 
       const info: LocationInfo = {
-        city: address.city || address.town || address.village || address.county || "Unknown",
-        country: address.country || "Unknown",
+        city: location.city,
+        country: location.country,
         lat,
         lng,
       };
@@ -65,9 +74,12 @@ export function useGeolocation() {
       setLocation(info);
       return info;
     } catch (err) {
-      const isPermission = err instanceof GeolocationPositionError && err.code === GeolocationPositionError.PERMISSION_DENIED;
-      const isTimeout = err instanceof GeolocationPositionError && err.code === GeolocationPositionError.TIMEOUT;
-      setDenied(true);
+      const code = typeof err === "object" && err !== null && "code" in err
+        ? Number((err as { code?: unknown }).code)
+        : undefined;
+      const isPermission = code === 1;
+      const isTimeout = code === 3;
+      setDenied(isPermission);
       setError(
         isPermission
           ? "permission"

@@ -12,9 +12,22 @@ Object.defineProperty(globalThis, "GeolocationPositionError", {
   value: MockGeolocationPositionError,
 });
 
-vi.mock("posthog-js", () => ({
-  default: { capture: vi.fn() },
-}));
+vi.mock("posthog-js", () => {
+  const posthog = {
+    capture: vi.fn(),
+    init: vi.fn(
+      (
+        _key: string,
+        config?: { loaded?: (client: { opt_out_capturing: () => void }) => void },
+      ) => {
+        config?.loaded?.(posthog);
+      },
+    ),
+    opt_out_capturing: vi.fn(),
+  };
+
+  return { default: posthog };
+});
 
 vi.mock("@sentry/react", () => ({
   captureException: vi.fn(),

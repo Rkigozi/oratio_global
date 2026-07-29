@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { ArrowLeft, Mail, Loader, Check } from "lucide-react";
+import { Mail, Loader, Check } from "lucide-react";
+import { AuthBackButton } from "../../components/auth/auth-back-button";
 import { useAuth } from '../../hooks/auth-context';
 
 export function ResetPassword() {
@@ -30,7 +31,7 @@ export function ResetPassword() {
 
   if (sent) {
     return (
-      <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto overscroll-contain text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div className="auth-page-scroll flex w-full flex-col text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
         <div className="relative z-10 flex flex-col flex-1 justify-center px-6 max-w-sm mx-auto w-full">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -44,7 +45,7 @@ export function ResetPassword() {
             </div>
             <h2 className="font-heading font-light text-2xl mb-3">Check Your Email</h2>
             <p className="text-text-muted text-sm mb-2">
-              We&apos;ve sent a password reset link to <strong className="text-text-secondary">{email}</strong>
+              If that email is linked to an Oratio account, we&apos;ll send a password reset link.
             </p>
             <p className="text-text-muted text-xs mb-8">
               Click the link in the email to reset your password. It expires in 1 hour.
@@ -62,17 +63,11 @@ export function ResetPassword() {
   }
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto overscroll-contain text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <div className="auth-page-scroll flex w-full flex-col text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(var(--rgb-accent), 0.12), transparent 70%)" }}
       />
-      <button
-        onClick={() => void navigate("/login")}
-        className="absolute top-6 left-4 z-20 flex items-center gap-1.5 text-text-muted hover:text-text-muted transition-colors cursor-pointer"
-      >
-        <ArrowLeft size={16} />
-        <span className="text-xs">Back</span>
-      </button>
+      <AuthBackButton onClick={() => void navigate("/login")} />
 
       <div className="relative z-10 flex flex-col flex-1 justify-center px-6 max-w-sm mx-auto w-full">
         <motion.div
