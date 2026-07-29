@@ -10,6 +10,7 @@ import {
   createComment,
   updateComment,
   deleteComment,
+  subscribeToPrayerCommentChanges,
 } from '../../services/supabase-queries';
 import type { Comment } from '../../services/supabase-queries';
 import { useAuth } from '../../hooks/auth-context';
@@ -35,6 +36,23 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
   const [replyTo, setReplyTo] = useState<{ id: string; username: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submitRef = useRef(false);
+  const loadedLimitRef = useRef(PAGE_SIZE);
+
+  const loadComments = useCallback(
+    async (limit = PAGE_SIZE) => {
+      const [data, total] = await Promise.all([
+        getComments(prayer.id, limit, 0),
+        getCommentCount(prayer.id),
+      ]);
+
+      setComments(data);
+      setHasMore(data.length < total);
+      setOffset(data.length);
+      loadedLimitRef.current = Math.max(PAGE_SIZE, data.length);
+      onCommentCountChange(total);
+    },
+    [onCommentCountChange, prayer.id]
+  );
 
   useEffect(() => {
     let active = true;
@@ -49,11 +67,11 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
           getComments(prayer.id, PAGE_SIZE, 0),
           getCommentCount(prayer.id),
         ]);
-
         if (!active) return;
         setComments(data);
         setHasMore(data.length < total);
         setOffset(data.length);
+        loadedLimitRef.current = Math.max(PAGE_SIZE, data.length);
         onCommentCountChange(total);
       } catch {
         if (!active) return;
@@ -72,14 +90,42 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
     };
   }, [onCommentCountChange, prayer.id]);
 
+  useEffect(() => {
+    let active = true;
+    let refreshTimer: number | undefined;
+
+    const unsubscribe = subscribeToPrayerCommentChanges(prayer.id, () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+
+      refreshTimer = window.setTimeout(() => {
+        if (!active) return;
+        void loadComments(Math.max(PAGE_SIZE, loadedLimitRef.current));
+      }, 250);
+    });
+
+    return () => {
+      active = false;
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      unsubscribe();
+    };
+  }, [loadComments, prayer.id]);
+
   const loadMore = () => {
     const load = async () => {
       setLoadingMore(true);
 
       try {
         const data = await getComments(prayer.id, PAGE_SIZE, offset);
-        setComments((prev) => [...prev, ...data]);
-        setOffset((prev) => prev + data.length);
+        setComments((prev) => {
+          const next = [...prev, ...data];
+          loadedLimitRef.current = Math.max(PAGE_SIZE, next.length);
+          return next;
+        });
+        setOffset((prev) => {
+          const next = prev + data.length;
+          loadedLimitRef.current = Math.max(PAGE_SIZE, next);
+          return next;
+        });
         setHasMore(data.length === PAGE_SIZE);
       } finally {
         setLoadingMore(false);

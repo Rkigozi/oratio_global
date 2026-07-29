@@ -15,9 +15,9 @@ import {
   getMyPrayers,
   getMyPrayedForPrayers,
   getMySavedIds,
-  getUnreadActivityCount,
 } from '../../services/supabase-queries';
 import { useGeolocation } from '../../hooks/use-geolocation';
+import { useActivityUpdates } from '../../hooks/activity-updates-context';
 
 type ProfileDetails = {
   username: string;
@@ -35,6 +35,7 @@ function formatDetectedLocation(location: { city: string; country: string }) {
 export function Profile() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const { liveVersion, unreadCount: unreadUpdates } = useActivityUpdates();
   const [profile, setProfile] = useState<ProfileDetails | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileLoadFailed, setProfileLoadFailed] = useState(false);
@@ -82,28 +83,25 @@ export function Profile() {
     return () => {
       active = false;
     };
-  }, [user?.id]);
+  }, [liveVersion, user?.id]);
   const [myPrayers, setMyPrayers] = useState<number>(0);
   const [myPrayedFor, setMyPrayedFor] = useState<number>(0);
   const [savedCount, setSavedCount] = useState<number>(0);
-  const [unreadUpdates, setUnreadUpdates] = useState<number>(0);
 
   useEffect(() => {
     let active = true;
 
     const loadPrayerCounts = async () => {
       if (!user?.id) return;
-      const [submitted, prayedFor, savedIds, updates] = await Promise.all([
+      const [submitted, prayedFor, savedIds] = await Promise.all([
         getMyPrayers(),
         getMyPrayedForPrayers(),
         getMySavedIds(),
-        getUnreadActivityCount(),
       ]);
       if (!active) return;
       setMyPrayers(submitted.length);
       setMyPrayedFor(prayedFor.length);
       setSavedCount(savedIds.length);
-      setUnreadUpdates(updates);
     };
 
     void loadPrayerCounts();
@@ -363,7 +361,7 @@ export function Profile() {
             <p className="text-text-dim text-xs mb-5">Please refresh and try again.</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer"
+              className="min-h-11 px-5 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer"
             >
               Refresh
             </button>
@@ -391,13 +389,18 @@ export function Profile() {
               />
               <button
                 onClick={() => setEditOpen(true)}
-                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer"
-                style={{
-                  background: 'rgb(var(--rgb-bg))',
-                  border: '2px solid rgba(var(--rgb-accent), 0.15)',
-                }}
+                className="absolute -bottom-3 -right-3 w-11 h-11 rounded-full flex items-center justify-center cursor-pointer"
+                aria-label="Change profile photo"
               >
-                <Camera size={10} className="text-accent" />
+                <span
+                  className="w-7 h-7 rounded-full flex items-center justify-center"
+                  style={{
+                    background: 'rgb(var(--rgb-bg))',
+                    border: '2px solid rgba(var(--rgb-accent), 0.15)',
+                  }}
+                >
+                  <Camera size={12} className="text-accent" />
+                </span>
               </button>
             </div>
             <div className="flex-1 min-w-0 pt-1">
@@ -407,7 +410,8 @@ export function Profile() {
                 </h1>
                 <button
                   onClick={() => setEditOpen(true)}
-                  className="text-text-dim hover:text-accent transition-colors cursor-pointer"
+                  className="h-10 w-10 -ml-2 rounded-full flex items-center justify-center text-text-dim hover:text-accent hover:bg-accent/6 transition-colors cursor-pointer"
+                  aria-label="Edit profile"
                 >
                   <Edit size={12} />
                 </button>
@@ -422,7 +426,7 @@ export function Profile() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => void handleSignOut()}
-                  className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
+                  className="w-11 h-11 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
                   style={{
                     background: 'rgba(var(--rgb-accent), 0.06)',
                     border: '1px solid rgba(var(--rgb-accent), 0.1)',
@@ -433,7 +437,7 @@ export function Profile() {
                 </button>
                 <button
                   onClick={() => void navigate('/info')}
-                  className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
+                  className="w-11 h-11 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
                   style={{
                     background: 'rgba(var(--rgb-accent), 0.06)',
                     border: '1px solid rgba(var(--rgb-accent), 0.1)',
@@ -444,7 +448,7 @@ export function Profile() {
                 </button>
                 <button
                   onClick={() => void navigate('/profile/settings')}
-                  className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
+                  className="w-11 h-11 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
                   style={{
                     background: 'rgba(var(--rgb-accent), 0.06)',
                     border: '1px solid rgba(var(--rgb-accent), 0.1)',
@@ -459,7 +463,7 @@ export function Profile() {
 
           {/* Stats row */}
           <div
-            className="flex justify-center gap-6 mb-6 py-3 rounded-xl"
+            className="flex justify-center gap-4 mb-5 py-2.5 rounded-xl"
             style={{
               background: 'rgba(var(--rgb-surface), 0.4)',
               border: '1px solid rgba(var(--rgb-accent), 0.06)',
@@ -467,25 +471,25 @@ export function Profile() {
           >
             <button
               onClick={() => void navigate('/profile/submitted')}
-              className="text-center cursor-pointer min-w-[50px]"
+              className="min-h-12 text-center cursor-pointer min-w-[72px] px-2 rounded-lg hover:bg-accent/4 transition-colors"
             >
-              <p className="text-text text-sm font-semibold">{myPrayers}</p>
-              <p className="text-text-dim text-[10px]">Prayers</p>
+              <p className="text-text-secondary text-sm font-medium">{myPrayers}</p>
+              <p className="text-text-dim text-[10px]">My prayers</p>
             </button>
             <button
               onClick={() => void navigate('/profile/prayed')}
-              className="text-center cursor-pointer min-w-[50px]"
+              className="min-h-12 text-center cursor-pointer min-w-[72px] px-2 rounded-lg hover:bg-accent/4 transition-colors"
             >
-              <p className="text-text text-sm font-semibold">{myPrayedFor}</p>
-              <p className="text-text-dim text-[10px]">Prayed</p>
+              <p className="text-text-secondary text-sm font-medium">{myPrayedFor}</p>
+              <p className="text-text-dim text-[10px]">Prayed for</p>
             </button>
             <div className="w-px bg-accent/10" />
             <button
               onClick={() => void navigate('/profile/circle')}
-              className="text-center cursor-pointer min-w-[70px]"
+              className="min-h-12 text-center cursor-pointer min-w-[72px] px-2 rounded-lg hover:bg-accent/4 transition-colors"
             >
-              <p className="text-text text-sm font-semibold">{circleCount}</p>
-              <p className="text-text-dim text-[10px]">Prayer Circle</p>
+              <p className="text-text-secondary text-sm font-medium">{circleCount}</p>
+              <p className="text-text-dim text-[10px]">Circle</p>
             </button>
           </div>
 
@@ -571,7 +575,7 @@ export function Profile() {
                 <p className="text-text-muted text-sm mb-1">No prayers yet</p>
                 <button
                   onClick={() => void navigate('/submit')}
-                  className="px-4 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer mt-2"
+                  className="min-h-11 px-5 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer mt-2"
                 >
                   Submit Prayer
                 </button>

@@ -436,6 +436,10 @@ export function Feed() {
     addRecentSearch(q);
   };
 
+  const filterPillClass =
+    'flex-shrink-0 min-h-11 px-4 py-2 rounded-full text-[13px] transition-all duration-300 cursor-pointer';
+  const filterPillWithIconClass = `${filterPillClass} flex items-center gap-1.5`;
+
   return (
     <div className="w-full h-full flex flex-col" style={{ background: 'rgb(var(--rgb-bg))' }}>
       {/* Fixed header area */}
@@ -448,7 +452,7 @@ export function Feed() {
         }}
       >
         {/* Filter pills row */}
-        <div className="px-5 mb-3 flex gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="px-5 mb-3 flex gap-2 overflow-x-auto no-scrollbar">
           {/* All */}
           <button
             onClick={() => {
@@ -456,7 +460,7 @@ export function Feed() {
               setShowSaved(false);
               setShowPrayerCircle(false);
             }}
-            className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
+            className={filterPillClass}
             style={{
               background:
                 !hasLocationFilter && !showSaved && !showPrayerCircle
@@ -489,7 +493,7 @@ export function Feed() {
                   setSearchParams({ country });
                 }
               }}
-              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer flex items-center gap-1"
+              className={filterPillWithIconClass}
               style={{
                 background: hasLocationFilter
                   ? 'rgba(var(--rgb-accent), 0.12)'
@@ -500,7 +504,7 @@ export function Feed() {
                 color: hasLocationFilter ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text-muted))',
               }}
             >
-              <MapPin size={11} />
+              <MapPin size={12} />
               Near Me
             </button>
           )}
@@ -513,7 +517,7 @@ export function Feed() {
               if (next) setShowSaved(false);
               setSearchParams(next ? { circle: '1' } : {});
             }}
-            className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
+            className={filterPillClass}
             style={{
               background: showPrayerCircle
                 ? 'rgba(var(--rgb-accent), 0.12)'
@@ -536,7 +540,7 @@ export function Feed() {
               if (next) setShowPrayerCircle(false);
               if (next) setSearchParams({});
             }}
-            className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer"
+            className={filterPillClass}
             style={{
               background: showSaved
                 ? 'rgba(var(--rgb-accent), 0.12)'
@@ -553,7 +557,7 @@ export function Feed() {
           {/* Country — opens filter */}
           <button
             onClick={() => setShowCountryFilter(!showCountryFilter)}
-            className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs transition-all duration-300 cursor-pointer flex items-center gap-1"
+            className={filterPillWithIconClass}
             style={{
               background: hasLocationFilter
                 ? 'rgba(var(--rgb-accent), 0.12)'
@@ -577,7 +581,7 @@ export function Feed() {
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -5 }}
-                className="absolute top-0 left-5 w-44 max-h-60 overflow-y-auto rounded-xl border border-accent/15 z-20"
+                className="absolute top-0 left-5 w-48 max-h-60 overflow-y-auto rounded-xl border border-accent/15 z-20"
                 style={{
                   background: 'rgba(var(--rgb-surface), 0.98)',
                   backdropFilter: 'blur(20px)',
@@ -588,7 +592,7 @@ export function Feed() {
                     setSearchParams({});
                     setShowCountryFilter(false);
                   }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-text-secondary hover:bg-accent/10 transition-colors cursor-pointer truncate"
+                  className="w-full min-h-11 text-left px-4 py-3 text-sm text-text-secondary hover:bg-accent/10 transition-colors cursor-pointer truncate"
                 >
                   All Countries
                 </button>
@@ -599,7 +603,7 @@ export function Feed() {
                       setSearchParams({ country });
                       setShowCountryFilter(false);
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-text-secondary hover:bg-accent/10 transition-colors cursor-pointer truncate"
+                    className="w-full min-h-11 text-left px-4 py-3 text-sm text-text-secondary hover:bg-accent/10 transition-colors cursor-pointer truncate"
                   >
                     {country}
                   </button>
@@ -629,7 +633,7 @@ export function Feed() {
                 }
               }}
               placeholder="Search prayers..."
-              className="w-full rounded-xl pl-9 pr-8 py-2.5 text-text placeholder-text-dim text-xs focus:outline-none border border-accent/10 focus:border-accent/30 transition-colors"
+              className="w-full min-h-11 rounded-xl pl-9 pr-11 py-3 text-text placeholder-text-dim text-sm focus:outline-none border border-accent/10 focus:border-accent/30 transition-colors"
               style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
             />
             {searchQuery && (
@@ -639,7 +643,7 @@ export function Feed() {
                   setActiveSearch('');
                   setSearchParams({});
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-dim hover:text-text-muted transition-colors cursor-pointer"
+                className="absolute right-1 top-1/2 h-10 w-10 -translate-y-1/2 rounded-full text-text-dim hover:text-text-muted hover:bg-accent/6 transition-colors cursor-pointer flex items-center justify-center"
               >
                 <X size={14} />
               </button>
@@ -665,11 +669,11 @@ export function Feed() {
                 {recentSearches.map((q) => (
                   <div
                     key={q}
-                    className="flex items-center gap-2 px-3 py-2 hover:bg-accent/6 transition-colors group"
+                    className="flex items-center gap-2 px-3 py-2.5 hover:bg-accent/6 transition-colors group"
                   >
                     <button
                       onClick={() => handleRecentClick(q)}
-                      className="flex-1 min-w-0 text-left text-text-secondary text-xs truncate cursor-pointer"
+                      className="flex-1 min-h-10 min-w-0 text-left text-text-secondary text-xs truncate cursor-pointer"
                     >
                       {q}
                     </button>
@@ -678,7 +682,7 @@ export function Feed() {
                         e.stopPropagation();
                         removeRecentSearch(q);
                       }}
-                      className="text-text-faint hover:text-text-muted transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                      className="h-10 w-10 rounded-full text-text-faint hover:text-text-muted hover:bg-accent/6 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 flex items-center justify-center"
                     >
                       <X size={12} />
                     </button>
@@ -700,7 +704,7 @@ export function Feed() {
                 <button
                   key={tag}
                   onClick={() => handleTagClick(tag.replace('#', ''))}
-                  className="flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] transition-all cursor-pointer"
+                  className="flex-shrink-0 min-h-10 px-3 py-2 rounded-full text-[11px] transition-all cursor-pointer"
                   style={{
                     background: 'rgba(var(--rgb-accent), 0.06)',
                     border: '1px solid rgba(var(--rgb-accent), 0.1)',
@@ -746,7 +750,7 @@ export function Feed() {
                     setSearchQuery('');
                     setActiveSearch('');
                   }}
-                  className="text-text-dim hover:text-text-muted cursor-pointer flex-shrink-0"
+                  className="h-11 w-11 -mr-2 rounded-full text-text-dim hover:text-text-muted hover:bg-accent/6 cursor-pointer flex-shrink-0 flex items-center justify-center"
                 >
                   <X size={14} />
                 </button>
@@ -776,13 +780,13 @@ export function Feed() {
                 <div className="flex-1 min-w-0">
                   <p className="text-text-secondary text-sm mb-0.5">Welcome to the Prayer Feed</p>
                   <p className="text-text-muted text-xs">
-                    People around the world are sharing prayer needs and praying for each other. Tap
-                    any prayer to read it and pray. Tap 🙏 to pray right from the list.
+                    Tap a prayer to read more, or pray right from the list when someone is on your
+                    heart.
                   </p>
                 </div>
                 <button
                   onClick={dismissWelcome}
-                  className="text-text-dim hover:text-text-muted cursor-pointer flex-shrink-0 mt-0.5"
+                  className="h-11 w-11 -mr-2 -mt-2 rounded-full text-text-dim hover:text-text-muted hover:bg-accent/6 cursor-pointer flex-shrink-0 flex items-center justify-center"
                 >
                   <X size={14} />
                 </button>
@@ -834,12 +838,12 @@ export function Feed() {
                   <div
                     key={u.username}
                     onClick={() => void navigate(`/user/${encodeURIComponent(u.username)}`)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-accent/4 transition-colors"
+                    className="flex min-h-12 items-center gap-3 px-3 py-3 rounded-xl cursor-pointer hover:bg-accent/4 transition-colors"
                   >
                     <img
                       src={`https://ui-avatars.com/api/?name=${u.username[0].toUpperCase()}&background=7c8fff&color=fff&size=32&font-size=0.5`}
                       alt={u.username || 'User'}
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-9 h-9 rounded-full object-cover"
                     />
                     <div>
                       <p className="text-text-secondary text-sm">@{u.username}</p>
@@ -916,7 +920,7 @@ export function Feed() {
                   <div className="flex flex-col items-center gap-2 mt-4">
                     <button
                       onClick={clearLocationFilter}
-                      className="px-5 py-2 rounded-full text-xs text-text-muted bg-accent/4 border border-accent/8 cursor-pointer hover:bg-accent/8 transition-all"
+                      className="min-h-11 px-5 py-2 rounded-full text-xs text-text-muted bg-accent/4 border border-accent/8 cursor-pointer hover:bg-accent/8 transition-all"
                     >
                       View all prayers
                     </button>

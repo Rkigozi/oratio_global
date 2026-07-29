@@ -1,8 +1,18 @@
-import { useState, useEffect } from "react";
-import { Bell, Globe, MessageCircle, Shield, Trash2, AlertTriangle, Sun, Moon, Monitor } from "lucide-react";
-import { useNavigate } from "react-router";
-import { motion, AnimatePresence } from "motion/react";
-import { createPortal } from "react-dom";
+import { useState, useEffect } from 'react';
+import {
+  Bell,
+  Globe,
+  MessageCircle,
+  Shield,
+  Trash2,
+  AlertTriangle,
+  Sun,
+  Moon,
+  Monitor,
+} from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { motion, AnimatePresence } from 'motion/react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../hooks/auth-context';
 import { useTheme, type ThemeMode } from '../../hooks/theme-context';
 import {
@@ -11,16 +21,16 @@ import {
   deleteAccount,
   type ProfilePreferences,
 } from '../../services/supabase-queries';
-import { LoadingSpinner } from "../../components/loading-spinner";
+import { LoadingSpinner } from '../../components/loading-spinner';
 
 const languages = [
-  { value: "auto", label: "Auto-detect" },
-  { value: "en", label: "English" },
-  { value: "es", label: "Spanish" },
-  { value: "fr", label: "French" },
-  { value: "pt", label: "Portuguese" },
-  { value: "de", label: "German" },
-  { value: "it", label: "Italian" },
+  { value: 'auto', label: 'Auto-detect' },
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'fr', label: 'French' },
+  { value: 'pt', label: 'Portuguese' },
+  { value: 'de', label: 'German' },
+  { value: 'it', label: 'Italian' },
 ];
 
 const appearanceOptions: Array<{
@@ -28,9 +38,9 @@ const appearanceOptions: Array<{
   label: string;
   icon: typeof Monitor;
 }> = [
-  { value: "system", label: "System", icon: Monitor },
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
+  { value: 'system', label: 'System', icon: Monitor },
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
 ];
 
 export function ProfileSettings() {
@@ -42,11 +52,11 @@ export function ProfileSettings() {
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState("");
+  const [deleteError, setDeleteError] = useState('');
 
   const handleDeleteAccount = async () => {
     setDeleting(true);
-    setDeleteError("");
+    setDeleteError('');
     const err = await deleteAccount();
     if (err) {
       setDeleteError(err);
@@ -55,7 +65,7 @@ export function ProfileSettings() {
       // The auth user is gone server-side; clear any local session state and leave the protected app.
       await signOut().catch(() => {});
       setShowDeleteConfirm(false);
-      void navigate("/landing", { replace: true });
+      void navigate('/landing', { replace: true });
     }
   };
 
@@ -90,14 +100,20 @@ export function ProfileSettings() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div
+        className="flex flex-col items-center justify-center h-full w-full"
+        style={{ background: 'rgb(var(--rgb-bg))' }}
+      >
         <LoadingSpinner text="Loading settings..." />
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <div
+      className="w-full h-full flex flex-col overflow-hidden"
+      style={{ background: 'rgb(var(--rgb-bg))' }}
+    >
       <div className="flex-1 overflow-y-auto px-5 pb-28 pt-24">
         <div className="max-w-md mx-auto">
           <h2 className="text-text font-heading text-base font-medium mb-6 mt-2">Settings</h2>
@@ -110,7 +126,7 @@ export function ProfileSettings() {
             </div>
             <div
               className="grid grid-cols-3 gap-1 rounded-xl border border-accent/8 p-1"
-              style={{ background: "rgba(var(--rgb-surface), 0.5)" }}
+              style={{ background: 'rgba(var(--rgb-surface), 0.5)' }}
             >
               {appearanceOptions.map(({ value, label, icon: Icon }) => {
                 const active = themeMode === value;
@@ -121,9 +137,9 @@ export function ProfileSettings() {
                     onClick={() => setThemeMode(value)}
                     className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all"
                     style={{
-                      background: active ? "rgba(var(--rgb-accent), 0.16)" : "transparent",
-                      color: active ? "rgb(var(--rgb-text))" : "rgb(var(--rgb-text-muted))",
-                      boxShadow: active ? "0 4px 14px rgba(var(--rgb-accent-dark), 0.12)" : "none",
+                      background: active ? 'rgba(var(--rgb-accent), 0.16)' : 'transparent',
+                      color: active ? 'rgb(var(--rgb-text))' : 'rgb(var(--rgb-text-muted))',
+                      boxShadow: active ? '0 4px 14px rgba(var(--rgb-accent-dark), 0.12)' : 'none',
                     }}
                     aria-pressed={active}
                   >
@@ -145,17 +161,23 @@ export function ProfileSettings() {
               <ToggleRow
                 icon={<Bell size={13} />}
                 label="Notify when someone prays for my prayer"
-                enabled={prefs?.notify_on_prayed ?? true}
-                onChange={(v) => update("notify_on_prayed", v)}
+                description="Coming soon"
+                enabled={false}
+                onChange={(v) => update('notify_on_prayed', v)}
+                disabled
               />
               <ToggleRow
                 icon={<MessageCircle size={13} />}
                 label="Notify when someone comments on my prayer"
-                enabled={prefs?.notify_on_comment ?? true}
-                onChange={(v) => update("notify_on_comment", v)}
+                description="Coming soon"
+                enabled={false}
+                onChange={(v) => update('notify_on_comment', v)}
+                disabled
               />
             </div>
-            <p className="text-text-dim text-[10px] mt-2">Push notifications are coming soon. These preferences will be used once available.</p>
+            <p className="text-text-dim text-[10px] mt-2">
+              Push notification controls will be enabled when notifications are live.
+            </p>
           </div>
 
           {/* Language */}
@@ -163,16 +185,18 @@ export function ProfileSettings() {
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Globe size={14} className="text-text-dim" />
-              <p className="text-text-muted text-xs uppercase tracking-[0.15em]">Translation Language</p>
+              <p className="text-text-muted text-xs uppercase tracking-[0.15em]">
+                Translation Language
+              </p>
             </div>
             <div
-              className="rounded-xl px-4 py-2 border border-accent/12"
-              style={{ background: "rgba(var(--rgb-surface), 0.6)" }}
+              className="min-h-11 rounded-xl px-4 border border-accent/12 flex items-center"
+              style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
             >
               <select
-                value={prefs?.language ?? "auto"}
-                onChange={(e) => update("language", e.target.value)}
-                className="w-full py-2 text-text text-sm bg-transparent focus:outline-none appearance-none cursor-pointer"
+                value={prefs?.language ?? 'auto'}
+                onChange={(e) => update('language', e.target.value)}
+                className="w-full min-h-11 py-2 text-text text-sm bg-transparent focus:outline-none appearance-none cursor-pointer"
               >
                 {languages.map((l) => (
                   <option key={l.value} value={l.value} className="bg-bg">
@@ -181,20 +205,24 @@ export function ProfileSettings() {
                 ))}
               </select>
             </div>
-            <p className="text-text-dim text-[10px] mt-2">Choose your preferred language for prayer translations.</p>
+            <p className="text-text-dim text-[10px] mt-2">
+              Choose your preferred language for prayer translations.
+            </p>
           </div>
 
           {/* Defaults */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <MessageCircle size={14} className="text-text-dim" />
-              <p className="text-text-muted text-xs uppercase tracking-[0.15em]">Comment Defaults</p>
+              <p className="text-text-muted text-xs uppercase tracking-[0.15em]">
+                Comment Defaults
+              </p>
             </div>
             <ToggleRow
               icon={<MessageCircle size={13} />}
               label="Enable comments on new prayers by default"
               enabled={prefs?.comments_enabled_default ?? true}
-              onChange={(v) => update("comments_enabled_default", v)}
+              onChange={(v) => update('comments_enabled_default', v)}
             />
           </div>
 
@@ -207,19 +235,19 @@ export function ProfileSettings() {
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="w-full rounded-xl px-4 py-3 border border-danger/20 flex items-center gap-3 cursor-pointer hover:bg-danger/4 transition-colors"
-              style={{ background: "rgba(var(--rgb-surface), 0.5)" }}
+              style={{ background: 'rgba(var(--rgb-surface), 0.5)' }}
             >
               <Trash2 size={14} className="text-danger" />
               <div className="text-left">
                 <p className="text-danger text-sm">Delete Account</p>
-                <p className="text-text-dim text-[10px]">Permanently delete your account and all data</p>
+                <p className="text-text-dim text-[10px]">
+                  Permanently delete your account and all data
+                </p>
               </div>
             </button>
           </div>
 
-          {saving && (
-            <p className="text-center text-accent text-[10px]">Saving...</p>
-          )}
+          {saving && <p className="text-center text-accent text-[10px]">Saving...</p>}
         </div>
       </div>
 
@@ -232,7 +260,7 @@ export function ProfileSettings() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-6"
-              style={{ background: "rgba(0, 0, 0, 0.7)", backdropFilter: "blur(4px)" }}
+              style={{ background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)' }}
               onClick={() => !deleting && setShowDeleteConfirm(false)}
             >
               <motion.div
@@ -240,7 +268,7 @@ export function ProfileSettings() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.92, opacity: 0 }}
                 className="w-full max-w-sm rounded-2xl p-5 border border-accent/10"
-                style={{ background: "rgba(15, 22, 55, 0.98)" }}
+                style={{ background: 'rgba(15, 22, 55, 0.98)' }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-center gap-3 mb-4">
@@ -253,7 +281,8 @@ export function ProfileSettings() {
                   </div>
                 </div>
                 <p className="text-text-muted text-xs mb-5 leading-relaxed">
-                  All your prayers, comments, Prayer Circle connections, and saved prayers will be permanently deleted. Your username will be released for others to use.
+                  All your prayers, comments, Prayer Circle connections, and saved prayers will be
+                  permanently deleted. Your username will be released for others to use.
                 </p>
                 {deleteError && (
                   <p className="text-danger text-xs mb-3 text-center">{deleteError}</p>
@@ -270,9 +299,11 @@ export function ProfileSettings() {
                     onClick={() => void handleDeleteAccount()}
                     disabled={deleting}
                     className="flex-1 py-3 rounded-full text-sm text-white cursor-pointer disabled:opacity-50"
-                    style={{ background: "linear-gradient(135deg, rgb(var(--rgb-danger)), #e05555)" }}
+                    style={{
+                      background: 'linear-gradient(135deg, rgb(var(--rgb-danger)), #e05555)',
+                    }}
                   >
-                    {deleting ? "Deleting..." : "Delete Forever"}
+                    {deleting ? 'Deleting...' : 'Delete Forever'}
                   </button>
                 </div>
               </motion.div>
@@ -288,35 +319,51 @@ export function ProfileSettings() {
 function ToggleRow({
   icon,
   label,
+  description,
   enabled,
   onChange,
+  disabled = false,
 }: {
   icon: React.ReactNode;
   label: string;
+  description?: string;
   enabled: boolean;
   onChange: (v: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <div
-      className="flex items-center justify-between rounded-xl px-4 py-3 border border-accent/8"
-      style={{ background: "rgba(var(--rgb-surface), 0.5)" }}
+      className={`flex items-center justify-between rounded-xl px-4 py-3 border border-accent/8 ${
+        disabled ? 'opacity-75' : ''
+      }`}
+      style={{ background: 'rgba(var(--rgb-surface), 0.5)' }}
     >
       <div className="flex items-center gap-2.5">
         <span className="text-text-dim">{icon}</span>
-        <span className="text-text-secondary text-xs">{label}</span>
+        <span>
+          <span className="block text-text-secondary text-xs">{label}</span>
+          {description ? (
+            <span className="mt-0.5 block text-text-dim text-[10px]">{description}</span>
+          ) : null}
+        </span>
       </div>
       <button
         type="button"
+        disabled={disabled}
         onClick={() => onChange(!enabled)}
-        className="relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
-        style={{
-          background: enabled ? "rgba(var(--rgb-accent), 0.35)" : "rgba(var(--rgb-accent), 0.12)",
-        }}
+        className="relative h-11 w-12 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0 disabled:cursor-not-allowed"
+        aria-label={label}
       >
-        <div
-          className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+        <span
+          className="absolute left-0.5 top-1/2 h-6 w-11 -translate-y-1/2 rounded-full transition-colors duration-200"
           style={{
-            transform: enabled ? "translateX(22px)" : "translateX(2px)",
+            background: enabled ? 'rgba(var(--rgb-accent), 0.35)' : 'rgba(var(--rgb-accent), 0.12)',
+          }}
+        />
+        <span
+          className="absolute left-1 top-1/2 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+          style={{
+            transform: enabled ? 'translate(22px, -50%)' : 'translate(0, -50%)',
           }}
         />
       </button>

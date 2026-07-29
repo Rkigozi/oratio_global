@@ -448,6 +448,29 @@ export async function deleteComment(commentId: string): Promise<boolean> {
   return true;
 }
 
+export function subscribeToPrayerCommentChanges(
+  prayerId: string,
+  onChange: () => void
+): () => void {
+  const channel = supabase
+    .channel(`comments:${prayerId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'comments',
+        filter: `prayer_id=eq.${prayerId}`,
+      },
+      onChange
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
+}
+
 // ─── Prayer Circle ─────────────────────────────────────────────────────
 
 function mapCircleProfile(profile: unknown, fallbackId: string): PrayerCircleUser {

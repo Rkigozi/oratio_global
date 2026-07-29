@@ -19,6 +19,7 @@ import {
   type ActivityEvent,
   type ActivityEventType,
 } from '../services/supabase-queries';
+import { useActivityUpdates } from '../hooks/activity-updates-context';
 
 const activityIcons: Record<ActivityEventType, LucideIcon> = {
   comment_on_prayer: MessageCircle,
@@ -96,6 +97,7 @@ function getActivityCopy(event: ActivityEvent): {
 
 export function Updates() {
   const navigate = useNavigate();
+  const { liveVersion, refreshUnreadCount } = useActivityUpdates();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -129,6 +131,16 @@ export function Updates() {
   }, []);
 
   useEffect(() => {
+    if (liveVersion === 0) return;
+
+    const timer = window.setTimeout(() => {
+      void loadUpdates();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [liveVersion, loadUpdates]);
+
+  useEffect(() => {
     if (loading || unreadIds.length === 0) return;
 
     const timer = window.setTimeout(() => {
@@ -141,6 +153,7 @@ export function Updates() {
             unreadIds.includes(event.id) ? { ...event, read_at: readAt } : event
           )
         );
+        void refreshUnreadCount();
         window.dispatchEvent(new Event('oratio-activity-updated'));
       };
 
@@ -148,7 +161,7 @@ export function Updates() {
     }, 1200);
 
     return () => window.clearTimeout(timer);
-  }, [loading, unreadIds]);
+  }, [loading, refreshUnreadCount, unreadIds]);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -163,6 +176,7 @@ export function Updates() {
     setEvents((current) =>
       current.map((event) => ({ ...event, read_at: event.read_at ?? readAt }))
     );
+    void refreshUnreadCount();
     window.dispatchEvent(new Event('oratio-activity-updated'));
   };
 
@@ -181,7 +195,7 @@ export function Updates() {
             <button
               onClick={() => void refresh()}
               disabled={refreshing}
-              className="ml-auto h-9 w-9 rounded-full flex items-center justify-center text-text-dim hover:text-text-muted bg-accent/6 border border-accent/10 transition-colors cursor-pointer disabled:opacity-60"
+              className="ml-auto h-11 w-11 rounded-full flex items-center justify-center text-text-dim hover:text-text-muted bg-accent/6 border border-accent/10 transition-colors cursor-pointer disabled:opacity-60"
               aria-label="Refresh updates"
             >
               <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
@@ -191,7 +205,7 @@ export function Updates() {
           {unreadIds.length > 0 && !loading && (
             <button
               onClick={() => void markAllRead()}
-              className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-accent/15 bg-accent/6 px-3 py-2 text-xs text-accent transition-colors hover:bg-accent/10 cursor-pointer"
+              className="mb-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/15 bg-accent/6 px-4 py-2 text-xs text-accent transition-colors hover:bg-accent/10 cursor-pointer"
             >
               <Check size={13} />
               Mark all read
@@ -211,6 +225,12 @@ export function Updates() {
               <p className="text-text-dim text-xs leading-relaxed max-w-xs mx-auto">
                 Comments, Prayer Circle invites, and report reviews will appear here.
               </p>
+              <button
+                onClick={() => void navigate('/feed')}
+                className="mt-5 min-h-11 rounded-full border border-accent/15 bg-accent/6 px-5 py-2 text-xs text-accent transition-colors hover:bg-accent/10 cursor-pointer"
+              >
+                Open prayer feed
+              </button>
             </motion.div>
           ) : (
             <div className="space-y-2.5">

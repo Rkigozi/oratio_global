@@ -99,9 +99,9 @@ function preloadRouteLoader(loader: RouteLoader) {
   const cached = preloadCache.get(loader);
   if (cached) return cached;
 
-  const request = loader().catch((error: unknown) => {
+  const request = loader().catch(() => {
     preloadCache.delete(loader);
-    throw error;
+    return undefined;
   });
   preloadCache.set(loader, request);
   return request;

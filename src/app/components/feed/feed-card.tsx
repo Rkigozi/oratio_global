@@ -37,7 +37,7 @@ export function FeedCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.6), duration: 0.4 }}
       onClick={() => onTap(prayer)}
-      className="rounded-2xl p-4 relative cursor-pointer active:scale-[0.98] transition-transform duration-150"
+      className="rounded-xl p-3.5 relative cursor-pointer active:scale-[0.98] transition-transform duration-150"
       style={{
         background:
           'linear-gradient(160deg, rgba(var(--rgb-surface), 0.7), rgba(var(--rgb-surface), 0.5))',
@@ -45,13 +45,13 @@ export function FeedCard({
       }}
     >
       {/* Top row: avatar + name + location + time */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           <AvatarImage
             src={prayer.avatarUrl}
             name={prayer.username || getAttributionText(prayer)}
             alt={prayer.username || 'avatar'}
-            className="h-5 w-5 flex-shrink-0 cursor-pointer text-[9px]"
+            className="h-8 w-8 flex-shrink-0 cursor-pointer text-xs"
             onClick={(e) => {
               e.stopPropagation();
               const u = prayer.username;
@@ -64,7 +64,7 @@ export function FeedCard({
               const u = prayer.username;
               if (u && onUserClick) onUserClick(u);
             }}
-            className="text-text-muted text-xs truncate hover:text-text-muted transition-colors cursor-pointer"
+            className="min-h-8 min-w-0 text-text-muted text-[13px] truncate hover:text-text-muted transition-colors cursor-pointer text-left"
           >
             {getAttributionText(prayer)}
           </button>
@@ -89,20 +89,25 @@ export function FeedCard({
 
       {/* Prayer text with hashtags */}
       <p
-        className="text-text-secondary mb-3 line-clamp-3"
-        style={{ fontSize: '0.95rem', lineHeight: 1.7 }}
+        className="text-text-secondary mb-2.5 line-clamp-3"
+        style={{ fontSize: '0.94rem', lineHeight: 1.58 }}
       >
         {onTagClick ? renderHashtags(prayer.text, onTagClick) : prayer.text}
       </p>
 
       {/* Actions: comment + pray */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onTap(prayer);
           }}
-          className="flex items-center gap-1 text-text-dim hover:text-text-muted text-xs transition-colors cursor-pointer"
+          className="-ml-2 flex min-h-10 items-center gap-1 rounded-full px-2 text-text-dim hover:text-text-muted hover:bg-accent/5 text-xs transition-colors cursor-pointer"
+          aria-label={
+            prayer.commentsEnabled === false
+              ? 'Comments are off'
+              : `Open ${prayer.commentCount || 0} comments`
+          }
         >
           <MessageCircle
             size={13}
@@ -118,8 +123,9 @@ export function FeedCard({
         </button>
         <button
           onClick={handlePray}
-          className="flex items-center gap-1.5 text-xs transition-colors duration-300 cursor-pointer ml-auto"
+          className="-mr-2 ml-auto flex min-h-10 items-center gap-1.5 rounded-full px-2 text-xs transition-colors duration-300 cursor-pointer hover:bg-accent/5"
           style={{ color: prayed ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text-dim))' }}
+          aria-label={prayed ? 'Remove prayed marker' : 'Mark as prayed'}
         >
           <span
             className={`text-sm transition-all duration-300 ${prayed ? 'opacity-100' : 'opacity-50'}`}

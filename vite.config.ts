@@ -1,9 +1,9 @@
-import { defineConfig } from 'vite'
-import path from 'path'
-import fs from 'fs'
-import tailwindcss from '@tailwindcss/vite'
-import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
+import { defineConfig } from 'vite';
+import path from 'path';
+import fs from 'fs';
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 
 function copyNetlifyToml() {
   return {
@@ -32,13 +32,23 @@ export default defineConfig({
         display_override: ['window-controls-overlay'],
         orientation: 'portrait',
         scope: '/',
-        start_url: '/',
+        start_url: '/landing',
         categories: ['religion', 'spirituality', 'lifestyle'],
         icons: [
           { src: '/icons/icon.svg?v=oratio-wordmark-2', sizes: '512x512', type: 'image/svg+xml' },
           { src: '/icons/icon-180.png?v=oratio-wordmark-2', sizes: '180x180', type: 'image/png' },
-          { src: '/icons/icon-192.png?v=oratio-wordmark-2', sizes: '192x192', type: 'image/png', purpose: 'maskable any' },
-          { src: '/icons/icon-512.png?v=oratio-wordmark-2', sizes: '512x512', type: 'image/png', purpose: 'maskable any' },
+          {
+            src: '/icons/icon-192.png?v=oratio-wordmark-2',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable any',
+          },
+          {
+            src: '/icons/icon-512.png?v=oratio-wordmark-2',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable any',
+          },
         ],
       },
       workbox: {
@@ -98,4 +108,4 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
-})
+});

@@ -69,6 +69,35 @@ describe('AuthGuard', () => {
     expect(screen.getByText('Login Page')).toBeTruthy();
   });
 
+  it('redirects the logged-out app root to landing instead of login', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      loading: false,
+      profile: null,
+      signUp: vi.fn(),
+      signIn: vi.fn(),
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn(),
+      resetPassword: vi.fn(),
+      updatePassword: vi.fn(),
+      needsEmailVerification: false,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route element={<AuthGuard />}>
+            <Route index element={<div>Protected Root</div>} />
+          </Route>
+          <Route path="/landing" element={<div>Landing Page</div>} />
+          <Route path="/login" element={<div>Login Page</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Landing Page')).toBeTruthy();
+  });
+
   it('shows loading spinner while auth loads', () => {
     vi.useFakeTimers();
     vi.mocked(useAuth).mockReturnValue({

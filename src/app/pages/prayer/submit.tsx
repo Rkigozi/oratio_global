@@ -197,7 +197,7 @@ export function Submit() {
           background: 'radial-gradient(ellipse, rgba(var(--rgb-accent), 0.04), transparent 70%)',
         }}
       />
-      <div className="flex-1 overflow-y-auto px-6 pt-24 pb-28 flex flex-col items-center">
+      <div className="flex-1 overflow-y-auto px-6 pt-20 pb-32 flex flex-col items-center">
         <AnimatePresence mode="wait">
           {!submitted ? (
             <motion.div
@@ -207,21 +207,21 @@ export function Submit() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full max-w-md"
             >
-              <h2 className="text-text text-center mb-2 font-heading font-light text-2xl">
+              <h2 className="text-text text-center mb-1.5 font-heading font-light text-xl">
                 Submit a Prayer Request
               </h2>
-              <p className="text-text-muted text-sm text-center mb-8">
+              <p className="text-text-muted text-sm text-center mb-6">
                 What&apos;s on your heart today?
               </p>
 
-              <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
+              <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
                 {/* Prayer text */}
                 <div>
                   <label className="text-text-muted text-sm mb-2 block">Prayer message</label>
                   <textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    placeholder="Share what's on your heart... (use #hashtags to help others find your prayer)"
+                    placeholder="Share what's on your heart..."
                     rows={4}
                     className={`w-full rounded-xl px-4 py-3 text-text placeholder-text-dim resize-none border ${errors.text ? 'border-red-500/50 focus:border-red-500/70' : 'border-accent/12 focus:border-accent/35'} focus:outline-none transition-colors text-sm`}
                     style={{
@@ -232,7 +232,9 @@ export function Submit() {
                   <div className="flex justify-between mt-1">
                     {errors.text && <p className="text-red-400 text-xs ml-1">{errors.text}</p>}
                     <p
-                      className={`text-xs ml-auto ${text.length < 10 ? 'text-red-400' : 'text-text-dim'}`}
+                      className={`text-xs ml-auto ${
+                        text.length > 0 && text.length < 10 ? 'text-red-400' : 'text-text-dim'
+                      }`}
                     >
                       {text.length}/500
                     </p>
@@ -240,7 +242,7 @@ export function Submit() {
                 </div>
 
                 {/* Guidance text */}
-                <p className="text-text-dim text-xs leading-relaxed text-center">
+                <p className="text-text-dim text-[11px] leading-relaxed text-center">
                   You&apos;re welcome to share what&apos;s on your heart. You may want to avoid
                   sharing personal information so you can receive prayer freely and safely.
                 </p>
@@ -255,7 +257,7 @@ export function Submit() {
                     <button
                       type="button"
                       onClick={() => setAudience('public')}
-                      className="min-h-[84px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer"
+                      className="min-h-[76px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer"
                       style={{
                         background:
                           audience === 'public' ? 'rgba(var(--rgb-accent), 0.12)' : 'transparent',
@@ -276,7 +278,7 @@ export function Submit() {
                     <button
                       type="button"
                       onClick={() => setAudience('circle')}
-                      className="min-h-[84px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer"
+                      className="min-h-[76px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer"
                       style={{
                         background:
                           audience === 'circle' ? 'rgba(var(--rgb-accent), 0.12)' : 'transparent',
@@ -317,18 +319,23 @@ export function Submit() {
                           void requestLocation();
                         }
                       }}
-                      className="relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
-                      style={{
-                        background: useAutoLocation
-                          ? 'rgba(var(--rgb-accent), 0.35)'
-                          : 'rgba(var(--rgb-accent), 0.12)',
-                      }}
+                      className="relative h-11 w-12 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
                       aria-label={useAutoLocation ? 'Auto-detect on' : 'Auto-detect off'}
                     >
-                      <div
-                        className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+                      <span
+                        className="absolute left-0.5 top-1/2 h-6 w-11 -translate-y-1/2 rounded-full transition-colors duration-200"
                         style={{
-                          transform: useAutoLocation ? 'translateX(22px)' : 'translateX(2px)',
+                          background: useAutoLocation
+                            ? 'rgba(var(--rgb-accent), 0.35)'
+                            : 'rgba(var(--rgb-accent), 0.12)',
+                        }}
+                      />
+                      <span
+                        className="absolute left-1 top-1/2 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+                        style={{
+                          transform: useAutoLocation
+                            ? 'translate(22px, -50%)'
+                            : 'translate(0, -50%)',
                         }}
                       />
                     </button>
@@ -347,7 +354,7 @@ export function Submit() {
                         <button
                           type="button"
                           onClick={() => setUseAutoLocation(false)}
-                          className="text-accent text-xs hover:text-accent transition-colors cursor-pointer flex-shrink-0"
+                          className="min-h-10 px-2 text-accent text-xs hover:text-accent transition-colors cursor-pointer flex-shrink-0"
                         >
                           Change
                         </button>
@@ -362,7 +369,7 @@ export function Submit() {
                           <button
                             type="button"
                             onClick={handleDetectLocation}
-                            className="text-accent text-xs hover:text-accent transition-colors cursor-pointer"
+                            className="min-h-10 px-2 text-accent text-xs hover:text-accent transition-colors cursor-pointer"
                           >
                             Try detecting now
                           </button>
@@ -421,17 +428,21 @@ export function Submit() {
                   <button
                     type="button"
                     onClick={() => setAnonymous(!anonymous)}
-                    className="relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
-                    style={{
-                      background: anonymous
-                        ? 'rgba(var(--rgb-accent), 0.12)'
-                        : 'rgba(var(--rgb-accent), 0.35)',
-                    }}
+                    className="relative h-11 w-12 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
+                    aria-label={anonymous ? 'Submit anonymously' : 'Submit with profile name'}
                   >
-                    <div
-                      className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+                    <span
+                      className="absolute left-0.5 top-1/2 h-6 w-11 -translate-y-1/2 rounded-full transition-colors duration-200"
                       style={{
-                        transform: anonymous ? 'translateX(22px)' : 'translateX(2px)',
+                        background: anonymous
+                          ? 'rgba(var(--rgb-accent), 0.12)'
+                          : 'rgba(var(--rgb-accent), 0.35)',
+                      }}
+                    />
+                    <span
+                      className="absolute left-1 top-1/2 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+                      style={{
+                        transform: anonymous ? 'translate(22px, -50%)' : 'translate(0, -50%)',
                       }}
                     />
                   </button>
@@ -455,17 +466,21 @@ export function Submit() {
                   <button
                     type="button"
                     onClick={() => setCommentsEnabled(!commentsEnabled)}
-                    className="relative w-11 h-6 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
-                    style={{
-                      background: commentsEnabled
-                        ? 'rgba(var(--rgb-accent), 0.35)'
-                        : 'rgba(var(--rgb-accent), 0.12)',
-                    }}
+                    className="relative h-11 w-12 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
+                    aria-label={commentsEnabled ? 'Turn comments off' : 'Turn comments on'}
                   >
-                    <div
-                      className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+                    <span
+                      className="absolute left-0.5 top-1/2 h-6 w-11 -translate-y-1/2 rounded-full transition-colors duration-200"
                       style={{
-                        transform: commentsEnabled ? 'translateX(22px)' : 'translateX(2px)',
+                        background: commentsEnabled
+                          ? 'rgba(var(--rgb-accent), 0.35)'
+                          : 'rgba(var(--rgb-accent), 0.12)',
+                      }}
+                    />
+                    <span
+                      className="absolute left-1 top-1/2 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+                      style={{
+                        transform: commentsEnabled ? 'translate(22px, -50%)' : 'translate(0, -50%)',
                       }}
                     />
                   </button>
@@ -481,7 +496,7 @@ export function Submit() {
                 <button
                   type="submit"
                   disabled={!text.trim() || submitting}
-                  className="w-full py-3.5 mt-4 rounded-full text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full min-h-12 py-3.5 mt-3 rounded-full text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{
                     background:
                       text.trim() && !submitting

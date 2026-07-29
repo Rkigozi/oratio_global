@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { Globe, Heart, MessageCircle, ArrowRight, Mail } from 'lucide-react';
+import {
+  Globe,
+  Heart,
+  MessageCircle,
+  ArrowRight,
+  Mail,
+  PlusCircle,
+  Smartphone,
+} from 'lucide-react';
 import { useAuth } from '../hooks/auth-context';
 import { BetaBadge } from '../components/beta-badge';
 import { BETA } from '../config';
@@ -57,19 +65,19 @@ export function Landing() {
         }}
       />
 
-      <div className="relative z-10 flex flex-col items-center w-full max-w-4xl mx-auto px-6 pt-20 pb-32">
+      <div className="relative z-10 flex flex-col items-center w-full max-w-4xl mx-auto px-6 pt-16 pb-24">
         {/* Hero */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="text-center mb-10"
         >
-          <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="flex items-center justify-center gap-3 mb-5">
             <h1
               className="font-heading text-text-secondary"
               style={{
-                fontSize: 'clamp(3rem, 8vw, 4.5rem)',
+                fontSize: 'clamp(2.85rem, 8vw, 4.5rem)',
                 fontWeight: 300,
                 letterSpacing: '0.08em',
               }}
@@ -81,43 +89,60 @@ export function Landing() {
           <p className="text-text-muted text-base md:text-lg mb-2 font-light tracking-[0.3em] uppercase">
             Pray Together. Anywhere.
           </p>
-          <p className="text-text-dim text-sm max-w-md mx-auto mb-10 leading-relaxed">
+          <p className="text-text-dim text-sm max-w-md mx-auto mb-7 leading-relaxed">
             A global Christian prayer platform. Share your needs, pray for others, and experience
             the power of a worldwide prayer community.
           </p>
 
-          {/* App Store badges */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
+          <div className="flex flex-col items-center gap-3 mb-7">
+            <button
+              onClick={() => void navigate('/onboarding')}
+              className="min-h-12 px-8 py-3 rounded-full text-sm font-medium text-white cursor-pointer transition-all active:scale-95"
+              style={{
+                background:
+                  'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
+                boxShadow: '0 4px 28px rgba(var(--rgb-accent), 0.3)',
+              }}
+            >
+              Create Account
+            </button>
+            <button
+              onClick={() => void navigate('/login')}
+              className="inline-flex min-h-11 items-center gap-2 px-4 text-accent text-sm hover:text-accent transition-colors cursor-pointer"
+            >
+              Sign in
+              <ArrowRight size={14} />
+            </button>
+          </div>
+
+          {/* PWA install cues */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-7">
             <div
-              className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm opacity-80"
+              className="inline-flex min-h-10 items-center gap-2.5 px-5 py-2.5 rounded-full text-sm opacity-85"
               style={{
                 background: 'rgba(var(--rgb-bg), 0.3)',
                 border: '1px solid rgba(var(--rgb-text), 0.1)',
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#8890b5">
-                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-              </svg>
-              <span className="text-text-muted text-sm">iOS — Coming Soon</span>
+              <Smartphone size={16} className="text-text-muted" />
+              <span className="text-text-muted text-sm">Works on iPhone & Android</span>
             </div>
             <div
-              className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm opacity-80"
+              className="inline-flex min-h-10 items-center gap-2.5 px-5 py-2.5 rounded-full text-sm opacity-85"
               style={{
                 background: 'rgba(var(--rgb-bg), 0.3)',
                 border: '1px solid rgba(var(--rgb-text), 0.1)',
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#8890b5">
-                <path d="M4.08 2.23a1.5 1.5 0 0 0-.08.52v18.5a1.5 1.5 0 0 0 2.3 1.28l15.22-9.24a1.5 1.5 0 0 0 0-2.58L6.3 1.45a1.5 1.5 0 0 0-2.22.78z" />
-              </svg>
-              <span className="text-text-muted text-sm">Android — Coming Soon</span>
+              <PlusCircle size={16} className="text-text-muted" />
+              <span className="text-text-muted text-sm">Add to Home Screen</span>
             </div>
           </div>
 
-          {/* Email waitlist */}
+          {/* Beta updates */}
           <div className="w-full max-w-sm mx-auto">
             <p className="text-text-dim text-xs mb-3 text-center">
-              Get notified when Oratio launches — we&apos;ll never spam you.
+              Get occasional beta updates. We&apos;ll never spam you.
             </p>
             {subscribed ? (
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
@@ -193,36 +218,8 @@ export function Landing() {
           </div>
         </motion.div>
 
-        {/* Sign in CTA */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.5 }}
-          className="text-center"
-        >
-          <button
-            onClick={() => void navigate('/onboarding')}
-            className="px-8 py-3.5 rounded-full text-sm font-medium text-white cursor-pointer transition-all active:scale-95 mb-5"
-            style={{
-              background:
-                'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
-              boxShadow: '0 4px 28px rgba(var(--rgb-accent), 0.3)',
-            }}
-          >
-            Create Account
-          </button>
-          <p className="text-text-dim text-xs mb-3">Already have an account?</p>
-          <button
-            onClick={() => void navigate('/login')}
-            className="inline-flex items-center gap-2 text-accent text-sm hover:text-accent transition-colors cursor-pointer"
-          >
-            Sign in
-            <ArrowRight size={14} />
-          </button>
-        </motion.div>
-
         {/* Footer */}
-        <div className="w-full text-center mt-16 pt-6 border-t border-accent/6 space-y-2">
+        <div className="w-full text-center mt-10 pt-6 border-t border-accent/6 space-y-2">
           {BETA.isBeta && (
             <p className="text-text-dim text-[11px] font-light italic">{BETA.notice}</p>
           )}

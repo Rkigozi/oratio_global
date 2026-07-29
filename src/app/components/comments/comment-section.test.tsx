@@ -9,6 +9,7 @@ vi.mock('../../services/supabase-queries', () => ({
   createComment: vi.fn(),
   updateComment: vi.fn(),
   deleteComment: vi.fn(),
+  subscribeToPrayerCommentChanges: vi.fn(() => vi.fn()),
 }));
 
 vi.mock('../../services/api', () => ({

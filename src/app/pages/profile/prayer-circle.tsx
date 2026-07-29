@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Check, Clock, UserMinus, Users, X } from 'lucide-react';
+import { Check, Clock, UserMinus, Users, X } from 'lucide-react';
 import { timeAgo } from '../../services/prayer-data';
 import { AvatarImage } from '../../components/avatar-image';
 import {
@@ -13,6 +13,7 @@ import {
   type PrayerCircleInvite,
   type PrayerCircleUser,
 } from '../../services/supabase-queries';
+import { useActivityUpdates } from '../../hooks/activity-updates-context';
 
 export function PrayerCircle() {
   const navigate = useNavigate();
@@ -21,15 +22,16 @@ export function PrayerCircle() {
   const [outgoing, setOutgoing] = useState<PrayerCircleInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { liveVersion } = useActivityUpdates();
 
-  const loadCircle = async () => {
-    setLoading(true);
+  const loadCircle = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     const [users, invites] = await Promise.all([getPrayerCircle(), getPrayerCircleInvites()]);
     setCircle(users);
     setIncoming(invites.incoming);
     setOutgoing(invites.outgoing);
-    setLoading(false);
-  };
+    if (showLoading) setLoading(false);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -50,6 +52,16 @@ export function PrayerCircle() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (liveVersion === 0) return;
+
+    const timer = window.setTimeout(() => {
+      void loadCircle(false);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [liveVersion, loadCircle]);
 
   const respond = async (inviteId: string, response: 'accepted' | 'declined') => {
     setBusyId(inviteId);
@@ -74,26 +86,7 @@ export function PrayerCircle() {
 
   return (
     <div className="w-full min-h-dvh flex flex-col" style={{ background: 'rgb(var(--rgb-bg))' }}>
-      <div
-        className="flex-shrink-0 pt-[max(1.5rem,env(safe-area-inset-top))] pb-2 px-4"
-        style={{
-          background:
-            'linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98), rgba(var(--rgb-bg), 0))',
-        }}
-      >
-        <div className="flex items-center gap-3 mt-12">
-          <button
-            onClick={() => void navigate(-1)}
-            className="flex items-center gap-2 text-text-muted hover:text-text-muted transition-colors cursor-pointer"
-          >
-            <ArrowLeft size={16} />
-            <span className="text-xs">Back</span>
-          </button>
-          <h2 className="text-text font-heading text-sm font-light">Prayer Circle</h2>
-        </div>
-      </div>
-
-      <div className="flex-1 px-5 pb-8 overflow-y-auto">
+      <div className="flex-1 px-5 pt-24 pb-28 overflow-y-auto">
         <div className="max-w-md mx-auto">
           <div
             className="rounded-xl px-4 py-4 mb-5"
@@ -112,7 +105,7 @@ export function PrayerCircle() {
             </p>
             <button
               onClick={() => void navigate('/feed?circle=1')}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-accent/15 bg-accent/6 px-3 py-2 text-xs text-accent transition-colors hover:bg-accent/10 cursor-pointer"
+              className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/15 bg-accent/6 px-4 py-2 text-xs text-accent transition-colors hover:bg-accent/10 cursor-pointer"
             >
               <Users size={13} />
               View Circle Prayers
@@ -139,7 +132,7 @@ export function PrayerCircle() {
                             <button
                               onClick={() => void respond(invite.id, 'accepted')}
                               disabled={busyId === invite.id}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs text-text cursor-pointer disabled:opacity-60"
+                              className="inline-flex min-h-11 items-center gap-1 px-4 py-2 rounded-full text-xs text-text cursor-pointer disabled:opacity-60"
                               style={{
                                 background:
                                   'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
@@ -151,7 +144,7 @@ export function PrayerCircle() {
                             <button
                               onClick={() => void respond(invite.id, 'declined')}
                               disabled={busyId === invite.id}
-                              className="w-8 h-8 rounded-full flex items-center justify-center text-text-dim bg-accent/6 border border-accent/10 cursor-pointer disabled:opacity-60"
+                              className="w-11 h-11 rounded-full flex items-center justify-center text-text-dim bg-accent/6 border border-accent/10 cursor-pointer disabled:opacity-60"
                               aria-label={`Decline invite from @${invite.requester.username}`}
                             >
                               <X size={13} />
@@ -179,7 +172,7 @@ export function PrayerCircle() {
                           <button
                             onClick={() => void cancel(invite.id)}
                             disabled={busyId === invite.id}
-                            className="text-xs px-3 py-1.5 rounded-full text-text-dim bg-accent/6 border border-accent/10 cursor-pointer disabled:opacity-60"
+                            className="min-h-11 text-xs px-4 py-2 rounded-full text-text-dim bg-accent/6 border border-accent/10 cursor-pointer disabled:opacity-60"
                           >
                             Cancel
                           </button>
@@ -226,7 +219,7 @@ export function PrayerCircle() {
                         <button
                           onClick={() => void remove(person.id)}
                           disabled={busyId === person.id}
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-text-dim bg-accent/6 border border-accent/10 cursor-pointer disabled:opacity-60"
+                          className="w-11 h-11 rounded-full flex items-center justify-center text-text-dim bg-accent/6 border border-accent/10 cursor-pointer disabled:opacity-60"
                           aria-label={`Remove @${person.username} from Prayer Circle`}
                         >
                           <UserMinus size={13} />

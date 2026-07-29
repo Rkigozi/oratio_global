@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
 import { Bell, ChevronLeft } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import { BetaBadge } from '../beta-badge';
-import { getUnreadActivityCount } from '../../services/supabase-queries';
+import { useActivityUpdates } from '../../hooks/activity-updates-context';
 
 interface HeaderProps {
   showBack?: boolean;
@@ -12,41 +11,7 @@ interface HeaderProps {
 export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const refreshUnreadCount = useCallback(async () => {
-    const count = await getUnreadActivityCount();
-    setUnreadCount(count);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    const refresh = async () => {
-      const count = await getUnreadActivityCount();
-      if (active) setUnreadCount(count);
-    };
-
-    void refresh();
-
-    return () => {
-      active = false;
-    };
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const refresh = () => void refreshUnreadCount();
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') refresh();
-    };
-
-    window.addEventListener('oratio-activity-updated', refresh);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    return () => {
-      window.removeEventListener('oratio-activity-updated', refresh);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
-  }, [refreshUnreadCount]);
+  const { unreadCount } = useActivityUpdates();
 
   // Determine if we should show back button
   const showBack =
@@ -60,6 +25,7 @@ export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
       if (location.pathname === '/profile/submitted') return 'Submitted Prayers';
       if (location.pathname === '/profile/prayed') return 'Prayed For';
       if (location.pathname === '/profile/saved') return 'Saved Prayers';
+      if (location.pathname === '/profile/circle') return 'Prayer Circle';
       if (location.pathname === '/updates') return 'Updates';
       return undefined;
     })();

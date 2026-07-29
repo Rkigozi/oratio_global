@@ -11,6 +11,10 @@ export function AuthGuard() {
   }
 
   if (!user) {
+    if (location.pathname === '/') {
+      return <Navigate to="/landing" replace />;
+    }
+
     const next = `${location.pathname}${location.search}${location.hash}`;
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
   }
