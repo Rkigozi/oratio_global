@@ -4,9 +4,10 @@ import { AuthProvider } from './hooks/auth-context';
 import { ThemeProvider } from './hooks/theme-context';
 import { ActivityUpdatesProvider } from './hooks/activity-updates-context';
 import { ErrorBoundary } from './components/error-boundary';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { capturePageView } from '../lib/analytics';
 import { useAuth } from './hooks/auth-context';
+import { getLaunchRedirect, isStandaloneLaunch } from './launch-route';
 import { preloadAuthenticatedRoutes, preloadPublicRoutes } from './route-loaders';
 
 const SERVICE_WORKER_RELOAD_KEY = 'oratio:sw-controller-reload-at';
@@ -103,6 +104,39 @@ function RouteModulePreloader() {
   return null;
 }
 
+function LaunchRouteNormalizer() {
+  const { loading, user } = useAuth();
+  const initialLocationRef = useRef(router.state.location);
+  const hasCheckedLaunchRef = useRef(false);
+
+  useEffect(() => {
+    if (loading || hasCheckedLaunchRef.current) return;
+    hasCheckedLaunchRef.current = true;
+
+    const initialLocation = initialLocationRef.current;
+    const currentLocation = router.state.location;
+    const isStillOnInitialRoute =
+      currentLocation.pathname === initialLocation.pathname &&
+      currentLocation.search === initialLocation.search &&
+      currentLocation.hash === initialLocation.hash;
+
+    if (!isStillOnInitialRoute) return;
+
+    const redirect = getLaunchRedirect({
+      isStandalone: isStandaloneLaunch(),
+      pathname: initialLocation.pathname,
+      search: initialLocation.search,
+      signedIn: Boolean(user),
+    });
+
+    if (redirect && redirect !== `${currentLocation.pathname}${currentLocation.search}`) {
+      void router.navigate(redirect, { replace: true });
+    }
+  }, [loading, user]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -121,6 +155,7 @@ export default function App() {
               }}
             >
               <RouterProvider router={router} />
+              <LaunchRouteNormalizer />
               <AnalyticsRouteTracker />
               <RouteModulePreloader />
               <ServiceWorkerUpdater />
