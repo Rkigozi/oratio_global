@@ -21,6 +21,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false,
       includeAssets: ['icons/icon.svg'],
       manifest: {
         name: 'Oratio — Global Prayer Platform',
@@ -57,7 +58,6 @@ export default defineConfig({
         // from asking for a lazy route file that disappeared after a new deploy.
         globPatterns: [
           'index.html',
-          'registerSW.js',
           'manifest.webmanifest',
           'icons/*.{svg,png,ico}',
           'assets/*.css',

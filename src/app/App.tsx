@@ -35,23 +35,35 @@ function ServiceWorkerUpdater() {
 
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
 
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then((registration) => {
-        const checkForUpdate = () => {
-          if (document.visibilityState === 'visible') void registration.update();
-        };
-
-        checkForUpdate();
-        intervalId = window.setInterval(checkForUpdate, UPDATE_CHECK_INTERVAL_MS);
-        document.addEventListener('visibilitychange', checkForUpdate);
-        removeVisibilityListener = () => {
-          document.removeEventListener('visibilitychange', checkForUpdate);
-        };
-      })
-      .catch(() => {
-        // SW registration can fail on some iOS browsers; the app can still run online.
+    const checkForUpdate = (registration: ServiceWorkerRegistration) => {
+      if (document.visibilityState !== 'visible') return;
+      registration.update().catch(() => {
+        // Update checks are best-effort; failed SW fetches should not surface to users/Sentry.
       });
+    };
+
+    try {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((registration) => {
+          const handleVisibilityChange = () => checkForUpdate(registration);
+
+          checkForUpdate(registration);
+          intervalId = window.setInterval(
+            () => checkForUpdate(registration),
+            UPDATE_CHECK_INTERVAL_MS
+          );
+          document.addEventListener('visibilitychange', handleVisibilityChange);
+          removeVisibilityListener = () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+          };
+        })
+        .catch(() => {
+          // SW registration can fail on some iOS browsers; the app can still run online.
+        });
+    } catch {
+      // Some browser contexts throw synchronously for service worker registration.
+    }
 
     return () => {
       if (intervalId) window.clearInterval(intervalId);
