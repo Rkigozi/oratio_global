@@ -1,22 +1,22 @@
-import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
-import { act, render, screen } from "@testing-library/react";
-import { MemoryRouter, Routes, Route } from "react-router";
-import { AuthGuard } from "./auth-guard";
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router';
+import { AuthGuard } from './auth-guard';
 
-vi.mock("../../hooks/auth-context", () => ({
+vi.mock('../../hooks/auth-context', () => ({
   useAuth: vi.fn(),
 }));
 
 import { useAuth } from '../../hooks/auth-context';
 
-describe("AuthGuard", () => {
+describe('AuthGuard', () => {
   afterEach(() => {
     vi.useRealTimers();
   });
 
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { id: "user-1" },
+      user: { id: 'user-1' },
       profile: null,
       loading: false,
       signUp: vi.fn(),
@@ -29,9 +29,9 @@ describe("AuthGuard", () => {
     });
   });
 
-  it("renders outlet when authenticated", () => {
+  it('renders outlet when authenticated', () => {
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={['/']}>
         <Routes>
           <Route element={<AuthGuard />}>
             <Route index element={<div>Authenticated Content</div>} />
@@ -39,35 +39,49 @@ describe("AuthGuard", () => {
         </Routes>
       </MemoryRouter>
     );
-    expect(screen.getByText("Authenticated Content")).toBeTruthy();
+    expect(screen.getByText('Authenticated Content')).toBeTruthy();
   });
 
-  it("redirects to /landing when not authenticated", () => {
+  it('redirects to login with a safe return path when not authenticated', () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: null, loading: false,
-      profile: null, signUp: vi.fn(), signIn: vi.fn(), signInWithGoogle: vi.fn(),
-      signOut: vi.fn(), resetPassword: vi.fn(), updatePassword: vi.fn(), needsEmailVerification: false,
+      user: null,
+      loading: false,
+      profile: null,
+      signUp: vi.fn(),
+      signIn: vi.fn(),
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn(),
+      resetPassword: vi.fn(),
+      updatePassword: vi.fn(),
+      needsEmailVerification: false,
     });
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={['/prayer/p1?from=share']}>
         <Routes>
           <Route element={<AuthGuard />}>
-            <Route index element={<div>Protected</div>} />
+            <Route path="/prayer/:id" element={<div>Protected</div>} />
           </Route>
-          <Route path="/landing" element={<div>Landing Page</div>} />
+          <Route path="/login" element={<div>Login Page</div>} />
         </Routes>
       </MemoryRouter>
     );
-    expect(screen.getByText("Landing Page")).toBeTruthy();
+    expect(screen.getByText('Login Page')).toBeTruthy();
   });
 
-  it("shows loading spinner while auth loads", () => {
+  it('shows loading spinner while auth loads', () => {
     vi.useFakeTimers();
     vi.mocked(useAuth).mockReturnValue({
-      user: null, loading: true,
-      profile: null, signUp: vi.fn(), signIn: vi.fn(), signInWithGoogle: vi.fn(),
-      signOut: vi.fn(), resetPassword: vi.fn(), updatePassword: vi.fn(), needsEmailVerification: false,
+      user: null,
+      loading: true,
+      profile: null,
+      signUp: vi.fn(),
+      signIn: vi.fn(),
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn(),
+      resetPassword: vi.fn(),
+      updatePassword: vi.fn(),
+      needsEmailVerification: false,
     });
 
     const { container } = render(
@@ -76,12 +90,12 @@ describe("AuthGuard", () => {
       </MemoryRouter>
     );
 
-    expect(container.querySelector(".animate-spin")).toBeNull();
+    expect(container.querySelector('.animate-spin')).toBeNull();
 
     act(() => {
       vi.advanceTimersByTime(180);
     });
 
-    expect(container.querySelector(".animate-spin")).toBeTruthy();
+    expect(container.querySelector('.animate-spin')).toBeTruthy();
   });
 });

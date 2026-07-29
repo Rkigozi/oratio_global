@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
-import { AuthProvider, useAuth } from "./auth-context";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { AuthProvider, useAuth } from './auth-context';
 
-vi.mock("../../lib/analytics", () => ({
+vi.mock('../../lib/analytics', () => ({
   captureEvent: vi.fn(),
 }));
 
-vi.mock("../services/supabase", () => {
+vi.mock('../services/supabase', () => {
   const authFns: Record<string, ReturnType<typeof vi.fn>> = {
     getUser: vi.fn(),
     getSession: vi.fn(),
@@ -47,26 +47,56 @@ vi.mock("../services/supabase", () => {
   };
 });
 
-import { supabase } from "../services/supabase";
-import { captureEvent } from "../../lib/analytics";
+import { supabase } from '../services/supabase';
+import { captureEvent } from '../../lib/analytics';
 
 function getQb(): Record<string, ReturnType<typeof vi.fn>> {
-  return (supabase as { from: () => Record<string, ReturnType<typeof vi.fn>> }).from("x");
+  return (supabase as { from: () => Record<string, ReturnType<typeof vi.fn>> }).from('x');
 }
 
 function setupDefaults() {
   vi.mocked(supabase.auth.getSession).mockResolvedValue({ data: { session: null }, error: null });
-  vi.mocked(supabase.auth.onAuthStateChange).mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } });
-  vi.mocked(supabase.auth.signUp).mockResolvedValue({ data: { user: { id: "new-user", email_confirmed_at: null, identities: [{ id: "i1" }] } }, error: null });
-  vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
-  vi.mocked(supabase.auth.signInWithOAuth).mockResolvedValue({ data: { url: "https://accounts.google.com/o/oauth2/auth" }, error: null });
+  vi.mocked(supabase.auth.onAuthStateChange).mockReturnValue({
+    data: { subscription: { unsubscribe: vi.fn() } },
+  });
+  vi.mocked(supabase.auth.signUp).mockResolvedValue({
+    data: { user: { id: 'new-user', email_confirmed_at: null, identities: [{ id: 'i1' }] } },
+    error: null,
+  });
+  vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
+    data: { user: { id: 'user-1' } },
+    error: null,
+  });
+  vi.mocked(supabase.auth.signInWithOAuth).mockResolvedValue({
+    data: { url: 'https://accounts.google.com/o/oauth2/auth' },
+    error: null,
+  });
   vi.mocked(supabase.auth.signOut).mockResolvedValue({ error: null });
   vi.mocked(supabase.auth.resetPasswordForEmail).mockResolvedValue({ data: {}, error: null });
-  vi.mocked(supabase.auth.updateUser).mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
-  vi.mocked(supabase.auth.getUser).mockResolvedValue({ data: { user: { id: "test-user-id" } }, error: null });
+  vi.mocked(supabase.auth.updateUser).mockResolvedValue({
+    data: { user: { id: 'user-1' } },
+    error: null,
+  });
+  vi.mocked(supabase.auth.getUser).mockResolvedValue({
+    data: { user: { id: 'test-user-id' } },
+    error: null,
+  });
 
   const qb = getQb();
-  for (const key of ["select", "eq", "order", "limit", "single", "insert", "delete", "in", "not", "ilike", "maybeSingle", "update"]) {
+  for (const key of [
+    'select',
+    'eq',
+    'order',
+    'limit',
+    'single',
+    'insert',
+    'delete',
+    'in',
+    'not',
+    'ilike',
+    'maybeSingle',
+    'update',
+  ]) {
     qb[key] = vi.fn().mockReturnThis();
   }
   qb.then = vi.fn((resolve: (value: unknown) => void) => {
@@ -74,38 +104,38 @@ function setupDefaults() {
   });
 }
 
-describe("AuthProvider", () => {
+describe('AuthProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setupDefaults();
   });
 
-  it("shows loading state initially", () => {
+  it('shows loading state initially', () => {
     vi.mocked(supabase.auth.getSession).mockReturnValue(new Promise(() => {}));
 
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
     expect(result.current.loading).toBe(true);
   });
 
-  it("sets user and profile after successful session load", async () => {
+  it('sets user and profile after successful session load', async () => {
     vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: { user: { id: "user-1", email: "test@example.com" } } },
+      data: { session: { user: { id: 'user-1', email: 'test@example.com' } } },
       error: null,
     });
 
     const qb = getQb();
     qb.then = vi.fn((resolve: (value: unknown) => void) => {
-      resolve({ data: { username: "testuser", display_name: "Test User" }, error: null });
+      resolve({ data: { username: 'testuser', display_name: 'Test User' }, error: null });
     });
 
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
     await waitFor(() => {
-      expect(result.current.profile?.username).toBe("testuser");
+      expect(result.current.profile?.username).toBe('testuser');
     });
   });
 
-  it("handles null session gracefully", async () => {
+  it('handles null session gracefully', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
     await waitFor(() => {
@@ -116,8 +146,8 @@ describe("AuthProvider", () => {
     expect(result.current.profile).toBeNull();
   });
 
-  it("handles getSession error gracefully", async () => {
-    vi.mocked(supabase.auth.getSession).mockRejectedValue(new Error("Network error"));
+  it('handles getSession error gracefully', async () => {
+    vi.mocked(supabase.auth.getSession).mockRejectedValue(new Error('Network error'));
 
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
@@ -128,28 +158,28 @@ describe("AuthProvider", () => {
     expect(result.current.user).toBeNull();
   });
 
-  it("signUp returns null on success", async () => {
+  it('signUp returns null on success', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let error: string | null = "pending";
+    let error: string | null = 'pending';
     await act(async () => {
-      error = await result.current.signUp("new@test.com", "password123", "newuser");
+      error = await result.current.signUp('new@test.com', 'password123', 'newuser');
     });
 
     expect(error).toBeNull();
     expect(supabase.auth.signUp).toHaveBeenCalledWith({
-      email: "new@test.com",
-      password: "password123",
-      options: { data: { username: "newuser" } },
+      email: 'new@test.com',
+      password: 'password123',
+      options: { data: { username: 'newuser' } },
     });
   });
 
-  it("signUp returns error message on failure", async () => {
+  it('signUp returns error message on failure', async () => {
     vi.mocked(supabase.auth.signUp).mockResolvedValue({
       data: { user: null },
-      error: { message: "User already exists" },
+      error: { message: 'User already exists' },
     });
 
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
@@ -158,15 +188,15 @@ describe("AuthProvider", () => {
 
     let error: string | null = null;
     await act(async () => {
-      error = await result.current.signUp("existing@test.com", "password123", "existing");
+      error = await result.current.signUp('existing@test.com', 'password123', 'existing');
     });
 
-    expect(error).toBe("User already exists");
+    expect(error).toBe('User already exists');
   });
 
-  it("sets needsEmailVerification when email not confirmed", async () => {
+  it('sets needsEmailVerification when email not confirmed', async () => {
     vi.mocked(supabase.auth.signUp).mockResolvedValue({
-      data: { user: { id: "u1", email_confirmed_at: null, identities: [] } },
+      data: { user: { id: 'u1', email_confirmed_at: null, identities: [] } },
       error: null,
     });
 
@@ -175,29 +205,29 @@ describe("AuthProvider", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await act(async () => {
-      await result.current.signUp("new@test.com", "password123", "newuser");
+      await result.current.signUp('new@test.com', 'password123', 'newuser');
     });
 
     expect(result.current.needsEmailVerification).toBe(true);
   });
 
-  it("signIn returns null on success", async () => {
+  it('signIn returns null on success', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let error: string | null = "pending";
+    let error: string | null = 'pending';
     await act(async () => {
-      error = await result.current.signIn("test@example.com", "password");
+      error = await result.current.signIn('test@example.com', 'password');
     });
 
     expect(error).toBeNull();
   });
 
-  it("signIn returns error on failure", async () => {
+  it('signIn returns error on failure', async () => {
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
       data: { user: null },
-      error: { message: "Invalid login credentials" },
+      error: { message: 'Invalid login credentials' },
     });
 
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
@@ -206,13 +236,13 @@ describe("AuthProvider", () => {
 
     let error: string | null = null;
     await act(async () => {
-      error = await result.current.signIn("wrong@test.com", "wrong");
+      error = await result.current.signIn('wrong@test.com', 'wrong');
     });
 
-    expect(error).toBe("Invalid login credentials");
+    expect(error).toBe('Invalid login credentials');
   });
 
-  it("signInWithGoogle calls OAuth", async () => {
+  it('signInWithGoogle calls OAuth', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -222,20 +252,35 @@ describe("AuthProvider", () => {
     });
 
     expect(supabase.auth.signInWithOAuth).toHaveBeenCalledWith({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/feed` },
     });
   });
 
-  it("signOut clears user and profile", async () => {
+  it('signInWithGoogle supports a safe return path', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    await act(async () => {
+      await result.current.signInWithGoogle('/prayer/p1');
+    });
+
+    expect(supabase.auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/prayer/p1` },
+    });
+  });
+
+  it('signOut clears user and profile', async () => {
     vi.mocked(supabase.auth.getSession).mockResolvedValue({
-      data: { session: { user: { id: "user-1", email: "test@example.com" } } },
+      data: { session: { user: { id: 'user-1', email: 'test@example.com' } } },
       error: null,
     });
 
     const qb = getQb();
     qb.then = vi.fn((resolve: (value: unknown) => void) => {
-      resolve({ data: { username: "testuser", display_name: "Test User" }, error: null });
+      resolve({ data: { username: 'testuser', display_name: 'Test User' }, error: null });
     });
 
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
@@ -252,45 +297,45 @@ describe("AuthProvider", () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.profile).toBeNull();
-    expect(captureEvent).toHaveBeenCalledWith("user_signed_out");
+    expect(captureEvent).toHaveBeenCalledWith('user_signed_out');
   });
 
-  it("resetPassword returns null on success", async () => {
+  it('resetPassword returns null on success', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let error: string | null = "pending";
+    let error: string | null = 'pending';
     await act(async () => {
-      error = await result.current.resetPassword("test@example.com");
+      error = await result.current.resetPassword('test@example.com');
     });
 
     expect(error).toBeNull();
-    expect(captureEvent).toHaveBeenCalledWith("password_reset_requested");
+    expect(captureEvent).toHaveBeenCalledWith('password_reset_requested');
   });
 
-  it("updatePassword returns null on success", async () => {
+  it('updatePassword returns null on success', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let error: string | null = "pending";
+    let error: string | null = 'pending';
     await act(async () => {
-      error = await result.current.updatePassword("newpassword");
+      error = await result.current.updatePassword('newpassword');
     });
 
     expect(error).toBeNull();
-    expect(captureEvent).toHaveBeenCalledWith("password_updated");
+    expect(captureEvent).toHaveBeenCalledWith('password_updated');
   });
 
-  it("subscribes to auth state changes", async () => {
+  it('subscribes to auth state changes', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
 
     await waitFor(() => expect(supabase.auth.onAuthStateChange).toHaveBeenCalled());
     await waitFor(() => expect(result.current.loading).toBe(false));
   });
 
-  it("unsubscribes on unmount", async () => {
+  it('unsubscribes on unmount', async () => {
     const unsubscribe = vi.fn();
     vi.mocked(supabase.auth.onAuthStateChange).mockReturnValue({
       data: { subscription: { unsubscribe } },

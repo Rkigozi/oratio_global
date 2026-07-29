@@ -7,6 +7,7 @@ vi.mock('../../services/supabase-queries', () => ({
   getComments: vi.fn(),
   getCommentCount: vi.fn(),
   createComment: vi.fn(),
+  updateComment: vi.fn(),
   deleteComment: vi.fn(),
 }));
 
@@ -22,6 +23,7 @@ import {
   getComments,
   getCommentCount,
   createComment,
+  updateComment,
   deleteComment,
 } from '../../services/supabase-queries';
 import { useAuth } from '../../hooks/auth-context';
@@ -83,6 +85,7 @@ describe('CommentSection', () => {
         parent_id: null,
         body: 'Great prayer!',
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         user: {
           username: 'commenter',
           display_name: 'Commenter',
@@ -111,6 +114,7 @@ describe('CommentSection', () => {
       parent_id: null,
       body: 'New comment',
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       user: {
         username: 'commenter',
         display_name: 'Commenter',
@@ -147,6 +151,7 @@ describe('CommentSection', () => {
         parent_id: null,
         body: "Someone else's comment",
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         user: {
           username: 'commenter',
           display_name: 'Commenter',
@@ -160,6 +165,7 @@ describe('CommentSection', () => {
         parent_id: 'c1',
         body: 'Reply under removed comment',
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         user: {
           username: 'other',
           display_name: 'Other',
@@ -190,5 +196,56 @@ describe('CommentSection', () => {
     expect(screen.queryByText("Someone else's comment")).toBeNull();
     expect(screen.queryByText('Reply under removed comment')).toBeNull();
     expect(onCommentCountChange).toHaveBeenLastCalledWith(0);
+  });
+
+  it('allows users to edit their own comments', async () => {
+    vi.mocked(getComments).mockResolvedValue([
+      {
+        id: 'c1',
+        prayer_id: 'p1',
+        user_id: 'user-1',
+        parent_id: null,
+        body: 'Original encouragement',
+        created_at: '2024-01-01T00:00:00.000Z',
+        updated_at: '2024-01-01T00:00:00.000Z',
+        user: {
+          username: 'commenter',
+          display_name: 'Commenter',
+          avatar_url: null,
+        },
+      },
+    ]);
+    vi.mocked(getCommentCount).mockResolvedValue(1);
+    vi.mocked(updateComment).mockResolvedValue({
+      id: 'c1',
+      prayer_id: 'p1',
+      user_id: 'user-1',
+      parent_id: null,
+      body: 'Updated encouragement',
+      created_at: '2024-01-01T00:00:00.000Z',
+      updated_at: '2024-01-01T00:00:05.000Z',
+      user: {
+        username: 'commenter',
+        display_name: 'Commenter',
+        avatar_url: null,
+      },
+    });
+
+    render(<CommentSection prayer={mockPrayer} commentCount={1} onCommentCountChange={vi.fn()} />);
+
+    await screen.findByText('Original encouragement');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.change(screen.getByDisplayValue('Original encouragement'), {
+      target: { value: 'Updated encouragement' },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(updateComment).toHaveBeenCalledWith('c1', 'Updated encouragement');
+    expect(screen.getByText('Updated encouragement')).toBeTruthy();
+    expect(screen.getByText('Edited')).toBeTruthy();
   });
 });

@@ -8,6 +8,7 @@ import {
   getComments,
   getCommentCount,
   createComment,
+  updateComment,
   deleteComment,
 } from '../../services/supabase-queries';
 import type { Comment } from '../../services/supabase-queries';
@@ -131,6 +132,26 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
     }
   };
 
+  const handleUpdate = useCallback(async (commentId: string, body: string) => {
+    const text = body.trim();
+    if (!text) return false;
+
+    const updated = await updateComment(commentId, text);
+    if (!updated) return false;
+
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId
+          ? {
+              ...updated,
+              user: updated.user ?? comment.user,
+            }
+          : comment
+      )
+    );
+    return true;
+  }, []);
+
   const canModerateComments =
     !!user &&
     (prayer.authorId
@@ -165,6 +186,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
               replies={replies(comment.id)}
               onReply={(id, username) => setReplyTo({ id, username })}
               onDelete={(id) => void handleDelete(id)}
+              onUpdate={handleUpdate}
               canModerateComments={canModerateComments}
             />
           ))}
@@ -261,35 +283,168 @@ function CommentThread({
   replies,
   onReply,
   onDelete,
+  onUpdate,
   canModerateComments,
 }: {
   comment: Comment;
   replies: Comment[];
   onReply: (id: string, username: string) => void;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, body: string) => Promise<boolean>;
   canModerateComments: boolean;
 }) {
   const { user } = useAuth();
   const username = comment.user?.username || comment.user?.display_name || 'Anonymous';
-  const [reported, setReported] = useState(false);
-  const [showReportConfirm, setShowReportConfirm] = useState(false);
   const [showAllReplies, setShowAllReplies] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editError, setEditError] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [reportedIds, setReportedIds] = useState<Set<string>>(() => new Set());
+  const [reportingId, setReportingId] = useState<string | null>(null);
+  const [reportMessageId, setReportMessageId] = useState<string | null>(null);
+  const [reportErrorId, setReportErrorId] = useState<string | null>(null);
 
-  const handleReport = async () => {
-    await reportContent({
+  const startEdit = (target: Comment) => {
+    setEditingId(target.id);
+    setEditText(target.body);
+    setEditError('');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditText('');
+    setEditError('');
+  };
+
+  const saveEdit = async (target: Comment) => {
+    const text = editText.trim();
+    if (!text) {
+      setEditError('Comment cannot be empty.');
+      return;
+    }
+    if (text === target.body) {
+      cancelEdit();
+      return;
+    }
+
+    setSavingEdit(true);
+    setEditError('');
+    const ok = await onUpdate(target.id, text);
+    setSavingEdit(false);
+
+    if (!ok) {
+      setEditError("We couldn't save that comment. Please try again.");
+      return;
+    }
+
+    cancelEdit();
+  };
+
+  const handleReport = async (targetId: string) => {
+    setReportingId(targetId);
+    setReportErrorId(null);
+    const result = await reportContent({
       reportable_type: 'comment',
-      reportable_id: comment.id,
+      reportable_id: targetId,
       reason: 'Upsetting or harmful',
     });
-    setReported(true);
-    setShowReportConfirm(true);
-    setTimeout(() => setShowReportConfirm(false), 2000);
+    setReportingId(null);
+
+    if (result.error) {
+      setReportErrorId(targetId);
+      return;
+    }
+
+    setReportedIds((current) => new Set(current).add(targetId));
+    setReportMessageId(targetId);
+    setTimeout(
+      () => setReportMessageId((current) => (current === targetId ? null : current)),
+      2500
+    );
   };
 
   const visibleReplies = showAllReplies ? replies : replies.slice(0, 1);
   const hiddenCount = replies.length - 1;
   const isOwnComment = !!user && comment.user_id === user.id;
   const canDeleteComment = isOwnComment || canModerateComments;
+  const renderEditedLabel = (target: Comment) => {
+    const created = new Date(target.created_at).getTime();
+    const updated = new Date(target.updated_at).getTime();
+    if (!Number.isFinite(created) || !Number.isFinite(updated) || updated - created < 1000) {
+      return null;
+    }
+
+    return <span className="text-text-faint text-[9px]">Edited</span>;
+  };
+
+  const renderBody = (target: Comment, textClassName: string) => {
+    const isEditing = editingId === target.id;
+    if (!isEditing) {
+      return (
+        <>
+          <p className={textClassName}>{target.body}</p>
+          {renderEditedLabel(target)}
+        </>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        <textarea
+          value={editText}
+          onChange={(e) => {
+            setEditText(e.target.value);
+            setEditError('');
+          }}
+          rows={2}
+          maxLength={500}
+          className="w-full rounded-lg px-3 py-2 text-text placeholder-text-dim text-xs focus:outline-none border border-accent/12 focus:border-accent/30 transition-colors resize-none"
+          style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
+        />
+        <div className="flex items-center gap-3">
+          {editError ? (
+            <p className="text-danger text-[10px] flex-1">{editError}</p>
+          ) : (
+            <p className="text-text-dim text-[10px] flex-1">{editText.length}/500</p>
+          )}
+          <button
+            onClick={cancelEdit}
+            disabled={savingEdit}
+            className="text-text-dim hover:text-text-muted text-[10px] transition-colors cursor-pointer disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => void saveEdit(target)}
+            disabled={savingEdit || !editText.trim()}
+            className="text-accent hover:text-accent text-[10px] font-medium transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {savingEdit ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderReportNotice = (targetId: string) => (
+    <AnimatePresence>
+      {(reportMessageId === targetId || reportErrorId === targetId) && (
+        <motion.p
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          className={`text-[10px] mt-1 ${
+            reportErrorId === targetId ? 'text-danger' : 'text-warning'
+          }`}
+        >
+          {reportErrorId === targetId
+            ? "We couldn't send that report. Please try again."
+            : 'Report sent for review.'}
+        </motion.p>
+      )}
+    </AnimatePresence>
+  );
 
   return (
     <div>
@@ -305,7 +460,7 @@ function CommentThread({
             <span className="text-text-muted text-[11px] font-medium">@{username}</span>
             <span className="text-text-dim text-[9px]">{timeAgo(comment.created_at)}</span>
           </div>
-          <p className="text-text-secondary text-sm leading-relaxed">{comment.body}</p>
+          {renderBody(comment, 'text-text-secondary text-sm leading-relaxed')}
           <div className="flex items-center gap-3 mt-1">
             <button
               onClick={() => onReply(comment.id, username)}
@@ -313,6 +468,14 @@ function CommentThread({
             >
               Reply
             </button>
+            {isOwnComment && (
+              <button
+                onClick={() => startEdit(comment)}
+                className="text-text-dim hover:text-accent text-[10px] transition-colors cursor-pointer"
+              >
+                Edit
+              </button>
+            )}
             {canDeleteComment && (
               <button
                 onClick={() => onDelete(comment.id)}
@@ -324,36 +487,24 @@ function CommentThread({
                 {isOwnComment ? 'Delete' : 'Remove'}
               </button>
             )}
-            {!reported && !canDeleteComment && (
+            {!reportedIds.has(comment.id) && !canDeleteComment && (
               <button
-                onClick={() => void handleReport()}
+                onClick={() => void handleReport(comment.id)}
+                disabled={reportingId === comment.id}
                 className="text-text-faint hover:text-warning text-[10px] transition-colors cursor-pointer"
               >
-                Report
+                {reportingId === comment.id ? 'Sending...' : 'Report'}
               </button>
             )}
-            {reported && (
+            {reportedIds.has(comment.id) && (
               <span className="text-warning text-[10px] flex items-center gap-1">
                 <Flag size={9} /> Reported
               </span>
             )}
           </div>
+          {renderReportNotice(comment.id)}
         </div>
       </div>
-
-      {/* Report confirmation toast */}
-      <AnimatePresence>
-        {showReportConfirm && (
-          <motion.p
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="text-warning text-[10px] ml-9 mt-1"
-          >
-            Thanks for reporting — we&apos;ll review it.
-          </motion.p>
-        )}
-      </AnimatePresence>
 
       {/* Instagram-style replies */}
       {replies.length > 0 && (
@@ -377,7 +528,7 @@ function CommentThread({
                     </span>
                     <span className="text-text-dim text-[9px]">{timeAgo(reply.created_at)}</span>
                   </div>
-                  <p className="text-text-dim text-sm leading-relaxed">{reply.body}</p>
+                  {renderBody(reply, 'text-text-dim text-sm leading-relaxed')}
                   <div className="flex items-center gap-3 mt-1">
                     <button
                       onClick={() => onReply(reply.id, replyUsername)}
@@ -385,6 +536,14 @@ function CommentThread({
                     >
                       Reply
                     </button>
+                    {isOwnReply && (
+                      <button
+                        onClick={() => startEdit(reply)}
+                        className="text-text-dim hover:text-accent text-[10px] transition-colors cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                    )}
                     {canDeleteReply && (
                       <button
                         onClick={() => onDelete(reply.id)}
@@ -398,7 +557,22 @@ function CommentThread({
                         {isOwnReply ? 'Delete' : 'Remove'}
                       </button>
                     )}
+                    {!reportedIds.has(reply.id) && !canDeleteReply && (
+                      <button
+                        onClick={() => void handleReport(reply.id)}
+                        disabled={reportingId === reply.id}
+                        className="text-text-faint hover:text-warning text-[10px] transition-colors cursor-pointer"
+                      >
+                        {reportingId === reply.id ? 'Sending...' : 'Report'}
+                      </button>
+                    )}
+                    {reportedIds.has(reply.id) && (
+                      <span className="text-warning text-[10px] flex items-center gap-1">
+                        <Flag size={9} /> Reported
+                      </span>
+                    )}
                   </div>
+                  {renderReportNotice(reply.id)}
                 </div>
               </div>
             );

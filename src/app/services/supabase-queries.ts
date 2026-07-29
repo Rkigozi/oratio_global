@@ -17,6 +17,7 @@ export interface Comment {
   parent_id: string | null;
   body: string;
   created_at: string;
+  updated_at: string;
   user?: { username: string; display_name: string | null; avatar_url: string | null } | null;
 }
 
@@ -56,6 +57,11 @@ type RpcResponse<T> = {
   data: T | null;
   error: unknown;
 };
+
+const COMMENT_SELECT = `
+  id, prayer_id, user_id, parent_id, body, created_at, updated_at,
+  profiles(username, display_name, avatar_url)
+`;
 
 function mapPrayerRequest(
   row: Record<string, unknown>,
@@ -339,6 +345,7 @@ function mapComment(row: Record<string, unknown>): Comment {
     parent_id: (row.parent_id as string) || null,
     body: row.body as string,
     created_at: row.created_at as string,
+    updated_at: row.updated_at as string,
     user: profile
       ? {
           username: profile.username,
@@ -352,12 +359,7 @@ function mapComment(row: Record<string, unknown>): Comment {
 export async function getComments(prayerId: string, limit = 20, offset = 0): Promise<Comment[]> {
   const { data, error } = await supabase
     .from('comments')
-    .select(
-      `
-      id, prayer_id, user_id, parent_id, body, created_at,
-      profiles(username, display_name, avatar_url)
-    `
-    )
+    .select(COMMENT_SELECT)
     .eq('prayer_id', prayerId)
     .order('created_at', { ascending: true })
     .range(offset, offset + limit - 1);
@@ -398,13 +400,33 @@ export async function createComment(input: {
       body: input.body,
       parent_id: input.parent_id || null,
     })
-    .select(
-      'id, prayer_id, user_id, parent_id, body, created_at, profiles(username, display_name, avatar_url)'
-    )
+    .select(COMMENT_SELECT)
     .single();
 
   if (error || !data) {
     logError('create comment', error);
+    return null;
+  }
+
+  return mapComment(data as Record<string, unknown>);
+}
+
+export async function updateComment(commentId: string, body: string): Promise<Comment | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('comments')
+    .update({ body })
+    .eq('id', commentId)
+    .eq('user_id', user.id)
+    .select(COMMENT_SELECT)
+    .single();
+
+  if (error || !data) {
+    logError('update comment', error);
     return null;
   }
 
@@ -1062,7 +1084,7 @@ export async function getMyPrayers(): Promise<PrayerRequest[]> {
       `
       id, user_id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, audience, prayer_count, created_at, edited_at, comments_enabled
+      is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled
     `
     )
     .eq('user_id', user.id)
@@ -1075,6 +1097,36 @@ export async function getMyPrayers(): Promise<PrayerRequest[]> {
   }
 
   return (data as Array<Record<string, unknown>>).map((row) => mapPrayerRequest(row));
+}
+
+export async function getMyPrayerCommentActivity(): Promise<{
+  commentCount: number;
+  latestCommentAt: string | null;
+}> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { commentCount: 0, latestCommentAt: null };
+
+  const { data, error, count } = await supabase
+    .from('comments')
+    .select('id, created_at, prayer_requests!inner(user_id)', { count: 'exact' })
+    .eq('prayer_requests.user_id', user.id)
+    .neq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error) {
+    logError('fetch my prayer comment activity', error);
+    return { commentCount: 0, latestCommentAt: null };
+  }
+
+  const latest = Array.isArray(data) && data.length > 0 ? (data[0].created_at as string) : null;
+
+  return {
+    commentCount: count ?? 0,
+    latestCommentAt: latest,
+  };
 }
 
 export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {

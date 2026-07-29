@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { logError } from '../../lib/logger';
-import { captureEvent } from "../../lib/analytics";
-import type { User } from "@supabase/supabase-js";
+import { captureEvent } from '../../lib/analytics';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthState {
   user: User | null;
@@ -9,7 +9,7 @@ interface AuthState {
   loading: boolean;
   signUp: (email: string, password: string, username: string) => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (redirectPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<string | null>;
   updatePassword: (password: string) => Promise<string | null>;
@@ -30,8 +30,13 @@ const AuthContext = createContext<AuthState>({
 });
 
 async function getSupabaseClient() {
-  const { supabase } = await import("../services/supabase");
+  const { supabase } = await import('../services/supabase');
   return supabase;
+}
+
+function getOAuthRedirectUrl(path = '/feed') {
+  const safePath = path.startsWith('/') && !path.startsWith('//') ? path : '/feed';
+  return `${window.location.origin}${safePath}`;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -43,9 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (uid: string) => {
     const supabase = await getSupabaseClient();
     const { data } = await supabase
-      .from("profiles")
-      .select("username, display_name")
-      .eq("id", uid)
+      .from('profiles')
+      .select('username, display_name')
+      .eq('id', uid)
       .single();
     if (data) setProfile(data);
   };
@@ -59,7 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!active) return;
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session?.user && active) {
           setUser(session.user);
           void fetchProfile(session.user.id);
@@ -75,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const authState = supabase.auth.onAuthStateChange((event, session) => {
         if (session?.user) {
           setUser(session.user);
-          if (event === "PASSWORD_RECOVERY") {
+          if (event === 'PASSWORD_RECOVERY') {
             // User landed from a password reset email — don't fetch profile yet
             return;
           }
@@ -97,7 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signUp = async (email: string, password: string, username: string): Promise<string | null> => {
+  const signUp = async (
+    email: string,
+    password: string,
+    username: string
+  ): Promise<string | null> => {
     const supabase = await getSupabaseClient();
     const { error, data } = await supabase.auth.signUp({
       email,
@@ -105,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { data: { username } },
     });
     if (error) return error.message;
-    captureEvent("user_signed_up", { method: "email" });
+    captureEvent('user_signed_up', { method: 'email' });
     // If user needs email confirmation, set the flag
     if (data?.user?.identities?.length === 0 || data?.user?.email_confirmed_at === null) {
       setNeedsEmailVerification(true);
@@ -116,24 +127,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string): Promise<string | null> => {
     const supabase = await getSupabaseClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error) captureEvent("user_signed_in", { method: "email" });
+    if (!error) captureEvent('user_signed_in', { method: 'email' });
     return error?.message || null;
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (redirectPath?: string) => {
     const supabase = await getSupabaseClient();
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
+      provider: 'google',
+      options: { redirectTo: getOAuthRedirectUrl(redirectPath) },
     });
-    if (error) logError("google sign-in", error);
-    else captureEvent("user_signed_in", { method: "google" });
+    if (error) logError('google sign-in', error);
+    else captureEvent('user_signed_in', { method: 'google' });
   };
 
   const signOut = async () => {
     const supabase = await getSupabaseClient();
     await supabase.auth.signOut();
-    captureEvent("user_signed_out");
+    captureEvent('user_signed_out');
     setUser(null);
     setProfile(null);
   };
@@ -143,19 +154,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/update-password`,
     });
-    if (!error) captureEvent("password_reset_requested");
+    if (!error) captureEvent('password_reset_requested');
     return error?.message || null;
   };
 
   const updatePassword = async (password: string): Promise<string | null> => {
     const supabase = await getSupabaseClient();
     const { error } = await supabase.auth.updateUser({ password });
-    if (!error) captureEvent("password_updated");
+    if (!error) captureEvent('password_updated');
     return error?.message || null;
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signUp, signIn, signInWithGoogle, signOut, resetPassword, updatePassword, needsEmailVerification }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        loading,
+        signUp,
+        signIn,
+        signInWithGoogle,
+        signOut,
+        resetPassword,
+        updatePassword,
+        needsEmailVerification,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

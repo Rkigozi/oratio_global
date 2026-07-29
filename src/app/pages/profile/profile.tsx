@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from 'react';
 import {
   Send,
   LogOut,
@@ -7,13 +7,16 @@ import {
   Camera,
   Settings,
   Users,
-} from "lucide-react";
-import { Drawer } from "vaul";
-import { useNavigate } from "react-router";
-import { validateProfile } from "../../../lib/validation";
+  Bookmark,
+  MessageCircle,
+} from 'lucide-react';
+import { Drawer } from 'vaul';
+import { useNavigate } from 'react-router';
+import { validateProfile } from '../../../lib/validation';
 import { useAuth } from '../../hooks/auth-context';
 import { uploadAvatar } from '../../services/upload';
-import { AvatarImage } from "../../components/avatar-image";
+import { AvatarImage } from '../../components/avatar-image';
+import { timeAgo } from '../../services/prayer-data';
 import {
   getPrayerCircleCount,
   getProfilePreferences,
@@ -22,6 +25,8 @@ import {
   getMyProfile,
   getMyPrayers,
   getMyPrayedForPrayers,
+  getMySavedIds,
+  getMyPrayerCommentActivity,
 } from '../../services/supabase-queries';
 import { useGeolocation } from '../../hooks/use-geolocation';
 
@@ -35,7 +40,7 @@ type ProfileDetails = {
 };
 
 function formatDetectedLocation(location: { city: string; country: string }) {
-  return [location.city, location.country].filter(Boolean).join(", ");
+  return [location.city, location.country].filter(Boolean).join(', ');
 }
 
 export function Profile() {
@@ -76,8 +81,8 @@ export function Profile() {
         username: supabaseProfile.username,
         displayName: supabaseProfile.display_name || supabaseProfile.username,
         display_name: supabaseProfile.display_name || undefined,
-        bio: supabaseProfile.bio || "",
-        location: supabaseProfile.location || "",
+        bio: supabaseProfile.bio || '',
+        location: supabaseProfile.location || '',
         photo: supabaseProfile.avatar_url || undefined,
       });
       setProfileLoading(false);
@@ -91,19 +96,28 @@ export function Profile() {
   }, [user?.id]);
   const [myPrayers, setMyPrayers] = useState<number>(0);
   const [myPrayedFor, setMyPrayedFor] = useState<number>(0);
+  const [savedCount, setSavedCount] = useState<number>(0);
+  const [commentActivity, setCommentActivity] = useState<{
+    commentCount: number;
+    latestCommentAt: string | null;
+  }>({ commentCount: 0, latestCommentAt: null });
 
   useEffect(() => {
     let active = true;
 
     const loadPrayerCounts = async () => {
       if (!user?.id) return;
-      const [submitted, prayedFor] = await Promise.all([
+      const [submitted, prayedFor, savedIds, activity] = await Promise.all([
         getMyPrayers(),
         getMyPrayedForPrayers(),
+        getMySavedIds(),
+        getMyPrayerCommentActivity(),
       ]);
       if (!active) return;
       setMyPrayers(submitted.length);
       setMyPrayedFor(prayedFor.length);
+      setSavedCount(savedIds.length);
+      setCommentActivity(activity);
     };
 
     void loadPrayerCounts();
@@ -113,20 +127,25 @@ export function Profile() {
     };
   }, [user?.id]);
 
-  const [newDisplayName, setNewDisplayName] = useState("");
-  const { location: geoLocation, loading: geoLoading, denied: geoDenied, requestLocation } = useGeolocation();
+  const [newDisplayName, setNewDisplayName] = useState('');
+  const {
+    location: geoLocation,
+    loading: geoLoading,
+    denied: geoDenied,
+    requestLocation,
+  } = useGeolocation();
   const requestLocationRef = useRef(requestLocation);
   const [useAutoLocation, setUseAutoLocation] = useState(false);
-  const [profileLocationMode, setProfileLocationMode] = useState<"manual" | "auto">("manual");
-  const [newBio, setNewBio] = useState("");
-  const [newLocation, setNewLocation] = useState("");
-  const [editError, setEditError] = useState<string>("");
+  const [profileLocationMode, setProfileLocationMode] = useState<'manual' | 'auto'>('manual');
+  const [newBio, setNewBio] = useState('');
+  const [newLocation, setNewLocation] = useState('');
+  const [editError, setEditError] = useState<string>('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [photoUploadStatus, setPhotoUploadStatus] = useState("");
+  const [photoUploadStatus, setPhotoUploadStatus] = useState('');
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
-  const username = profile?.username || "";
+  const username = profile?.username || '';
   const displayName = profile?.displayName || username;
   const avatarSource = avatarPreviewUrl || profile?.photo;
 
@@ -142,7 +161,7 @@ export function Profile() {
 
     const loadProfilePreferences = async () => {
       if (!user?.id) {
-        setProfileLocationMode("manual");
+        setProfileLocationMode('manual');
         return;
       }
 
@@ -184,8 +203,8 @@ export function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setEditError("");
-    setPhotoUploadStatus("Checking photo...");
+    setEditError('');
+    setPhotoUploadStatus('Checking photo...');
     setAvatarPreviewUrl((current) => {
       if (current) URL.revokeObjectURL(current);
       return URL.createObjectURL(file);
@@ -195,12 +214,14 @@ export function Profile() {
       setUploadingPhoto(true);
       const result = await uploadAvatar(file, {
         onStatusChange: (status) => {
-          setPhotoUploadStatus({
-            checking: "Checking photo...",
-            converting: "Converting iPhone photo...",
-            preparing: "Preparing photo...",
-            uploading: "Uploading photo...",
-          }[status]);
+          setPhotoUploadStatus(
+            {
+              checking: 'Checking photo...',
+              converting: 'Converting iPhone photo...',
+              preparing: 'Preparing photo...',
+              uploading: 'Uploading photo...',
+            }[status]
+          );
         },
       });
 
@@ -213,25 +234,27 @@ export function Profile() {
       const avatarUrl = result.url;
 
       if (!user?.id) {
-        setEditError("Please sign in again before changing your photo.");
+        setEditError('Please sign in again before changing your photo.');
         setAvatarPreviewUrl(null);
         return;
       }
 
-      setPhotoUploadStatus("Saving photo...");
+      setPhotoUploadStatus('Saving photo...');
       const saved = await updateProfile({ avatar_url: avatarUrl });
       if (!saved) {
-        setEditError("We uploaded your photo, but couldn't save it to your profile. Please try again.");
+        setEditError(
+          "We uploaded your photo, but couldn't save it to your profile. Please try again."
+        );
         setAvatarPreviewUrl(null);
         return;
       }
 
-      setProfile(prev => prev ? ({ ...prev, photo: avatarUrl }) : prev);
+      setProfile((prev) => (prev ? { ...prev, photo: avatarUrl } : prev));
     } finally {
       setUploadingPhoto(false);
-      setPhotoUploadStatus("");
+      setPhotoUploadStatus('');
       setAvatarPreviewUrl(null);
-      input.value = "";
+      input.value = '';
     }
   };
 
@@ -240,11 +263,11 @@ export function Profile() {
     const syncEditFields = () => {
       if (!editOpen || !profile) return;
       setNewDisplayName(profile.displayName);
-      setNewBio(profile.bio || "");
-      setNewLocation(profile.location || "");
-      setUseAutoLocation(profileLocationMode === "auto");
+      setNewBio(profile.bio || '');
+      setNewLocation(profile.location || '');
+      setUseAutoLocation(profileLocationMode === 'auto');
       setEditError('');
-      if (profileLocationMode === "auto") void requestLocationRef.current();
+      if (profileLocationMode === 'auto') void requestLocationRef.current();
     };
 
     syncEditFields();
@@ -257,13 +280,13 @@ export function Profile() {
 
   const handleSignOut = async () => {
     await signOut();
-    void navigate("/landing");
+    void navigate('/landing');
   };
 
   const handleAutoLocationToggle = () => {
     const next = !useAutoLocation;
     setUseAutoLocation(next);
-    setEditError("");
+    setEditError('');
 
     if (next) {
       void requestLocation().then((detected) => {
@@ -274,7 +297,7 @@ export function Profile() {
 
   const handleSaveProfile = async () => {
     if (!profile || savingProfile) return;
-    setEditError("");
+    setEditError('');
     const trimmedDisplayName = newDisplayName.trim();
 
     const validation = validateProfile({
@@ -283,7 +306,7 @@ export function Profile() {
     });
     if (!validation.success) {
       const firstError = Object.values(validation.errors || {})[0];
-      setEditError(firstError || "Invalid input");
+      setEditError(firstError || 'Invalid input');
       return;
     }
 
@@ -291,11 +314,11 @@ export function Profile() {
 
     let locationToSave = newLocation.trim();
     if (useAutoLocation) {
-      const detected = geoLocation ?? await requestLocation();
+      const detected = geoLocation ?? (await requestLocation());
       if (!detected) {
         setEditError(
           geoDenied
-            ? "Allow location access in your browser, then try again."
+            ? 'Allow location access in your browser, then try again.'
             : "We couldn't detect your location. Try again or switch off auto-detect."
         );
         return;
@@ -312,7 +335,7 @@ export function Profile() {
           location: locationToSave || undefined,
         }),
         updateProfilePreferences({
-          profile_location_mode: useAutoLocation ? "auto" : "manual",
+          profile_location_mode: useAutoLocation ? 'auto' : 'manual',
         }),
       ]);
 
@@ -321,13 +344,17 @@ export function Profile() {
         return;
       }
 
-      setProfile(prev => prev ? ({
-        ...prev,
-        displayName: trimmedDisplayName || prev.username,
-        bio: newBio.trim(),
-        location: locationToSave,
-      }) : prev);
-      setProfileLocationMode(useAutoLocation ? "auto" : "manual");
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              displayName: trimmedDisplayName || prev.username,
+              bio: newBio.trim(),
+              location: locationToSave,
+            }
+          : prev
+      );
+      setProfileLocationMode(useAutoLocation ? 'auto' : 'manual');
       setEditOpen(false);
     } finally {
       setSavingProfile(false);
@@ -340,7 +367,10 @@ export function Profile() {
 
   if (profileLoadFailed || !profile) {
     return (
-      <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div
+        className="w-full h-full flex flex-col overflow-hidden"
+        style={{ background: 'rgb(var(--rgb-bg))' }}
+      >
         <div className="relative z-10 px-5 overflow-y-auto overflow-x-hidden flex-1 h-full pt-24 pb-28">
           <div className="max-w-md mx-auto text-center py-16">
             <p className="text-text-muted text-sm mb-2">We could not load your profile.</p>
@@ -358,7 +388,10 @@ export function Profile() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <div
+      className="w-full h-full flex flex-col overflow-hidden"
+      style={{ background: 'rgb(var(--rgb-bg))' }}
+    >
       <div className="relative z-10 px-5 overflow-y-auto overflow-x-hidden flex-1 h-full pt-24 pb-28">
         <div className="max-w-md mx-auto">
           {/* Profile header */}
@@ -367,13 +400,16 @@ export function Profile() {
               <AvatarImage
                 src={avatarSource}
                 name={displayName || username}
-                alt={username || "User"}
+                alt={username || 'User'}
                 className="h-20 w-20 text-2xl"
               />
               <button
                 onClick={() => setEditOpen(true)}
                 className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer"
-                style={{ background: "rgb(var(--rgb-bg))", border: "2px solid rgba(var(--rgb-accent), 0.15)" }}
+                style={{
+                  background: 'rgb(var(--rgb-bg))',
+                  border: '2px solid rgba(var(--rgb-accent), 0.15)',
+                }}
               >
                 <Camera size={10} className="text-accent" />
               </button>
@@ -383,42 +419,49 @@ export function Profile() {
                 <h1 className="text-text font-heading text-base font-medium truncate">
                   {displayName}
                 </h1>
-                <button onClick={() => setEditOpen(true)} className="text-text-dim hover:text-accent transition-colors cursor-pointer">
+                <button
+                  onClick={() => setEditOpen(true)}
+                  className="text-text-dim hover:text-accent transition-colors cursor-pointer"
+                >
                   <Edit size={12} />
                 </button>
               </div>
               <p className="text-text-dim text-xs mb-1">@{username}</p>
-              {profile.bio && <p className="text-text-secondary text-xs mb-1.5 leading-relaxed">{profile.bio}</p>}
-              {profile.location && <p className="text-text-dim text-[10px] mb-2">📍 {profile.location}</p>}
+              {profile.bio && (
+                <p className="text-text-secondary text-xs mb-1.5 leading-relaxed">{profile.bio}</p>
+              )}
+              {profile.location && (
+                <p className="text-text-dim text-[10px] mb-2">📍 {profile.location}</p>
+              )}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => void handleSignOut()}
                   className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
                   style={{
-                    background: "rgba(var(--rgb-accent), 0.06)",
-                    border: "1px solid rgba(var(--rgb-accent), 0.1)",
+                    background: 'rgba(var(--rgb-accent), 0.06)',
+                    border: '1px solid rgba(var(--rgb-accent), 0.1)',
                   }}
                   aria-label="Sign out"
                 >
                   <LogOut size={16} className="text-text-muted" />
                 </button>
                 <button
-                  onClick={() => void navigate("/info")}
+                  onClick={() => void navigate('/info')}
                   className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
                   style={{
-                    background: "rgba(var(--rgb-accent), 0.06)",
-                    border: "1px solid rgba(var(--rgb-accent), 0.1)",
+                    background: 'rgba(var(--rgb-accent), 0.06)',
+                    border: '1px solid rgba(var(--rgb-accent), 0.1)',
                   }}
                   aria-label="About"
                 >
                   <Info size={16} className="text-text-muted" />
                 </button>
                 <button
-                  onClick={() => void navigate("/profile/settings")}
+                  onClick={() => void navigate('/profile/settings')}
                   className="w-10 h-10 flex items-center justify-center rounded-full cursor-pointer active:scale-95 transition-transform"
                   style={{
-                    background: "rgba(var(--rgb-accent), 0.06)",
-                    border: "1px solid rgba(var(--rgb-accent), 0.1)",
+                    background: 'rgba(var(--rgb-accent), 0.06)',
+                    border: '1px solid rgba(var(--rgb-accent), 0.1)',
                   }}
                   aria-label="Settings"
                 >
@@ -429,36 +472,96 @@ export function Profile() {
           </div>
 
           {/* Stats row */}
-          <div className="flex justify-center gap-6 mb-6 py-3 rounded-xl"
-            style={{ background: "rgba(var(--rgb-surface), 0.4)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
+          <div
+            className="flex justify-center gap-6 mb-6 py-3 rounded-xl"
+            style={{
+              background: 'rgba(var(--rgb-surface), 0.4)',
+              border: '1px solid rgba(var(--rgb-accent), 0.06)',
+            }}
           >
-            <button onClick={() => void navigate("/profile/submitted")} className="text-center cursor-pointer min-w-[50px]">
+            <button
+              onClick={() => void navigate('/profile/submitted')}
+              className="text-center cursor-pointer min-w-[50px]"
+            >
               <p className="text-text text-sm font-semibold">{myPrayers}</p>
               <p className="text-text-dim text-[10px]">Prayers</p>
             </button>
-            <button onClick={() => void navigate("/profile/prayed")} className="text-center cursor-pointer min-w-[50px]">
+            <button
+              onClick={() => void navigate('/profile/prayed')}
+              className="text-center cursor-pointer min-w-[50px]"
+            >
               <p className="text-text text-sm font-semibold">{myPrayedFor}</p>
               <p className="text-text-dim text-[10px]">Prayed</p>
             </button>
             <div className="w-px bg-accent/10" />
-            <button onClick={() => void navigate("/profile/circle")} className="text-center cursor-pointer min-w-[70px]">
+            <button
+              onClick={() => void navigate('/profile/circle')}
+              className="text-center cursor-pointer min-w-[70px]"
+            >
               <p className="text-text text-sm font-semibold">{circleCount}</p>
               <p className="text-text-dim text-[10px]">Prayer Circle</p>
             </button>
           </div>
 
           <button
-            onClick={() => void navigate("/profile/circle")}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-6 text-left cursor-pointer active:scale-[0.99] transition-transform"
+            onClick={() => void navigate('/profile/circle')}
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
             style={{
-              background: "linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))",
-              border: "1px solid rgba(var(--rgb-accent), 0.08)",
+              background:
+                'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
+              border: '1px solid rgba(var(--rgb-accent), 0.08)',
             }}
           >
             <Users size={18} className="text-accent flex-shrink-0" />
             <div>
               <p className="text-text text-sm font-medium">Prayer Circle</p>
-              <p className="text-text-dim text-xs mt-0.5">A quieter place for people you keep praying with.</p>
+              <p className="text-text-dim text-xs mt-0.5">
+                A quieter place for people you keep praying with.
+              </p>
+            </div>
+          </button>
+
+          {commentActivity.commentCount > 0 && (
+            <button
+              onClick={() => void navigate('/profile/submitted')}
+              className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
+              style={{
+                background:
+                  'linear-gradient(160deg, rgba(var(--rgb-warning), 0.08), rgba(var(--rgb-surface), 0.35))',
+                border: '1px solid rgba(var(--rgb-warning), 0.12)',
+              }}
+            >
+              <MessageCircle size={18} className="text-warning flex-shrink-0" />
+              <div>
+                <p className="text-text text-sm font-medium">New encouragement</p>
+                <p className="text-text-dim text-xs mt-0.5">
+                  {commentActivity.commentCount} comment
+                  {commentActivity.commentCount !== 1 ? 's' : ''} on your prayers
+                  {commentActivity.latestCommentAt
+                    ? ` · Latest ${timeAgo(commentActivity.latestCommentAt)}`
+                    : ''}
+                </p>
+              </div>
+            </button>
+          )}
+
+          <button
+            onClick={() => void navigate('/profile/saved')}
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-6 text-left cursor-pointer active:scale-[0.99] transition-transform"
+            style={{
+              background:
+                'linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))',
+              border: '1px solid rgba(var(--rgb-accent), 0.06)',
+            }}
+          >
+            <Bookmark size={18} className="text-text-dim flex-shrink-0" />
+            <div>
+              <p className="text-text text-sm font-medium">Saved prayers</p>
+              <p className="text-text-dim text-xs mt-0.5">
+                {savedCount > 0
+                  ? `${savedCount} prayer${savedCount !== 1 ? 's' : ''} you can return to.`
+                  : 'Save prayers from the feed to find them here.'}
+              </p>
             </div>
           </button>
 
@@ -466,15 +569,18 @@ export function Profile() {
           <div className="space-y-2">
             {myPrayers > 0 ? (
               <div
-                onClick={() => void navigate("/profile/submitted")}
+                onClick={() => void navigate('/profile/submitted')}
                 className="rounded-xl px-4 py-4 cursor-pointer active:scale-[0.99] transition-transform text-center"
                 style={{
-                  background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))",
-                  border: "1px solid rgba(var(--rgb-accent), 0.05)",
+                  background:
+                    'linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))',
+                  border: '1px solid rgba(var(--rgb-accent), 0.05)',
                 }}
               >
                 <Send size={20} className="text-text-dim mx-auto mb-2" />
-                <p className="text-text text-sm font-medium">{myPrayers} prayer{myPrayers !== 1 ? "s" : ""}</p>
+                <p className="text-text text-sm font-medium">
+                  {myPrayers} prayer{myPrayers !== 1 ? 's' : ''}
+                </p>
                 <p className="text-text-dim text-xs mt-1">Tap to view all</p>
               </div>
             ) : (
@@ -497,32 +603,43 @@ export function Profile() {
       <Drawer.Root open={editOpen} onOpenChange={setEditOpen}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[600]" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-[600] bg-bg rounded-t-2xl p-6 outline-none"
-            style={{ borderTop: "1px solid rgba(var(--rgb-accent), 0.1)", boxShadow: "0 -20px 60px rgba(0, 0, 0, 0.3)" }}
+          <Drawer.Content
+            className="fixed bottom-0 left-0 right-0 z-[600] bg-bg rounded-t-2xl p-6 outline-none"
+            style={{
+              borderTop: '1px solid rgba(var(--rgb-accent), 0.1)',
+              boxShadow: '0 -20px 60px rgba(0, 0, 0, 0.3)',
+            }}
           >
             <div className="mx-auto w-12 h-1.5 bg-accent/20 rounded-full mb-6" />
             <Drawer.Title className="sr-only">Edit Profile</Drawer.Title>
-            <Drawer.Description className="sr-only">Update your username and display name</Drawer.Description>
+            <Drawer.Description className="sr-only">
+              Update your username and display name
+            </Drawer.Description>
 
             <div className="max-w-md mx-auto">
               <h3 className="text-text text-center mb-4 font-heading text-lg">Edit Profile</h3>
 
               {/* Photo upload */}
               <div className="flex justify-center mb-6">
-                <label className={`flex flex-col items-center gap-2 ${uploadingPhoto ? "cursor-wait" : "cursor-pointer"}`}>
+                <label
+                  className={`flex flex-col items-center gap-2 ${uploadingPhoto ? 'cursor-wait' : 'cursor-pointer'}`}
+                >
                   <div className="relative">
                     <AvatarImage
                       src={avatarSource}
                       name={displayName || username}
-                      alt={username || "User"}
+                      alt={username || 'User'}
                       className="h-16 w-16 text-xl"
                     />
-                    <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center" aria-hidden="true">
+                    <div
+                      className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center"
+                      aria-hidden="true"
+                    >
                       <Camera size={16} className="text-white" />
                     </div>
                   </div>
                   <span className="text-accent text-xs" aria-live="polite">
-                    {uploadingPhoto ? photoUploadStatus || "Uploading photo..." : "Change Photo"}
+                    {uploadingPhoto ? photoUploadStatus || 'Uploading photo...' : 'Change Photo'}
                   </span>
                   <input
                     type="file"
@@ -537,29 +654,41 @@ export function Profile() {
               <div className="mb-4 text-center">
                 <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-1">Username</p>
                 <p className="text-text text-sm">@{profile.username}</p>
-                <p className="text-text-dim text-[10px] mt-1">Username can&apos;t be changed at this time</p>
+                <p className="text-text-dim text-[10px] mt-1">
+                  Username can&apos;t be changed at this time
+                </p>
               </div>
 
               <div className="mb-6">
-                <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">Display Name</p>
-                <input type="text" value={newDisplayName}
-                  onChange={(e) => { setNewDisplayName(e.target.value); setEditError(''); }}
-                  onKeyDown={(e) => e.key === "Enter" && void handleSaveProfile()}
+                <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">
+                  Display Name
+                </p>
+                <input
+                  type="text"
+                  value={newDisplayName}
+                  onChange={(e) => {
+                    setNewDisplayName(e.target.value);
+                    setEditError('');
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && void handleSaveProfile()}
                   placeholder="Leave empty to use username"
                   className={`w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-danger' : 'border-accent/12'}`}
-                  style={{ background: "rgba(var(--rgb-surface), 0.6)" }}
+                  style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
                 />
               </div>
 
               <div className="mb-4">
-                <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">Bio</p>
-                <textarea value={newBio}
+                <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">
+                  Bio
+                </p>
+                <textarea
+                  value={newBio}
                   onChange={(e) => setNewBio(e.target.value)}
                   placeholder="Tell people a bit about yourself..."
                   rows={2}
                   maxLength={150}
                   className="w-full rounded-xl px-4 py-3 text-text placeholder-text-dim text-sm focus:outline-none border border-accent/12 resize-none text-center"
-                  style={{ background: "rgba(var(--rgb-surface), 0.6)" }}
+                  style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
                 />
                 <p className="text-text-dim text-[10px] text-right mt-1">{newBio.length}/150</p>
               </div>
@@ -571,38 +700,61 @@ export function Profile() {
                     type="button"
                     onClick={handleAutoLocationToggle}
                     className="relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
-                    style={{ background: useAutoLocation ? "rgba(var(--rgb-accent), 0.35)" : "rgba(var(--rgb-accent), 0.12)" }}
+                    style={{
+                      background: useAutoLocation
+                        ? 'rgba(var(--rgb-accent), 0.35)'
+                        : 'rgba(var(--rgb-accent), 0.12)',
+                    }}
                     aria-label="Auto-detect location"
                   >
-                    <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 shadow-md"
-                      style={{ transform: useAutoLocation ? "translateX(18px)" : "translateX(2px)" }}
+                    <div
+                      className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 shadow-md"
+                      style={{
+                        transform: useAutoLocation ? 'translateX(18px)' : 'translateX(2px)',
+                      }}
                     />
                   </button>
                 </div>
-                <p className="text-text-dim text-[10px] text-center mb-2">Toggle to auto-detect from your browser</p>
+                <p className="text-text-dim text-[10px] text-center mb-2">
+                  Toggle to auto-detect from your browser
+                </p>
                 {useAutoLocation ? (
                   geoLocation ? (
-                    <div className="rounded-xl px-4 py-3 flex items-center gap-2 border border-accent/12 justify-center"
-                      style={{ background: "rgba(var(--rgb-surface), 0.6)" }}
+                    <div
+                      className="rounded-xl px-4 py-3 flex items-center gap-2 border border-accent/12 justify-center"
+                      style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
                     >
-                      <span className="text-text text-sm">{geoLocation.city}, {geoLocation.country}</span>
+                      <span className="text-text text-sm">
+                        {geoLocation.city}, {geoLocation.country}
+                      </span>
                     </div>
                   ) : (
                     <div className="text-center">
                       <p className="text-text-dim text-xs">
-                        {geoLoading ? "Detecting..." : geoDenied ? "Location access denied" : "Location not available"}
+                        {geoLoading
+                          ? 'Detecting...'
+                          : geoDenied
+                            ? 'Location access denied'
+                            : 'Location not available'}
                       </p>
                       {!geoLoading && !geoDenied && (
-                        <button onClick={() => void requestLocation()} className="text-accent text-xs mt-1 cursor-pointer">Try again</button>
+                        <button
+                          onClick={() => void requestLocation()}
+                          className="text-accent text-xs mt-1 cursor-pointer"
+                        >
+                          Try again
+                        </button>
                       )}
                     </div>
                   )
                 ) : (
-                  <input type="text" value={newLocation}
+                  <input
+                    type="text"
+                    value={newLocation}
                     onChange={(e) => setNewLocation(e.target.value)}
                     placeholder="e.g. London, UK"
                     className="w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border border-accent/12 transition-colors text-center"
-                    style={{ background: "rgba(var(--rgb-surface), 0.6)" }}
+                    style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
                   />
                 )}
               </div>
@@ -610,20 +762,30 @@ export function Profile() {
               {editError && <p className="text-danger text-xs text-center mb-3">{editError}</p>}
 
               <div className="flex gap-3">
-                <button onClick={() => setEditOpen(false)}
+                <button
+                  onClick={() => setEditOpen(false)}
                   className="flex-1 py-3.5 rounded-full text-sm text-text-muted bg-accent/6 border border-accent/10 cursor-pointer"
                 >
                   Cancel
                 </button>
-                <button onClick={() => void handleSaveProfile()} disabled={savingProfile || detectingAutoLocation || uploadingPhoto}
+                <button
+                  onClick={() => void handleSaveProfile()}
+                  disabled={savingProfile || detectingAutoLocation || uploadingPhoto}
                   className="flex-1 py-3.5 rounded-full text-sm font-semibold cursor-pointer active:scale-[0.98] transition-transform disabled:opacity-60"
                   style={{
-                    background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
-                    color: "#fff",
-                    boxShadow: "0 10px 24px rgba(var(--rgb-accent), 0.24)",
+                    background:
+                      'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
+                    color: '#fff',
+                    boxShadow: '0 10px 24px rgba(var(--rgb-accent), 0.24)',
                   }}
                 >
-                  {uploadingPhoto ? "Uploading photo..." : savingProfile ? "Saving..." : detectingAutoLocation ? "Detecting..." : "Save Changes"}
+                  {uploadingPhoto
+                    ? 'Uploading photo...'
+                    : savingProfile
+                      ? 'Saving...'
+                      : detectingAutoLocation
+                        ? 'Detecting...'
+                        : 'Save Changes'}
                 </button>
               </div>
             </div>
@@ -636,7 +798,10 @@ export function Profile() {
 
 function ProfileLoadingState() {
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden" style={{ background: "rgb(var(--rgb-bg))" }}>
+    <div
+      className="w-full h-full flex flex-col overflow-hidden"
+      style={{ background: 'rgb(var(--rgb-bg))' }}
+    >
       <div className="relative z-10 px-5 overflow-y-auto overflow-x-hidden flex-1 h-full pt-24 pb-28">
         <div className="max-w-md mx-auto">
           <div className="flex items-start gap-4 mb-6 animate-pulse">
@@ -654,7 +819,10 @@ function ProfileLoadingState() {
 
           <div
             className="flex justify-center gap-6 mb-6 py-3 rounded-xl animate-pulse"
-            style={{ background: "rgba(var(--rgb-surface), 0.4)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
+            style={{
+              background: 'rgba(var(--rgb-surface), 0.4)',
+              border: '1px solid rgba(var(--rgb-accent), 0.06)',
+            }}
           >
             <div className="h-8 w-12 rounded-lg bg-accent/8" />
             <div className="h-8 w-12 rounded-lg bg-accent/8" />
@@ -665,8 +833,9 @@ function ProfileLoadingState() {
           <div
             className="w-full rounded-xl px-4 py-3 mb-6 animate-pulse"
             style={{
-              background: "linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))",
-              border: "1px solid rgba(var(--rgb-accent), 0.08)",
+              background:
+                'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
+              border: '1px solid rgba(var(--rgb-accent), 0.08)',
             }}
           >
             <div className="h-4 w-32 rounded-full bg-accent/10 mb-2" />

@@ -5,6 +5,7 @@ vi.mock('./supabase', () => {
     const qb: Record<string, ReturnType<typeof vi.fn>> = {};
     qb.select = vi.fn().mockReturnThis();
     qb.eq = vi.fn().mockReturnThis();
+    qb.neq = vi.fn().mockReturnThis();
     qb.order = vi.fn().mockReturnThis();
     qb.limit = vi.fn().mockReturnThis();
     qb.single = vi.fn().mockReturnThis();
@@ -76,6 +77,7 @@ beforeEach(() => {
 
   qb.select.mockReturnThis();
   qb.eq.mockReturnThis();
+  qb.neq.mockReturnThis();
   qb.order.mockReturnThis();
   qb.limit.mockReturnThis();
   qb.single.mockReturnThis();
@@ -411,6 +413,7 @@ describe('getComments', () => {
         parent_id: null,
         body: 'Great prayer',
         created_at: '2024-01-01',
+        updated_at: '2024-01-01',
         profiles: {
           username: 'commenter',
           display_name: 'Commenter',
@@ -424,6 +427,7 @@ describe('getComments', () => {
         parent_id: 'c1',
         body: 'Reply',
         created_at: '2024-01-02',
+        updated_at: '2024-01-02',
         profiles: null,
       },
     ]);
@@ -451,6 +455,7 @@ describe('createComment', () => {
       parent_id: null,
       body: 'Nice!',
       created_at: '2024-01-01',
+      updated_at: '2024-01-01',
       profiles: {
         username: 'testuser',
         display_name: 'Test User',
@@ -476,11 +481,45 @@ describe('createComment', () => {
       parent_id: 'c1',
       body: 'Reply',
       created_at: '2024-01-01',
+      updated_at: '2024-01-01',
       profiles: null,
     });
     const result = await m.createComment({ prayer_id: 'p1', body: 'Reply', parent_id: 'c1' });
     expect(result).not.toBeNull();
     expect(result!.parent_id).toBe('c1');
+  });
+});
+
+describe('updateComment', () => {
+  it('updates own comment body on success', async () => {
+    setAlways({
+      id: 'c1',
+      prayer_id: 'p1',
+      user_id: 'test-user',
+      parent_id: null,
+      body: 'Updated encouragement',
+      created_at: '2024-01-01',
+      updated_at: '2024-01-02',
+      profiles: {
+        username: 'testuser',
+        display_name: 'Test User',
+        avatar_url: null,
+      },
+    });
+
+    const result = await m.updateComment('c1', 'Updated encouragement');
+
+    expect(result?.body).toBe('Updated encouragement');
+    expect(result?.updated_at).toBe('2024-01-02');
+    expect(qb.update).toHaveBeenCalledWith({ body: 'Updated encouragement' });
+    expect(qb.eq).toHaveBeenCalledWith('id', 'c1');
+    expect(qb.eq).toHaveBeenCalledWith('user_id', 'test-user');
+  });
+
+  it('returns null if no user', async () => {
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    expect(await m.updateComment('c1', 'Updated')).toBeNull();
+    expect(qb.update).not.toHaveBeenCalled();
   });
 });
 
@@ -975,6 +1014,7 @@ describe('getMyPrayers', () => {
         location_lng: 139.7,
         is_anonymous: false,
         prayer_count: 2,
+        comment_count: 4,
         created_at: '2024-01-01',
         comments_enabled: true,
       },
@@ -982,11 +1022,36 @@ describe('getMyPrayers', () => {
     const result = await m.getMyPrayers();
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('p1');
+    expect(result[0].commentCount).toBe(4);
   });
 
   it('returns empty if no user', async () => {
     auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
     expect(await m.getMyPrayers()).toEqual([]);
+  });
+});
+
+describe('getMyPrayerCommentActivity', () => {
+  it('counts comments from other people on my prayers', async () => {
+    setAlways(
+      [{ id: 'c1', created_at: '2024-01-03', prayer_requests: { user_id: 'test-user' } }],
+      null,
+      3
+    );
+
+    const result = await m.getMyPrayerCommentActivity();
+
+    expect(result).toEqual({ commentCount: 3, latestCommentAt: '2024-01-03' });
+    expect(qb.eq).toHaveBeenCalledWith('prayer_requests.user_id', 'test-user');
+    expect(qb.neq).toHaveBeenCalledWith('user_id', 'test-user');
+  });
+
+  it('returns an empty activity summary if signed out', async () => {
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    expect(await m.getMyPrayerCommentActivity()).toEqual({
+      commentCount: 0,
+      latestCommentAt: null,
+    });
   });
 });
 

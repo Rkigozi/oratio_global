@@ -131,6 +131,9 @@ export function PrayerDetail() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showMenu]);
   const [reported, setReported] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [reportNotice, setReportNotice] = useState<string | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
   const [circleStatus, setCircleStatus] = useState<PrayerCircleStatus>({ state: 'none' });
   const [circleBusy, setCircleBusy] = useState(false);
   const { profile: authProfile, user } = useAuth();
@@ -287,14 +290,30 @@ export function PrayerDetail() {
   };
 
   const handleReport = async (reason: string) => {
+    if (!prayer || reporting) return;
     setShowReport(false);
-    try {
-      await reportContent({ reportable_type: 'prayer', reportable_id: prayer!.id, reason });
-      captureEvent('prayer_reported', { prayerId: prayer!.id, reason });
-      setReported(true);
-    } catch {
+    setReporting(true);
+    setReportNotice(null);
+    setReportError(null);
+
+    const result = await reportContent({
+      reportable_type: 'prayer',
+      reportable_id: prayer.id,
+      reason,
+    });
+    setReporting(false);
+
+    if (result.error) {
       logError('report prayer', 'report failed');
+      setReportError("We couldn't send that report. Please try again.");
+      return;
     }
+
+    captureEvent('prayer_reported', { prayerId: prayer.id, reason });
+    setReported(true);
+    setReportNotice(
+      "Thanks. Your report is saved for moderation, so you don't need to report this prayer again."
+    );
   };
 
   const [commentsEnabled, setCommentsEnabled] = useState(true);
@@ -507,7 +526,7 @@ export function PrayerDetail() {
                       {commentsEnabled ? 'Turn off comments' : 'Turn on comments'}
                     </button>
                   )}
-                  {!reported && (
+                  {!reported ? (
                     <button
                       onClick={() => {
                         setShowMenu(false);
@@ -518,6 +537,11 @@ export function PrayerDetail() {
                       <Flag size={12} />
                       Report
                     </button>
+                  ) : (
+                    <div className="w-full px-4 py-2.5 text-xs text-text-dim flex items-center gap-2">
+                      <Flag size={12} />
+                      Report sent
+                    </div>
                   )}
                 </motion.div>
               )}
@@ -645,9 +669,24 @@ export function PrayerDetail() {
             </motion.button>
           </div>
 
-          {reported && (
+          {(reportNotice || reportError) && (
             <div className="flex justify-center mb-8">
-              <span className="text-text-dim text-[11px]">Reported</span>
+              <div
+                className={`max-w-sm rounded-xl px-4 py-3 text-center border ${
+                  reportError ? 'border-danger/20 bg-danger/8' : 'border-warning/20 bg-warning/8'
+                }`}
+              >
+                <p
+                  className={`text-xs font-medium mb-1 ${
+                    reportError ? 'text-danger' : 'text-warning'
+                  }`}
+                >
+                  {reportError ? 'Report not sent' : 'Report sent'}
+                </p>
+                <p className="text-text-dim text-[11px] leading-relaxed">
+                  {reportError || reportNotice}
+                </p>
+              </div>
             </div>
           )}
 
@@ -787,6 +826,7 @@ export function PrayerDetail() {
                     <button
                       key={reason}
                       onClick={() => void handleReport(reason)}
+                      disabled={reporting}
                       className="w-full text-left px-4 py-3 rounded-xl text-xs text-text-muted hover:text-text-secondary hover:bg-accent/8 border border-accent/6 transition-all cursor-pointer"
                     >
                       {reason}
