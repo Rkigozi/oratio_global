@@ -1,22 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  Send,
-  LogOut,
-  Edit,
-  Info,
-  Camera,
-  Settings,
-  Users,
-  Bookmark,
-  MessageCircle,
-} from 'lucide-react';
+import { Send, LogOut, Edit, Info, Camera, Settings, Users, Bookmark, Bell } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useNavigate } from 'react-router';
 import { validateProfile } from '../../../lib/validation';
 import { useAuth } from '../../hooks/auth-context';
 import { uploadAvatar } from '../../services/upload';
 import { AvatarImage } from '../../components/avatar-image';
-import { timeAgo } from '../../services/prayer-data';
 import {
   getPrayerCircleCount,
   getProfilePreferences,
@@ -26,7 +15,7 @@ import {
   getMyPrayers,
   getMyPrayedForPrayers,
   getMySavedIds,
-  getMyPrayerCommentActivity,
+  getUnreadActivityCount,
 } from '../../services/supabase-queries';
 import { useGeolocation } from '../../hooks/use-geolocation';
 
@@ -97,27 +86,24 @@ export function Profile() {
   const [myPrayers, setMyPrayers] = useState<number>(0);
   const [myPrayedFor, setMyPrayedFor] = useState<number>(0);
   const [savedCount, setSavedCount] = useState<number>(0);
-  const [commentActivity, setCommentActivity] = useState<{
-    commentCount: number;
-    latestCommentAt: string | null;
-  }>({ commentCount: 0, latestCommentAt: null });
+  const [unreadUpdates, setUnreadUpdates] = useState<number>(0);
 
   useEffect(() => {
     let active = true;
 
     const loadPrayerCounts = async () => {
       if (!user?.id) return;
-      const [submitted, prayedFor, savedIds, activity] = await Promise.all([
+      const [submitted, prayedFor, savedIds, updates] = await Promise.all([
         getMyPrayers(),
         getMyPrayedForPrayers(),
         getMySavedIds(),
-        getMyPrayerCommentActivity(),
+        getUnreadActivityCount(),
       ]);
       if (!active) return;
       setMyPrayers(submitted.length);
       setMyPrayedFor(prayedFor.length);
       setSavedCount(savedIds.length);
-      setCommentActivity(activity);
+      setUnreadUpdates(updates);
     };
 
     void loadPrayerCounts();
@@ -504,6 +490,26 @@ export function Profile() {
           </div>
 
           <button
+            onClick={() => void navigate('/updates')}
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
+            style={{
+              background:
+                'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
+              border: '1px solid rgba(var(--rgb-accent), 0.08)',
+            }}
+          >
+            <Bell size={18} className="text-accent flex-shrink-0" />
+            <div>
+              <p className="text-text text-sm font-medium">Updates</p>
+              <p className="text-text-dim text-xs mt-0.5">
+                {unreadUpdates > 0
+                  ? `${unreadUpdates} unread update${unreadUpdates !== 1 ? 's' : ''} for you.`
+                  : 'Comments, invites, and report reviews in one place.'}
+              </p>
+            </div>
+          </button>
+
+          <button
             onClick={() => void navigate('/profile/circle')}
             className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
             style={{
@@ -520,30 +526,6 @@ export function Profile() {
               </p>
             </div>
           </button>
-
-          {commentActivity.commentCount > 0 && (
-            <button
-              onClick={() => void navigate('/profile/submitted')}
-              className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-              style={{
-                background:
-                  'linear-gradient(160deg, rgba(var(--rgb-warning), 0.08), rgba(var(--rgb-surface), 0.35))',
-                border: '1px solid rgba(var(--rgb-warning), 0.12)',
-              }}
-            >
-              <MessageCircle size={18} className="text-warning flex-shrink-0" />
-              <div>
-                <p className="text-text text-sm font-medium">New encouragement</p>
-                <p className="text-text-dim text-xs mt-0.5">
-                  {commentActivity.commentCount} comment
-                  {commentActivity.commentCount !== 1 ? 's' : ''} on your prayers
-                  {commentActivity.latestCommentAt
-                    ? ` · Latest ${timeAgo(commentActivity.latestCommentAt)}`
-                    : ''}
-                </p>
-              </div>
-            </button>
-          )}
 
           <button
             onClick={() => void navigate('/profile/saved')}

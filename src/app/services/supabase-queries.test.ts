@@ -6,6 +6,7 @@ vi.mock('./supabase', () => {
     qb.select = vi.fn().mockReturnThis();
     qb.eq = vi.fn().mockReturnThis();
     qb.neq = vi.fn().mockReturnThis();
+    qb.is = vi.fn().mockReturnThis();
     qb.order = vi.fn().mockReturnThis();
     qb.limit = vi.fn().mockReturnThis();
     qb.single = vi.fn().mockReturnThis();
@@ -78,6 +79,7 @@ beforeEach(() => {
   qb.select.mockReturnThis();
   qb.eq.mockReturnThis();
   qb.neq.mockReturnThis();
+  qb.is.mockReturnThis();
   qb.order.mockReturnThis();
   qb.limit.mockReturnThis();
   qb.single.mockReturnThis();
@@ -741,6 +743,69 @@ describe('getPrayerCircleCount', () => {
   });
 });
 
+describe('activity updates', () => {
+  it('returns activity events with actor profiles', async () => {
+    setOnce([
+      {
+        id: 'event-1',
+        recipient_user_id: 'test-user',
+        actor_user_id: 'actor-1',
+        event_type: 'comment_on_prayer',
+        prayer_id: 'p1',
+        comment_id: 'c1',
+        report_id: null,
+        invite_id: null,
+        metadata: { comment_preview: 'Praying with you' },
+        read_at: null,
+        created_at: '2026-07-29T12:00:00Z',
+      },
+    ]);
+    setOnce([
+      {
+        id: 'actor-1',
+        username: 'miriam',
+        display_name: 'Miriam',
+        avatar_url: 'https://cdn.example.com/miriam.jpg',
+      },
+    ]);
+
+    const result = await m.getActivityEvents();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].event_type).toBe('comment_on_prayer');
+    expect(result[0].metadata.comment_preview).toBe('Praying with you');
+    expect(result[0].actor?.username).toBe('miriam');
+    expect(qb.eq).toHaveBeenCalledWith('recipient_user_id', 'test-user');
+    expect(qb.in).toHaveBeenCalledWith('id', ['actor-1']);
+  });
+
+  it('returns unread activity count', async () => {
+    setAlways(null, null, 2);
+
+    expect(await m.getUnreadActivityCount()).toBe(2);
+    expect(qb.eq).toHaveBeenCalledWith('recipient_user_id', 'test-user');
+    expect(qb.is).toHaveBeenCalledWith('read_at', null);
+  });
+
+  it('marks selected events read', async () => {
+    setAlways(null);
+
+    expect(await m.markActivityEventsRead(['event-1'])).toBe(true);
+    expect(qb.update).toHaveBeenCalledWith({ read_at: expect.any(String) });
+    expect(qb.eq).toHaveBeenCalledWith('recipient_user_id', 'test-user');
+    expect(qb.is).toHaveBeenCalledWith('read_at', null);
+    expect(qb.in).toHaveBeenCalledWith('id', ['event-1']);
+  });
+
+  it('does not query when signed out', async () => {
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+
+    expect(await m.getActivityEvents()).toEqual([]);
+    expect(await m.getUnreadActivityCount()).toBe(0);
+    expect(await m.markActivityEventsRead()).toBe(false);
+  });
+});
+
 describe('createReport', () => {
   it('creates report on success', async () => {
     setAlways(null);
@@ -1028,30 +1093,6 @@ describe('getMyPrayers', () => {
   it('returns empty if no user', async () => {
     auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
     expect(await m.getMyPrayers()).toEqual([]);
-  });
-});
-
-describe('getMyPrayerCommentActivity', () => {
-  it('counts comments from other people on my prayers', async () => {
-    setAlways(
-      [{ id: 'c1', created_at: '2024-01-03', prayer_requests: { user_id: 'test-user' } }],
-      null,
-      3
-    );
-
-    const result = await m.getMyPrayerCommentActivity();
-
-    expect(result).toEqual({ commentCount: 3, latestCommentAt: '2024-01-03' });
-    expect(qb.eq).toHaveBeenCalledWith('prayer_requests.user_id', 'test-user');
-    expect(qb.neq).toHaveBeenCalledWith('user_id', 'test-user');
-  });
-
-  it('returns an empty activity summary if signed out', async () => {
-    auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-    expect(await m.getMyPrayerCommentActivity()).toEqual({
-      commentCount: 0,
-      latestCommentAt: null,
-    });
   });
 });
 

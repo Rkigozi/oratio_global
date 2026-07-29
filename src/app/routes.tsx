@@ -1,10 +1,9 @@
-
-import { lazy, Suspense } from "react";
-import { createBrowserRouter } from "react-router";
-import { Layout } from "./components/layout/layout";
-import { AuthGuard } from "./components/auth/auth-guard";
-import { RouteErrorBoundary } from "./components/route-error-boundary";
-import { FullPageLoadingSpinner } from "./components/loading-spinner";
+import { lazy, Suspense } from 'react';
+import { createBrowserRouter } from 'react-router';
+import { Layout } from './components/layout/layout';
+import { AuthGuard } from './components/auth/auth-guard';
+import { RouteErrorBoundary } from './components/route-error-boundary';
+import { FullPageLoadingSpinner } from './components/loading-spinner';
 import {
   loadFeed,
   loadHome,
@@ -26,8 +25,9 @@ import {
   loadSubmit,
   loadTerms,
   loadUpdatePassword,
+  loadUpdates,
   loadUserProfile,
-} from "./route-loaders";
+} from './route-loaders';
 
 const Home = lazy(loadHome);
 const Feed = lazy(loadFeed);
@@ -49,9 +49,14 @@ const PrayerDetail = lazy(loadPrayerDetail);
 const Moderate = lazy(loadModerate);
 const UserProfile = lazy(loadUserProfile);
 const PrayerCircle = lazy(loadPrayerCircle);
+const Updates = lazy(loadUpdates);
 const NotFound = lazy(loadNotFound);
 
-function SuspenseWrapper({ Component }: { Component: React.LazyExoticComponent<() => React.ReactNode> }) {
+function SuspenseWrapper({
+  Component,
+}: {
+  Component: React.LazyExoticComponent<() => React.ReactNode>;
+}) {
   return (
     <Suspense fallback={<FullPageLoadingSpinner />}>
       <Component />
@@ -63,41 +68,48 @@ export const router = createBrowserRouter([
   {
     errorElement: <RouteErrorBoundary />,
     children: [
-      { path: "/landing", element: <SuspenseWrapper Component={Landing} /> },
-      { path: "/login", element: <SuspenseWrapper Component={Login} /> },
-      { path: "/reset-password", element: <SuspenseWrapper Component={ResetPassword} /> },
-      { path: "/update-password", element: <SuspenseWrapper Component={UpdatePassword} /> },
-      { path: "/privacy", element: <SuspenseWrapper Component={Privacy} /> },
-      { path: "/terms", element: <SuspenseWrapper Component={Terms} /> },
-      { path: "/onboarding", element: <SuspenseWrapper Component={Onboarding} /> },
+      { path: '/landing', element: <SuspenseWrapper Component={Landing} /> },
+      { path: '/login', element: <SuspenseWrapper Component={Login} /> },
+      { path: '/reset-password', element: <SuspenseWrapper Component={ResetPassword} /> },
+      { path: '/update-password', element: <SuspenseWrapper Component={UpdatePassword} /> },
+      { path: '/privacy', element: <SuspenseWrapper Component={Privacy} /> },
+      { path: '/terms', element: <SuspenseWrapper Component={Terms} /> },
+      { path: '/onboarding', element: <SuspenseWrapper Component={Onboarding} /> },
 
       {
         Component: AuthGuard,
         children: [
-          { path: "/prayer/:id", element: <SuspenseWrapper Component={PrayerDetail} /> },
-          { path: "/moderate", element: <SuspenseWrapper Component={Moderate} /> },
-          { path: "/user/:name", element: <SuspenseWrapper Component={UserProfile} /> },
+          { path: '/prayer/:id', element: <SuspenseWrapper Component={PrayerDetail} /> },
+          { path: '/moderate', element: <SuspenseWrapper Component={Moderate} /> },
+          { path: '/user/:name', element: <SuspenseWrapper Component={UserProfile} /> },
 
           {
-            path: "/",
+            path: '/',
             Component: Layout,
             children: [
               { index: true, element: <SuspenseWrapper Component={Home} /> },
-              { path: "feed", element: <SuspenseWrapper Component={Feed} /> },
-              { path: "submit", element: <SuspenseWrapper Component={Submit} /> },
-              { path: "profile", element: <SuspenseWrapper Component={Profile} /> },
-              { path: "profile/circle", element: <SuspenseWrapper Component={PrayerCircle} /> },
-              { path: "profile/submitted", element: <SuspenseWrapper Component={ProfileSubmitted} /> },
-              { path: "profile/prayed", element: <SuspenseWrapper Component={ProfilePrayed} /> },
-              { path: "profile/saved", element: <SuspenseWrapper Component={ProfileSaved} /> },
-              { path: "profile/settings", element: <SuspenseWrapper Component={ProfileSettings} /> },
-              { path: "info", element: <SuspenseWrapper Component={Info} /> },
+              { path: 'feed', element: <SuspenseWrapper Component={Feed} /> },
+              { path: 'submit', element: <SuspenseWrapper Component={Submit} /> },
+              { path: 'profile', element: <SuspenseWrapper Component={Profile} /> },
+              { path: 'profile/circle', element: <SuspenseWrapper Component={PrayerCircle} /> },
+              {
+                path: 'profile/submitted',
+                element: <SuspenseWrapper Component={ProfileSubmitted} />,
+              },
+              { path: 'profile/prayed', element: <SuspenseWrapper Component={ProfilePrayed} /> },
+              { path: 'profile/saved', element: <SuspenseWrapper Component={ProfileSaved} /> },
+              {
+                path: 'profile/settings',
+                element: <SuspenseWrapper Component={ProfileSettings} />,
+              },
+              { path: 'updates', element: <SuspenseWrapper Component={Updates} /> },
+              { path: 'info', element: <SuspenseWrapper Component={Info} /> },
             ],
           },
         ],
       },
 
-      { path: "*", element: <SuspenseWrapper Component={NotFound} /> },
+      { path: '*', element: <SuspenseWrapper Component={NotFound} /> },
     ],
   },
 ]);

@@ -1,6 +1,8 @@
-import { ChevronLeft } from "lucide-react";
-import { useNavigate, useLocation } from "react-router";
+import { useCallback, useEffect, useState } from 'react';
+import { Bell, ChevronLeft } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router';
 import { BetaBadge } from '../beta-badge';
+import { getUnreadActivityCount } from '../../services/supabase-queries';
 
 interface HeaderProps {
   showBack?: boolean;
@@ -10,25 +12,66 @@ interface HeaderProps {
 export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const refreshUnreadCount = useCallback(async () => {
+    const count = await getUnreadActivityCount();
+    setUnreadCount(count);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const refresh = async () => {
+      const count = await getUnreadActivityCount();
+      if (active) setUnreadCount(count);
+    };
+
+    void refresh();
+
+    return () => {
+      active = false;
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const refresh = () => void refreshUnreadCount();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+
+    window.addEventListener('oratio-activity-updated', refresh);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.removeEventListener('oratio-activity-updated', refresh);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [refreshUnreadCount]);
+
   // Determine if we should show back button
-  const showBack = propShowBack || (location.pathname !== '/' && 
-    !['/feed', '/submit', '/profile'].includes(location.pathname));
-  
+  const showBack =
+    propShowBack ||
+    (location.pathname !== '/' && !['/feed', '/submit', '/profile'].includes(location.pathname));
+
   // Determine title based on route if not provided
-  const routeTitle = title || (() => {
-    if (location.pathname === '/profile/submitted') return 'Submitted Prayers';
-    if (location.pathname === '/profile/prayed') return 'Prayed For';
-    if (location.pathname === '/profile/saved') return 'Saved Prayers';
-    return undefined;
-  })();
-  
+  const routeTitle =
+    title ||
+    (() => {
+      if (location.pathname === '/profile/submitted') return 'Submitted Prayers';
+      if (location.pathname === '/profile/prayed') return 'Prayed For';
+      if (location.pathname === '/profile/saved') return 'Saved Prayers';
+      if (location.pathname === '/updates') return 'Updates';
+      return undefined;
+    })();
+  const showUpdatesButton = location.pathname !== '/updates';
+
   return (
     <header
       className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between py-4 px-4 pt-[max(1rem,env(safe-area-inset-top))]"
       style={{
-        minHeight: "calc(3.5rem + env(safe-area-inset-top))",
-        background: "linear-gradient(to bottom, rgba(var(--rgb-bg), 0.97) 40%, rgba(var(--rgb-bg), 0))",
+        minHeight: 'calc(3.5rem + env(safe-area-inset-top))',
+        background:
+          'linear-gradient(to bottom, rgba(var(--rgb-bg), 0.97) 40%, rgba(var(--rgb-bg), 0))',
       }}
     >
       {/* Left side: Back button or empty spacer */}
@@ -43,7 +86,7 @@ export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
           </button>
         ) : null}
       </div>
-      
+
       {/* Center: Title or ORATIO logo */}
       <div className="flex-1 flex justify-center">
         {routeTitle ? (
@@ -55,9 +98,9 @@ export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
             <h1
               className="font-heading tracking-[0.25em] text-text-secondary"
               style={{
-                fontSize: "0.95rem",
+                fontSize: '0.95rem',
                 fontWeight: 300,
-                textShadow: "0 0 30px rgba(var(--rgb-accent), 0.2)",
+                textShadow: '0 0 30px rgba(var(--rgb-accent), 0.2)',
               }}
             >
               ORATIO
@@ -66,9 +109,24 @@ export function Header({ showBack: propShowBack = false, title }: HeaderProps) {
           </div>
         )}
       </div>
-      
-      {/* Right side: spacer for symmetry */}
-      <div className="w-11" />
+
+      {/* Right side: updates button or spacer */}
+      <div className="w-11 flex justify-end">
+        {showUpdatesButton ? (
+          <button
+            onClick={() => void navigate('/updates')}
+            className="relative w-11 h-11 flex items-center justify-center rounded-full cursor-pointer transition-colors hover:bg-accent/10 active:scale-95"
+            aria-label={unreadCount > 0 ? `${unreadCount} unread updates` : 'Updates'}
+          >
+            <Bell size={18} className="text-text-secondary" />
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 min-w-4 h-4 px-1 rounded-full bg-accent text-[9px] leading-4 text-white text-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+        ) : null}
+      </div>
     </header>
   );
 }
