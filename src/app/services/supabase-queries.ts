@@ -911,15 +911,33 @@ export async function markActivityEventsRead(eventIds?: string[]): Promise<boole
 
 // ─── Reports ───────────────────────────────────────────────────────────
 
+export type CreateReportResult = 'created' | 'already_reported' | 'failed';
+
 export async function createReport(input: {
   reportable_type: 'prayer' | 'comment';
   reportable_id: string;
   reason: string;
-}): Promise<boolean> {
+}): Promise<CreateReportResult> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return false;
+  if (!user) return 'failed';
+
+  const { data: existingReport, error: existingReportError } = await supabase
+    .from('reports')
+    .select('id')
+    .eq('reportable_type', input.reportable_type)
+    .eq('reportable_id', input.reportable_id)
+    .eq('reported_by', user.id)
+    .eq('status', 'pending')
+    .maybeSingle();
+
+  if (existingReportError) {
+    logError('check existing report', existingReportError);
+    return 'failed';
+  }
+
+  if (existingReport) return 'already_reported';
 
   const { error } = await supabase.from('reports').insert({
     reportable_type: input.reportable_type,
@@ -929,10 +947,13 @@ export async function createReport(input: {
   });
 
   if (error) {
+    if ('code' in error && error.code === '23505') {
+      return 'already_reported';
+    }
     logError('create report', error);
-    return false;
+    return 'failed';
   }
-  return true;
+  return 'created';
 }
 
 export interface ReportRecord {

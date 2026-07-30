@@ -399,7 +399,7 @@ describe('togglePray', () => {
     expect(rpc).toHaveBeenCalledWith('decrement_prayer_count', { p_prayer_id: 'p1' });
   });
 
-  it('returns false if no user', async () => {
+  it('returns failed if no user', async () => {
     auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
     expect(await m.togglePray('p1', true)).toBe(false);
   });
@@ -808,17 +808,50 @@ describe('activity updates', () => {
 
 describe('createReport', () => {
   it('creates report on success', async () => {
-    setAlways(null);
+    setOnce(null);
+    setOnce(null);
     expect(
       await m.createReport({ reportable_type: 'prayer', reportable_id: 'p1', reason: 'Spam' })
-    ).toBe(true);
+    ).toBe('created');
+    expect(qb.eq).toHaveBeenCalledWith('reported_by', 'test-user');
+    expect(qb.eq).toHaveBeenCalledWith('status', 'pending');
+    expect(qb.insert).toHaveBeenCalledWith({
+      reportable_type: 'prayer',
+      reportable_id: 'p1',
+      reported_by: 'test-user',
+      reason: 'Spam',
+    });
+  });
+
+  it('does not create a duplicate pending report', async () => {
+    setOnce({ id: 'r1' });
+    expect(
+      await m.createReport({ reportable_type: 'prayer', reportable_id: 'p1', reason: 'Spam' })
+    ).toBe('already_reported');
+    expect(qb.insert).not.toHaveBeenCalled();
+  });
+
+  it('treats unique constraint races as already reported', async () => {
+    setOnce(null);
+    setOnce(null, { code: '23505', message: 'duplicate key value violates unique constraint' });
+    expect(
+      await m.createReport({ reportable_type: 'comment', reportable_id: 'c1', reason: 'Spam' })
+    ).toBe('already_reported');
+  });
+
+  it('returns failed when the duplicate check fails', async () => {
+    setOnce(null, new Error('lookup failed'));
+    expect(
+      await m.createReport({ reportable_type: 'prayer', reportable_id: 'p1', reason: 'Spam' })
+    ).toBe('failed');
+    expect(qb.insert).not.toHaveBeenCalled();
   });
 
   it('returns false if no user', async () => {
     auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
     expect(
       await m.createReport({ reportable_type: 'prayer', reportable_id: 'p1', reason: 'Spam' })
-    ).toBe(false);
+    ).toBe('failed');
   });
 });
 

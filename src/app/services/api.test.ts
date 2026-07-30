@@ -20,13 +20,14 @@ describe('reportContent', () => {
   });
 
   it('returns error null on success', async () => {
-    vi.mocked(createReport).mockResolvedValue(true);
+    vi.mocked(createReport).mockResolvedValue('created');
     const result = await reportContent({
       reportable_type: 'prayer',
       reportable_id: 'prayer-1',
       reason: 'Inappropriate content',
     });
     expect(result.error).toBeNull();
+    expect(result.alreadyReported).toBe(false);
     expect(createReport).toHaveBeenCalledWith({
       reportable_type: 'prayer',
       reportable_id: 'prayer-1',
@@ -34,8 +35,19 @@ describe('reportContent', () => {
     });
   });
 
+  it('marks duplicate pending reports without returning an error', async () => {
+    vi.mocked(createReport).mockResolvedValue('already_reported');
+    const result = await reportContent({
+      reportable_type: 'prayer',
+      reportable_id: 'prayer-1',
+      reason: 'Spam',
+    });
+    expect(result.error).toBeNull();
+    expect(result.alreadyReported).toBe(true);
+  });
+
   it('returns error on failure', async () => {
-    vi.mocked(createReport).mockResolvedValue(false);
+    vi.mocked(createReport).mockResolvedValue('failed');
     const result = await reportContent({
       reportable_type: 'comment',
       reportable_id: 'comment-1',

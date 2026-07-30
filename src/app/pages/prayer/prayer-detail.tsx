@@ -309,10 +309,14 @@ export function PrayerDetail() {
       return;
     }
 
-    captureEvent('prayer_reported', { prayerId: prayer.id, reason });
+    if (!result.alreadyReported) {
+      captureEvent('prayer_reported', { prayerId: prayer.id, reason });
+    }
     setReported(true);
     setReportNotice(
-      "Thanks. Your report is saved for moderation, so you don't need to report this prayer again."
+      result.alreadyReported
+        ? "You've already reported this prayer. It's still saved for moderation."
+        : "Thanks. Your report is saved for moderation, so you don't need to report this prayer again."
     );
   };
 

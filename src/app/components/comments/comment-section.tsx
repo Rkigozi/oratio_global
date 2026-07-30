@@ -353,6 +353,7 @@ function CommentThread({
   const [editError, setEditError] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
   const [reportedIds, setReportedIds] = useState<Set<string>>(() => new Set());
+  const [alreadyReportedIds, setAlreadyReportedIds] = useState<Set<string>>(() => new Set());
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [reportMessageId, setReportMessageId] = useState<string | null>(null);
   const [reportErrorId, setReportErrorId] = useState<string | null>(null);
@@ -394,6 +395,8 @@ function CommentThread({
   };
 
   const handleReport = async (targetId: string) => {
+    if (reportedIds.has(targetId) || reportingId === targetId) return;
+
     setReportingId(targetId);
     setReportErrorId(null);
     const result = await reportContent({
@@ -409,6 +412,15 @@ function CommentThread({
     }
 
     setReportedIds((current) => new Set(current).add(targetId));
+    if (result.alreadyReported) {
+      setAlreadyReportedIds((current) => new Set(current).add(targetId));
+    } else {
+      setAlreadyReportedIds((current) => {
+        const next = new Set(current);
+        next.delete(targetId);
+        return next;
+      });
+    }
     setReportMessageId(targetId);
     setTimeout(
       () => setReportMessageId((current) => (current === targetId ? null : current)),
@@ -492,7 +504,9 @@ function CommentThread({
         >
           {reportErrorId === targetId
             ? "We couldn't send that report. Please try again."
-            : 'Report sent for review.'}
+            : alreadyReportedIds.has(targetId)
+              ? "You've already reported this comment. It's still saved for moderation."
+              : 'Report sent for review.'}
         </motion.p>
       )}
     </AnimatePresence>

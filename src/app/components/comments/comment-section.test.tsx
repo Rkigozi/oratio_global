@@ -29,6 +29,7 @@ import {
   subscribeToPrayerCommentChanges,
 } from '../../services/supabase-queries';
 import { useAuth } from '../../hooks/auth-context';
+import { reportContent } from '../../services/api';
 
 const mockPrayer: PrayerRequest = {
   id: 'p1',
@@ -116,6 +117,43 @@ describe('CommentSection', () => {
     expect(screen.getByAltText('commenter').getAttribute('src')).toBe(
       'https://cdn.example.com/commenter.jpg'
     );
+  });
+
+  it('shows already-reported feedback when a comment report already exists', async () => {
+    vi.mocked(getComments).mockResolvedValue([
+      {
+        id: 'c1',
+        prayer_id: 'p1',
+        user_id: 'other-user',
+        parent_id: null,
+        body: 'Concerning comment',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user: {
+          username: 'other',
+          display_name: 'Other',
+          avatar_url: null,
+        },
+      },
+    ]);
+    vi.mocked(getCommentCount).mockResolvedValue(1);
+    vi.mocked(reportContent).mockResolvedValue({ error: null, alreadyReported: true });
+
+    render(<CommentSection prayer={mockPrayer} commentCount={1} onCommentCountChange={vi.fn()} />);
+
+    await screen.findByText('Concerning comment');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Report'));
+    });
+
+    expect(reportContent).toHaveBeenCalledWith({
+      reportable_type: 'comment',
+      reportable_id: 'c1',
+      reason: 'Upsetting or harmful',
+    });
+    expect(await screen.findByText(/already reported this comment/i)).toBeTruthy();
+    expect(screen.getByText('Reported')).toBeTruthy();
   });
 
   it('allows submitting a comment', async () => {

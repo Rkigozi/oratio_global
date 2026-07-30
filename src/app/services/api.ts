@@ -14,8 +14,11 @@ export async function reportContent(report: {
   reportable_id: string;
   reason: string;
 }) {
-  const ok = await supabaseCreateReport(report);
-  return { error: ok ? null : new Error('Failed to create report') } as const;
+  const result = await supabaseCreateReport(report);
+  return {
+    error: result === 'failed' ? new Error('Failed to create report') : null,
+    alreadyReported: result === 'already_reported',
+  } as const;
 }
 
 export async function getPendingReports() {

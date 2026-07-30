@@ -29,10 +29,10 @@
 }
 
 [data-theme='light'] .bottom-nav-safe {
-  background: rgba(255, 255, 255, 0.98);
+  background: #ffffff;
   border-top-color: rgba(var(--rgb-text-faint), 0.38);
   box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.07);
-  backdrop-filter: blur(10px) saturate(115%);
+  backdrop-filter: none;
 }
 
 .bottom-nav-inner {
