@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getPrayerReportStatusTitle } from './prayer-detail';
+import { getPrayerReportStatusTitle } from './report-status-title';
 
 describe('getPrayerReportStatusTitle', () => {
   it('labels duplicate report feedback clearly', () => {

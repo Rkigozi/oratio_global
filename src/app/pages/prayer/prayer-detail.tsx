@@ -45,12 +45,7 @@ import { LoadingSpinner, ErrorState } from '../../components/loading-spinner';
 import { useAuth } from '../../hooks/auth-context';
 import { logError } from '../../../lib/logger';
 import { captureEvent } from '../../../lib/analytics';
-
-export function getPrayerReportStatusTitle(reportNotice: string | null, reportError: string | null) {
-  if (reportError) return 'Report not sent';
-  if (reportNotice?.startsWith("You've already")) return 'Already reported';
-  return 'Report sent';
-}
+import { getPrayerReportStatusTitle } from './report-status-title';
 
 export function PrayerDetail() {
   const { id } = useParams<{ id: string }>();
