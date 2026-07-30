@@ -5,11 +5,16 @@ import { Updates } from './updates';
 import type { ActivityEvent } from '../services/supabase-queries';
 
 vi.mock('../services/supabase-queries', () => ({
+  deleteActivityEvent: vi.fn(),
   getActivityEvents: vi.fn(),
   markActivityEventsRead: vi.fn(),
 }));
 
-import { getActivityEvents, markActivityEventsRead } from '../services/supabase-queries';
+import {
+  deleteActivityEvent,
+  getActivityEvents,
+  markActivityEventsRead,
+} from '../services/supabase-queries';
 
 const commentUpdate: ActivityEvent = {
   id: 'event-1',
@@ -35,6 +40,7 @@ describe('Updates', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    vi.mocked(deleteActivityEvent).mockResolvedValue(true);
     vi.mocked(markActivityEventsRead).mockResolvedValue(true);
   });
 
@@ -88,5 +94,25 @@ describe('Updates', () => {
     });
 
     expect(markActivityEventsRead).toHaveBeenCalledWith(['event-1']);
+  });
+
+  it('can delete an update', async () => {
+    vi.mocked(getActivityEvents).mockResolvedValue([commentUpdate]);
+
+    render(
+      <MemoryRouter>
+        <Updates />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Miriam commented on your prayer');
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /delete update/i }));
+    });
+
+    expect(deleteActivityEvent).toHaveBeenCalledWith('event-1');
+    expect(screen.queryByText('Miriam commented on your prayer')).not.toBeInTheDocument();
+    expect(await screen.findByText('No updates yet')).toBeInTheDocument();
   });
 });

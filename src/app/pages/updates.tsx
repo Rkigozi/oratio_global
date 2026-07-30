@@ -6,6 +6,7 @@ import {
   MessageCircle,
   RefreshCw,
   ShieldCheck,
+  Trash2,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -14,6 +15,7 @@ import { AvatarImage } from '../components/avatar-image';
 import { LoadingSpinner } from '../components/loading-spinner';
 import { timeAgo } from '../services/prayer-data';
 import {
+  deleteActivityEvent,
   getActivityEvents,
   markActivityEventsRead,
   type ActivityEvent,
@@ -101,6 +103,8 @@ export function Updates() {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteErrorId, setDeleteErrorId] = useState<string | null>(null);
 
   const unreadIds = useMemo(
     () => events.filter((event) => !event.read_at).map((event) => event.id),
@@ -180,6 +184,23 @@ export function Updates() {
     window.dispatchEvent(new Event('oratio-activity-updated'));
   };
 
+  const deleteUpdate = async (eventId: string) => {
+    setDeletingId(eventId);
+    setDeleteErrorId(null);
+
+    const ok = await deleteActivityEvent(eventId);
+    setDeletingId(null);
+
+    if (!ok) {
+      setDeleteErrorId(eventId);
+      return;
+    }
+
+    setEvents((current) => current.filter((event) => event.id !== eventId));
+    void refreshUnreadCount();
+    window.dispatchEvent(new Event('oratio-activity-updated'));
+  };
+
   return (
     <div
       className="w-full h-full flex flex-col px-5 pb-28"
@@ -189,9 +210,7 @@ export function Updates() {
         <div className="max-w-md mx-auto">
           <div className="flex items-center gap-2 mb-4">
             <Bell size={15} className="text-accent" />
-            <span className="text-text-muted text-xs uppercase tracking-[0.15em]">
-              Quiet updates
-            </span>
+            <span className="text-text-muted text-xs uppercase tracking-[0.15em]">Updates</span>
             <button
               onClick={() => void refresh()}
               disabled={refreshing}
@@ -241,16 +260,12 @@ export function Updates() {
                 const clickable = Boolean(copy.actionPath);
 
                 return (
-                  <motion.button
+                  <motion.div
                     key={event.id}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(index * 0.035, 0.35), duration: 0.28 }}
-                    onClick={() => copy.actionPath && void navigate(copy.actionPath)}
-                    disabled={!clickable}
-                    className={`w-full rounded-xl px-4 py-3.5 text-left transition-colors ${
-                      clickable ? 'cursor-pointer active:bg-accent/5' : 'cursor-default'
-                    }`}
+                    className="w-full rounded-xl px-4 py-3.5 text-left transition-colors"
                     style={{
                       background: unread
                         ? 'linear-gradient(160deg, rgba(var(--rgb-accent), 0.1), rgba(var(--rgb-surface), 0.42))'
@@ -261,44 +276,69 @@ export function Updates() {
                     }}
                   >
                     <div className="flex items-start gap-3">
-                      {event.actor ? (
-                        <AvatarImage
-                          src={event.actor.avatar_url}
-                          name={event.actor.display_name || event.actor.username}
-                          alt={event.actor.display_name || event.actor.username}
-                          className="h-9 w-9 flex-shrink-0 text-xs"
-                        />
-                      ) : (
-                        <span className="h-9 w-9 rounded-full bg-accent/8 border border-accent/10 flex items-center justify-center flex-shrink-0">
-                          <Icon size={15} className="text-text-dim" />
-                        </span>
-                      )}
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-start gap-2">
-                          <span className="text-text text-sm font-medium leading-snug">
-                            {copy.title}
-                          </span>
-                          {unread && (
-                            <span
-                              className="mt-1.5 h-2 w-2 rounded-full bg-accent flex-shrink-0"
-                              aria-label="Unread"
+                      <button
+                        type="button"
+                        onClick={() => copy.actionPath && void navigate(copy.actionPath)}
+                        disabled={!clickable}
+                        className={`min-w-0 flex-1 text-left ${
+                          clickable ? 'cursor-pointer' : 'cursor-default'
+                        }`}
+                      >
+                        <span className="flex items-start gap-3">
+                          {event.actor ? (
+                            <AvatarImage
+                              src={event.actor.avatar_url}
+                              name={event.actor.display_name || event.actor.username}
+                              alt={event.actor.display_name || event.actor.username}
+                              className="h-9 w-9 flex-shrink-0 text-xs"
                             />
+                          ) : (
+                            <span className="h-9 w-9 rounded-full bg-accent/8 border border-accent/10 flex items-center justify-center flex-shrink-0">
+                              <Icon size={15} className="text-text-dim" />
+                            </span>
                           )}
-                        </span>
-                        <span className="mt-1 block text-text-dim text-xs leading-relaxed">
-                          {copy.body}
-                        </span>
-                        <span className="mt-2 flex items-center gap-2">
-                          <span className="text-text-faint text-[10px]">
-                            {timeAgo(event.created_at)}
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-start gap-2">
+                              <span className="text-text text-sm font-medium leading-snug">
+                                {copy.title}
+                              </span>
+                              {unread && (
+                                <span
+                                  className="mt-1.5 h-2 w-2 rounded-full bg-accent flex-shrink-0"
+                                  aria-label="Unread"
+                                />
+                              )}
+                            </span>
+                            <span className="mt-1 block text-text-dim text-xs leading-relaxed">
+                              {copy.body}
+                            </span>
+                            <span className="mt-2 flex items-center gap-2">
+                              <span className="text-text-faint text-[10px]">
+                                {timeAgo(event.created_at)}
+                              </span>
+                              {copy.actionLabel && (
+                                <span className="text-accent text-[10px]">{copy.actionLabel}</span>
+                              )}
+                            </span>
                           </span>
-                          {copy.actionLabel && (
-                            <span className="text-accent text-[10px]">{copy.actionLabel}</span>
-                          )}
                         </span>
-                      </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void deleteUpdate(event.id)}
+                        disabled={deletingId === event.id}
+                        aria-label={`Delete update: ${copy.title}`}
+                        className="h-9 w-9 flex-shrink-0 rounded-full border border-accent/10 bg-accent/5 text-text-faint transition-colors hover:border-danger/20 hover:bg-danger/8 hover:text-danger cursor-pointer disabled:cursor-default disabled:opacity-50"
+                      >
+                        <Trash2 size={13} className="mx-auto" />
+                      </button>
                     </div>
-                  </motion.button>
+                    {deleteErrorId === event.id && (
+                      <p className="mt-2 pl-12 text-[10px] text-danger">
+                        {"We couldn't delete that update. Please try again."}
+                      </p>
+                    )}
+                  </motion.div>
                 );
               })}
             </div>

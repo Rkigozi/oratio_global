@@ -797,12 +797,22 @@ describe('activity updates', () => {
     expect(qb.in).toHaveBeenCalledWith('id', ['event-1']);
   });
 
+  it('deletes an own activity event', async () => {
+    setAlways(null);
+
+    expect(await m.deleteActivityEvent('event-1')).toBe(true);
+    expect(qb.delete).toHaveBeenCalled();
+    expect(qb.eq).toHaveBeenCalledWith('id', 'event-1');
+    expect(qb.eq).toHaveBeenCalledWith('recipient_user_id', 'test-user');
+  });
+
   it('does not query when signed out', async () => {
     auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
 
     expect(await m.getActivityEvents()).toEqual([]);
     expect(await m.getUnreadActivityCount()).toBe(0);
     expect(await m.markActivityEventsRead()).toBe(false);
+    expect(await m.deleteActivityEvent('event-1')).toBe(false);
   });
 });
 

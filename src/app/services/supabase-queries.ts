@@ -909,6 +909,26 @@ export async function markActivityEventsRead(eventIds?: string[]): Promise<boole
   return true;
 }
 
+export async function deleteActivityEvent(eventId: string): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase
+    .from('activity_events')
+    .delete()
+    .eq('id', eventId)
+    .eq('recipient_user_id', user.id);
+
+  if (error) {
+    logError('delete activity event', error);
+    return false;
+  }
+
+  return true;
+}
+
 // ─── Reports ───────────────────────────────────────────────────────────
 
 export type CreateReportResult = 'created' | 'already_reported' | 'failed';
