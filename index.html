@@ -41,14 +41,17 @@
           var systemLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
           var theme = mode === "system" ? (systemLight ? "light" : "dark") : mode;
           var color = theme === "light" ? "#F0F3F9" : "#0A1A3A";
+          var safeAreaColor = theme === "light" ? "#FFFFFF" : "#0A1A3A";
           document.documentElement.setAttribute("data-theme", theme);
           document.documentElement.style.setProperty("--oratio-page-bg", color);
-          document.documentElement.style.backgroundColor = color;
+          document.documentElement.style.setProperty("--oratio-safe-area-bg", safeAreaColor);
+          document.documentElement.style.backgroundColor = safeAreaColor;
           document.documentElement.style.colorScheme = theme;
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute("content", color);
+          if (meta) meta.setAttribute("content", safeAreaColor);
         } catch (e) {
           document.documentElement.style.setProperty("--oratio-page-bg", "#0A1A3A");
+          document.documentElement.style.setProperty("--oratio-safe-area-bg", "#0A1A3A");
         }
       })();
     </script>
@@ -161,7 +164,7 @@
         width: 100%;
         height: 100%;
         overflow: hidden; /* Prevent body scrolling */
-        background: var(--oratio-page-bg, #0A1A3A); /* Prevent white flash on iOS cold start */
+        background: var(--oratio-safe-area-bg, var(--oratio-page-bg, #0A1A3A)); /* Prevent mismatched iOS safe-area flashes */
       }
       
       #root {

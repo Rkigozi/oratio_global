@@ -3,9 +3,9 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 type Theme = "dark" | "light";
 export type ThemeMode = Theme | "system";
 
-const themeColors: Record<Theme, string> = {
-  dark: "#0A1A3A",
-  light: "#F0F3F9",
+const themeColors: Record<Theme, { page: string; safeArea: string }> = {
+  dark: { page: "#0A1A3A", safeArea: "#0A1A3A" },
+  light: { page: "#F0F3F9", safeArea: "#FFFFFF" },
 };
 
 interface ThemeState {
@@ -52,13 +52,14 @@ function storeThemeMode(themeMode: ThemeMode) {
 function applyTheme(theme: Theme) {
   const color = themeColors[theme];
   document.documentElement.setAttribute("data-theme", theme);
-  document.documentElement.style.setProperty("--oratio-page-bg", color);
-  document.documentElement.style.backgroundColor = color;
-  document.body.style.backgroundColor = color;
+  document.documentElement.style.setProperty("--oratio-page-bg", color.page);
+  document.documentElement.style.setProperty("--oratio-safe-area-bg", color.safeArea);
+  document.documentElement.style.backgroundColor = color.safeArea;
+  document.body.style.backgroundColor = color.safeArea;
   document.documentElement.style.colorScheme = theme;
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", color);
+    ?.setAttribute("content", color.safeArea);
 }
 
 async function getSupabaseClient() {

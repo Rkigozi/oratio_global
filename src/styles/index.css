@@ -20,16 +20,17 @@
 .bottom-nav-safe {
   /* Keep the tab bar in the range of familiar social apps: substantial enough
      for the home indicator, but much slimmer than the full iOS safe area. */
+  --bottom-nav-bg: rgba(var(--rgb-bg), 0.96);
   --bottom-nav-safe-bottom: clamp(6px, env(safe-area-inset-bottom, 0px), 12px);
   --bottom-nav-content-shift: 3px;
-  background: rgba(var(--rgb-bg), 0.96);
+  background: var(--bottom-nav-bg);
   border-top: 1px solid rgba(var(--rgb-accent), 0.08);
   backdrop-filter: blur(14px);
   padding-bottom: var(--bottom-nav-safe-bottom);
 }
 
 [data-theme='light'] .bottom-nav-safe {
-  background: #ffffff;
+  --bottom-nav-bg: var(--oratio-safe-area-bg, #ffffff);
   border-top-color: rgba(var(--rgb-text-faint), 0.38);
   box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.07);
   backdrop-filter: none;

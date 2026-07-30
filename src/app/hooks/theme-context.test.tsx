@@ -66,6 +66,8 @@ describe("ThemeProvider", () => {
     expect(result.current.theme).toBe("light");
     expect(localStorage.getItem("oratio_theme")).toBe("light");
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    expect(document.documentElement.style.getPropertyValue("--oratio-page-bg")).toBe("#F0F3F9");
+    expect(document.documentElement.style.getPropertyValue("--oratio-safe-area-bg")).toBe("#FFFFFF");
   });
 
   it("toggles theme from light to dark", () => {
