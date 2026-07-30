@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapPin, X, Search, ChevronDown, Users } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router';
+import { useSearchParams, useNavigate, useLocation } from 'react-router';
 import {
   countries,
   getPrayerLocationKey,
@@ -30,10 +30,64 @@ function readRecentSearches(): string[] {
   }
 }
 
+const FEED_SCROLL_SNAPSHOT_KEY = 'oratio_feed_scroll_snapshot';
+const FEED_SCROLL_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1000;
+
+type FeedScrollSnapshot = {
+  path: string;
+  scrollTop: number;
+  prayerId?: string;
+  showSaved: boolean;
+  showPrayerCircle: boolean;
+  searchQuery: string;
+  activeSearch: string;
+  savedAt: number;
+};
+
+function getFeedPath(search: string) {
+  return `/feed${search}`;
+}
+
+function readFeedScrollSnapshot(search: string): FeedScrollSnapshot | null {
+  try {
+    const raw = sessionStorage.getItem(FEED_SCROLL_SNAPSHOT_KEY);
+    if (!raw) return null;
+
+    const snapshot = JSON.parse(raw) as FeedScrollSnapshot;
+    const isFresh = Date.now() - snapshot.savedAt < FEED_SCROLL_SNAPSHOT_MAX_AGE_MS;
+    if (!isFresh || snapshot.path !== getFeedPath(search)) return null;
+
+    return snapshot;
+  } catch {
+    return null;
+  }
+}
+
+function writeFeedScrollSnapshot(snapshot: FeedScrollSnapshot) {
+  try {
+    sessionStorage.setItem(FEED_SCROLL_SNAPSHOT_KEY, JSON.stringify(snapshot));
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearFeedScrollSnapshot() {
+  try {
+    sessionStorage.removeItem(FEED_SCROLL_SNAPSHOT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function Feed() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { location: geoLocation } = useGeolocation();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [initialScrollSnapshot] = useState(() => readFeedScrollSnapshot(location.search));
+  const initialScrollSnapshotRef = useRef<FeedScrollSnapshot | null>(initialScrollSnapshot);
+  const restoreAttemptCountRef = useRef(0);
   const locationCity = searchParams.get('city');
   const locationCountry = searchParams.get('country');
   const hasLocationFilter = !!locationCity || !!locationCountry;
@@ -57,13 +111,19 @@ export function Feed() {
     setSearchParams({});
   };
 
-  const [showSaved, setShowSaved] = useState(false);
+  const [showSaved, setShowSaved] = useState(() => initialScrollSnapshot?.showSaved ?? false);
   const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [showPrayerCircle, setShowPrayerCircle] = useState(searchParams.get('circle') === '1');
+  const [showPrayerCircle, setShowPrayerCircle] = useState(
+    () => searchParams.get('circle') === '1'
+  );
   const [prayerCircleMemberIds, setPrayerCircleMemberIds] = useState<string[]>([]);
   const searchParamActive = searchParams.get('search') || '';
-  const [searchQuery, setSearchQuery] = useState(searchParamActive);
-  const [activeSearch, setActiveSearch] = useState(searchParamActive);
+  const [searchQuery, setSearchQuery] = useState(
+    () => searchParamActive || initialScrollSnapshot?.searchQuery || ''
+  );
+  const [activeSearch, setActiveSearch] = useState(
+    () => searchParamActive || initialScrollSnapshot?.activeSearch || ''
+  );
   const [showRecent, setShowRecent] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>(() => readRecentSearches());
   const [userResults, setUserResults] = useState<
@@ -397,6 +457,26 @@ export function Feed() {
   }, [loadPrayers, locationCity, locationCountry, showSaved, showPrayerCircle]);
 
   useEffect(() => {
+    const snapshot = initialScrollSnapshotRef.current;
+    const scroller = scrollContainerRef.current;
+    if (!snapshot || !scroller || loading || error) return;
+
+    const timerId = window.setTimeout(() => {
+      const maxScrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      scroller.scrollTop = Math.min(snapshot.scrollTop, maxScrollTop);
+      restoreAttemptCountRef.current += 1;
+
+      const restored = Math.abs(scroller.scrollTop - snapshot.scrollTop) <= 8;
+      if (restored || !hasMore || restoreAttemptCountRef.current >= 12) {
+        clearFeedScrollSnapshot();
+        initialScrollSnapshotRef.current = null;
+      }
+    }, 80);
+
+    return () => window.clearTimeout(timerId);
+  }, [error, hasMore, loading, visiblePrayers.length]);
+
+  useEffect(() => {
     setShowPrayerCircle(searchParams.get('circle') === '1');
   }, [searchParams]);
 
@@ -425,9 +505,23 @@ export function Feed() {
     });
   }, []);
 
-  const handleTap = (prayer: PrayerRequest) => {
-    void navigate(`/prayer/${prayer.id}`);
-  };
+  const handleTap = useCallback(
+    (prayer: PrayerRequest) => {
+      writeFeedScrollSnapshot({
+        path: getFeedPath(location.search),
+        scrollTop: scrollContainerRef.current?.scrollTop ?? 0,
+        prayerId: prayer.id,
+        showSaved,
+        showPrayerCircle,
+        searchQuery,
+        activeSearch,
+        savedAt: Date.now(),
+      });
+
+      void navigate(`/prayer/${prayer.id}`);
+    },
+    [activeSearch, location.search, navigate, searchQuery, showPrayerCircle, showSaved]
+  );
 
   const handleTagClick = (tag: string) => {
     const q = tag.startsWith('#') ? tag : `#${tag}`;
@@ -720,7 +814,11 @@ export function Feed() {
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 px-4 overflow-y-auto pb-28">
+      <div
+        ref={scrollContainerRef}
+        data-testid="feed-scroll-container"
+        className="flex-1 px-4 overflow-y-auto pb-28"
+      >
         {/* Search banner */}
         <AnimatePresence>
           {activeSearch && (

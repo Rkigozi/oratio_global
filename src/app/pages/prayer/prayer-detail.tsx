@@ -46,6 +46,12 @@ import { useAuth } from '../../hooks/auth-context';
 import { logError } from '../../../lib/logger';
 import { captureEvent } from '../../../lib/analytics';
 
+export function getPrayerReportStatusTitle(reportNotice: string | null, reportError: string | null) {
+  if (reportError) return 'Report not sent';
+  if (reportNotice?.startsWith("You've already")) return 'Already reported';
+  return 'Report sent';
+}
+
 export function PrayerDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -134,6 +140,7 @@ export function PrayerDetail() {
   const [reporting, setReporting] = useState(false);
   const [reportNotice, setReportNotice] = useState<string | null>(null);
   const [reportError, setReportError] = useState<string | null>(null);
+  const reportStatusTitle = getPrayerReportStatusTitle(reportNotice, reportError);
   const [circleStatus, setCircleStatus] = useState<PrayerCircleStatus>({ state: 'none' });
   const [circleBusy, setCircleBusy] = useState(false);
   const { profile: authProfile, user } = useAuth();
@@ -685,7 +692,7 @@ export function PrayerDetail() {
                     reportError ? 'text-danger' : 'text-warning'
                   }`}
                 >
-                  {reportError ? 'Report not sent' : 'Report sent'}
+                  {reportStatusTitle}
                 </p>
                 <p className="text-text-dim text-[11px] leading-relaxed">
                   {reportError || reportNotice}
