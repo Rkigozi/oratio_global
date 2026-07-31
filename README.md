@@ -37,6 +37,7 @@ node node_modules/vite/bin/vite.js
 ```
 
 ### Additional Resources
+- **Codebase Navigation Guide**: See [CODEBASE_NAVIGATION_GUIDE.md](docs/CODEBASE_NAVIGATION_GUIDE.md) for a V1-focused guide to the routes, flows, Supabase structure, and cleanup priorities.
 - **Quick Start Guide**: See [QUICK-START.md](docs/QUICK-START.md) for detailed commands
 - **Development Aliases**: Source `.oratio-aliases` for convenient shortcuts
 - **Port**: Default 5173 (or next available)
