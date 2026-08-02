@@ -82,6 +82,14 @@
           }
         }
 
+        function isStartupTimeout(error) {
+          return /startup timeout/i.test(errorText(error));
+        }
+
+        function isRepairableStartupFailure(error) {
+          return isModuleScriptError(error) || isStartupTimeout(error);
+        }
+
         function isModuleScriptError(error) {
           var text = errorText(error);
           return moduleScriptPatterns.some(function (pattern) {
@@ -126,20 +134,23 @@
           if (shown || root.childElementCount > 0) return;
           shown = true;
 
-          var isModuleError = isModuleScriptError(event);
+          var isRepairable = isRepairableStartupFailure(event);
+          var isTimedOut = isStartupTimeout(event);
           var isOffline = navigator.onLine === false;
           var title = isOffline
             ? "You're offline"
-            : isModuleError
+            : isRepairable
               ? "Oratio needs a refresh"
               : "We couldn't load the app";
           var detail = isOffline
             ? "Reconnect to the internet, then reload Oratio."
-            : isModuleError
-              ? "The installed app has an older file cached. Repair and reload to open the latest version."
+            : isTimedOut
+              ? "The app took too long to start. This can happen when Safari has an older file cached or the connection drops."
+              : isRepairable
+                ? "The installed app has an older file cached. Repair and reload to open the latest version."
               : "Something went wrong while starting up. Please reload to try again.";
-          var action = isModuleError && !isOffline ? "Repair and reload" : "Reload";
-          var click = isModuleError && !isOffline
+          var action = isRepairable && !isOffline ? "Repair and reload" : "Reload";
+          var click = isRepairable && !isOffline
             ? "window.__oratioStartupRecover()"
             : "location.reload()";
 
@@ -154,6 +165,9 @@
         window.__oratioStartupRecover = recoverStartup;
         window.addEventListener("error", renderFallback);
         window.addEventListener("unhandledrejection", renderFallback);
+        window.setTimeout(function () {
+          renderFallback("startup timeout");
+        }, 10000);
       })();
     </script>
     <style>
