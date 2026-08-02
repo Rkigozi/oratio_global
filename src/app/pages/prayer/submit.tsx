@@ -30,7 +30,6 @@ export function Submit() {
     requestLocation,
   } = useGeolocation();
   const [text, setText] = useState('');
-  const [anonymous, setAnonymous] = useState(false);
   const [audience, setAudience] = useState<PrayerAudience>('public');
   const [circleCount, setCircleCount] = useState(0);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
@@ -43,7 +42,7 @@ export function Submit() {
   const [useAutoLocation, setUseAutoLocation] = useState(true);
 
   const { user, profile } = useAuth();
-  const effectiveAnonymous = audience === 'public' && anonymous;
+  const effectiveCommentsEnabled = audience === 'public' ? commentsEnabled : true;
 
   const getSubmissionLocation = () => {
     const cityValue = useAutoLocation && geoLocation ? geoLocation.city : city.trim();
@@ -107,7 +106,6 @@ export function Submit() {
   const selectAudience = (nextAudience: PrayerAudience) => {
     if (nextAudience === 'circle' && circleCount < 1) return;
     setAudience(nextAudience);
-    if (nextAudience !== 'public') setAnonymous(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,7 +118,7 @@ export function Submit() {
         text: text.trim(),
         location: '',
         category: undefined,
-        anonymous: effectiveAnonymous,
+        anonymous: false,
       });
 
       if (!validation.success) {
@@ -141,10 +139,8 @@ export function Submit() {
       }
 
       const sanitizedText = sanitizePrayerText(text.trim());
-      const displayUsername = effectiveAnonymous
-        ? undefined
-        : profile?.username || user?.email || undefined;
-      const displayNameVal = effectiveAnonymous ? undefined : profile?.display_name || undefined;
+      const displayUsername = profile?.username || user.email || undefined;
+      const displayNameVal = profile?.display_name || undefined;
 
       const submissionLocation = getSubmissionLocation();
       const { lat, lng } = getSubmissionCoordinates(submissionLocation);
@@ -161,7 +157,7 @@ export function Submit() {
         username: displayUsername,
         audience,
         prayerCount: 0,
-        commentsEnabled,
+        commentsEnabled: effectiveCommentsEnabled,
       });
 
       if (!supabaseId) {
@@ -185,7 +181,7 @@ export function Submit() {
         lat,
         lng,
         createdAt: new Date().toISOString(),
-        commentsEnabled,
+        commentsEnabled: effectiveCommentsEnabled,
       };
 
       if (typeof window !== 'undefined') {
@@ -196,7 +192,7 @@ export function Submit() {
       captureEvent('prayer_submitted', {
         city: submissionLocation.city,
         country: submissionLocation.country,
-        anonymous: effectiveAnonymous,
+        anonymous: false,
         audience,
       });
       setSubmitted(true);
@@ -209,7 +205,6 @@ export function Submit() {
 
   const resetForm = () => {
     setText('');
-    setAnonymous(false);
     setAudience('public');
     setErrors({});
     setSubmitted(false);
@@ -360,53 +355,11 @@ export function Submit() {
                   )}
                   {audience === 'private' && (
                     <p className="text-text-dim text-[11px] leading-relaxed mt-2">
-                      Only you can see this prayer. You can add private testimony notes in the
-                      comments later.
+                      Only you can see this prayer. Open it later to add testimony notes or jot down
+                      what you are sensing.
                     </p>
                   )}
                 </div>
-
-                {/* Public identity toggle */}
-                {audience === 'public' && (
-                  <div
-                    className="flex items-center justify-between rounded-xl px-4 py-3 border border-accent/12"
-                    style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
-                  >
-                    <div>
-                      <p className="text-text text-sm">
-                        {anonymous
-                          ? 'Posting anonymously'
-                          : `Posting as @${profile?.username || 'yourself'}`}
-                      </p>
-                      <p className="text-text-dim text-xs mt-0.5">
-                        {anonymous
-                          ? "Your name won't be shown on this public prayer"
-                          : 'Your profile name will be shown publicly'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setAnonymous(!anonymous)}
-                      className="relative h-11 w-12 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
-                      aria-label={anonymous ? 'Post with profile name' : 'Post anonymously'}
-                    >
-                      <span
-                        className="absolute left-0.5 top-1/2 h-6 w-11 -translate-y-1/2 rounded-full transition-colors duration-200"
-                        style={{
-                          background: anonymous
-                            ? 'rgba(var(--rgb-accent), 0.35)'
-                            : 'rgba(var(--rgb-accent), 0.12)',
-                        }}
-                      />
-                      <span
-                        className="absolute left-1 top-1/2 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-md"
-                        style={{
-                          transform: anonymous ? 'translate(22px, -50%)' : 'translate(0, -50%)',
-                        }}
-                      />
-                    </button>
-                  </div>
-                )}
 
                 {/* Location */}
                 <div>
@@ -513,47 +466,47 @@ export function Submit() {
                   )}
                 </div>
 
-                {/* Allow comments toggle */}
-                <div
-                  className="flex items-center justify-between rounded-xl px-4 py-3 border border-accent/12"
-                  style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
-                >
-                  <div>
-                    <p className="text-text text-sm">
-                      {commentsEnabled ? 'Comments are on' : 'Comments are off'}
-                    </p>
-                    <p className="text-text-dim text-xs mt-0.5">
-                      {audience === 'private'
-                        ? commentsEnabled
-                          ? 'Use comments later for testimony notes'
-                          : 'Private testimony notes will be off'
-                        : commentsEnabled
-                          ? 'Others can leave encouragement'
-                          : 'No one can comment on this prayer'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCommentsEnabled(!commentsEnabled)}
-                    className="relative h-11 w-12 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
-                    aria-label={commentsEnabled ? 'Turn comments off' : 'Turn comments on'}
+                {/* Public comments toggle */}
+                {audience === 'public' && (
+                  <div
+                    className="flex items-center justify-between rounded-xl px-4 py-3 border border-accent/12"
+                    style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
                   >
-                    <span
-                      className="absolute left-0.5 top-1/2 h-6 w-11 -translate-y-1/2 rounded-full transition-colors duration-200"
-                      style={{
-                        background: commentsEnabled
-                          ? 'rgba(var(--rgb-accent), 0.35)'
-                          : 'rgba(var(--rgb-accent), 0.12)',
-                      }}
-                    />
-                    <span
-                      className="absolute left-1 top-1/2 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-md"
-                      style={{
-                        transform: commentsEnabled ? 'translate(22px, -50%)' : 'translate(0, -50%)',
-                      }}
-                    />
-                  </button>
-                </div>
+                    <div>
+                      <p className="text-text text-sm">
+                        {commentsEnabled ? 'Comments are on' : 'Comments are off'}
+                      </p>
+                      <p className="text-text-dim text-xs mt-0.5">
+                        {commentsEnabled
+                          ? 'Others can leave encouragement'
+                          : 'No one can comment on this public prayer'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCommentsEnabled(!commentsEnabled)}
+                      className="relative h-11 w-12 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
+                      aria-label={commentsEnabled ? 'Turn comments off' : 'Turn comments on'}
+                    >
+                      <span
+                        className="absolute left-0.5 top-1/2 h-6 w-11 -translate-y-1/2 rounded-full transition-colors duration-200"
+                        style={{
+                          background: commentsEnabled
+                            ? 'rgba(var(--rgb-accent), 0.35)'
+                            : 'rgba(var(--rgb-accent), 0.12)',
+                        }}
+                      />
+                      <span
+                        className="absolute left-1 top-1/2 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+                        style={{
+                          transform: commentsEnabled
+                            ? 'translate(22px, -50%)'
+                            : 'translate(0, -50%)',
+                        }}
+                      />
+                    </button>
+                  </div>
+                )}
 
                 {/* Submit button */}
                 {errors.general && (
@@ -626,7 +579,7 @@ export function Submit() {
               </p>
               <p className="text-text-muted text-sm mb-8">
                 {audience === 'private'
-                  ? 'Only you can see it. You can add testimony notes when you open it.'
+                  ? 'Only you can see it. Open it later for testimony notes or private thoughts.'
                   : audience === 'circle'
                     ? 'People in your Prayer Circle can see it and pray with you.'
                     : 'People around the world will see it and pray.'}

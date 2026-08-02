@@ -79,6 +79,23 @@ describe('CommentSection', () => {
     expect(text).toBeTruthy();
   });
 
+  it('uses testimony-note copy for private prayers', async () => {
+    vi.mocked(getComments).mockResolvedValue([]);
+    vi.mocked(getCommentCount).mockResolvedValue(0);
+
+    render(
+      <CommentSection
+        prayer={{ ...mockPrayer, audience: 'private' }}
+        commentCount={0}
+        onCommentCountChange={vi.fn()}
+      />
+    );
+
+    expect(await screen.findByText('Testimony notes (0)')).toBeTruthy();
+    expect(screen.getByText('No notes yet. Add a testimony, reflection, or thought for later.')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Add a testimony or thought...')).toBeTruthy();
+  });
+
   it('still renders when realtime comments fail to subscribe', async () => {
     vi.mocked(getComments).mockResolvedValue([]);
     vi.mocked(getCommentCount).mockResolvedValue(0);

@@ -209,6 +209,19 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
     (prayer.authorId
       ? prayer.authorId === user.id
       : !!prayer.username && prayer.username === profile?.username);
+  const isPrivatePrayer = prayer.audience === 'private';
+  const sectionLabel = isPrivatePrayer ? 'Testimony notes' : 'Comments';
+  const emptyText = isPrivatePrayer
+    ? 'No notes yet. Add a testimony, reflection, or thought for later.'
+    : 'No comments yet. Be the first to encourage them.';
+  const signedOutPrompt = isPrivatePrayer
+    ? 'to add a private note.'
+    : 'to leave an encouragement.';
+  const placeholder = replyTo
+    ? 'Write a reply...'
+    : isPrivatePrayer
+      ? 'Add a testimony or thought...'
+      : 'Write an encouragement...';
   const topLevel = comments.filter((c) => !c.parent_id);
   const replies = (parentId: string) => comments.filter((c) => c.parent_id === parentId);
 
@@ -217,7 +230,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
       <div className="flex items-center gap-2 mb-4">
         <MessageCircle size={14} className="text-text-dim" />
         <span className="text-text-muted text-xs uppercase tracking-[0.15em]">
-          Comments ({commentCount})
+          {sectionLabel} ({commentCount})
         </span>
       </div>
 
@@ -226,9 +239,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
           <div className="w-5 h-5 rounded-full border-2 border-accent/20 border-t-accent animate-spin" />
         </div>
       ) : topLevel.length === 0 ? (
-        <p className="text-text-dim text-xs text-center py-4">
-          No comments yet. Be the first to encourage them.
-        </p>
+        <p className="text-text-dim text-xs text-center py-4">{emptyText}</p>
       ) : (
         <div className="space-y-3 mb-4">
           {topLevel.map((comment) => (
@@ -281,7 +292,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
           <a href="/login" className="text-accent hover:underline">
             Sign in
           </a>{' '}
-          to leave an encouragement.
+          {signedOutPrompt}
         </p>
       ) : (
         <div className="flex gap-2 items-end">
@@ -295,7 +306,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
                   void handleSubmit();
                 }
               }}
-              placeholder={replyTo ? 'Write a reply...' : 'Write an encouragement...'}
+              placeholder={placeholder}
               rows={1}
               maxLength={500}
               className="w-full rounded-xl px-3 py-2.5 text-text placeholder-text-dim text-xs focus:outline-none border border-accent/12 focus:border-accent/30 transition-colors resize-none"

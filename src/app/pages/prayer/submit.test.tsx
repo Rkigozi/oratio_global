@@ -93,16 +93,18 @@ describe('Submit', () => {
     vi.mocked(createPrayerRequest).mockResolvedValue('prayer-1');
   });
 
-  it('renders textarea, visibility options, public identity toggle, and submit button', async () => {
+  it('renders textarea, visibility options, public comments toggle, and submit button', async () => {
     await renderSubmit();
 
     expect(screen.getByPlaceholderText(/share what's on your heart/i)).toBeInTheDocument();
     expect(screen.getByText('Submit Prayer Request')).toBeInTheDocument();
-    expect(screen.getByText(/posting as @testuser/i)).toBeInTheDocument();
     expect(screen.getByText('Prayer visibility')).toBeInTheDocument();
     expect(screen.getByText('Public')).toBeInTheDocument();
     expect(screen.getByText('Prayer Circle')).toBeInTheDocument();
     expect(screen.getByText('Only me')).toBeInTheDocument();
+    expect(screen.getByText('Comments are on')).toBeInTheDocument();
+    expect(screen.queryByText(/posting as/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/posting anonymously/i)).not.toBeInTheDocument();
   });
 
   it('renders location section with auto-detect toggle', async () => {
@@ -132,6 +134,7 @@ describe('Submit', () => {
     const callArg = vi.mocked(createPrayerRequest).mock.calls[0][0];
     expect(callArg.text).toContain('Please heal my family');
     expect(callArg.audience).toBe('public');
+    expect(callArg.username).toBe('testuser');
 
     const prayerEvent = dispatchSpy.mock.calls.find(
       ([event]) => event instanceof CustomEvent && event.type === 'oratio-prayer-added'
@@ -168,6 +171,8 @@ describe('Submit', () => {
     const callArg = vi.mocked(createPrayerRequest).mock.calls[0][0];
     expect(callArg.audience).toBe('circle');
     expect(callArg.username).toBe('testuser');
+    expect(callArg.commentsEnabled).toBe(true);
+    expect(screen.queryByText('Comments are on')).not.toBeInTheDocument();
 
     await vi.waitFor(() => {
       expect(screen.getByText('View Prayer Circle')).toBeInTheDocument();
@@ -194,6 +199,8 @@ describe('Submit', () => {
     const callArg = vi.mocked(createPrayerRequest).mock.calls[0][0];
     expect(callArg.audience).toBe('private');
     expect(callArg.username).toBe('testuser');
+    expect(callArg.commentsEnabled).toBe(true);
+    expect(screen.queryByText('Comments are on')).not.toBeInTheDocument();
 
     await vi.waitFor(() => {
       expect(screen.getByText('Open Private Prayer')).toBeInTheDocument();
@@ -298,17 +305,31 @@ describe('Submit', () => {
     expect(callArg.lng).not.toBe(0);
   });
 
-  it('toggles anonymous mode', async () => {
+  it('allows comments to be turned off for public prayers', async () => {
     await renderSubmit();
 
-    expect(screen.getByText(/posting as @testuser/i)).toBeInTheDocument();
+    expect(screen.getByText('Comments are on')).toBeInTheDocument();
 
-    const section = screen.getByText(/posting as/i).closest('div')!.parentElement!;
+    const section = screen.getByText('Comments are on').closest('div')!.parentElement!;
     const toggle = section.querySelector('button')!;
     await act(async () => {
       fireEvent.click(toggle);
     });
 
-    expect(screen.getByText(/posting anonymously/i)).toBeInTheDocument();
+    expect(screen.getByText('Comments are off')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
+      target: { value: 'Please pray for a public request without comments' },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit Prayer Request'));
+    });
+
+    await vi.waitFor(() => {
+      expect(createPrayerRequest).toHaveBeenCalled();
+    });
+
+    expect(vi.mocked(createPrayerRequest).mock.calls[0][0].commentsEnabled).toBe(false);
   });
 });

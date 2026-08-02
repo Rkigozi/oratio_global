@@ -334,12 +334,16 @@ export function PrayerDetail() {
   }, [prayer]);
 
   const handleToggleComments = () => {
+    if (!prayer || prayer.audience !== 'public') return;
     const newVal = !commentsEnabled;
     setCommentsEnabled(newVal);
-    void toggleCommentsEnabled(prayer!.id, newVal);
+    void toggleCommentsEnabled(prayer.id, newVal);
   };
 
   const isPrayed = prayer ? prayedIds.includes(prayer.id) : false;
+  const commentsAreAvailable =
+    prayer?.audience === 'circle' || prayer?.audience === 'private' || commentsEnabled;
+  const canToggleComments = isAuthor && prayer?.audience === 'public';
 
   const togglePrayed = useCallback((prayerId: string) => {
     setPrayedIds((prev) => {
@@ -521,7 +525,7 @@ export function PrayerDetail() {
                       Edit prayer
                     </button>
                   )}
-                  {isAuthor && (
+                  {canToggleComments && (
                     <button
                       onClick={() => {
                         setShowMenu(false);
@@ -638,7 +642,7 @@ export function PrayerDetail() {
 
           {/* Prayer count + comments indicator */}
           <div className="flex items-center gap-3 text-text-muted text-xs mb-8">
-            {!commentsEnabled && (
+            {!commentsAreAvailable && (
               <span className="flex items-center gap-1 text-text-dim">
                 <MessageCircle size={11} />
                 <span>Comments off</span>
@@ -705,7 +709,7 @@ export function PrayerDetail() {
 
           {/* Comments section */}
           <div className="border-t border-accent/8 pt-4">
-            {commentsEnabled ? (
+            {commentsAreAvailable ? (
               <CommentSection
                 prayer={prayer}
                 commentCount={commentCount}
