@@ -34,9 +34,6 @@ export const loadProfileSettings: RouteLoader = () =>
 export const loadUpdates: RouteLoader = () =>
   import('./pages/updates').then((m) => ({ default: m.Updates }));
 
-export const loadLanding: RouteLoader = () =>
-  import('./pages/landing').then((m) => ({ default: m.Landing }));
-
 export const loadOnboarding: RouteLoader = () =>
   import('./pages/auth/onboarding').then((m) => ({ default: m.Onboarding }));
 
@@ -87,7 +84,6 @@ const routeLoadersByPath = new Map<string, RouteLoader>([
   ['/profile/settings', loadProfileSettings],
   ['/updates', loadUpdates],
   ['/info', loadInfo],
-  ['/landing', loadLanding],
   ['/login', loadLogin],
   ['/reset-password', loadResetPassword],
   ['/update-password', loadUpdatePassword],
@@ -104,7 +100,7 @@ const authenticatedPreloadLoaders = [
   loadUpdates,
   loadPrayerDetail,
 ];
-const publicPreloadLoaders = [loadLanding, loadLogin, loadOnboarding, loadResetPassword];
+const publicPreloadLoaders = [loadLogin, loadOnboarding, loadResetPassword];
 
 function preloadRouteLoader(loader: RouteLoader) {
   const cached = preloadCache.get(loader);

@@ -4,11 +4,11 @@ import { Layout } from './components/layout/layout';
 import { AuthGuard } from './components/auth/auth-guard';
 import { RouteErrorBoundary } from './components/route-error-boundary';
 import { FullPageLoadingSpinner } from './components/loading-spinner';
+import { Landing } from './pages/landing';
 import {
   loadFeed,
   loadHome,
   loadInfo,
-  loadLanding,
   loadLogin,
   loadModerate,
   loadNotFound,
@@ -37,7 +37,6 @@ const ProfileSubmitted = lazy(loadProfileSubmitted);
 const ProfilePrayed = lazy(loadProfilePrayed);
 const ProfileSaved = lazy(loadProfileSaved);
 const ProfileSettings = lazy(loadProfileSettings);
-const Landing = lazy(loadLanding);
 const Onboarding = lazy(loadOnboarding);
 const Login = lazy(loadLogin);
 const ResetPassword = lazy(loadResetPassword);
@@ -68,7 +67,7 @@ export const router = createBrowserRouter([
   {
     errorElement: <RouteErrorBoundary />,
     children: [
-      { path: '/landing', element: <SuspenseWrapper Component={Landing} /> },
+      { path: '/landing', element: <Landing /> },
       { path: '/login', element: <SuspenseWrapper Component={Login} /> },
       { path: '/reset-password', element: <SuspenseWrapper Component={ResetPassword} /> },
       { path: '/update-password', element: <SuspenseWrapper Component={UpdatePassword} /> },

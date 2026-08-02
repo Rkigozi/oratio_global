@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { motion } from 'motion/react';
 import {
   Globe,
   Heart,
@@ -67,12 +66,7 @@ export function Landing() {
 
       <div className="relative z-10 flex flex-col items-center w-full max-w-4xl mx-auto px-6 pt-16 pb-24">
         {/* Hero */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-10"
-        >
+        <div className="oratio-fade-up text-center mb-10">
           <div className="flex items-center justify-center gap-3 mb-5">
             <h1
               className="font-heading text-text-secondary"
@@ -145,7 +139,7 @@ export function Landing() {
               Get occasional beta updates. We&apos;ll never spam you.
             </p>
             {subscribed ? (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+              <div className="oratio-fade-soft">
                 <p className="text-accent text-sm py-3 text-center">You&apos;re on the list! 🙏</p>
                 <button
                   onClick={() => {
@@ -156,7 +150,7 @@ export function Landing() {
                 >
                   Remove
                 </button>
-              </motion.div>
+              </div>
             ) : (
               <form onSubmit={(e) => void handleSubscribe(e)} className="flex gap-2">
                 <input
@@ -182,24 +176,17 @@ export function Landing() {
               </form>
             )}
           </div>
-        </motion.div>
+        </div>
 
         {/* Features */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="w-full max-w-2xl mx-auto mb-16"
-        >
+        <div className="oratio-fade-up w-full max-w-2xl mx-auto mb-16 [animation-delay:120ms]">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {features.map((feature, i) => (
-              <motion.div
+              <div
                 key={feature.title}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 + i * 0.1 }}
-                className="rounded-xl px-5 py-5 text-center"
+                className="oratio-fade-up rounded-xl px-5 py-5 text-center"
                 style={{
+                  animationDelay: `${220 + i * 70}ms`,
                   background:
                     'linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))',
                   border: '1px solid rgba(var(--rgb-accent), 0.06)',
@@ -213,10 +200,10 @@ export function Landing() {
                 </div>
                 <h3 className="text-text-secondary text-sm font-medium mb-1.5">{feature.title}</h3>
                 <p className="text-text-muted text-xs leading-relaxed">{feature.desc}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {/* Footer */}
         <div className="w-full text-center mt-10 pt-6 border-t border-accent/6 space-y-2">

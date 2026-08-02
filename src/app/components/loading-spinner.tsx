@@ -1,4 +1,3 @@
-import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 
 interface LoadingSpinnerProps {
@@ -35,11 +34,7 @@ export function LoadingSpinner({ text = "Loading...", delayMs = 180 }: LoadingSp
 
   return (
     <div className="flex flex-col items-center justify-center py-16">
-      <motion.div
-        className="w-8 h-8 rounded-full border-2 border-accent/15 border-t-accent"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-      />
+      <div className="w-8 h-8 rounded-full border-2 border-accent/15 border-t-accent animate-spin" />
       {text && <p className="text-text-muted text-xs mt-3">{text}</p>}
     </div>
   );

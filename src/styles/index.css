@@ -16,6 +16,43 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.oratio-fade-up {
+  animation: oratio-fade-up 500ms ease-out both;
+}
+
+.oratio-fade-soft {
+  animation: oratio-fade-soft 240ms ease-out both;
+}
+
+@keyframes oratio-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes oratio-fade-soft {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oratio-fade-up,
+  .oratio-fade-soft {
+    animation: none;
+  }
+}
+
 /* ── Bottom nav safe area (PWA standalone mode) ───────────────────── */
 .bottom-nav-safe {
   /* Keep the tab bar in the range of familiar social apps: substantial enough
