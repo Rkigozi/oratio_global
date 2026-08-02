@@ -3,7 +3,7 @@ export interface PrayerRequest {
   city: string;
   country: string;
   text: string;
-  audience?: 'public' | 'circle';
+  audience?: 'public' | 'circle' | 'private';
   name?: string; // Legacy field - use displayName instead
   displayName?: string; // User's public display name
   username?: string; // Unique handle (without @) e.g., "prayer_warrior"

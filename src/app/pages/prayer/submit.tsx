@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, Check, Share2, MapPin, RefreshCw, Loader, Globe2, Users } from 'lucide-react';
+import { Send, Check, Share2, MapPin, RefreshCw, Loader, Globe2, Users, Lock } from 'lucide-react';
 import {
   countries,
   getApproximateCoordinates,
@@ -11,7 +11,12 @@ import { useNavigate } from 'react-router';
 import { validatePrayerSubmission, sanitizePrayerText } from '../../../lib/validation';
 import { CrisisResources } from '../../components/crisis-resources';
 import { useGeolocation } from '../../hooks/use-geolocation';
-import { createPrayerRequest, getProfilePreferences } from '../../services/supabase-queries';
+import {
+  createPrayerRequest,
+  getPrayerCircleCount,
+  getProfilePreferences,
+  type PrayerAudience,
+} from '../../services/supabase-queries';
 import { useAuth } from '../../hooks/auth-context';
 import { logError } from '../../../lib/logger';
 import { captureEvent } from '../../../lib/analytics';
@@ -26,7 +31,8 @@ export function Submit() {
   } = useGeolocation();
   const [text, setText] = useState('');
   const [anonymous, setAnonymous] = useState(false);
-  const [audience, setAudience] = useState<'public' | 'circle'>('public');
+  const [audience, setAudience] = useState<PrayerAudience>('public');
+  const [circleCount, setCircleCount] = useState(0);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [lastPrayerId, setLastPrayerId] = useState<string | null>(null);
@@ -37,6 +43,7 @@ export function Submit() {
   const [useAutoLocation, setUseAutoLocation] = useState(true);
 
   const { user, profile } = useAuth();
+  const effectiveAnonymous = audience === 'public' && anonymous;
 
   const getSubmissionLocation = () => {
     const cityValue = useAutoLocation && geoLocation ? geoLocation.city : city.trim();
@@ -65,8 +72,12 @@ export function Submit() {
 
     const loadPreferences = async () => {
       if (!user) return;
-      const prefs = await getProfilePreferences();
+      const [prefs, count] = await Promise.all([
+        getProfilePreferences(),
+        getPrayerCircleCount(user.id),
+      ]);
       if (active) setCommentsEnabled(prefs.comments_enabled_default);
+      if (active) setCircleCount(count);
     };
 
     void loadPreferences();
@@ -93,6 +104,12 @@ export function Submit() {
     void requestLocation();
   };
 
+  const selectAudience = (nextAudience: PrayerAudience) => {
+    if (nextAudience === 'circle' && circleCount < 1) return;
+    setAudience(nextAudience);
+    if (nextAudience !== 'public') setAnonymous(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -103,7 +120,7 @@ export function Submit() {
         text: text.trim(),
         location: '',
         category: undefined,
-        anonymous,
+        anonymous: effectiveAnonymous,
       });
 
       if (!validation.success) {
@@ -116,9 +133,18 @@ export function Submit() {
         return;
       }
 
+      if (audience === 'circle' && circleCount < 1) {
+        setErrors({
+          general: 'Add at least one person to your Prayer Circle before sharing there.',
+        });
+        return;
+      }
+
       const sanitizedText = sanitizePrayerText(text.trim());
-      const displayUsername = anonymous ? undefined : profile?.username || user?.email || undefined;
-      const displayNameVal = anonymous ? undefined : profile?.display_name || undefined;
+      const displayUsername = effectiveAnonymous
+        ? undefined
+        : profile?.username || user?.email || undefined;
+      const displayNameVal = effectiveAnonymous ? undefined : profile?.display_name || undefined;
 
       const submissionLocation = getSubmissionLocation();
       const { lat, lng } = getSubmissionCoordinates(submissionLocation);
@@ -170,7 +196,7 @@ export function Submit() {
       captureEvent('prayer_submitted', {
         city: submissionLocation.city,
         country: submissionLocation.country,
-        anonymous: !displayUsername,
+        anonymous: effectiveAnonymous,
         audience,
       });
       setSubmitted(true);
@@ -247,17 +273,17 @@ export function Submit() {
                   sharing personal information so you can receive prayer freely and safely.
                 </p>
 
-                {/* Audience */}
+                {/* Prayer visibility */}
                 <div>
-                  <label className="text-text-muted text-sm mb-2 block">Who should see this?</label>
+                  <label className="text-text-muted text-sm mb-2 block">Prayer visibility</label>
                   <div
-                    className="grid grid-cols-2 gap-2 rounded-xl border border-accent/12 p-1"
+                    className="grid grid-cols-1 gap-2 rounded-xl border border-accent/12 p-1"
                     style={{ background: 'rgba(var(--rgb-surface), 0.45)' }}
                   >
                     <button
                       type="button"
-                      onClick={() => setAudience('public')}
-                      className="min-h-[76px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer"
+                      onClick={() => selectAudience('public')}
+                      className="min-h-[70px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer"
                       style={{
                         background:
                           audience === 'public' ? 'rgba(var(--rgb-accent), 0.12)' : 'transparent',
@@ -277,8 +303,9 @@ export function Submit() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setAudience('circle')}
-                      className="min-h-[76px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer"
+                      onClick={() => selectAudience('circle')}
+                      disabled={circleCount < 1}
+                      className="min-h-[70px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-55"
                       style={{
                         background:
                           audience === 'circle' ? 'rgba(var(--rgb-accent), 0.12)' : 'transparent',
@@ -293,17 +320,93 @@ export function Submit() {
                         Prayer Circle
                       </span>
                       <span className="block text-text-dim text-[11px] leading-relaxed">
-                        Accepted Circle only. Kept out of the public map.
+                        Accepted Prayer Circle only. Kept out of the public map.
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => selectAudience('private')}
+                      className="min-h-[70px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer"
+                      style={{
+                        background:
+                          audience === 'private'
+                            ? 'rgba(var(--rgb-accent), 0.12)'
+                            : 'transparent',
+                        border:
+                          audience === 'private'
+                            ? '1px solid rgba(var(--rgb-accent), 0.18)'
+                            : '1px solid transparent',
+                      }}
+                    >
+                      <span className="mb-2 flex items-center gap-1.5 text-text text-sm">
+                        <Lock size={14} className="text-accent" />
+                        Only me
+                      </span>
+                      <span className="block text-text-dim text-[11px] leading-relaxed">
+                        Private to you. Useful for personal prayers and testimonies.
                       </span>
                     </button>
                   </div>
                   {audience === 'circle' && (
                     <p className="text-text-dim text-[11px] leading-relaxed mt-2">
-                      Visible to people while they are in your Prayer Circle. Use Public when you
-                      want wider prayer support.
+                      Visible to accepted people in your Prayer Circle. Your name will be shown
+                      because this is a trusted space.
+                    </p>
+                  )}
+                  {audience === 'public' && circleCount < 1 && (
+                    <p className="text-text-dim text-[11px] leading-relaxed mt-2">
+                      Add at least one person to your Prayer Circle before sharing Circle prayers.
+                    </p>
+                  )}
+                  {audience === 'private' && (
+                    <p className="text-text-dim text-[11px] leading-relaxed mt-2">
+                      Only you can see this prayer. You can add private testimony notes in the
+                      comments later.
                     </p>
                   )}
                 </div>
+
+                {/* Public identity toggle */}
+                {audience === 'public' && (
+                  <div
+                    className="flex items-center justify-between rounded-xl px-4 py-3 border border-accent/12"
+                    style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
+                  >
+                    <div>
+                      <p className="text-text text-sm">
+                        {anonymous
+                          ? 'Posting anonymously'
+                          : `Posting as @${profile?.username || 'yourself'}`}
+                      </p>
+                      <p className="text-text-dim text-xs mt-0.5">
+                        {anonymous
+                          ? "Your name won't be shown on this public prayer"
+                          : 'Your profile name will be shown publicly'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAnonymous(!anonymous)}
+                      className="relative h-11 w-12 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
+                      aria-label={anonymous ? 'Post with profile name' : 'Post anonymously'}
+                    >
+                      <span
+                        className="absolute left-0.5 top-1/2 h-6 w-11 -translate-y-1/2 rounded-full transition-colors duration-200"
+                        style={{
+                          background: anonymous
+                            ? 'rgba(var(--rgb-accent), 0.35)'
+                            : 'rgba(var(--rgb-accent), 0.12)',
+                        }}
+                      />
+                      <span
+                        className="absolute left-1 top-1/2 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-md"
+                        style={{
+                          transform: anonymous ? 'translate(22px, -50%)' : 'translate(0, -50%)',
+                        }}
+                      />
+                    </button>
+                  </div>
+                )}
 
                 {/* Location */}
                 <div>
@@ -410,44 +513,6 @@ export function Submit() {
                   )}
                 </div>
 
-                {/* Anonymous toggle */}
-                <div
-                  className="flex items-center justify-between rounded-xl px-4 py-3 border border-accent/12"
-                  style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
-                >
-                  <div>
-                    <p className="text-text text-sm">
-                      {anonymous
-                        ? 'Submitting anonymously'
-                        : `Submitting as ${profile?.username || 'yourself'}`}
-                    </p>
-                    <p className="text-text-dim text-xs mt-0.5">
-                      {anonymous ? "Your name won't be shown" : 'Your profile name will be shown'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setAnonymous(!anonymous)}
-                    className="relative h-11 w-12 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
-                    aria-label={anonymous ? 'Submit anonymously' : 'Submit with profile name'}
-                  >
-                    <span
-                      className="absolute left-0.5 top-1/2 h-6 w-11 -translate-y-1/2 rounded-full transition-colors duration-200"
-                      style={{
-                        background: anonymous
-                          ? 'rgba(var(--rgb-accent), 0.12)'
-                          : 'rgba(var(--rgb-accent), 0.35)',
-                      }}
-                    />
-                    <span
-                      className="absolute left-1 top-1/2 h-5 w-5 rounded-full bg-white transition-transform duration-200 shadow-md"
-                      style={{
-                        transform: anonymous ? 'translate(22px, -50%)' : 'translate(0, -50%)',
-                      }}
-                    />
-                  </button>
-                </div>
-
                 {/* Allow comments toggle */}
                 <div
                   className="flex items-center justify-between rounded-xl px-4 py-3 border border-accent/12"
@@ -458,9 +523,13 @@ export function Submit() {
                       {commentsEnabled ? 'Comments are on' : 'Comments are off'}
                     </p>
                     <p className="text-text-dim text-xs mt-0.5">
-                      {commentsEnabled
-                        ? 'Others can leave encouragement'
-                        : 'No one can comment on this prayer'}
+                      {audience === 'private'
+                        ? commentsEnabled
+                          ? 'Use comments later for testimony notes'
+                          : 'Private testimony notes will be off'
+                        : commentsEnabled
+                          ? 'Others can leave encouragement'
+                          : 'No one can comment on this prayer'}
                     </p>
                   </div>
                   <button
@@ -549,25 +618,37 @@ export function Submit() {
                 Prayer Request Submitted
               </h2>
               <p className="text-text-muted text-sm mb-2">
-                {audience === 'circle'
-                  ? 'Your prayer is in your Prayer Circle.'
-                  : 'Your prayer is in the feed.'}
+                {audience === 'private'
+                  ? 'Your prayer has been saved privately.'
+                  : audience === 'circle'
+                    ? 'Your prayer is in your Prayer Circle.'
+                    : 'Your prayer is in the feed.'}
               </p>
               <p className="text-text-muted text-sm mb-8">
-                {audience === 'circle'
-                  ? 'People in your Circle can see it and pray with you.'
-                  : 'People around the world will see it and pray.'}
+                {audience === 'private'
+                  ? 'Only you can see it. You can add testimony notes when you open it.'
+                  : audience === 'circle'
+                    ? 'People in your Prayer Circle can see it and pray with you.'
+                    : 'People around the world will see it and pray.'}
               </p>
 
               <div className="flex flex-col items-center gap-3">
                 <button
                   onClick={() => {
                     resetForm();
-                    void navigate(audience === 'circle' ? '/feed?circle=1' : '/feed');
+                    if (audience === 'private' && lastPrayerId) {
+                      void navigate(`/prayer/${lastPrayerId}`);
+                    } else {
+                      void navigate(audience === 'circle' ? '/feed?circle=1' : '/feed');
+                    }
                   }}
                   className="px-8 py-3 rounded-full text-sm text-accent border border-accent/25 hover:border-accent/50 transition-all cursor-pointer"
                 >
-                  {audience === 'circle' ? 'View Circle Prayers' : 'View in Feed'}
+                  {audience === 'private'
+                    ? 'Open Private Prayer'
+                    : audience === 'circle'
+                      ? 'View Prayer Circle'
+                      : 'View in Feed'}
                 </button>
 
                 {lastPrayerId && audience === 'public' && (

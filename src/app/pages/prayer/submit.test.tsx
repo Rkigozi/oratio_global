@@ -9,6 +9,7 @@ vi.mock('../../hooks/auth-context', () => ({
 
 vi.mock('../../services/supabase-queries', () => ({
   createPrayerRequest: vi.fn(),
+  getPrayerCircleCount: vi.fn(),
   getProfilePreferences: vi.fn(),
 }));
 
@@ -36,10 +37,29 @@ vi.mock('motion/react', () => ({
 
 import { Submit } from './submit';
 import { useAuth } from '../../hooks/auth-context';
-import { createPrayerRequest, getProfilePreferences } from '../../services/supabase-queries';
+import {
+  createPrayerRequest,
+  getPrayerCircleCount,
+  getProfilePreferences,
+} from '../../services/supabase-queries';
 import { useGeolocation } from '../../hooks/use-geolocation';
 
 describe('Submit', () => {
+  const renderSubmit = async () => {
+    const result = render(
+      <MemoryRouter>
+        <Submit />
+      </MemoryRouter>
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    return result;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useAuth).mockReturnValue({
@@ -62,30 +82,32 @@ describe('Submit', () => {
       requestLocation: vi.fn(),
       resetDenied: vi.fn(),
     });
-    vi.mocked(getProfilePreferences).mockReturnValue(new Promise(() => {}));
+    vi.mocked(getProfilePreferences).mockResolvedValue({
+      notify_on_prayed: true,
+      notify_on_comment: true,
+      language: 'auto',
+      comments_enabled_default: true,
+      profile_location_mode: 'manual',
+    });
+    vi.mocked(getPrayerCircleCount).mockResolvedValue(1);
     vi.mocked(createPrayerRequest).mockResolvedValue('prayer-1');
   });
 
-  it('renders textarea, anonymous toggle, and submit button', () => {
-    render(
-      <MemoryRouter>
-        <Submit />
-      </MemoryRouter>
-    );
+  it('renders textarea, visibility options, public identity toggle, and submit button', async () => {
+    await renderSubmit();
+
     expect(screen.getByPlaceholderText(/share what's on your heart/i)).toBeInTheDocument();
     expect(screen.getByText('Submit Prayer Request')).toBeInTheDocument();
-    expect(screen.getByText(/submitting as testuser/i)).toBeInTheDocument();
-    expect(screen.getByText('Who should see this?')).toBeInTheDocument();
+    expect(screen.getByText(/posting as @testuser/i)).toBeInTheDocument();
+    expect(screen.getByText('Prayer visibility')).toBeInTheDocument();
     expect(screen.getByText('Public')).toBeInTheDocument();
     expect(screen.getByText('Prayer Circle')).toBeInTheDocument();
+    expect(screen.getByText('Only me')).toBeInTheDocument();
   });
 
-  it('renders location section with auto-detect toggle', () => {
-    render(
-      <MemoryRouter>
-        <Submit />
-      </MemoryRouter>
-    );
+  it('renders location section with auto-detect toggle', async () => {
+    await renderSubmit();
+
     expect(screen.getByText('Your Location')).toBeInTheDocument();
     expect(screen.getByLabelText(/auto-detect/i)).toBeInTheDocument();
   });
@@ -93,11 +115,7 @@ describe('Submit', () => {
   it('calls createPrayerRequest on valid submit', async () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
 
-    render(
-      <MemoryRouter>
-        <Submit />
-      </MemoryRouter>
-    );
+    await renderSubmit();
 
     fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
       target: { value: 'Please heal my family and bring peace' },
@@ -129,12 +147,11 @@ describe('Submit', () => {
   });
 
   it('submits to Prayer Circle when selected', async () => {
-    render(
-      <MemoryRouter>
-        <Submit />
-      </MemoryRouter>
-    );
+    await renderSubmit();
 
+    await vi.waitFor(() => {
+      expect(screen.getByRole('button', { name: /Prayer Circle/i })).not.toBeDisabled();
+    });
     fireEvent.click(screen.getByRole('button', { name: /Prayer Circle/i }));
     fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
       target: { value: 'Please pray with me through this quiet season' },
@@ -150,19 +167,53 @@ describe('Submit', () => {
 
     const callArg = vi.mocked(createPrayerRequest).mock.calls[0][0];
     expect(callArg.audience).toBe('circle');
+    expect(callArg.username).toBe('testuser');
 
     await vi.waitFor(() => {
-      expect(screen.getByText('View Circle Prayers')).toBeInTheDocument();
+      expect(screen.getByText('View Prayer Circle')).toBeInTheDocument();
     });
     expect(screen.queryByText('Share prayer link')).not.toBeInTheDocument();
   });
 
+  it('submits private prayers to Only me', async () => {
+    await renderSubmit();
+
+    fireEvent.click(screen.getByRole('button', { name: /Only me/i }));
+    fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
+      target: { value: 'A private prayer and testimony note' },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit Prayer Request'));
+    });
+
+    await vi.waitFor(() => {
+      expect(createPrayerRequest).toHaveBeenCalled();
+    });
+
+    const callArg = vi.mocked(createPrayerRequest).mock.calls[0][0];
+    expect(callArg.audience).toBe('private');
+    expect(callArg.username).toBe('testuser');
+
+    await vi.waitFor(() => {
+      expect(screen.getByText('Open Private Prayer')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Share prayer link')).not.toBeInTheDocument();
+  });
+
+  it('disables Prayer Circle when there are no Circle members', async () => {
+    vi.mocked(getPrayerCircleCount).mockResolvedValueOnce(0);
+
+    await renderSubmit();
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole('button', { name: /Prayer Circle/i })).toBeDisabled();
+    });
+    expect(screen.getByText(/add at least one person/i)).toBeInTheDocument();
+  });
+
   it('shows validation error when prayer text is too short', async () => {
-    render(
-      <MemoryRouter>
-        <Submit />
-      </MemoryRouter>
-    );
+    await renderSubmit();
 
     fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
       target: { value: 'Short' },
@@ -180,11 +231,7 @@ describe('Submit', () => {
   });
 
   it('shows success message after submission', async () => {
-    render(
-      <MemoryRouter>
-        <Submit />
-      </MemoryRouter>
-    );
+    await renderSubmit();
 
     fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
       target: { value: 'Please heal my family and bring peace to us all' },
@@ -205,11 +252,7 @@ describe('Submit', () => {
   it('shows an error instead of success when saving fails', async () => {
     vi.mocked(createPrayerRequest).mockResolvedValueOnce(null);
 
-    render(
-      <MemoryRouter>
-        <Submit />
-      </MemoryRouter>
-    );
+    await renderSubmit();
 
     fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
       target: { value: 'Please heal my family and bring peace to us all' },
@@ -227,11 +270,7 @@ describe('Submit', () => {
   });
 
   it('uses approximate coordinates for manually entered locations', async () => {
-    render(
-      <MemoryRouter>
-        <Submit />
-      </MemoryRouter>
-    );
+    await renderSubmit();
 
     fireEvent.click(screen.getByLabelText(/auto-detect/i));
     fireEvent.change(screen.getByPlaceholderText('City'), {
@@ -259,19 +298,17 @@ describe('Submit', () => {
     expect(callArg.lng).not.toBe(0);
   });
 
-  it('toggles anonymous mode', () => {
-    render(
-      <MemoryRouter>
-        <Submit />
-      </MemoryRouter>
-    );
+  it('toggles anonymous mode', async () => {
+    await renderSubmit();
 
-    expect(screen.getByText(/submitting as testuser/i)).toBeInTheDocument();
+    expect(screen.getByText(/posting as @testuser/i)).toBeInTheDocument();
 
-    const section = screen.getByText(/submitting as/i).closest('div')!.parentElement!;
+    const section = screen.getByText(/posting as/i).closest('div')!.parentElement!;
     const toggle = section.querySelector('button')!;
-    fireEvent.click(toggle);
+    await act(async () => {
+      fireEvent.click(toggle);
+    });
 
-    expect(screen.getByText(/submitting anonymously/i)).toBeInTheDocument();
+    expect(screen.getByText(/posting anonymously/i)).toBeInTheDocument();
   });
 });

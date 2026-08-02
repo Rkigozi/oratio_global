@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { MapPin, Trash2 } from "lucide-react";
+import { Lock, MapPin, Trash2, Users } from "lucide-react";
 import type { PrayerRequest } from '../../services/prayer-data';
 import { timeAgo, getAttributionText } from '../../services/prayer-data';
 import { renderHashtags } from '../../services/hashtags';
@@ -65,6 +65,18 @@ export function PrayerRow({
             <span className="text-text-dim text-[11px]">
               {prayer.city || "Unknown"}
             </span>
+            {prayer.audience === 'circle' && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent/6 px-1.5 py-0.5 text-[9px] text-text-dim">
+                <Users size={9} />
+                Prayer Circle
+              </span>
+            )}
+            {prayer.audience === 'private' && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent/6 px-1.5 py-0.5 text-[9px] text-text-dim">
+                <Lock size={9} />
+                Only me
+              </span>
+            )}
             {prayer.createdAt && (
               <span className="text-text-muted text-[10px] ml-auto">
                 {prayer.editedAt ? "Edited · " : ""}

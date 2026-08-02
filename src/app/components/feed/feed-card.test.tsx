@@ -70,7 +70,7 @@ describe('FeedCard', () => {
     expect(screen.getByText('Edited')).toBeTruthy();
   });
 
-  it('labels Circle prayers', () => {
+  it('labels Prayer Circle prayers', () => {
     render(
       <MemoryRouter>
         <FeedCard
@@ -82,7 +82,22 @@ describe('FeedCard', () => {
         />
       </MemoryRouter>
     );
-    expect(screen.getByText('Circle')).toBeTruthy();
+    expect(screen.getByText('Prayer Circle')).toBeTruthy();
+  });
+
+  it('labels private prayers', () => {
+    render(
+      <MemoryRouter>
+        <FeedCard
+          prayer={{ ...mockPrayer, audience: 'private' }}
+          index={0}
+          hasPrayed={false}
+          onPrayed={vi.fn()}
+          onTap={vi.fn()}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.getByText('Only me')).toBeTruthy();
   });
 
   it('calls onPrayed when pray button clicked', () => {

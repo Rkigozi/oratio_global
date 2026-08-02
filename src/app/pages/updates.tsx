@@ -83,7 +83,7 @@ function getActivityCopy(event: ActivityEvent): {
     return {
       title: `${actor} accepted your Prayer Circle invite`,
       body: 'You can now share quieter Prayer Circle requests with each other.',
-      actionLabel: 'Open circle',
+      actionLabel: 'Open Prayer Circle',
       actionPath: '/profile/circle',
     };
   }

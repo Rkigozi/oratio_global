@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { logError } from '../../lib/logger';
 import { captureEvent } from '../../lib/analytics';
 import type { User } from '@supabase/supabase-js';
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
 
-  const fetchProfile = async (uid: string) => {
+  const fetchProfile = useCallback(async (uid: string) => {
     const supabase = await getSupabaseClient();
     const { data } = await supabase
       .from('profiles')
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', uid)
       .single();
     if (data) setProfile(data);
-  };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -102,7 +102,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false;
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const handleProfileUpdated = () => {
+      void fetchProfile(user.id);
+    };
+
+    window.addEventListener('oratio-profile-updated', handleProfileUpdated);
+    return () => {
+      window.removeEventListener('oratio-profile-updated', handleProfileUpdated);
+    };
+  }, [fetchProfile, user?.id]);
 
   const signUp = async (
     email: string,

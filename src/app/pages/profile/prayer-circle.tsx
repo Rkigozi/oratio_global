@@ -15,6 +15,8 @@ import {
 } from '../../services/supabase-queries';
 import { useActivityUpdates } from '../../hooks/activity-updates-context';
 
+const PRAYER_CIRCLE_LIMIT = 12;
+
 export function PrayerCircle() {
   const navigate = useNavigate();
   const [circle, setCircle] = useState<PrayerCircleUser[]>([]);
@@ -23,6 +25,7 @@ export function PrayerCircle() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const { liveVersion } = useActivityUpdates();
+  const circleIsFull = circle.length >= PRAYER_CIRCLE_LIMIT;
 
   const loadCircle = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -101,14 +104,17 @@ export function PrayerCircle() {
             </div>
             <p className="text-text-dim text-xs mt-2 leading-relaxed">
               Prayer Circle is mutual. It is for people you intentionally allow into a closer prayer
-              space.
+              space. V1 has {PRAYER_CIRCLE_LIMIT} spaces.
+            </p>
+            <p className="text-text-muted text-[11px] mt-2">
+              {circle.length}/{PRAYER_CIRCLE_LIMIT} spaces filled
             </p>
             <button
               onClick={() => void navigate('/feed?circle=1')}
               className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/15 bg-accent/6 px-4 py-2 text-xs text-accent transition-colors hover:bg-accent/10 cursor-pointer"
             >
               <Users size={13} />
-              View Circle Prayers
+              View Prayer Circle Prayers
             </button>
           </div>
 
@@ -131,7 +137,7 @@ export function PrayerCircle() {
                           <>
                             <button
                               onClick={() => void respond(invite.id, 'accepted')}
-                              disabled={busyId === invite.id}
+                              disabled={busyId === invite.id || circleIsFull}
                               className="inline-flex min-h-11 items-center gap-1 px-4 py-2 rounded-full text-xs text-text cursor-pointer disabled:opacity-60"
                               style={{
                                 background:
@@ -139,7 +145,7 @@ export function PrayerCircle() {
                               }}
                             >
                               <Check size={12} />
-                              Accept
+                              {circleIsFull ? 'Full' : 'Accept'}
                             </button>
                             <button
                               onClick={() => void respond(invite.id, 'declined')}

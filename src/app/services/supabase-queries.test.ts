@@ -322,6 +322,14 @@ describe('createPrayerRequest', () => {
     expect(qb.insert).toHaveBeenCalledWith(expect.objectContaining({ audience: 'circle' }));
   });
 
+  it('stores private audience when requested', async () => {
+    setAlways({ id: 'new-id' });
+    const result = await m.createPrayerRequest({ ...prayer, audience: 'private' });
+
+    expect(result).toBe('new-id');
+    expect(qb.insert).toHaveBeenCalledWith(expect.objectContaining({ audience: 'private' }));
+  });
+
   it('stores canonical London location names', async () => {
     setAlways({ id: 'new-id' });
     const result = await m.createPrayerRequest({

@@ -112,6 +112,7 @@ export function Profile() {
   }, [user?.id]);
 
   const [newDisplayName, setNewDisplayName] = useState('');
+  const [newUsername, setNewUsername] = useState('');
   const {
     location: geoLocation,
     loading: geoLoading,
@@ -246,6 +247,7 @@ export function Profile() {
   useEffect(() => {
     const syncEditFields = () => {
       if (!editOpen || !profile) return;
+      setNewUsername(profile.username);
       setNewDisplayName(profile.displayName);
       setNewBio(profile.bio || '');
       setNewLocation(profile.location || '');
@@ -282,10 +284,11 @@ export function Profile() {
   const handleSaveProfile = async () => {
     if (!profile || savingProfile) return;
     setEditError('');
+    const trimmedUsername = newUsername.trim().toLowerCase();
     const trimmedDisplayName = newDisplayName.trim();
 
     const validation = validateProfile({
-      username: profile.username,
+      username: trimmedUsername,
       displayName: trimmedDisplayName,
     });
     if (!validation.success) {
@@ -293,6 +296,7 @@ export function Profile() {
       setEditError(firstError || 'Invalid input');
       return;
     }
+    const nextUsername = validation.data?.username || trimmedUsername;
 
     if (!user?.id) return;
 
@@ -314,6 +318,7 @@ export function Profile() {
     try {
       const [profileSaved, preferencesSaved] = await Promise.all([
         updateProfile({
+          username: nextUsername,
           display_name: trimmedDisplayName || undefined,
           bio: newBio.trim() || undefined,
           location: locationToSave || undefined,
@@ -324,7 +329,7 @@ export function Profile() {
       ]);
 
       if (!profileSaved || !preferencesSaved) {
-        setEditError("We couldn't save your changes. Please try again.");
+        setEditError("We couldn't save your changes. The username may already be taken.");
         return;
       }
 
@@ -332,12 +337,14 @@ export function Profile() {
         prev
           ? {
               ...prev,
-              displayName: trimmedDisplayName || prev.username,
+              username: nextUsername,
+              displayName: trimmedDisplayName || nextUsername,
               bio: newBio.trim(),
               location: locationToSave,
             }
           : prev
       );
+      window.dispatchEvent(new Event('oratio-profile-updated'));
       setProfileLocationMode(useAutoLocation ? 'auto' : 'manual');
       setEditOpen(false);
     } finally {
@@ -489,7 +496,7 @@ export function Profile() {
               className="min-h-12 text-center cursor-pointer min-w-[72px] px-2 rounded-lg hover:bg-accent/4 transition-colors"
             >
               <p className="text-text-secondary text-sm font-medium">{circleCount}</p>
-              <p className="text-text-dim text-[10px]">Circle</p>
+              <p className="text-text-dim text-[10px]">Prayer Circle</p>
             </button>
           </div>
 
@@ -637,11 +644,32 @@ export function Profile() {
                 </label>
               </div>
 
-              <div className="mb-4 text-center">
-                <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-1">Username</p>
-                <p className="text-text text-sm">@{profile.username}</p>
-                <p className="text-text-dim text-[10px] mt-1">
-                  Username can&apos;t be changed at this time
+              <div className="mb-4">
+                <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">
+                  Username
+                </p>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim text-sm">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    value={newUsername}
+                    onChange={(e) => {
+                      setNewUsername(e.target.value.toLowerCase());
+                      setEditError('');
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && void handleSaveProfile()}
+                    placeholder="your_username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    className={`w-full rounded-xl py-3.5 pl-8 pr-4 text-text placeholder-text-dim text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-danger' : 'border-accent/12'}`}
+                    style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
+                  />
+                </div>
+                <p className="text-text-dim text-[10px] mt-1 text-center">
+                  Lowercase letters, numbers, underscores, and dots.
                 </p>
               </div>
 

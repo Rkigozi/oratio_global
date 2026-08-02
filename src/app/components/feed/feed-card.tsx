@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { MessageCircle, Users } from 'lucide-react';
+import { Lock, MessageCircle, Users } from 'lucide-react';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { timeAgo, getAttributionText } from '../../services/prayer-data';
 import { renderHashtags } from '../../services/hashtags';
@@ -73,7 +73,13 @@ export function FeedCard({
           {prayer.audience === 'circle' && (
             <span className="inline-flex items-center gap-1 rounded-full bg-accent/6 px-1.5 py-0.5 text-[9px] text-text-dim">
               <Users size={9} />
-              Circle
+              Prayer Circle
+            </span>
+          )}
+          {prayer.audience === 'private' && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/6 px-1.5 py-0.5 text-[9px] text-text-dim">
+              <Lock size={9} />
+              Only me
             </span>
           )}
           {prayer.editedAt && (

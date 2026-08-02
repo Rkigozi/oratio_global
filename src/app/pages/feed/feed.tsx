@@ -352,6 +352,10 @@ export function Feed() {
   const filteredPrayers = useMemo(() => {
     let result = prayers;
 
+    if (showPrayerCircle && prayerCircleMemberIds.length <= 1) {
+      return [];
+    }
+
     // Location filter from map hotspot or country filter
     if (locationCity && normalizedLocationFilter) {
       const filterKey = getPrayerLocationKey(
@@ -391,6 +395,8 @@ export function Feed() {
     locationCountry,
     normalizedLocationFilter,
     showSaved,
+    showPrayerCircle,
+    prayerCircleMemberIds.length,
     savedIds,
     activeSearch,
   ]);
@@ -901,7 +907,7 @@ export function Feed() {
         )}
         {showPrayerCircle && !activeSearch && (
           <p className="text-text-dim text-xs text-center mb-4 px-3">
-            A quieter space for prayers shared with your Circle
+            A quieter space for prayers shared with your Prayer Circle
           </p>
         )}
 

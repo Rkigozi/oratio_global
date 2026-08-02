@@ -17,6 +17,7 @@ import {
   Pencil,
   Loader,
   Users,
+  Lock,
 } from 'lucide-react';
 import { timeAgo, getAttributionText } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
@@ -575,6 +576,12 @@ export function PrayerDetail() {
                   Prayer Circle
                 </span>
               )}
+              {prayer.audience === 'private' && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-accent/10 bg-accent/6 px-2 py-0.5 text-[10px] text-text-dim">
+                  <Lock size={10} />
+                  Only me
+                </span>
+              )}
               {prayer.editedAt && (
                 <span className="rounded-full border border-accent/10 bg-accent/6 px-2 py-0.5 text-[10px] text-text-dim">
                   Edited
@@ -868,7 +875,7 @@ function PrayerCircleMiniButton({
     return (
       <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full text-accent bg-accent/10 border border-accent/15">
         <Check size={11} />
-        In Circle
+        In Prayer Circle
       </span>
     );
   }

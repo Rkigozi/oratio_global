@@ -7,8 +7,8 @@ import {
 } from './prayer-data';
 import { logError } from '../../lib/logger';
 
-export type PrayerAudience = 'public' | 'circle';
-export type FeedAudienceMode = PrayerAudience;
+export type PrayerAudience = 'public' | 'circle' | 'private';
+export type FeedAudienceMode = Exclude<PrayerAudience, 'private'>;
 
 export interface Comment {
   id: string;
@@ -1126,6 +1126,7 @@ export async function isCurrentUserModerator(): Promise<boolean> {
 // ─── Profiles ──────────────────────────────────────────────────────────
 
 export async function updateProfile(data: {
+  username?: string;
   display_name?: string;
   bio?: string;
   location?: string;
