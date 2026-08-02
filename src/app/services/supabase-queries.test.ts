@@ -283,6 +283,30 @@ describe('getPrayerById', () => {
     expect(result!.editedAt).toBe('2024-01-02');
   });
 
+  it('shows the profile identity for owned anonymous legacy prayers', async () => {
+    setAlways({
+      id: 'p-owned',
+      body: 'Owned private detail',
+      category: 'Other',
+      location_city: 'London',
+      location_country: 'UK',
+      location_lat: 51.5,
+      location_lng: -0.1,
+      user_id: 'test-user',
+      is_anonymous: true,
+      audience: 'private',
+      prayer_count: 0,
+      created_at: '2024-01-01',
+      comments_enabled: true,
+      profiles: { username: 'qa_miriam', display_name: 'Miriam' },
+    });
+
+    const result = await m.getPrayerById('p-owned');
+
+    expect(result?.username).toBe('qa_miriam');
+    expect(result?.displayName).toBe('Miriam');
+  });
+
   it('returns null when not found', async () => {
     setAlways(null, new Error('not found'));
     expect(await m.getPrayerById('missing')).toBeNull();
@@ -1133,12 +1157,40 @@ describe('getMyPrayers', () => {
         comment_count: 4,
         created_at: '2024-01-01',
         comments_enabled: true,
+        profiles: { username: 'qa_miriam', display_name: 'Miriam' },
       },
     ]);
     const result = await m.getMyPrayers();
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('p1');
+    expect(result[0].username).toBe('qa_miriam');
     expect(result[0].commentCount).toBe(4);
+  });
+
+  it('shows profile identity for legacy anonymous rows in my prayers', async () => {
+    setAlways([
+      {
+        id: 'p-private',
+        body: 'Private note',
+        category: 'Other',
+        location_city: 'Tokyo',
+        location_country: 'Japan',
+        location_lat: 35.7,
+        location_lng: 139.7,
+        is_anonymous: true,
+        audience: 'private',
+        prayer_count: 0,
+        comment_count: 0,
+        created_at: '2024-01-01',
+        comments_enabled: true,
+        profiles: { username: 'qa_miriam', display_name: 'Miriam' },
+      },
+    ]);
+
+    const result = await m.getMyPrayers();
+
+    expect(result[0].username).toBe('qa_miriam');
+    expect(result[0].displayName).toBe('Miriam');
   });
 
   it('returns empty if no user', async () => {

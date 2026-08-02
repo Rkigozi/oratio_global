@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, LogOut, Edit, Info, Camera, Settings, Users, Bookmark, Bell } from 'lucide-react';
+import { Send, LogOut, Edit, Info, Camera, Settings, Users, Bookmark, Bell, Lock } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useNavigate } from 'react-router';
 import { validateProfile } from '../../../lib/validation';
@@ -85,6 +85,7 @@ export function Profile() {
     };
   }, [liveVersion, user?.id]);
   const [myPrayers, setMyPrayers] = useState<number>(0);
+  const [privatePrayers, setPrivatePrayers] = useState<number>(0);
   const [myPrayedFor, setMyPrayedFor] = useState<number>(0);
   const [savedCount, setSavedCount] = useState<number>(0);
 
@@ -100,6 +101,7 @@ export function Profile() {
       ]);
       if (!active) return;
       setMyPrayers(submitted.length);
+      setPrivatePrayers(submitted.filter((prayer) => prayer.audience === 'private').length);
       setMyPrayedFor(prayedFor.length);
       setSavedCount(savedIds.length);
     };
@@ -539,6 +541,26 @@ export function Profile() {
           </button>
 
           <button
+            onClick={() => void navigate('/profile/submitted?view=private')}
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
+            style={{
+              background:
+                'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
+              border: '1px solid rgba(var(--rgb-accent), 0.08)',
+            }}
+          >
+            <Lock size={18} className="text-accent flex-shrink-0" />
+            <div>
+              <p className="text-text text-sm font-medium">Private prayers</p>
+              <p className="text-text-dim text-xs mt-0.5">
+                {privatePrayers > 0
+                  ? `${privatePrayers} Only me prayer${privatePrayers !== 1 ? 's' : ''} for testimony notes.`
+                  : 'Only me prayers and testimony notes will live here.'}
+              </p>
+            </div>
+          </button>
+
+          <button
             onClick={() => void navigate('/profile/saved')}
             className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-6 text-left cursor-pointer active:scale-[0.99] transition-transform"
             style={{
@@ -574,7 +596,7 @@ export function Profile() {
                 <p className="text-text text-sm font-medium">
                   {myPrayers} prayer{myPrayers !== 1 ? 's' : ''}
                 </p>
-                <p className="text-text-dim text-xs mt-1">Tap to view all</p>
+                <p className="text-text-dim text-xs mt-1">Shared and Only me prayers in one place</p>
               </div>
             ) : (
               <div className="text-center py-8">

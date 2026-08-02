@@ -98,6 +98,10 @@ function mapPrayerRequest(
   };
 }
 
+function mapOwnedPrayerRequest(row: Record<string, unknown>): PrayerRequest {
+  return mapPrayerRequest({ ...row, is_anonymous: false });
+}
+
 function mapHotspotTotal(row: Record<string, unknown>): PrayerRequest {
   const location = normalizePrayerLocation(
     (row.location_city as string | null) || 'Unknown',
@@ -213,7 +217,12 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
     return null;
   }
 
-  return mapPrayerRequest(data as Record<string, unknown>);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const row = data as Record<string, unknown>;
+
+  return user?.id && row.user_id === user.id ? mapOwnedPrayerRequest(row) : mapPrayerRequest(row);
 }
 
 export async function createPrayerRequest(
@@ -1317,7 +1326,8 @@ export async function getMyPrayers(): Promise<PrayerRequest[]> {
       `
       id, user_id, body, category,
       location_city, location_country, location_lat, location_lng,
-      is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled
+      is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled,
+      profiles!inner(username, display_name, avatar_url)
     `
     )
     .eq('user_id', user.id)
@@ -1329,7 +1339,7 @@ export async function getMyPrayers(): Promise<PrayerRequest[]> {
     return [];
   }
 
-  return (data as Array<Record<string, unknown>>).map((row) => mapPrayerRequest(row));
+  return (data as Array<Record<string, unknown>>).map((row) => mapOwnedPrayerRequest(row));
 }
 
 export async function getMyPrayedForPrayers(): Promise<PrayerRequest[]> {
