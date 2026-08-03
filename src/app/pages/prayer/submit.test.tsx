@@ -101,7 +101,7 @@ describe('Submit', () => {
     expect(screen.getByText('Prayer visibility')).toBeInTheDocument();
     expect(screen.getByText('Public')).toBeInTheDocument();
     expect(screen.getByText('Prayer Circle')).toBeInTheDocument();
-    expect(screen.getByText('Only me')).toBeInTheDocument();
+    expect(screen.getByText('Private')).toBeInTheDocument();
     expect(screen.getByText('Comments are on')).toBeInTheDocument();
     expect(screen.queryByText(/posting as/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/posting anonymously/i)).not.toBeInTheDocument();
@@ -180,12 +180,12 @@ describe('Submit', () => {
     expect(screen.queryByText('Share prayer link')).not.toBeInTheDocument();
   });
 
-  it('submits private prayers to Only me', async () => {
+  it('submits private prayers', async () => {
     await renderSubmit();
 
-    fireEvent.click(screen.getByRole('button', { name: /Only me/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Private/i }));
     fireEvent.change(screen.getByPlaceholderText(/share what's on your heart/i), {
-      target: { value: 'A private prayer and testimony note' },
+      target: { value: 'A private prayer note' },
     });
 
     await act(async () => {

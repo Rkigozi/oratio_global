@@ -1,5 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, LogOut, Edit, Info, Camera, Settings, Users, Bookmark, Bell, Lock } from 'lucide-react';
+import {
+  Bell,
+  Bookmark,
+  Camera,
+  Edit,
+  Heart,
+  Info,
+  Lock,
+  LogOut,
+  Send,
+  Settings,
+  Users,
+} from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useNavigate } from 'react-router';
 import { validateProfile } from '../../../lib/validation';
@@ -84,7 +96,8 @@ export function Profile() {
       active = false;
     };
   }, [liveVersion, user?.id]);
-  const [myPrayers, setMyPrayers] = useState<number>(0);
+  const [publicPrayers, setPublicPrayers] = useState<number>(0);
+  const [circlePrayers, setCirclePrayers] = useState<number>(0);
   const [privatePrayers, setPrivatePrayers] = useState<number>(0);
   const [myPrayedFor, setMyPrayedFor] = useState<number>(0);
   const [savedCount, setSavedCount] = useState<number>(0);
@@ -100,7 +113,8 @@ export function Profile() {
         getMySavedIds(),
       ]);
       if (!active) return;
-      setMyPrayers(submitted.length);
+      setPublicPrayers(submitted.filter((prayer) => (prayer.audience || 'public') === 'public').length);
+      setCirclePrayers(submitted.filter((prayer) => prayer.audience === 'circle').length);
       setPrivatePrayers(submitted.filter((prayer) => prayer.audience === 'private').length);
       setMyPrayedFor(prayedFor.length);
       setSavedCount(savedIds.length);
@@ -470,146 +484,153 @@ export function Profile() {
             </div>
           </div>
 
-          {/* Stats row */}
-          <div
-            className="flex justify-center gap-4 mb-5 py-2.5 rounded-xl"
-            style={{
-              background: 'rgba(var(--rgb-surface), 0.4)',
-              border: '1px solid rgba(var(--rgb-accent), 0.06)',
-            }}
-          >
-            <button
-              onClick={() => void navigate('/profile/submitted')}
-              className="min-h-12 text-center cursor-pointer min-w-[72px] px-2 rounded-lg hover:bg-accent/4 transition-colors"
-            >
-              <p className="text-text-secondary text-sm font-medium">{myPrayers}</p>
-              <p className="text-text-dim text-[10px]">My prayers</p>
-            </button>
-            <button
-              onClick={() => void navigate('/profile/prayed')}
-              className="min-h-12 text-center cursor-pointer min-w-[72px] px-2 rounded-lg hover:bg-accent/4 transition-colors"
-            >
-              <p className="text-text-secondary text-sm font-medium">{myPrayedFor}</p>
-              <p className="text-text-dim text-[10px]">Prayed for</p>
-            </button>
-            <div className="w-px bg-accent/10" />
-            <button
-              onClick={() => void navigate('/profile/circle')}
-              className="min-h-12 text-center cursor-pointer min-w-[72px] px-2 rounded-lg hover:bg-accent/4 transition-colors"
-            >
-              <p className="text-text-secondary text-sm font-medium">{circleCount}</p>
-              <p className="text-text-dim text-[10px]">Prayer Circle</p>
-            </button>
-          </div>
-
-          <button
-            onClick={() => void navigate('/updates')}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-            style={{
-              background:
-                'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
-              border: '1px solid rgba(var(--rgb-accent), 0.08)',
-            }}
-          >
-            <Bell size={18} className="text-accent flex-shrink-0" />
-            <div>
-              <p className="text-text text-sm font-medium">Updates</p>
-              <p className="text-text-dim text-xs mt-0.5">
-                {unreadUpdates > 0
-                  ? `${unreadUpdates} unread update${unreadUpdates !== 1 ? 's' : ''} for you.`
-                  : 'Comments, invites, and report reviews in one place.'}
+          <div className="space-y-5">
+            <section>
+              <p className="text-text-dim text-[10px] uppercase tracking-[0.16em] mb-2 px-1">
+                Prayer Library
               </p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => void navigate('/profile/circle')}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-            style={{
-              background:
-                'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
-              border: '1px solid rgba(var(--rgb-accent), 0.08)',
-            }}
-          >
-            <Users size={18} className="text-accent flex-shrink-0" />
-            <div>
-              <p className="text-text text-sm font-medium">Prayer Circle</p>
-              <p className="text-text-dim text-xs mt-0.5">
-                A quieter place for people you keep praying with.
-              </p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => void navigate('/profile/submitted?view=private')}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-            style={{
-              background:
-                'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
-              border: '1px solid rgba(var(--rgb-accent), 0.08)',
-            }}
-          >
-            <Lock size={18} className="text-accent flex-shrink-0" />
-            <div>
-              <p className="text-text text-sm font-medium">Private prayers</p>
-              <p className="text-text-dim text-xs mt-0.5">
-                {privatePrayers > 0
-                  ? `${privatePrayers} Only me prayer${privatePrayers !== 1 ? 's' : ''} for testimony notes.`
-                  : 'Only me prayers and testimony notes will live here.'}
-              </p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => void navigate('/profile/saved')}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 mb-6 text-left cursor-pointer active:scale-[0.99] transition-transform"
-            style={{
-              background:
-                'linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))',
-              border: '1px solid rgba(var(--rgb-accent), 0.06)',
-            }}
-          >
-            <Bookmark size={18} className="text-text-dim flex-shrink-0" />
-            <div>
-              <p className="text-text text-sm font-medium">Saved prayers</p>
-              <p className="text-text-dim text-xs mt-0.5">
-                {savedCount > 0
-                  ? `${savedCount} prayer${savedCount !== 1 ? 's' : ''} you can return to.`
-                  : 'Save prayers from the feed to find them here.'}
-              </p>
-            </div>
-          </button>
-
-          {/* My prayers summary card */}
-          <div className="space-y-2">
-            {myPrayers > 0 ? (
-              <div
-                onClick={() => void navigate('/profile/submitted')}
-                className="rounded-xl px-4 py-4 cursor-pointer active:scale-[0.99] transition-transform text-center"
-                style={{
-                  background:
-                    'linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))',
-                  border: '1px solid rgba(var(--rgb-accent), 0.05)',
-                }}
-              >
-                <Send size={20} className="text-text-dim mx-auto mb-2" />
-                <p className="text-text text-sm font-medium">
-                  {myPrayers} prayer{myPrayers !== 1 ? 's' : ''}
-                </p>
-                <p className="text-text-dim text-xs mt-1">Shared and Only me prayers in one place</p>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Send size={20} className="text-text-dim mx-auto mb-2" />
-                <p className="text-text-muted text-sm mb-1">No prayers yet</p>
+              <div className="space-y-2">
                 <button
-                  onClick={() => void navigate('/submit')}
-                  className="min-h-11 px-5 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer mt-2"
+                  onClick={() => void navigate('/profile/submitted?view=public')}
+                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
+                  style={{
+                    background:
+                      'linear-gradient(160deg, rgba(var(--rgb-surface), 0.55), rgba(var(--rgb-surface), 0.34))',
+                    border: '1px solid rgba(var(--rgb-accent), 0.06)',
+                  }}
                 >
-                  Submit Prayer
+                  <Send size={18} className="text-text-dim flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-text text-sm font-medium">Public prayers</p>
+                    <p className="text-text-dim text-xs mt-0.5">
+                      {publicPrayers} shared with the wider community.
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => void navigate('/profile/submitted?view=circle')}
+                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
+                  style={{
+                    background:
+                      'linear-gradient(160deg, rgba(var(--rgb-surface), 0.55), rgba(var(--rgb-surface), 0.34))',
+                    border: '1px solid rgba(var(--rgb-accent), 0.06)',
+                  }}
+                >
+                  <Users size={18} className="text-text-dim flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-text text-sm font-medium">Prayer Circle prayers</p>
+                    <p className="text-text-dim text-xs mt-0.5">
+                      {circlePrayers} shared with your Prayer Circle.
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => void navigate('/profile/submitted?view=private')}
+                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
+                  style={{
+                    background:
+                      'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
+                    border: '1px solid rgba(var(--rgb-accent), 0.08)',
+                  }}
+                >
+                  <Lock size={18} className="text-accent flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-text text-sm font-medium">Private prayers</p>
+                    <p className="text-text-dim text-xs mt-0.5">
+                      {privatePrayers} private prayer{privatePrayers !== 1 ? 's' : ''}.
+                    </p>
+                  </div>
                 </button>
               </div>
-            )}
+            </section>
+
+            <section>
+              <p className="text-text-dim text-[10px] uppercase tracking-[0.16em] mb-2 px-1">
+                Activity
+              </p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => void navigate('/updates')}
+                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
+                  style={{
+                    background:
+                      'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
+                    border: '1px solid rgba(var(--rgb-accent), 0.08)',
+                  }}
+                >
+                  <Bell size={18} className="text-accent flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-text text-sm font-medium">Updates</p>
+                    <p className="text-text-dim text-xs mt-0.5">
+                      {unreadUpdates > 0
+                        ? `${unreadUpdates} unread update${unreadUpdates !== 1 ? 's' : ''} for you.`
+                        : 'Comments, invites, and report reviews.'}
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => void navigate('/profile/prayed')}
+                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
+                  style={{
+                    background:
+                      'linear-gradient(160deg, rgba(var(--rgb-surface), 0.55), rgba(var(--rgb-surface), 0.34))',
+                    border: '1px solid rgba(var(--rgb-accent), 0.06)',
+                  }}
+                >
+                  <Heart size={18} className="text-text-dim flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-text text-sm font-medium">Prayed for</p>
+                    <p className="text-text-dim text-xs mt-0.5">
+                      {myPrayedFor} prayer{myPrayedFor !== 1 ? 's' : ''} you marked.
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => void navigate('/profile/saved')}
+                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
+                  style={{
+                    background:
+                      'linear-gradient(160deg, rgba(var(--rgb-surface), 0.55), rgba(var(--rgb-surface), 0.34))',
+                    border: '1px solid rgba(var(--rgb-accent), 0.06)',
+                  }}
+                >
+                  <Bookmark size={18} className="text-text-dim flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-text text-sm font-medium">Saved prayers</p>
+                    <p className="text-text-dim text-xs mt-0.5">
+                      {savedCount} prayer{savedCount !== 1 ? 's' : ''} saved for later.
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </section>
+
+            <section>
+              <p className="text-text-dim text-[10px] uppercase tracking-[0.16em] mb-2 px-1">
+                People
+              </p>
+              <button
+                onClick={() => void navigate('/profile/circle')}
+                className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
+                style={{
+                  background:
+                    'linear-gradient(160deg, rgba(var(--rgb-surface), 0.55), rgba(var(--rgb-surface), 0.34))',
+                  border: '1px solid rgba(var(--rgb-accent), 0.06)',
+                }}
+              >
+                <Users size={18} className="text-text-dim flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-text text-sm font-medium">Manage Prayer Circle</p>
+                  <p className="text-text-dim text-xs mt-0.5">
+                    {circleCount} accepted person{circleCount !== 1 ? 's' : ''}.
+                  </p>
+                </div>
+              </button>
+            </section>
           </div>
         </div>
       </div>

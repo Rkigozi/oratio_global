@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ComponentProps, ReactNode } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import type { PrayerRequest } from '../../services/prayer-data';
 
@@ -58,7 +58,7 @@ const privatePrayer: PrayerRequest = {
   id: 'private-1',
   city: 'London',
   country: 'United Kingdom',
-  text: 'Private testimony note for later',
+  text: 'Private prayer note for later',
   username: 'qa_miriam',
   displayName: 'Miriam',
   audience: 'private',
@@ -66,6 +66,21 @@ const privatePrayer: PrayerRequest = {
   lat: 51.5,
   lng: -0.1,
   createdAt: '2024-01-02T00:00:00.000Z',
+  commentsEnabled: true,
+};
+
+const circlePrayer: PrayerRequest = {
+  id: 'circle-1',
+  city: 'Lagos',
+  country: 'Nigeria',
+  text: 'Prayer Circle encouragement for the week',
+  username: 'qa_miriam',
+  displayName: 'Miriam',
+  audience: 'circle',
+  prayerCount: 1,
+  lat: 6.5,
+  lng: 3.3,
+  createdAt: '2024-01-03T00:00:00.000Z',
   commentsEnabled: true,
 };
 
@@ -83,36 +98,36 @@ function renderSubmitted(initialEntry = '/profile/submitted') {
 describe('ProfileSubmitted', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getMyPrayers).mockResolvedValue([privatePrayer, sharedPrayer]);
+    vi.mocked(getMyPrayers).mockResolvedValue([privatePrayer, circlePrayer, sharedPrayer]);
   });
 
-  it('shows private prayers in the Only me section without anonymous attribution', async () => {
+  it('shows private prayers as a dedicated list without anonymous attribution', async () => {
     renderSubmitted('/profile/submitted?view=private');
 
     expect(await screen.findByText('Private prayers')).toBeInTheDocument();
-    expect(screen.getByText('Private testimony note for later')).toBeInTheDocument();
+    expect(screen.getByText('Private prayer note for later')).toBeInTheDocument();
     expect(screen.queryByText('Please pray for shared courage')).not.toBeInTheDocument();
+    expect(screen.queryByText('Prayer Circle encouragement for the week')).not.toBeInTheDocument();
     expect(screen.getByText('qa_miriam')).toBeInTheDocument();
     expect(screen.queryByText('Anonymous')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Shared/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Only me/i })).not.toBeInTheDocument();
   });
 
-  it('lets users switch between Shared and Only me prayers', async () => {
-    renderSubmitted('/profile/submitted?view=private');
-
-    expect(await screen.findByText('Private testimony note for later')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /Shared/i }));
-
-    expect(await screen.findByText('Please pray for shared courage')).toBeInTheDocument();
-    expect(screen.queryByText('Private testimony note for later')).not.toBeInTheDocument();
-  });
-
-  it('opens Only me automatically when the user only has private prayers', async () => {
-    vi.mocked(getMyPrayers).mockResolvedValue([privatePrayer]);
-
+  it('shows public prayers as a dedicated list by default', async () => {
     renderSubmitted();
 
-    expect(await screen.findByText('Private prayers')).toBeInTheDocument();
-    expect(screen.getByText('Private testimony note for later')).toBeInTheDocument();
+    expect(await screen.findByText('Please pray for shared courage')).toBeInTheDocument();
+    expect(screen.queryByText('Private prayer note for later')).not.toBeInTheDocument();
+    expect(screen.queryByText('Prayer Circle encouragement for the week')).not.toBeInTheDocument();
+  });
+
+  it('shows Prayer Circle prayers as a dedicated list', async () => {
+    renderSubmitted('/profile/submitted?view=circle');
+
+    expect(await screen.findByText('Prayer Circle prayers')).toBeInTheDocument();
+    expect(screen.getByText('Prayer Circle encouragement for the week')).toBeInTheDocument();
+    expect(screen.queryByText('Private prayer note for later')).not.toBeInTheDocument();
+    expect(screen.queryByText('Please pray for shared courage')).not.toBeInTheDocument();
   });
 });

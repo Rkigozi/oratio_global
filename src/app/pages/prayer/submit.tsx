@@ -335,10 +335,10 @@ export function Submit() {
                     >
                       <span className="mb-2 flex items-center gap-1.5 text-text text-sm">
                         <Lock size={14} className="text-accent" />
-                        Only me
+                        Private
                       </span>
                       <span className="block text-text-dim text-[11px] leading-relaxed">
-                        Private to you. Useful for personal prayers and testimonies.
+                        Private to you. Useful for personal prayers, reflections, and updates.
                       </span>
                     </button>
                   </div>
@@ -355,8 +355,8 @@ export function Submit() {
                   )}
                   {audience === 'private' && (
                     <p className="text-text-dim text-[11px] leading-relaxed mt-2">
-                      Only you can see this prayer. Open it later to add testimony notes or jot down
-                      what you are sensing.
+                      Only you can see this prayer. Open it later to add notes or keep track of
+                      updates.
                     </p>
                   )}
                 </div>
@@ -579,7 +579,7 @@ export function Submit() {
               </p>
               <p className="text-text-muted text-sm mb-8">
                 {audience === 'private'
-                  ? 'Only you can see it. Open it later for testimony notes or private thoughts.'
+                  ? 'Only you can see it. Open it later for notes or private thoughts.'
                   : audience === 'circle'
                     ? 'People in your Prayer Circle can see it and pray with you.'
                     : 'People around the world will see it and pray.'}

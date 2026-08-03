@@ -210,9 +210,9 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
       ? prayer.authorId === user.id
       : !!prayer.username && prayer.username === profile?.username);
   const isPrivatePrayer = prayer.audience === 'private';
-  const sectionLabel = isPrivatePrayer ? 'Testimony notes' : 'Comments';
+  const sectionLabel = isPrivatePrayer ? 'Notes' : 'Comments';
   const emptyText = isPrivatePrayer
-    ? 'No notes yet. Add a testimony, reflection, or thought for later.'
+    ? 'No notes yet. Add a thought, reflection, or update for later.'
     : 'No comments yet. Be the first to encourage them.';
   const signedOutPrompt = isPrivatePrayer
     ? 'to add a private note.'
@@ -220,7 +220,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
   const placeholder = replyTo
     ? 'Write a reply...'
     : isPrivatePrayer
-      ? 'Add a testimony or thought...'
+      ? 'Write a private note...'
       : 'Write an encouragement...';
   const topLevel = comments.filter((c) => !c.parent_id);
   const replies = (parentId: string) => comments.filter((c) => c.parent_id === parentId);

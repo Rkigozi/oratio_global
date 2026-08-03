@@ -74,7 +74,7 @@ export function PrayerRow({
             {prayer.audience === 'private' && (
               <span className="inline-flex items-center gap-1 rounded-full bg-accent/6 px-1.5 py-0.5 text-[9px] text-text-dim">
                 <Lock size={9} />
-                Only me
+                Private
               </span>
             )}
             {prayer.createdAt && (

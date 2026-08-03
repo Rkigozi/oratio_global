@@ -1,32 +1,66 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Lock, Send, MapPin } from "lucide-react";
+import { Lock, Send, Users } from "lucide-react";
 import { Drawer } from "vaul";
 import { useNavigate, useSearchParams } from "react-router";
-import { timeAgo, getAttributionText } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { PrayerRow } from "../../components/feed/prayer-row";
 import { getMyPrayers, deletePrayerRequest } from '../../services/supabase-queries';
 import { LoadingSpinner } from "../../components/loading-spinner";
 
+type PrayerLibraryView = 'public' | 'circle' | 'private';
+
+function getPrayerLibraryView(searchParams: URLSearchParams): PrayerLibraryView {
+  const view = searchParams.get('view');
+  if (view === 'circle' || view === 'private') return view;
+  return 'public';
+}
+
+function getViewCopy(view: PrayerLibraryView) {
+  if (view === 'private') {
+    return {
+      title: 'Private prayers',
+      description: 'Only you can see these. Open one to add private notes whenever you need.',
+      emptyTitle: 'No private prayers yet',
+      emptyDescription: 'Use Private when a prayer is just for you.',
+      Icon: Lock,
+    };
+  }
+
+  if (view === 'circle') {
+    return {
+      title: 'Prayer Circle prayers',
+      description: 'Prayers you shared with accepted people in your Prayer Circle.',
+      emptyTitle: 'No Prayer Circle prayers yet',
+      emptyDescription: 'Prayer Circle prayers will appear here after you share with your circle.',
+      Icon: Users,
+    };
+  }
+
+  return {
+    title: 'Public prayers',
+    description: 'Prayers you shared with the wider Oratio community.',
+    emptyTitle: 'No public prayers yet',
+    emptyDescription: 'Public prayers will appear here after you share with everyone.',
+    Icon: Send,
+  };
+}
+
 export function ProfileSubmitted() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  
-  // Prayer detail / action drawer
-  const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
+  const [searchParams] = useSearchParams();
   // Delete confirmation
   const [prayerToDelete, setPrayerToDelete] = useState<PrayerRequest | null>(null);
   
   const [mySubmitted, setMySubmitted] = useState<PrayerRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'shared' | 'private'>(
-    searchParams.get('view') === 'private' ? 'private' : 'shared'
-  );
-
-  const sharedPrayers = mySubmitted.filter((prayer) => prayer.audience !== 'private');
-  const privatePrayers = mySubmitted.filter((prayer) => prayer.audience === 'private');
-  const visiblePrayers = activeView === 'private' ? privatePrayers : sharedPrayers;
+  const activeView = getPrayerLibraryView(searchParams);
+  const viewCopy = getViewCopy(activeView);
+  const Icon = viewCopy.Icon;
+  const visiblePrayers = mySubmitted.filter((prayer) => {
+    const audience = prayer.audience || 'public';
+    return audience === activeView;
+  });
 
   useEffect(() => {
     let active = true;
@@ -47,24 +81,6 @@ export function ProfileSubmitted() {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    const requestedView = searchParams.get('view') === 'private' ? 'private' : 'shared';
-    setActiveView(requestedView);
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (loading || activeView !== 'shared') return;
-    if (sharedPrayers.length === 0 && privatePrayers.length > 0) {
-      setActiveView('private');
-      setSearchParams({ view: 'private' }, { replace: true });
-    }
-  }, [activeView, loading, privatePrayers.length, setSearchParams, sharedPrayers.length]);
-
-  const selectView = (view: 'shared' | 'private') => {
-    setActiveView(view);
-    setSearchParams(view === 'private' ? { view: 'private' } : {}, { replace: true });
-  };
 
   const handleOpenPrayer = (prayer: PrayerRequest) => {
     void navigate(`/prayer/${prayer.id}`);
@@ -88,9 +104,6 @@ export function ProfileSubmitted() {
   const handleDeleteClick = (prayerId: string) => {
     const prayer = mySubmitted.find(p => p.id === prayerId);
     if (prayer) {
-      // Close any open prayer detail drawer
-      setSelectedPrayer(null);
-      // Open delete confirmation drawer
       setPrayerToDelete(prayer);
     }
   };
@@ -104,60 +117,26 @@ export function ProfileSubmitted() {
       <div className="flex-1 px-4 pb-28 overflow-y-auto pt-24">
         {loading ? (
           <LoadingSpinner text="Loading your prayers..." />
-        ) : mySubmitted.length > 0 ? (
+        ) : (
           <div className="space-y-4">
             <div
-              className="grid grid-cols-2 gap-1 rounded-xl p-1"
+              className="rounded-xl px-4 py-3.5"
               style={{
-                background: "rgba(var(--rgb-surface), 0.45)",
-                border: "1px solid rgba(var(--rgb-accent), 0.07)",
+                background:
+                  "linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))",
+                border: "1px solid rgba(var(--rgb-accent), 0.08)",
               }}
             >
-              {[
-                { key: 'shared' as const, label: 'Shared', count: sharedPrayers.length },
-                { key: 'private' as const, label: 'Only me', count: privatePrayers.length },
-              ].map((item) => {
-                const selected = activeView === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => selectView(item.key)}
-                    className="min-h-10 rounded-lg px-3 text-xs transition-all cursor-pointer"
-                    style={{
-                      background: selected ? "rgba(var(--rgb-accent), 0.12)" : "transparent",
-                      color: selected
-                        ? "rgb(var(--rgb-text-secondary))"
-                        : "rgb(var(--rgb-text-dim))",
-                    }}
-                  >
-                    {item.label}
-                    <span className="ml-1 text-[10px] opacity-70">{item.count}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {activeView === 'private' && (
-              <div
-                className="rounded-xl px-4 py-3"
-                style={{
-                  background:
-                    "linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))",
-                  border: "1px solid rgba(var(--rgb-accent), 0.08)",
-                }}
-              >
-                <div className="flex gap-3">
-                  <Lock size={16} className="text-accent flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-text text-sm font-medium">Private prayers</p>
-                    <p className="text-text-dim text-xs mt-0.5 leading-relaxed">
-                      Only you can see these. Open one to add testimony notes or private thoughts.
-                    </p>
-                  </div>
+              <div className="flex gap-3">
+                <Icon size={16} className="text-accent flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-text text-sm font-medium">{viewCopy.title}</p>
+                  <p className="text-text-dim text-xs mt-0.5 leading-relaxed">
+                    {viewCopy.description}
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
 
             {visiblePrayers.length > 0 ? (
               <div className="space-y-2.5">
@@ -184,23 +163,9 @@ export function ProfileSubmitted() {
                   border: "1px solid rgba(var(--rgb-accent), 0.05)",
                 }}
               >
-                {activeView === 'private' ? (
-                  <>
-                    <Lock size={20} className="text-text-dim mx-auto mb-2" />
-                    <p className="text-text-muted text-sm mb-1">No private prayers yet</p>
-                    <p className="text-text-dim text-xs mb-3">
-                      Use Only me when a prayer is just for you.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <Send size={20} className="text-text-dim mx-auto mb-2" />
-                    <p className="text-text-muted text-sm mb-1">No shared prayers yet</p>
-                    <p className="text-text-dim text-xs mb-3">
-                      Public and Prayer Circle prayers will appear here.
-                    </p>
-                  </>
-                )}
+                <Icon size={20} className="text-text-dim mx-auto mb-2" />
+                <p className="text-text-muted text-sm mb-1">{viewCopy.emptyTitle}</p>
+                <p className="text-text-dim text-xs mb-3">{viewCopy.emptyDescription}</p>
                 <button
                   onClick={() => void navigate('/submit')}
                   className="px-4 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer hover:bg-accent/12 transition-all"
@@ -210,105 +175,8 @@ export function ProfileSubmitted() {
               </motion.div>
             )}
           </div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-8 rounded-xl mt-8"
-            style={{
-              background: "rgba(var(--rgb-surface), 0.4)",
-              border: "1px solid rgba(var(--rgb-accent), 0.05)",
-            }}
-          >
-            <Send size={20} className="text-text-dim mx-auto mb-2" />
-            <p className="text-text-muted text-sm mb-1">No prayers yet</p>
-            <p className="text-text-dim text-xs">
-              Submit your first prayer request
-            </p>
-            <button
-              onClick={() => void navigate('/submit')}
-              className="mt-3 px-4 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer hover:bg-accent/12 transition-all"
-            >
-              Submit Prayer
-            </button>
-          </motion.div>
         )}
       </div>
-
-      {/* Prayer Action Drawer */}
-      <Drawer.Root
-        open={!!selectedPrayer}
-        onOpenChange={(o) => {
-          if (!o) {
-            setSelectedPrayer(null);
-          }
-        }}
-      >
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[600]" />
-          <Drawer.Content
-            className="flex flex-col rounded-t-[1.5rem] fixed bottom-0 left-0 right-0 z-[600] max-h-[85vh] focus:outline-none"
-            style={{
-              background: "linear-gradient(180deg, rgb(var(--rgb-surface)), rgb(var(--rgb-surface)))",
-              borderTop: "1px solid rgba(var(--rgb-accent), 0.1)",
-            }}
-          >
-            <Drawer.Title className="sr-only">Prayer Options</Drawer.Title>
-            <Drawer.Description className="sr-only">
-              Manage your prayer request
-            </Drawer.Description>
-
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-accent/20" />
-            </div>
-
-            <div className="max-w-md w-full mx-auto p-6 pt-2 flex-1 overflow-auto">
-              {selectedPrayer && (
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key="options"
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.97 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {/* Prayer preview */}
-                    <div className="flex items-center gap-2 mb-1 justify-center">
-                      <MapPin size={12} className="text-text-dim" />
-                      <p className="text-text-muted text-xs">
-                        {(selectedPrayer.city || "Unknown")}, {selectedPrayer.country}
-                      </p>
-                    </div>
-                    {selectedPrayer.createdAt && (
-                      <p className="text-text-muted text-[11px] mb-5 text-center">
-                        {selectedPrayer.editedAt ? "Edited · " : ""}
-                        {timeAgo(selectedPrayer.createdAt)}
-                      </p>
-                    )}
-
-                    <p
-                      className="text-text-secondary text-center mb-3 max-w-xs mx-auto"
-                      style={{ fontSize: "0.95rem", lineHeight: 1.7 }}
-                    >
-                      {selectedPrayer.text}
-                    </p>
-
-                      <p className="text-text-dim text-xs text-center mb-2">
-                        {getAttributionText(selectedPrayer)}
-                      </p>
-
-                    <div className="flex items-center gap-1.5 justify-center text-text-dim text-xs mb-8">
-                      <span className="text-xs opacity-60">🙏</span>
-                      <span>{(selectedPrayer.prayerCount ?? 0)} {(selectedPrayer.prayerCount ?? 0) === 1 ? "person" : "people"} prayed</span>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              )}
-            </div>
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
 
       {/* Delete Confirmation Drawer */}
       <Drawer.Root
@@ -352,7 +220,7 @@ export function ProfileSubmitted() {
                       <p className="text-text-secondary text-lg mb-2">Delete prayer?</p>
                       <p className="text-text-muted text-sm">
                         {prayerToDelete.audience === 'private'
-                          ? 'This private prayer and any testimony notes will be removed.'
+                          ? 'This private prayer and any notes will be removed.'
                           : prayerToDelete.audience === 'circle'
                             ? 'This prayer will be removed from your submitted prayers and Prayer Circle.'
                             : 'This prayer will be removed from your submitted prayers and the global feed.'}

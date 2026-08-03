@@ -583,7 +583,7 @@ export function PrayerDetail() {
               {prayer.audience === 'private' && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-accent/10 bg-accent/6 px-2 py-0.5 text-[10px] text-text-dim">
                   <Lock size={10} />
-                  Only me
+                  Private
                 </span>
               )}
               {prayer.editedAt && (

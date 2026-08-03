@@ -97,7 +97,7 @@ describe('FeedCard', () => {
         />
       </MemoryRouter>
     );
-    expect(screen.getByText('Only me')).toBeTruthy();
+    expect(screen.getByText('Private')).toBeTruthy();
   });
 
   it('calls onPrayed when pray button clicked', () => {
