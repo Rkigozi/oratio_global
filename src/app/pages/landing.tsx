@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import {
   Globe,
   Heart,
@@ -210,6 +210,14 @@ export function Landing() {
           {BETA.isBeta && (
             <p className="text-text-dim text-[11px] font-light italic">{BETA.notice}</p>
           )}
+          <div className="flex items-center justify-center gap-4 text-[10px] text-text-faint">
+            <Link to="/privacy" className="hover:text-text-muted transition-colors">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" className="hover:text-text-muted transition-colors">
+              Terms of Service
+            </Link>
+          </div>
           <p className="text-text-faint text-[10px]">Oratio · A global Christian prayer platform</p>
         </div>
       </div>

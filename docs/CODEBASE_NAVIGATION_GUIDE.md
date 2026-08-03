@@ -216,14 +216,18 @@ Run these before a release or before asking for review:
 npm run type-check
 npm run lint
 npm test
+npm run test:coverage
 npm run build
+npm audit --omit=dev --audit-level=moderate
 ```
+
+For the full release-control checklist, use [V1_RELEASE_READINESS.md](./V1_RELEASE_READINESS.md).
 
 Optional deeper checks:
 
 ```bash
 npm run test:e2e
-npm run test:coverage
+npm run test:e2e:remote
 ```
 
 The app is also checked in GitHub Actions on `main` and pull requests.
