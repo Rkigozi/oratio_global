@@ -151,32 +151,30 @@ export function ProfileSettings() {
             </div>
           </div>
 
-          {/* Notifications */}
+          {/* Updates */}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <Bell size={14} className="text-text-dim" />
-              <p className="text-text-muted text-xs uppercase tracking-[0.15em]">Notifications</p>
+              <p className="text-text-muted text-xs uppercase tracking-[0.15em]">Updates</p>
             </div>
             <div className="space-y-2">
               <ToggleRow
                 icon={<Bell size={13} />}
-                label="Notify when someone prays for my prayer"
-                description="Coming soon"
-                enabled={false}
+                label="When someone prays for my prayer"
+                description="Shows in Updates"
+                enabled={prefs?.notify_on_prayed ?? true}
                 onChange={(v) => update('notify_on_prayed', v)}
-                disabled
               />
               <ToggleRow
                 icon={<MessageCircle size={13} />}
-                label="Notify when someone comments on my prayer"
-                description="Coming soon"
-                enabled={false}
+                label="When someone comments or replies"
+                description="Shows in Updates"
+                enabled={prefs?.notify_on_comment ?? true}
                 onChange={(v) => update('notify_on_comment', v)}
-                disabled
               />
             </div>
             <p className="text-text-dim text-[10px] mt-2">
-              Push notification controls will be enabled when notifications are live.
+              These control your in-app Updates. Phone alerts can come later.
             </p>
           </div>
 

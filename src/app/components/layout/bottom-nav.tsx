@@ -28,19 +28,14 @@ export function BottomNav() {
               onPointerEnter={() => preloadRoutePath(item.path)}
               onTouchStart={() => preloadRoutePath(item.path)}
               onClick={() => void navigate(item.path)}
-              className={`bottom-nav-item relative flex flex-col items-center justify-center cursor-pointer ${isActive ? 'bottom-nav-item-active' : ''}`}
+              className={`bottom-nav-item relative flex items-center justify-center cursor-pointer ${isActive ? 'bottom-nav-item-active' : ''}`}
               aria-current={isActive ? 'page' : undefined}
             >
               <Icon
-                size={21}
+                size={23}
                 className={`bottom-nav-icon ${isActive ? 'text-accent' : 'text-text-muted'}`}
                 strokeWidth={isActive ? 2.4 : 1.9}
               />
-              <span
-                className={`bottom-nav-label text-[10px] leading-none mt-0.5 ${isActive ? 'text-accent' : 'text-text-muted'}`}
-              >
-                {item.label}
-              </span>
             </button>
           );
         })}

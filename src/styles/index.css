@@ -53,13 +53,74 @@
   }
 }
 
+/* ── Quiet premium surfaces ─────────────────────────────────────────── */
+.oratio-surface {
+  background: rgba(var(--rgb-surface), 0.64);
+  border: 1px solid rgba(var(--rgb-accent), 0.07);
+}
+
+[data-theme='light'] .oratio-surface {
+  background: rgba(var(--rgb-surface), 0.82);
+  border-color: rgba(var(--rgb-text-faint), 0.28);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.045);
+}
+
+.oratio-quiet-row {
+  background: rgba(var(--rgb-surface), 0.44);
+  border: 1px solid rgba(var(--rgb-accent), 0.06);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.oratio-quiet-row:hover {
+  background: rgba(var(--rgb-accent), 0.045);
+  border-color: rgba(var(--rgb-accent), 0.12);
+}
+
+.oratio-quiet-row:active {
+  transform: scale(0.99);
+}
+
+.oratio-section-label {
+  color: rgb(var(--rgb-text-dim));
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.oratio-pill {
+  background: rgba(var(--rgb-accent), 0.06);
+  border: 1px solid rgba(var(--rgb-accent), 0.1);
+  color: rgb(var(--rgb-text-dim));
+}
+
+.oratio-pill-active {
+  background: rgba(var(--rgb-accent), 0.14);
+  border-color: rgba(var(--rgb-accent), 0.24);
+  color: rgb(var(--rgb-accent));
+}
+
+.oratio-primary-pill {
+  background: linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)));
+  color: #ffffff;
+  box-shadow: 0 10px 28px rgba(var(--rgb-accent), 0.24);
+}
+
+.oratio-primary-pill:disabled {
+  background: rgba(var(--rgb-accent), 0.15);
+  color: rgb(var(--rgb-text-muted));
+  box-shadow: none;
+}
+
 /* ── Bottom nav safe area (PWA standalone mode) ───────────────────── */
 .bottom-nav-safe {
   /* Keep the tab bar in the range of familiar social apps: substantial enough
      for the home indicator, but much slimmer than the full iOS safe area. */
   --bottom-nav-bg: rgba(var(--rgb-bg), 0.96);
   --bottom-nav-safe-bottom: clamp(6px, env(safe-area-inset-bottom, 0px), 12px);
-  --bottom-nav-content-shift: 3px;
+  --bottom-nav-content-shift: 2px;
   background: var(--bottom-nav-bg);
   border-top: 1px solid rgba(var(--rgb-accent), 0.08);
   backdrop-filter: blur(14px);
@@ -97,8 +158,7 @@
   opacity: 1;
 }
 
-.bottom-nav-icon,
-.bottom-nav-label {
+.bottom-nav-icon {
   transition:
     color 150ms ease,
     opacity 150ms ease,
@@ -106,17 +166,13 @@
 }
 
 .bottom-nav-item-active .bottom-nav-icon {
-  transform: translateY(0);
-}
-
-.bottom-nav-item-active .bottom-nav-label {
-  font-weight: 600;
+  transform: scale(1.08);
 }
 
 @media (display-mode: standalone) {
   .bottom-nav-safe {
     --bottom-nav-safe-bottom: clamp(2px, env(safe-area-inset-bottom, 0px), 4px);
-    --bottom-nav-content-shift: 3px;
+    --bottom-nav-content-shift: 1px;
   }
 
   .bottom-nav-inner {
@@ -129,13 +185,8 @@
   }
 
   .bottom-nav-icon {
-    width: 19px;
-    height: 19px;
-  }
-
-  .bottom-nav-label {
-    font-size: 9px;
-    margin-top: 1px;
+    width: 22px;
+    height: 22px;
   }
 }
 

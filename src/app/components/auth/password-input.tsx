@@ -33,7 +33,7 @@ export function PasswordInput({
         className="w-full rounded-xl px-14 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border transition-colors text-center"
         style={{
           background: 'rgba(var(--rgb-surface), 0.6)',
-          borderColor: hasError ? 'rgb(var(--rgb-danger))' : 'rgba(var(--rgb-accent), 0.12)',
+          borderColor: hasError ? 'rgb(var(--rgb-danger))' : 'rgba(var(--rgb-text-faint), 0.22)',
         }}
       />
       <button

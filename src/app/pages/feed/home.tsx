@@ -284,12 +284,9 @@ export function Home() {
             className="absolute top-20 left-4 right-4 z-[500] pointer-events-none"
           >
             <div
-              className="mx-auto max-w-sm rounded-full px-3 py-2 flex items-center gap-2 pointer-events-auto"
+              className="oratio-surface mx-auto max-w-sm rounded-full px-3 py-2 flex items-center gap-2 pointer-events-auto"
               style={{
-                background: 'rgba(var(--rgb-bg), 0.9)',
-                border: '1px solid rgba(var(--rgb-accent), 0.14)',
                 backdropFilter: 'blur(12px)',
-                boxShadow: '0 8px 28px rgba(0,0,0,0.12)',
               }}
             >
               <span
@@ -317,7 +314,7 @@ export function Home() {
                       `/feed?city=${encodeURIComponent(nearbyArea.city)}&country=${encodeURIComponent(nearbyArea.country)}`
                     );
                   }}
-                  className="px-3 py-1.5 rounded-full text-[10px] text-accent border border-accent/20 cursor-pointer flex-shrink-0"
+                  className="oratio-pill-active px-3 py-1.5 rounded-full text-[10px] cursor-pointer flex-shrink-0"
                   aria-label={`View prayers near ${nearbyArea.city}`}
                 >
                   View
@@ -473,9 +470,8 @@ export function Home() {
           <Drawer.Content
             className="flex flex-col rounded-t-[1.5rem] fixed bottom-0 left-0 right-0 z-[600] max-h-[75vh] focus:outline-none"
             style={{
-              background:
-                'linear-gradient(180deg, rgb(var(--rgb-surface)), rgb(var(--rgb-surface)))',
-              borderTop: '1px solid rgba(var(--rgb-accent), 0.1)',
+              background: 'rgb(var(--rgb-surface))',
+              borderTop: '1px solid rgba(var(--rgb-text-faint), 0.18)',
             }}
           >
             <Drawer.Title className="sr-only">Hotspot Details</Drawer.Title>
@@ -495,7 +491,7 @@ export function Home() {
                   className="w-full flex flex-col items-center"
                 >
                   {/* Location */}
-                  <p className="text-text-muted text-xs uppercase tracking-[0.2em] mb-4">
+                  <p className="oratio-section-label mb-4">
                     {selectedPrayerDetails.city || 'Unknown'},{' '}
                     {selectedPrayerDetails.country || 'Unknown'}
                   </p>
@@ -547,13 +543,7 @@ export function Home() {
                           : '/feed'
                       );
                     }}
-                    className="flex items-center gap-2.5 px-7 py-3 rounded-full text-sm cursor-pointer"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
-                      color: 'rgb(var(--rgb-text))',
-                      boxShadow: '0 4px 24px rgba(var(--rgb-accent), 0.25)',
-                    }}
+                    className="oratio-primary-pill flex items-center gap-2.5 px-7 py-3 rounded-full text-sm cursor-pointer"
                   >
                     <Heart size={15} />
                     View {selectedPrayerDetails.city || 'Location'} Prayers

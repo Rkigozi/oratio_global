@@ -874,18 +874,12 @@ export function Feed() {
               className="overflow-hidden mb-4"
             >
               <div
-                className="rounded-xl px-4 py-3.5 flex items-start gap-3"
-                style={{
-                  background: 'rgba(var(--rgb-accent), 0.06)',
-                  border: '1px solid rgba(var(--rgb-accent), 0.1)',
-                }}
+                className="oratio-surface rounded-xl px-4 py-3.5 flex items-start gap-3"
               >
-                <span className="text-base mt-0.5 flex-shrink-0">🕊️</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-text-secondary text-sm mb-0.5">Welcome to the Prayer Feed</p>
+                  <p className="text-text-secondary text-sm mb-0.5">Prayer feed</p>
                   <p className="text-text-muted text-xs">
-                    Tap a prayer to read more, or pray right from the list when someone is on your
-                    heart.
+                    Read, pray, or leave encouragement when someone is on your heart.
                   </p>
                 </div>
                 <button
@@ -899,31 +893,19 @@ export function Feed() {
           )}
         </AnimatePresence>
 
-        {/* Subtle CTA */}
-        {!showSaved && !showPrayerCircle && !activeSearch && !hasLocationFilter && (
-          <p className="text-text-dim text-xs text-center mb-4">
-            Tap any prayer to pray for someone today
-          </p>
-        )}
-        {showPrayerCircle && !activeSearch && (
-          <p className="text-text-dim text-xs text-center mb-4 px-3">
-            Prayers shared with your Prayer Circle
-          </p>
-        )}
-
         {/* Section label */}
         <div className="flex items-center justify-between gap-3 px-1 mb-3">
-          <span className="min-w-0 truncate text-text-muted text-[11px] uppercase tracking-[0.15em]">
+          <span className="oratio-section-label min-w-0 truncate">
             {showSaved
-              ? 'Saved Prayers'
+              ? 'Saved'
               : showPrayerCircle
-                ? 'Prayer Circle Prayers'
+                ? 'Prayer Circle'
                 : hasLocationFilter
                   ? `Prayers from ${locationDisplayName}`
-                  : 'Latest Prayer Needs'}
+                  : 'Latest'}
           </span>
           <span className="flex-shrink-0 text-text-faint text-[10px]">
-            {filteredPrayers.length} requests
+            {filteredPrayers.length} prayers
           </span>
         </div>
 

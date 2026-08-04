@@ -110,7 +110,7 @@ describe('Submit', () => {
   it('renders location section with auto-detect toggle', async () => {
     await renderSubmit();
 
-    expect(screen.getByText('Your Location')).toBeInTheDocument();
+    expect(screen.getByText('Location')).toBeInTheDocument();
     expect(screen.getByLabelText(/auto-detect/i)).toBeInTheDocument();
   });
 

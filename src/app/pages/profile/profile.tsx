@@ -488,18 +488,13 @@ export function Profile() {
 
           <div className="space-y-5">
             <section>
-              <p className="text-text-dim text-[10px] uppercase tracking-[0.16em] mb-2 px-1">
+              <p className="oratio-section-label mb-2 px-1">
                 Prayer Library
               </p>
               <div className="space-y-2">
                 <button
                   onClick={() => void navigate('/profile/submitted?view=public')}
-                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-                  style={{
-                    background:
-                      'linear-gradient(160deg, rgba(var(--rgb-surface), 0.55), rgba(var(--rgb-surface), 0.34))',
-                    border: '1px solid rgba(var(--rgb-accent), 0.06)',
-                  }}
+                  className="oratio-quiet-row w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer"
                 >
                   <Send size={18} className="text-text-dim flex-shrink-0" />
                   <div className="min-w-0">
@@ -512,12 +507,7 @@ export function Profile() {
 
                 <button
                   onClick={() => void navigate('/profile/submitted?view=circle')}
-                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-                  style={{
-                    background:
-                      'linear-gradient(160deg, rgba(var(--rgb-surface), 0.55), rgba(var(--rgb-surface), 0.34))',
-                    border: '1px solid rgba(var(--rgb-accent), 0.06)',
-                  }}
+                  className="oratio-quiet-row w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer"
                 >
                   <Users size={18} className="text-text-dim flex-shrink-0" />
                   <div className="min-w-0">
@@ -530,12 +520,7 @@ export function Profile() {
 
                 <button
                   onClick={() => void navigate('/profile/submitted?view=private')}
-                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-                  style={{
-                    background:
-                      'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
-                    border: '1px solid rgba(var(--rgb-accent), 0.08)',
-                  }}
+                  className="oratio-quiet-row w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer"
                 >
                   <Lock size={18} className="text-accent flex-shrink-0" />
                   <div className="min-w-0">
@@ -549,18 +534,13 @@ export function Profile() {
             </section>
 
             <section>
-              <p className="text-text-dim text-[10px] uppercase tracking-[0.16em] mb-2 px-1">
+              <p className="oratio-section-label mb-2 px-1">
                 Activity
               </p>
               <div className="space-y-2">
                 <button
                   onClick={() => void navigate('/updates')}
-                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-                  style={{
-                    background:
-                      'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
-                    border: '1px solid rgba(var(--rgb-accent), 0.08)',
-                  }}
+                  className="oratio-quiet-row w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer"
                 >
                   <Bell size={18} className="text-accent flex-shrink-0" />
                   <div className="min-w-0">
@@ -575,12 +555,7 @@ export function Profile() {
 
                 <button
                   onClick={() => void navigate('/profile/prayed')}
-                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-                  style={{
-                    background:
-                      'linear-gradient(160deg, rgba(var(--rgb-surface), 0.55), rgba(var(--rgb-surface), 0.34))',
-                    border: '1px solid rgba(var(--rgb-accent), 0.06)',
-                  }}
+                  className="oratio-quiet-row w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer"
                 >
                   <Heart size={18} className="text-text-dim flex-shrink-0" />
                   <div className="min-w-0">
@@ -593,12 +568,7 @@ export function Profile() {
 
                 <button
                   onClick={() => void navigate('/profile/saved')}
-                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-                  style={{
-                    background:
-                      'linear-gradient(160deg, rgba(var(--rgb-surface), 0.55), rgba(var(--rgb-surface), 0.34))',
-                    border: '1px solid rgba(var(--rgb-accent), 0.06)',
-                  }}
+                  className="oratio-quiet-row w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer"
                 >
                   <Bookmark size={18} className="text-text-dim flex-shrink-0" />
                   <div className="min-w-0">
@@ -612,17 +582,12 @@ export function Profile() {
             </section>
 
             <section>
-              <p className="text-text-dim text-[10px] uppercase tracking-[0.16em] mb-2 px-1">
+              <p className="oratio-section-label mb-2 px-1">
                 People
               </p>
               <button
                 onClick={() => void navigate('/profile/circle')}
-                className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer active:scale-[0.99] transition-transform"
-                style={{
-                  background:
-                    'linear-gradient(160deg, rgba(var(--rgb-surface), 0.55), rgba(var(--rgb-surface), 0.34))',
-                  border: '1px solid rgba(var(--rgb-accent), 0.06)',
-                }}
+                className="oratio-quiet-row w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer"
               >
                 <Users size={18} className="text-text-dim flex-shrink-0" />
                 <div className="min-w-0">

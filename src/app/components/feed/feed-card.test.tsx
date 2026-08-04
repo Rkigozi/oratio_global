@@ -136,7 +136,7 @@ describe('FeedCard', () => {
     expect(onTap).toHaveBeenCalledWith(mockPrayer);
   });
 
-  it('shows Comment button when comments are enabled', () => {
+  it('shows comment count when comments are enabled', () => {
     render(
       <MemoryRouter>
         <FeedCard
@@ -148,7 +148,8 @@ describe('FeedCard', () => {
         />
       </MemoryRouter>
     );
-    expect(screen.getByText('Comment')).toBeTruthy();
+    expect(screen.getByLabelText('Open 0 comments')).toBeTruthy();
+    expect(screen.getByText('0')).toBeTruthy();
   });
 
   it('shows Off when comments are disabled', () => {

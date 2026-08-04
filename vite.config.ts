@@ -63,6 +63,11 @@ export default defineConfig({
           'assets/*.css',
           'assets/*.js',
         ],
+        globIgnores: [
+          // Loaded only when someone uploads an iPhone HEIC photo. Keeping it
+          // out of the precache saves over 1MB during first install/update.
+          'assets/heic2any-*.js',
+        ],
         navigateFallback: '/index.html',
         navigateFallbackAllowlist: [/^\/[a-z]/],
         // Take control immediately so a new deploy replaces the old cached app

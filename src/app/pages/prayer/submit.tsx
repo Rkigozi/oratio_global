@@ -238,13 +238,13 @@ export function Submit() {
               <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
                 {/* Prayer text */}
                 <div>
-                  <label className="text-text-muted text-sm mb-2 block">Prayer message</label>
+                  <label className="oratio-section-label mb-2 block">Prayer</label>
                   <textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     placeholder="Share what's on your heart..."
                     rows={4}
-                    className={`w-full rounded-xl px-4 py-3 text-text placeholder-text-dim resize-none border ${errors.text ? 'border-red-500/50 focus:border-red-500/70' : 'border-accent/12 focus:border-accent/35'} focus:outline-none transition-colors text-sm`}
+                    className={`w-full rounded-xl px-4 py-3 text-text placeholder-text-dim resize-none border ${errors.text ? 'border-red-500/50 focus:border-red-500/70' : 'border-text-faint/20 focus:border-text-muted/40'} focus:outline-none transition-colors text-sm`}
                     style={{
                       background: 'rgba(var(--rgb-surface), 0.6)',
                       lineHeight: 1.7,
@@ -264,16 +264,15 @@ export function Submit() {
 
                 {/* Guidance text */}
                 <p className="text-text-dim text-[11px] leading-relaxed text-center">
-                  You&apos;re welcome to share what&apos;s on your heart. You may want to avoid
-                  sharing personal information so you can receive prayer freely and safely.
+                  Share enough to be prayed for. Keep sensitive details private.
                 </p>
 
                 {/* Prayer visibility */}
                 <div>
-                  <label className="text-text-muted text-sm mb-2 block">Visibility</label>
+                  <label className="oratio-section-label mb-2 block">Visibility</label>
                   <div
-                    className="grid grid-cols-1 gap-2 rounded-xl border border-accent/12 p-1"
-                    style={{ background: 'rgba(var(--rgb-surface), 0.45)' }}
+                    className="grid grid-cols-1 gap-2 rounded-xl border border-text-faint/16 p-1"
+                    style={{ background: 'rgba(var(--rgb-surface), 0.35)' }}
                   >
                     <button
                       type="button"
@@ -281,10 +280,10 @@ export function Submit() {
                       className="min-h-[70px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer"
                       style={{
                         background:
-                          audience === 'public' ? 'rgba(var(--rgb-accent), 0.12)' : 'transparent',
+                          audience === 'public' ? 'rgba(var(--rgb-text), 0.08)' : 'transparent',
                         border:
                           audience === 'public'
-                            ? '1px solid rgba(var(--rgb-accent), 0.18)'
+                            ? '1px solid rgba(var(--rgb-text-faint), 0.32)'
                             : '1px solid transparent',
                       }}
                     >
@@ -303,10 +302,10 @@ export function Submit() {
                       className="min-h-[70px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-55"
                       style={{
                         background:
-                          audience === 'circle' ? 'rgba(var(--rgb-accent), 0.12)' : 'transparent',
+                          audience === 'circle' ? 'rgba(var(--rgb-text), 0.08)' : 'transparent',
                         border:
                           audience === 'circle'
-                            ? '1px solid rgba(var(--rgb-accent), 0.18)'
+                            ? '1px solid rgba(var(--rgb-text-faint), 0.32)'
                             : '1px solid transparent',
                       }}
                     >
@@ -325,11 +324,11 @@ export function Submit() {
                       style={{
                         background:
                           audience === 'private'
-                            ? 'rgba(var(--rgb-accent), 0.12)'
+                            ? 'rgba(var(--rgb-text), 0.08)'
                             : 'transparent',
                         border:
                           audience === 'private'
-                            ? '1px solid rgba(var(--rgb-accent), 0.18)'
+                            ? '1px solid rgba(var(--rgb-text-faint), 0.32)'
                             : '1px solid transparent',
                       }}
                     >
@@ -363,7 +362,7 @@ export function Submit() {
                 {/* Location */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-text-muted text-sm">Your Location</label>
+                    <label className="oratio-section-label">Location</label>
                     <button
                       type="button"
                       onClick={() => {
@@ -517,21 +516,7 @@ export function Submit() {
                 <button
                   type="submit"
                   disabled={!text.trim() || submitting}
-                  className="w-full min-h-12 py-3.5 mt-3 rounded-full text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{
-                    background:
-                      text.trim() && !submitting
-                        ? 'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))'
-                        : 'rgba(var(--rgb-accent), 0.15)',
-                    color:
-                      text.trim() && !submitting
-                        ? 'rgb(var(--rgb-text))'
-                        : 'rgb(var(--rgb-text-muted))',
-                    boxShadow:
-                      text.trim() && !submitting
-                        ? '0 4px 25px rgba(var(--rgb-accent), 0.3)'
-                        : 'none',
-                  }}
+                  className="oratio-primary-pill w-full min-h-12 py-3.5 mt-3 rounded-full text-sm flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer disabled:opacity-100 disabled:cursor-not-allowed"
                 >
                   {submitting ? <Loader size={16} className="animate-spin" /> : <Send size={16} />}
                   Submit Prayer Request

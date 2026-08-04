@@ -567,7 +567,7 @@ export function PrayerDetail() {
           {/* Location + time */}
           <div className="flex items-center gap-2 mb-1">
             <MapPin size={12} className="text-text-dim" />
-            <p className="text-text-muted text-xs uppercase tracking-[0.15em]">
+            <p className="oratio-section-label">
               {prayer.city || 'Unknown'}, {prayer.country}
             </p>
           </div>
@@ -575,19 +575,19 @@ export function PrayerDetail() {
             <p className="text-text-muted text-[11px] mb-5 flex items-center gap-2">
               {timeAgo(prayer.createdAt)}
               {prayer.audience === 'circle' && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-accent/10 bg-accent/6 px-2 py-0.5 text-[10px] text-text-dim">
+                <span className="oratio-pill inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]">
                   <Users size={10} />
                   Prayer Circle
                 </span>
               )}
               {prayer.audience === 'private' && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-accent/10 bg-accent/6 px-2 py-0.5 text-[10px] text-text-dim">
+                <span className="oratio-pill inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]">
                   <Lock size={10} />
                   Private
                 </span>
               )}
               {prayer.editedAt && (
-                <span className="rounded-full border border-accent/10 bg-accent/6 px-2 py-0.5 text-[10px] text-text-dim">
+                <span className="oratio-pill rounded-full px-2 py-0.5 text-[10px]">
                   Edited
                 </span>
               )}
@@ -599,8 +599,8 @@ export function PrayerDetail() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="text-text font-heading mb-2"
-            style={{ fontSize: '1.2rem', lineHeight: 1.8, fontWeight: 300 }}
+            className="text-text font-heading mb-3"
+            style={{ fontSize: '1.28rem', lineHeight: 1.72, fontWeight: 320 }}
           >
             {translatedText ||
               renderHashtags(prayer.text, (tag) => {
@@ -614,7 +614,7 @@ export function PrayerDetail() {
           )}
 
           {/* Attribution */}
-          <div className="flex items-center gap-2.5 mb-4">
+          <div className="flex items-center gap-2.5 mb-7">
             <AvatarImage
               src={prayer.avatarUrl}
               name={username || getAttributionText(prayer)}
@@ -641,7 +641,7 @@ export function PrayerDetail() {
           </div>
 
           {/* Prayer count + comments indicator */}
-          <div className="flex items-center gap-3 text-text-muted text-xs mb-8">
+          <div className="flex items-center gap-3 text-text-muted text-xs mb-4">
             {!commentsAreAvailable && (
               <span className="flex items-center gap-1 text-text-dim">
                 <MessageCircle size={11} />
@@ -670,16 +670,10 @@ export function PrayerDetail() {
             <motion.button
               onClick={() => togglePrayed(prayer.id)}
               whileTap={{ scale: 0.96 }}
-              className="flex items-center gap-2.5 px-8 py-3 rounded-full text-sm transition-all duration-500 cursor-pointer"
-              style={{
-                background: isPrayed
-                  ? 'rgba(var(--rgb-accent), 0.12)'
-                  : 'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
-                color: isPrayed ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text))',
-                boxShadow: isPrayed
-                  ? 'none'
-                  : '0 4px 24px rgba(var(--rgb-accent), 0.25), 0 0 0 1px rgba(var(--rgb-accent), 0.1)',
-              }}
+              className={`flex items-center gap-2.5 px-8 py-3 rounded-full text-sm transition-all duration-500 cursor-pointer ${
+                isPrayed ? 'oratio-surface' : 'oratio-primary-pill'
+              }`}
+              style={isPrayed ? { color: 'rgb(var(--rgb-accent))' } : undefined}
             >
               <span className="text-base">🙏</span>
               {isPrayed ? 'Prayed for this' : 'Pray for this'}
@@ -708,7 +702,7 @@ export function PrayerDetail() {
           )}
 
           {/* Comments section */}
-          <div className="border-t border-accent/8 pt-4">
+          <div className="border-t border-text-faint/10 pt-4">
             {commentsAreAvailable ? (
               <CommentSection
                 prayer={prayer}

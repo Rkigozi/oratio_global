@@ -4,16 +4,20 @@ import { MemoryRouter } from "react-router";
 import { BottomNav } from "./bottom-nav";
 
 describe("BottomNav", () => {
-  it("renders all nav items", () => {
+  it("renders icon-only nav items with accessible labels", () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
         <BottomNav />
       </MemoryRouter>
     );
-    expect(screen.getByText("Map")).toBeTruthy();
-    expect(screen.getByText("Feed")).toBeTruthy();
-    expect(screen.getByText("Submit")).toBeTruthy();
-    expect(screen.getByText("Profile")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Map" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Feed" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Submit" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Profile" })).toBeTruthy();
+    expect(screen.queryByText("Map")).toBeNull();
+    expect(screen.queryByText("Feed")).toBeNull();
+    expect(screen.queryByText("Submit")).toBeNull();
+    expect(screen.queryByText("Profile")).toBeNull();
   });
 
   it("highlights active route", () => {
@@ -23,8 +27,11 @@ describe("BottomNav", () => {
       </MemoryRouter>
     );
 
-    const feedButton = screen.getByText("Feed");
-    expect(feedButton.className).toContain("text-accent");
+    const feedButton = screen.getByRole("button", { name: "Feed" });
+    const feedIcon = feedButton.querySelector(".bottom-nav-icon");
+    expect(feedIcon?.getAttribute("class")).toContain("text-accent");
+    expect(feedButton.className).toContain("bottom-nav-item-active");
+    expect(feedButton.getAttribute("aria-current")).toBe("page");
   });
 
   it("applies inactive style to non-active routes", () => {
@@ -34,9 +41,10 @@ describe("BottomNav", () => {
       </MemoryRouter>
     );
 
-    const feedButton = screen.getByText("Feed");
-    expect(feedButton.className).toContain("text-text-muted");
-    const mapButton = screen.getByText("Map");
-    expect(mapButton.className).toContain("text-accent");
+    const feedButton = screen.getByRole("button", { name: "Feed" });
+    const feedIcon = feedButton.querySelector(".bottom-nav-icon");
+    expect(feedIcon?.getAttribute("class")).toContain("text-text-muted");
+    const mapButton = screen.getByRole("button", { name: "Map" });
+    expect(mapButton.className).toContain("bottom-nav-item-active");
   });
 });

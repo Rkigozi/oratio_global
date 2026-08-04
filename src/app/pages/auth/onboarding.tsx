@@ -90,13 +90,6 @@ export function Onboarding() {
       className="auth-page-scroll flex w-full flex-col text-text relative"
       style={{ background: 'rgb(var(--rgb-bg))' }}
     >
-      <div
-        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, rgba(var(--rgb-accent), 0.12), transparent 70%)',
-        }}
-      />
-
       <AuthBackButton onClick={() => void navigate('/landing')} />
 
       <div className="relative z-10 flex flex-col flex-1 justify-center px-6 max-w-sm mx-auto w-full">
@@ -106,7 +99,7 @@ export function Onboarding() {
           transition={{ duration: 0.7 }}
           className="text-center mb-8"
         >
-          <p className="text-accent text-xs tracking-[0.25em] uppercase mb-4">Welcome to</p>
+          <p className="oratio-section-label mb-4">Welcome to</p>
           <h1
             className="font-heading font-light tracking-[0.2em] text-text-secondary mb-3"
             style={{ fontSize: '2.2rem' }}
@@ -123,7 +116,7 @@ export function Onboarding() {
           className="mb-6 space-y-4"
         >
           <div>
-            <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">
+            <p className="oratio-section-label mb-2 text-center">
               Email
             </p>
             <input
@@ -132,12 +125,12 @@ export function Onboarding() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               autoFocus
-              className="w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border border-accent/12 transition-colors text-center"
+              className="w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border border-text-faint/22 transition-colors text-center"
               style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
             />
           </div>
           <div>
-            <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">
+            <p className="oratio-section-label mb-2 text-center">
               Password
             </p>
             <PasswordInput
@@ -149,7 +142,7 @@ export function Onboarding() {
             />
           </div>
           <div>
-            <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">
+            <p className="oratio-section-label mb-2 text-center">
               Username
             </p>
             <input
@@ -158,7 +151,7 @@ export function Onboarding() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="e.g., prayer_warrior"
               onKeyDown={(e) => e.key === 'Enter' && void handleBegin()}
-              className="w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border border-accent/12 transition-colors text-center"
+              className="w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border border-text-faint/22 transition-colors text-center"
               style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
             />
           </div>
@@ -173,25 +166,19 @@ export function Onboarding() {
           <button
             onClick={() => void handleBegin()}
             disabled={loading}
-            className="w-full py-4 rounded-full text-sm flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
-            style={{
-              background:
-                'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
-              color: 'rgb(var(--rgb-text))',
-              boxShadow: '0 4px 28px rgba(var(--rgb-accent), 0.3)',
-            }}
+            className="oratio-primary-pill w-full py-4 rounded-full text-sm flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 disabled:opacity-100"
           >
             {loading ? <Loader size={15} className="animate-spin" /> : <Check size={15} />}
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
           <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px bg-accent/10" />
+            <div className="flex-1 h-px bg-text-faint/20" />
             <span className="text-text-dim text-[10px]">or</span>
-            <div className="flex-1 h-px bg-accent/10" />
+            <div className="flex-1 h-px bg-text-faint/20" />
           </div>
           <button
             onClick={() => void signInWithGoogle(nextPath)}
-            className="w-full py-3.5 rounded-full text-sm flex items-center justify-center gap-2.5 cursor-pointer transition-all active:scale-95 border border-accent/15 hover:border-accent/30"
+            className="w-full py-3.5 rounded-full text-sm flex items-center justify-center gap-2.5 cursor-pointer transition-all active:scale-95 border border-text-faint/22 hover:border-text-faint/40"
             style={{ background: 'rgba(var(--rgb-surface), 0.6)', color: 'rgb(var(--rgb-text))' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24">

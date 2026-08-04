@@ -37,21 +37,16 @@ export function FeedCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.6), duration: 0.4 }}
       onClick={() => onTap(prayer)}
-      className="rounded-xl p-3.5 relative cursor-pointer active:scale-[0.98] transition-transform duration-150"
-      style={{
-        background:
-          'linear-gradient(160deg, rgba(var(--rgb-surface), 0.7), rgba(var(--rgb-surface), 0.5))',
-        border: '1px solid rgba(var(--rgb-accent), 0.07)',
-      }}
+      className="oratio-surface rounded-xl p-4 relative cursor-pointer active:scale-[0.99] transition-transform duration-150"
     >
       {/* Top row: avatar + name + location + time */}
-      <div className="flex items-center justify-between mb-2.5">
+      <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <AvatarImage
             src={prayer.avatarUrl}
             name={prayer.username || getAttributionText(prayer)}
             alt={prayer.username || 'avatar'}
-            className="h-8 w-8 flex-shrink-0 cursor-pointer text-xs"
+            className="h-7 w-7 flex-shrink-0 cursor-pointer text-[11px]"
             onClick={(e) => {
               e.stopPropagation();
               const u = prayer.username;
@@ -64,26 +59,26 @@ export function FeedCard({
               const u = prayer.username;
               if (u && onUserClick) onUserClick(u);
             }}
-            className="min-h-8 min-w-0 text-text-muted text-[13px] truncate hover:text-text-muted transition-colors cursor-pointer text-left"
+            className="min-h-8 min-w-0 text-text-muted text-[12px] truncate hover:text-text-secondary transition-colors cursor-pointer text-left"
           >
             {getAttributionText(prayer)}
           </button>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {prayer.audience === 'circle' && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent/6 px-1.5 py-0.5 text-[9px] text-text-dim">
+            <span className="oratio-pill inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px]">
               <Users size={9} />
               Prayer Circle
             </span>
           )}
           {prayer.audience === 'private' && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent/6 px-1.5 py-0.5 text-[9px] text-text-dim">
+            <span className="oratio-pill inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px]">
               <Lock size={9} />
               Private
             </span>
           )}
           {prayer.editedAt && (
-            <span className="rounded-full bg-accent/6 px-1.5 py-0.5 text-[9px] text-text-dim">
+            <span className="oratio-pill rounded-full px-1.5 py-0.5 text-[9px]">
               Edited
             </span>
           )}
@@ -95,20 +90,20 @@ export function FeedCard({
 
       {/* Prayer text with hashtags */}
       <p
-        className="text-text-secondary mb-2.5 line-clamp-3"
-        style={{ fontSize: '0.94rem', lineHeight: 1.58 }}
+        className="text-text mb-3 line-clamp-3"
+        style={{ fontSize: '0.98rem', lineHeight: 1.62, fontWeight: 390 }}
       >
         {onTagClick ? renderHashtags(prayer.text, onTagClick) : prayer.text}
       </p>
 
       {/* Actions: comment + pray */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 border-t border-text-faint/10 pt-2.5">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onTap(prayer);
           }}
-          className="-ml-2 flex min-h-10 items-center gap-1 rounded-full px-2 text-text-dim hover:text-text-muted hover:bg-accent/5 text-xs transition-colors cursor-pointer"
+          className="-ml-2 flex min-h-10 items-center gap-1.5 rounded-full px-2 text-text-dim hover:text-text-muted hover:bg-text/5 text-xs transition-colors cursor-pointer"
           aria-label={
             prayer.commentsEnabled === false
               ? 'Comments are off'
@@ -124,12 +119,12 @@ export function FeedCard({
               ? 'Off'
               : prayer.commentCount
                 ? prayer.commentCount
-                : 'Comment'}
+                : 0}
           </span>
         </button>
         <button
           onClick={handlePray}
-          className="-mr-2 ml-auto flex min-h-10 items-center gap-1.5 rounded-full px-2 text-xs transition-colors duration-300 cursor-pointer hover:bg-accent/5"
+          className="-mr-2 ml-auto flex min-h-10 items-center gap-1.5 rounded-full px-2 text-xs transition-colors duration-300 cursor-pointer hover:bg-text/5"
           style={{ color: prayed ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text-dim))' }}
           aria-label={prayed ? 'Remove prayed marker' : 'Mark as prayed'}
         >
