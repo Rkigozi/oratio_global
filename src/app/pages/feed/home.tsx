@@ -66,11 +66,12 @@ function NearbyAreaBanner({
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: [0, 1, 1, 0], y: [-8, 0, 0, -6] }}
-      exit={{ opacity: 0, y: -6 }}
+      animate={{ opacity: [0, 1, 1, 0.92], y: [-8, 0, 0, -120] }}
+      exit={{ opacity: 0.92, y: -120 }}
       transition={{ duration: NEARBY_AREA_BANNER_VISIBLE_MS / 1000, times: [0, 0.12, 0.82, 1] }}
       onAnimationComplete={() => setIsVisible(false)}
       className="absolute top-20 left-4 right-4 z-[500] pointer-events-none"
+      style={{ willChange: 'transform, opacity' }}
       aria-live="polite"
     >
       <div
@@ -228,7 +229,7 @@ export function Home() {
     }
   });
   const nearbyAreaKey = nearbyArea
-    ? `${nearbyArea.city}:${nearbyArea.country}:${nearbyArea.requestCount}:${nearbyArea.prayerCount}`
+    ? `${nearbyArea.city}:${nearbyArea.country}`
     : '';
 
   // Fly to user location when it's resolved

@@ -13,6 +13,7 @@ import { preloadAuthenticatedRoutes } from './route-loaders';
 const SERVICE_WORKER_RELOAD_KEY = 'oratio:sw-controller-reload-at';
 const UPDATE_CHECK_INTERVAL_MS = 15 * 60 * 1000;
 const CONTROLLER_RELOAD_COOLDOWN_MS = 30_000;
+const WEB_SERVICE_WORKER_REGISTRATION_DELAY_MS = 4_000;
 const DESKTOP_ROUTE_PRELOAD_DELAY_MS = 1_800;
 const MOBILE_ROUTE_PRELOAD_DELAY_MS = 5_000;
 
@@ -64,8 +65,13 @@ function ServiceWorkerUpdater() {
 
     let intervalId: number | undefined;
     let removeVisibilityListener: (() => void) | undefined;
+    const hadControllerAtMount = Boolean(navigator.serviceWorker.controller);
 
     const handleControllerChange = () => {
+      // A first-time browser visit has no controller. Reloading when the newly
+      // installed worker claims that page interrupts the initial app load.
+      if (!hadControllerAtMount) return;
+
       try {
         const lastReload = Number(sessionStorage.getItem(SERVICE_WORKER_RELOAD_KEY) ?? 0);
         if (Date.now() - lastReload < CONTROLLER_RELOAD_COOLDOWN_MS) return;
@@ -86,31 +92,41 @@ function ServiceWorkerUpdater() {
       });
     };
 
-    try {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((registration) => {
-          const handleVisibilityChange = () => checkForUpdate(registration);
+    const registerServiceWorker = () => {
+      try {
+        navigator.serviceWorker
+          .register('/sw.js')
+          .then((registration) => {
+            const handleVisibilityChange = () => checkForUpdate(registration);
 
-          checkForUpdate(registration);
-          intervalId = window.setInterval(
-            () => checkForUpdate(registration),
-            UPDATE_CHECK_INTERVAL_MS
-          );
-          document.addEventListener('visibilitychange', handleVisibilityChange);
-          removeVisibilityListener = () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-          };
-        })
-        .catch(() => {
-          // SW registration can fail on some iOS browsers; the app can still run online.
-        });
-    } catch {
-      // Some browser contexts throw synchronously for service worker registration.
-    }
+            // register() already performs the initial update check.
+            intervalId = window.setInterval(
+              () => checkForUpdate(registration),
+              UPDATE_CHECK_INTERVAL_MS
+            );
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            removeVisibilityListener = () => {
+              document.removeEventListener('visibilitychange', handleVisibilityChange);
+            };
+          })
+          .catch(() => {
+            // SW registration can fail on some iOS browsers; the app can still run online.
+          });
+      } catch {
+        // Some browser contexts throw synchronously for service worker registration.
+      }
+    };
+
+    // Installed PWAs should check immediately. In a normal browser, let the
+    // visible page finish loading before precaching the offline app shell.
+    const registrationTimerId = window.setTimeout(
+      registerServiceWorker,
+      isStandaloneLaunch() ? 0 : WEB_SERVICE_WORKER_REGISTRATION_DELAY_MS
+    );
 
     return () => {
       if (intervalId) window.clearInterval(intervalId);
+      window.clearTimeout(registrationTimerId);
       removeVisibilityListener?.();
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
     };

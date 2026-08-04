@@ -29,6 +29,21 @@ const AuthContext = createContext<AuthState>({
   needsEmailVerification: false,
 });
 
+const AUTH_STARTUP_TIMEOUT_MS = 8_000;
+
+async function withStartupTimeout<T>(promise: Promise<T>): Promise<T | null> {
+  let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timeoutId = globalThis.setTimeout(() => resolve(null), AUTH_STARTUP_TIMEOUT_MS);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) globalThis.clearTimeout(timeoutId);
+  }
+}
+
 async function getSupabaseClient() {
   const { supabase } = await import('../services/supabase');
   return supabase;
@@ -60,40 +75,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let subscription: { unsubscribe: () => void } | null = null;
 
     const initAuth = async () => {
-      const supabase = await getSupabaseClient();
-      if (!active) return;
-
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session?.user && active) {
-          setUser(session.user);
-          void fetchProfile(session.user.id);
+        const supabase = await withStartupTimeout(getSupabaseClient());
+        if (!supabase || !active) return;
+
+        const sessionResult = await withStartupTimeout(supabase.auth.getSession());
+        if (sessionResult?.data.session?.user && active) {
+          setUser(sessionResult.data.session.user);
+          void fetchProfile(sessionResult.data.session.user.id);
         }
+
+        if (!active) return;
+
+        const authState = supabase.auth.onAuthStateChange((event, session) => {
+          if (session?.user) {
+            setUser(session.user);
+            if (event === 'PASSWORD_RECOVERY') {
+              // User landed from a password reset email — don't fetch profile yet
+              return;
+            }
+            void fetchProfile(session.user.id);
+          } else {
+            setUser(null);
+            setProfile(null);
+          }
+        });
+
+        subscription = authState.data.subscription;
       } catch {
         // Network/config failure — don't leave the app stuck on a loading state.
       } finally {
         if (active) setLoading(false);
       }
-
-      if (!active) return;
-
-      const authState = supabase.auth.onAuthStateChange((event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          if (event === 'PASSWORD_RECOVERY') {
-            // User landed from a password reset email — don't fetch profile yet
-            return;
-          }
-          void fetchProfile(session.user.id);
-        } else {
-          setUser(null);
-          setProfile(null);
-        }
-      });
-
-      subscription = authState.data.subscription;
     };
 
     void initAuth();

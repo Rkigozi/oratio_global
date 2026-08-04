@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from './auth-context';
 
@@ -110,11 +110,29 @@ describe('AuthProvider', () => {
     setupDefaults();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('shows loading state initially', () => {
     vi.mocked(supabase.auth.getSession).mockReturnValue(new Promise(() => {}));
 
     const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
     expect(result.current.loading).toBe(true);
+  });
+
+  it('stops loading when session restoration stalls', async () => {
+    vi.useFakeTimers();
+    vi.mocked(supabase.auth.getSession).mockReturnValue(new Promise(() => {}));
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(8_000);
+    });
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.user).toBeNull();
   });
 
   it('sets user and profile after successful session load', async () => {
