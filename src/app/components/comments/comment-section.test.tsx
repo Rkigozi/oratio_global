@@ -92,7 +92,7 @@ describe('CommentSection', () => {
     );
 
     expect(await screen.findByText('Notes (0)')).toBeTruthy();
-    expect(screen.getByText('No notes yet. Add a thought, reflection, or update for later.')).toBeTruthy();
+    expect(await screen.findByText('No notes yet. Add a thought, reflection, or update for later.')).toBeTruthy();
     expect(screen.getByPlaceholderText('Write a private note...')).toBeTruthy();
   });
 
