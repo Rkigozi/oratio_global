@@ -8,7 +8,7 @@ import { useEffect, useRef } from 'react';
 import { capturePageView } from '../lib/analytics';
 import { useAuth } from './hooks/auth-context';
 import { getLaunchRedirect, isStandaloneLaunch } from './launch-route';
-import { preloadAuthenticatedRoutes, preloadPublicRoutes } from './route-loaders';
+import { preloadAuthenticatedRoutes } from './route-loaders';
 
 const SERVICE_WORKER_RELOAD_KEY = 'oratio:sw-controller-reload-at';
 const UPDATE_CHECK_INTERVAL_MS = 15 * 60 * 1000;
@@ -151,11 +151,7 @@ function RouteModulePreloader() {
       const preloadRoutes = () => {
         if (document.visibilityState !== 'visible') return;
 
-        if (user) {
-          preloadAuthenticatedRoutes();
-        } else {
-          preloadPublicRoutes();
-        }
+        if (user) preloadAuthenticatedRoutes();
       };
 
       const win = window as WindowWithIdleCallback;

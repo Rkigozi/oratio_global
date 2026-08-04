@@ -15,6 +15,7 @@ describe('AuthGuard', () => {
   });
 
   beforeEach(() => {
+    localStorage.clear();
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 'user-1' },
       profile: null,
@@ -98,7 +99,61 @@ describe('AuthGuard', () => {
     expect(screen.getByText('Landing Page')).toBeTruthy();
   });
 
-  it('shows loading spinner while auth loads', () => {
+  it('shows landing immediately on root while auth loads', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      loading: true,
+      profile: null,
+      signUp: vi.fn(),
+      signIn: vi.fn(),
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn(),
+      resetPassword: vi.fn(),
+      updatePassword: vi.fn(),
+      needsEmailVerification: false,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AuthGuard />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('ORATIO')).toBeTruthy();
+  });
+
+  it('keeps the loader on root while an existing session is restored', () => {
+    vi.useFakeTimers();
+    localStorage.setItem('sb-test-auth-token', '{}');
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      loading: true,
+      profile: null,
+      signUp: vi.fn(),
+      signIn: vi.fn(),
+      signInWithGoogle: vi.fn(),
+      signOut: vi.fn(),
+      resetPassword: vi.fn(),
+      updatePassword: vi.fn(),
+      needsEmailVerification: false,
+    });
+
+    const { container } = render(
+      <MemoryRouter initialEntries={['/']}>
+        <AuthGuard />
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('ORATIO')).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(180);
+    });
+
+    expect(container.querySelector('.animate-spin')).toBeTruthy();
+  });
+
+  it('shows loading spinner while auth loads on protected non-root routes', () => {
     vi.useFakeTimers();
     vi.mocked(useAuth).mockReturnValue({
       user: null,
@@ -114,7 +169,7 @@ describe('AuthGuard', () => {
     });
 
     const { container } = render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/feed']}>
         <AuthGuard />
       </MemoryRouter>
     );
