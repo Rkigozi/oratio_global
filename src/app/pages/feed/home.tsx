@@ -18,6 +18,8 @@ function getLocationMarkerId(city: string, country: string) {
   return `location:${getPrayerLocationKey(city, country)}`;
 }
 
+const NEARBY_AREA_BANNER_VISIBLE_MS = 6000;
+
 function getPrivacyRoundedCoordinates(point: { lat: number; lng: number }) {
   return {
     lat: Math.round(point.lat * 10) / 10,
@@ -43,6 +45,66 @@ function getNearbyAreaSummary(area: { requestCount: number; prayerCount: number 
   }
 
   return 'Your local prayer area';
+}
+
+function NearbyAreaBanner({
+  area,
+  onView,
+}: {
+  area: {
+    city: string;
+    country: string;
+    requestCount: number;
+    prayerCount: number;
+  };
+  onView: () => void;
+}) {
+  const [isVisible, setIsVisible] = useState(true);
+
+  if (!isVisible) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: [0, 1, 1, 0], y: [-8, 0, 0, -6] }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: NEARBY_AREA_BANNER_VISIBLE_MS / 1000, times: [0, 0.12, 0.82, 1] }}
+      onAnimationComplete={() => setIsVisible(false)}
+      className="absolute top-20 left-4 right-4 z-[500] pointer-events-none"
+      aria-live="polite"
+    >
+      <div
+        className="oratio-surface mx-auto max-w-sm rounded-full px-3 py-2 flex items-center gap-2 pointer-events-auto"
+        style={{
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        <span
+          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{
+            background: 'rgba(var(--rgb-accent), 0.12)',
+            color: 'rgb(var(--rgb-accent))',
+          }}
+        >
+          <MapPin size={13} />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-text text-xs font-medium truncate">Prayers near {area.city}</p>
+          <p className="text-text-muted text-[10px] truncate">{getNearbyAreaSummary(area)}</p>
+        </div>
+        {area.requestCount > 0 && (
+          <button
+            type="button"
+            onClick={onView}
+            className="oratio-pill-active px-3 py-1.5 rounded-full text-[10px] cursor-pointer flex-shrink-0"
+            aria-label={`View prayers near ${area.city}`}
+          >
+            View
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
 }
 
 function aggregateMapPrayers(prayers: PrayerRequest[]): PrayerRequest[] {
@@ -157,6 +219,7 @@ export function Home() {
   const [newPrayerId, setNewPrayerId] = useState<string | null>(null);
   const [flyTo, setFlyTo] = useState<{ lat: number; lng: number } | null>(null);
   const [showGeoPrompt, setShowGeoPrompt] = useState(true);
+  const [nearbyAreaBannerToken, setNearbyAreaBannerToken] = useState(0);
   const [hintDone] = useState(() => {
     try {
       return !!localStorage.getItem('oratio_hint_shown');
@@ -164,6 +227,9 @@ export function Home() {
       return false;
     }
   });
+  const nearbyAreaKey = nearbyArea
+    ? `${nearbyArea.city}:${nearbyArea.country}:${nearbyArea.requestCount}:${nearbyArea.prayerCount}`
+    : '';
 
   // Fly to user location when it's resolved
   useEffect(() => {
@@ -277,51 +343,15 @@ export function Home() {
       {/* Nearby area state */}
       <AnimatePresence>
         {nearbyArea && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            className="absolute top-20 left-4 right-4 z-[500] pointer-events-none"
-          >
-            <div
-              className="oratio-surface mx-auto max-w-sm rounded-full px-3 py-2 flex items-center gap-2 pointer-events-auto"
-              style={{
-                backdropFilter: 'blur(12px)',
-              }}
-            >
-              <span
-                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{
-                  background: 'rgba(var(--rgb-accent), 0.12)',
-                  color: 'rgb(var(--rgb-accent))',
-                }}
-              >
-                <MapPin size={13} />
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-text text-xs font-medium truncate">
-                  Prayers near {nearbyArea.city}
-                </p>
-                <p className="text-text-muted text-[10px] truncate">
-                  {getNearbyAreaSummary(nearbyArea)}
-                </p>
-              </div>
-              {nearbyArea.requestCount > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    void navigate(
-                      `/feed?city=${encodeURIComponent(nearbyArea.city)}&country=${encodeURIComponent(nearbyArea.country)}`
-                    );
-                  }}
-                  className="oratio-pill-active px-3 py-1.5 rounded-full text-[10px] cursor-pointer flex-shrink-0"
-                  aria-label={`View prayers near ${nearbyArea.city}`}
-                >
-                  View
-                </button>
-              )}
-            </div>
-          </motion.div>
+          <NearbyAreaBanner
+            key={`${nearbyAreaKey}:${nearbyAreaBannerToken}`}
+            area={nearbyArea}
+            onView={() => {
+              void navigate(
+                `/feed?city=${encodeURIComponent(nearbyArea.city)}&country=${encodeURIComponent(nearbyArea.country)}`
+              );
+            }}
+          />
         )}
       </AnimatePresence>
 
@@ -330,6 +360,7 @@ export function Home() {
         onClick={() => {
           if (geoLocation) {
             setFlyTo(getPrivacyRoundedCoordinates(geoLocation));
+            setNearbyAreaBannerToken((current) => current + 1);
           } else {
             if (geoDenied) resetDenied();
             void requestLocation();
