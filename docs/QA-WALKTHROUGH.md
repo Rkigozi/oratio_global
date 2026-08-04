@@ -147,7 +147,17 @@
 
 ---
 
-## 10. Edge Cases
+## 10. Updates
+
+- [ ] User B prays for User A's prayer → User A sees "[Name] prayed with you"
+- [ ] Multiple users pray for the same prayer → User A sees one grouped update, e.g. "[Name] and 2 others prayed with you"
+- [ ] Tap "View prayer" from the update → opens the correct prayer
+- [ ] User A praying for their own prayer does not create an update
+- [ ] Toggling pray/unpray/pray again from the same user does not create duplicate update rows
+
+---
+
+## 11. Edge Cases
 
 - [ ] **Empty states** — Feed with no prayers shows empty message
 - [ ] **No location** — prayers without location can show "Unknown" in non-map views, but do not create map hotspots
@@ -160,7 +170,7 @@
 
 ---
 
-## 11. PWA
+## 12. PWA
 
 - [ ] Install prompt appears (after criteria met)
 - [ ] App launches standalone (no browser chrome)
@@ -170,7 +180,7 @@
 
 ---
 
-## 12. Monitoring Verification
+## 13. Monitoring Verification
 
 - [ ] Open browser console → no uncaught errors
 - [ ] Trigger an error → check **Sentry** at https://sentry.io/organizations/oratio-3j/issues/

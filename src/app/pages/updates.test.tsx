@@ -36,6 +36,26 @@ const commentUpdate: ActivityEvent = {
   },
 };
 
+const prayedUpdate: ActivityEvent = {
+  id: 'event-2',
+  recipient_user_id: 'user-1',
+  actor_user_id: 'actor-2',
+  event_type: 'prayer_prayed',
+  prayer_id: 'p2',
+  comment_id: null,
+  report_id: null,
+  invite_id: null,
+  metadata: { actor_count: 1 },
+  read_at: null,
+  created_at: new Date().toISOString(),
+  actor: {
+    id: 'actor-2',
+    username: 'daniel',
+    display_name: 'Daniel',
+    avatar_url: null,
+  },
+};
+
 describe('Updates', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -76,6 +96,45 @@ describe('Updates', () => {
     );
 
     expect(await screen.findByText('No updates yet')).toBeInTheDocument();
+  });
+
+  it('renders prayed-for updates', async () => {
+    vi.mocked(getActivityEvents).mockResolvedValue([prayedUpdate]);
+
+    render(
+      <MemoryRouter initialEntries={['/updates']}>
+        <Routes>
+          <Route path="/updates" element={<Updates />} />
+          <Route path="/prayer/:id" element={<div>Prayer detail</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Daniel prayed with you')).toBeInTheDocument();
+    expect(screen.getByText('Open the prayer to see the encouragement.')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('View prayer'));
+    });
+
+    expect(screen.getByText('Prayer detail')).toBeInTheDocument();
+  });
+
+  it('groups multiple prayed-for updates for the same prayer', async () => {
+    vi.mocked(getActivityEvents).mockResolvedValue([
+      {
+        ...prayedUpdate,
+        metadata: { actor_count: 5 },
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <Updates />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Daniel and 4 others prayed with you')).toBeInTheDocument();
   });
 
   it('can mark all unread updates as read', async () => {

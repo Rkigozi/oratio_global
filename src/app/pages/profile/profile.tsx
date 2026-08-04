@@ -31,6 +31,8 @@ import {
 import { useGeolocation } from '../../hooks/use-geolocation';
 import { useActivityUpdates } from '../../hooks/activity-updates-context';
 
+const PRAYER_CIRCLE_LIMIT = 12;
+
 type ProfileDetails = {
   username: string;
   displayName: string;
@@ -503,7 +505,7 @@ export function Profile() {
                   <div className="min-w-0">
                     <p className="text-text text-sm font-medium">Public prayers</p>
                     <p className="text-text-dim text-xs mt-0.5">
-                      {publicPrayers} shared with the wider community.
+                      {publicPrayers} shared on the public feed.
                     </p>
                   </div>
                 </button>
@@ -539,7 +541,7 @@ export function Profile() {
                   <div className="min-w-0">
                     <p className="text-text text-sm font-medium">Private prayers</p>
                     <p className="text-text-dim text-xs mt-0.5">
-                      {privatePrayers} private prayer{privatePrayers !== 1 ? 's' : ''}.
+                      {privatePrayers} kept just for you.
                     </p>
                   </div>
                 </button>
@@ -566,7 +568,7 @@ export function Profile() {
                     <p className="text-text-dim text-xs mt-0.5">
                       {unreadUpdates > 0
                         ? `${unreadUpdates} unread update${unreadUpdates !== 1 ? 's' : ''} for you.`
-                        : 'Comments, invites, and report reviews.'}
+                        : 'Prayers, comments, invites, and moderation updates.'}
                     </p>
                   </div>
                 </button>
@@ -626,7 +628,7 @@ export function Profile() {
                 <div className="min-w-0">
                   <p className="text-text text-sm font-medium">Manage Prayer Circle</p>
                   <p className="text-text-dim text-xs mt-0.5">
-                    {circleCount} accepted person{circleCount !== 1 ? 's' : ''}.
+                    {circleCount} of {PRAYER_CIRCLE_LIMIT} spaces filled.
                   </p>
                 </div>
               </button>

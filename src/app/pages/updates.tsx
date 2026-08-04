@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import {
   Bell,
   Check,
+  Heart,
   MessageCircle,
   RefreshCw,
   ShieldCheck,
@@ -26,6 +27,7 @@ import { useActivityUpdates } from '../hooks/activity-updates-context';
 const activityIcons: Record<ActivityEventType, LucideIcon> = {
   comment_on_prayer: MessageCircle,
   reply_to_comment: MessageCircle,
+  prayer_prayed: Heart,
   prayer_circle_invite: Users,
   prayer_circle_accepted: Users,
   report_reviewed: ShieldCheck,
@@ -34,6 +36,16 @@ const activityIcons: Record<ActivityEventType, LucideIcon> = {
 function metadataText(event: ActivityEvent, key: string) {
   const value = event.metadata[key];
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function metadataNumber(event: ActivityEvent, key: string) {
+  const value = event.metadata[key];
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
 }
 
 function actorLabel(event: ActivityEvent) {
@@ -70,6 +82,27 @@ function getActivityCopy(event: ActivityEvent): {
     };
   }
 
+  if (event.event_type === 'prayer_prayed') {
+    const actorCount = metadataNumber(event, 'actor_count');
+    const otherCount = Math.max(actorCount - 1, 0);
+    const title = event.actor
+      ? otherCount > 1
+        ? `${actor} and ${otherCount} others prayed with you`
+        : otherCount === 1
+          ? `${actor} and 1 other prayed with you`
+          : `${actor} prayed with you`
+      : actorCount > 1
+        ? `${actorCount} people prayed with you`
+        : 'Someone prayed with you';
+
+    return {
+      title,
+      body: 'Open the prayer to see the encouragement.',
+      actionLabel: 'View prayer',
+      actionPath: event.prayer_id ? `/prayer/${event.prayer_id}` : undefined,
+    };
+  }
+
   if (event.event_type === 'prayer_circle_invite') {
     return {
       title: `${actor} invited you to their Prayer Circle`,
@@ -82,7 +115,7 @@ function getActivityCopy(event: ActivityEvent): {
   if (event.event_type === 'prayer_circle_accepted') {
     return {
       title: `${actor} accepted your Prayer Circle invite`,
-      body: 'You can now share quieter Prayer Circle requests with each other.',
+      body: 'You can now share Prayer Circle prayers with each other.',
       actionLabel: 'Open Prayer Circle',
       actionPath: '/profile/circle',
     };
@@ -242,7 +275,7 @@ export function Updates() {
               <Bell size={24} className="text-text-dim mx-auto mb-3" />
               <p className="text-text-muted text-sm mb-1">No updates yet</p>
               <p className="text-text-dim text-xs leading-relaxed max-w-xs mx-auto">
-                Comments, Prayer Circle invites, and report reviews will appear here.
+                Prayers, comments, Prayer Circle invites, and moderation updates will appear here.
               </p>
               <button
                 onClick={() => void navigate('/feed')}
@@ -255,7 +288,7 @@ export function Updates() {
             <div className="space-y-2.5">
               {events.map((event, index) => {
                 const copy = getActivityCopy(event);
-                const Icon = activityIcons[event.event_type];
+                const Icon = activityIcons[event.event_type] || Bell;
                 const unread = !event.read_at;
                 const clickable = Boolean(copy.actionPath);
 

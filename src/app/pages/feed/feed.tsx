@@ -416,8 +416,8 @@ export function Feed() {
     ? 'Tap ⋯ on a prayer and choose Save, or save from the prayer detail page'
     : showPrayerCircle
       ? prayerCircleMemberIds.length <= 1
-        ? 'Invite someone from a prayer or profile when you want to pray with them more closely'
-        : 'Prayers intentionally shared with your Prayer Circle will appear here'
+        ? 'Invite someone from a prayer or profile to start your Prayer Circle'
+        : 'Prayers shared with your Prayer Circle will appear here'
       : hasLocationFilter
         ? 'View all prayers'
         : 'View all prayers';
@@ -907,7 +907,7 @@ export function Feed() {
         )}
         {showPrayerCircle && !activeSearch && (
           <p className="text-text-dim text-xs text-center mb-4 px-3">
-            A quieter space for prayers shared with your Prayer Circle
+            Prayers shared with your Prayer Circle
           </p>
         )}
 

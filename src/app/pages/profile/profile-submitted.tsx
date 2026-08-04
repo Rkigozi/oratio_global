@@ -30,18 +30,18 @@ function getViewCopy(view: PrayerLibraryView) {
   if (view === 'circle') {
     return {
       title: 'Prayer Circle prayers',
-      description: 'Prayers you shared with accepted people in your Prayer Circle.',
+      description: 'Prayers you shared with your Prayer Circle.',
       emptyTitle: 'No Prayer Circle prayers yet',
-      emptyDescription: 'Prayer Circle prayers will appear here after you share with your circle.',
+      emptyDescription: 'Prayers you share with your Circle will live here.',
       Icon: Users,
     };
   }
 
   return {
     title: 'Public prayers',
-    description: 'Prayers you shared with the wider Oratio community.',
+    description: 'Prayers you shared on the public feed.',
     emptyTitle: 'No public prayers yet',
-    emptyDescription: 'Public prayers will appear here after you share with everyone.',
+    emptyDescription: 'Public prayers will appear here after you share on the feed.',
     Icon: Send,
   };
 }

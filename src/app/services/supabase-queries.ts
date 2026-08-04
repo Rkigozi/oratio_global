@@ -760,6 +760,7 @@ export async function getPrayerCircleCount(userId: string): Promise<number> {
 export type ActivityEventType =
   | 'comment_on_prayer'
   | 'reply_to_comment'
+  | 'prayer_prayed'
   | 'prayer_circle_invite'
   | 'prayer_circle_accepted'
   | 'report_reviewed';

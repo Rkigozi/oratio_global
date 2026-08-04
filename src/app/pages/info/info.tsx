@@ -17,7 +17,7 @@ const roadmapItems = [
   {
     icon: Users,
     label: 'Prayer Circle',
-    desc: 'A closer mutual space for prayer requests shared with people you intentionally accept.',
+    desc: 'Share prayer requests with people in your Prayer Circle.',
     status: 'live' as const,
   },
   {
@@ -120,8 +120,8 @@ export function Info() {
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
                   <span>
-                    Prayer Circle is mutual. You can share a prayer publicly or with accepted Circle
-                    connections only.
+                    Prayer Circle is mutual. You can share a prayer publicly, with your Circle, or
+                    keep it private.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">

@@ -137,6 +137,16 @@
 
 ---
 
+## Updates
+
+- [ ] When another user prays for your prayer, Updates shows "[Name] prayed with you"
+- [ ] When multiple users pray for the same prayer, Updates groups them as "[Name] and X others prayed with you"
+- [ ] Tapping "View prayer" opens the related prayer
+- [ ] Praying for your own prayer does not create an update
+- [ ] Re-praying the same prayer by the same user does not create duplicate update rows
+
+---
+
 ## Info Page
 
 - [ ] Prototype notice visible

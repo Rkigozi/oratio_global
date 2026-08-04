@@ -100,11 +100,10 @@ export function PrayerCircle() {
           >
             <div className="flex items-center gap-2 text-text text-sm font-medium">
               <Users size={16} className="text-accent" />
-              <span>Keep close to people you pray with.</span>
+              <span>Your Prayer Circle</span>
             </div>
             <p className="text-text-dim text-xs mt-2 leading-relaxed">
-              Prayer Circle is mutual. It is for people you intentionally allow into a closer prayer
-              space. V1 has {PRAYER_CIRCLE_LIMIT} spaces.
+              Prayer Circle is mutual. You have {PRAYER_CIRCLE_LIMIT} spaces.
             </p>
             <p className="text-text-muted text-[11px] mt-2">
               {circle.length}/{PRAYER_CIRCLE_LIMIT} spaces filled
@@ -238,8 +237,7 @@ export function PrayerCircle() {
                     <Users size={24} className="text-text-dim mx-auto mb-3" />
                     <p className="text-text-muted text-sm mb-1">No Prayer Circle connections yet</p>
                     <p className="text-text-dim text-xs leading-relaxed max-w-xs mx-auto">
-                      Invite someone from a prayer or profile when you want to pray with them more
-                      closely over time.
+                      Invite someone from a prayer or profile to start your Circle.
                     </p>
                   </div>
                 )}

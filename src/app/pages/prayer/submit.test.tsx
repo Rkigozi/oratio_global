@@ -98,7 +98,7 @@ describe('Submit', () => {
 
     expect(screen.getByPlaceholderText(/share what's on your heart/i)).toBeInTheDocument();
     expect(screen.getByText('Submit Prayer Request')).toBeInTheDocument();
-    expect(screen.getByText('Prayer visibility')).toBeInTheDocument();
+    expect(screen.getByText('Visibility')).toBeInTheDocument();
     expect(screen.getByText('Public')).toBeInTheDocument();
     expect(screen.getByText('Prayer Circle')).toBeInTheDocument();
     expect(screen.getByText('Private')).toBeInTheDocument();
@@ -216,7 +216,9 @@ describe('Submit', () => {
     await vi.waitFor(() => {
       expect(screen.getByRole('button', { name: /Prayer Circle/i })).toBeDisabled();
     });
-    expect(screen.getByText(/add at least one person/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Prayer Circle opens once someone accepts your invite/i)
+    ).toBeInTheDocument();
   });
 
   it('shows validation error when prayer text is too short', async () => {

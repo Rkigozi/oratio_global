@@ -133,7 +133,7 @@ export function Submit() {
 
       if (audience === 'circle' && circleCount < 1) {
         setErrors({
-          general: 'Add at least one person to your Prayer Circle before sharing there.',
+          general: 'Someone needs to accept your Prayer Circle invite before you can share there.',
         });
         return;
       }
@@ -270,7 +270,7 @@ export function Submit() {
 
                 {/* Prayer visibility */}
                 <div>
-                  <label className="text-text-muted text-sm mb-2 block">Prayer visibility</label>
+                  <label className="text-text-muted text-sm mb-2 block">Visibility</label>
                   <div
                     className="grid grid-cols-1 gap-2 rounded-xl border border-accent/12 p-1"
                     style={{ background: 'rgba(var(--rgb-surface), 0.45)' }}
@@ -293,7 +293,7 @@ export function Submit() {
                         Public
                       </span>
                       <span className="block text-text-dim text-[11px] leading-relaxed">
-                        Wider Oratio feed and map. Anyone signed in can pray.
+                        Appears in the public feed and map for signed-in people to pray.
                       </span>
                     </button>
                     <button
@@ -315,7 +315,7 @@ export function Submit() {
                         Prayer Circle
                       </span>
                       <span className="block text-text-dim text-[11px] leading-relaxed">
-                        Accepted Prayer Circle only. Kept out of the public map.
+                        Share with your Prayer Circle only. It stays off the public feed and map.
                       </span>
                     </button>
                     <button
@@ -338,25 +338,24 @@ export function Submit() {
                         Private
                       </span>
                       <span className="block text-text-dim text-[11px] leading-relaxed">
-                        Private to you. Useful for personal prayers, reflections, and updates.
+                        Only you can see this. Save it for your own prayers, notes, and updates.
                       </span>
                     </button>
                   </div>
                   {audience === 'circle' && (
                     <p className="text-text-dim text-[11px] leading-relaxed mt-2">
-                      Visible to accepted people in your Prayer Circle. Your name will be shown
-                      because this is a trusted space.
+                      Your name is shown on Prayer Circle requests.
                     </p>
                   )}
                   {audience === 'public' && circleCount < 1 && (
                     <p className="text-text-dim text-[11px] leading-relaxed mt-2">
-                      Add at least one person to your Prayer Circle before sharing Circle prayers.
+                      Prayer Circle opens once someone accepts your invite. Until then, you can
+                      share publicly or keep a prayer private.
                     </p>
                   )}
                   {audience === 'private' && (
                     <p className="text-text-dim text-[11px] leading-relaxed mt-2">
-                      Only you can see this prayer. Open it later to add notes or keep track of
-                      updates.
+                      Only you can see this. Come back later to add notes, reflections, or updates.
                     </p>
                   )}
                 </div>
@@ -574,15 +573,15 @@ export function Submit() {
                 {audience === 'private'
                   ? 'Your prayer has been saved privately.'
                   : audience === 'circle'
-                    ? 'Your prayer is in your Prayer Circle.'
+                    ? 'Shared with your Prayer Circle.'
                     : 'Your prayer is in the feed.'}
               </p>
               <p className="text-text-muted text-sm mb-8">
                 {audience === 'private'
-                  ? 'Only you can see it. Open it later for notes or private thoughts.'
+                  ? 'Only you can see it. Come back later for notes or private thoughts.'
                   : audience === 'circle'
-                    ? 'People in your Prayer Circle can see it and pray with you.'
-                    : 'People around the world will see it and pray.'}
+                    ? 'Your Prayer Circle can see it, pray, and leave encouragement.'
+                    : 'People can find it in the feed, pray, and leave encouragement.'}
               </p>
 
               <div className="flex flex-col items-center gap-3">
