@@ -32,7 +32,7 @@ function getPrayerRequestLabel(count: number) {
 }
 
 function getPeoplePrayedLabel(count: number) {
-  return `${count} ${count === 1 ? 'person has' : 'people have'} prayed`;
+  return `${count} ${count === 1 ? 'person' : 'people'} prayed`;
 }
 
 function getNearbyAreaSummary(area: { requestCount: number; prayerCount: number }) {
@@ -558,7 +558,7 @@ export function Home() {
                   </p>
                   <p className="text-text-muted text-sm text-center mb-6 max-w-[260px]">
                     {selectedPrayerActivity > 0
-                      ? `${selectedPrayerActivity} ${selectedPrayerActivity === 1 ? 'person has' : 'people have'} prayed here`
+                      ? `${getPeoplePrayedLabel(selectedPrayerActivity)} here`
                       : `People around ${selectedPrayerDetails.city || 'Unknown'} can lift this up now`}
                   </p>
 

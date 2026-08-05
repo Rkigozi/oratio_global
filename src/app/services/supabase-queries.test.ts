@@ -114,7 +114,7 @@ describe('getMapHotspots', () => {
           location_lat: 51.5,
           location_lng: -0.1,
           request_count: 3,
-          prayer_count: 12,
+          prayer_count: 7,
           latest_created_at: '2024-01-03',
         },
         {
@@ -138,7 +138,7 @@ describe('getMapHotspots', () => {
         city: 'London',
         country: 'United Kingdom',
         requestCount: 3,
-        prayerCount: 12,
+        prayerCount: 7,
         createdAt: '2024-01-03',
       }),
     ]);

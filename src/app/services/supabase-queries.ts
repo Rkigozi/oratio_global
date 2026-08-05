@@ -113,6 +113,8 @@ function mapHotspotTotal(row: Record<string, unknown>): PrayerRequest {
     city: location.city,
     country: location.country,
     text: '',
+    // The RPC keeps this legacy column name, but it now contains the number
+    // of distinct people who prayed for requests at this location.
     prayerCount: Number(row.prayer_count || 0),
     requestCount: Number(row.request_count || 0),
     lat: Number(row.location_lat || 0),
