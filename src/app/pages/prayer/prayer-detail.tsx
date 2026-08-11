@@ -428,7 +428,12 @@ export function PrayerDetail() {
         className="flex flex-col items-center justify-center h-full w-full"
         style={{ background: 'rgb(var(--rgb-bg))' }}
       >
-        <p className="text-text-muted text-sm mb-4">Prayer not found</p>
+        <div className="text-center px-6 mb-4">
+          <p className="text-text text-sm font-medium">Prayer unavailable</p>
+          <p className="text-text-muted text-xs mt-2">
+            It may have been removed, or you may not have access to it.
+          </p>
+        </div>
         <button
           onClick={() => void navigate('/feed')}
           className="px-5 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer"

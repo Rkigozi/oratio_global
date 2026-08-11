@@ -212,12 +212,14 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
     `
     )
     .eq('id', prayerId)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
     logError('fetch prayer', error);
     return null;
   }
+
+  if (!data) return null;
 
   const {
     data: { user },

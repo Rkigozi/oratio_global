@@ -307,14 +307,24 @@ describe('getPrayerById', () => {
     expect(result?.displayName).toBe('Miriam');
   });
 
-  it('returns null when not found', async () => {
-    setAlways(null, new Error('not found'));
+  it('returns null without logging when no prayer is visible', async () => {
+    setAlways(null);
+
     expect(await m.getPrayerById('missing')).toBeNull();
+    expect(qb.maybeSingle).toHaveBeenCalledOnce();
+    expect(qb.single).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
-  it('returns null when data is null without error', async () => {
-    setAlways(null);
+  it('returns null and logs genuine query errors', async () => {
+    setAlways(null, new Error('database unavailable'));
+
     expect(await m.getPrayerById('missing')).toBeNull();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[fetch prayer]',
+      'database unavailable',
+      ''
+    );
   });
 });
 
