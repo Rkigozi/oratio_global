@@ -483,8 +483,9 @@ export function subscribeToPrayerCommentChanges(
     return () => {
       void supabase.removeChannel(channel);
     };
-  } catch (error) {
-    logError('subscribe comments realtime', error);
+  } catch {
+    // Realtime is optional. Browsers can deny WebSockets through privacy or
+    // network policies; comments still load and update through normal queries.
     return () => {};
   }
 }

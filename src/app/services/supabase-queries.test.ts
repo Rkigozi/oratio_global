@@ -23,6 +23,10 @@ vi.mock('./supabase', () => {
     return qb;
   };
   const qb = makeQb();
+  const realtimeChannel = {
+    on: vi.fn().mockReturnThis(),
+    subscribe: vi.fn().mockReturnThis(),
+  };
   return {
     supabase: {
       auth: {
@@ -34,6 +38,8 @@ vi.mock('./supabase', () => {
       from: () => qb,
       rpc: vi.fn(),
       functions: { invoke: vi.fn() },
+      channel: vi.fn(() => realtimeChannel),
+      removeChannel: vi.fn().mockResolvedValue('ok'),
     },
   };
 });
@@ -43,6 +49,10 @@ let qb: Record<string, ReturnType<typeof vi.fn>>;
 let auth: { getUser: ReturnType<typeof vi.fn>; getSession: ReturnType<typeof vi.fn> };
 let rpc: ReturnType<typeof vi.fn>;
 let functionsInvoke: ReturnType<typeof vi.fn>;
+let realtimeChannel: {
+  on: ReturnType<typeof vi.fn>;
+  subscribe: ReturnType<typeof vi.fn>;
+};
 let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
 function setOnce(data: unknown, error: unknown = null, count?: number) {
@@ -66,6 +76,7 @@ beforeAll(async () => {
   };
   rpc = supabase.rpc as ReturnType<typeof vi.fn>;
   functionsInvoke = supabase.functions.invoke as ReturnType<typeof vi.fn>;
+  realtimeChannel = supabase.channel('test') as unknown as typeof realtimeChannel;
   m = await import('./supabase-queries');
 });
 
@@ -98,10 +109,26 @@ beforeEach(() => {
 
   rpc.mockResolvedValue({ error: null });
   functionsInvoke.mockResolvedValue({ error: null });
+  realtimeChannel.on.mockReturnThis();
+  realtimeChannel.subscribe.mockReturnThis();
 });
 
 afterEach(() => {
   consoleErrorSpy.mockRestore();
+});
+
+describe('subscribeToPrayerCommentChanges', () => {
+  it('falls back quietly when the browser denies the realtime WebSocket', () => {
+    realtimeChannel.subscribe.mockImplementationOnce(() => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    });
+
+    const unsubscribe = m.subscribeToPrayerCommentChanges('prayer-1', vi.fn());
+
+    expect(unsubscribe).toEqual(expect.any(Function));
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(() => unsubscribe()).not.toThrow();
+  });
 });
 
 describe('getMapHotspots', () => {
