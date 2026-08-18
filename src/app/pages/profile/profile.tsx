@@ -681,6 +681,9 @@ export function Profile() {
                 <p className="text-text-dim text-[10px] mt-1 text-center">
                   Lowercase letters, numbers, underscores, and dots.
                 </p>
+                <p className="text-text-dim text-[10px] mt-1 text-center leading-relaxed">
+                  Your prayers and Prayer Circle stay connected. Old profile links will still work.
+                </p>
               </div>
 
               <div className="mb-6">

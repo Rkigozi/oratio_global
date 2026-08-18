@@ -107,7 +107,7 @@ beforeEach(() => {
     resolve({ data: null, error: null })
   );
 
-  rpc.mockResolvedValue({ error: null });
+  rpc.mockResolvedValue({ data: null, error: null });
   functionsInvoke.mockResolvedValue({ error: null });
   realtimeChannel.on.mockReturnThis();
   realtimeChannel.subscribe.mockReturnThis();
@@ -1058,8 +1058,27 @@ describe('getProfileByUsername', () => {
   });
 
   it('returns null when not found', async () => {
-    setAlways(null, new Error('not found'));
+    setAlways(null);
     expect(await m.getProfileByUsername('nobody')).toBeNull();
+  });
+
+  it('resolves a previous username to the current profile', async () => {
+    const profileData = {
+      id: 'uid1',
+      username: 'current_name',
+      display_name: 'User 1',
+      avatar_url: null,
+      created_at: '2024-01-01',
+    };
+    setAlways(null);
+    rpc.mockResolvedValueOnce({ data: [profileData], error: null });
+
+    const result = await m.getProfileByUsername('Old_Name');
+
+    expect(result).toEqual(profileData);
+    expect(rpc).toHaveBeenCalledWith('resolve_profile_by_username', {
+      p_username: 'old_name',
+    });
   });
 });
 

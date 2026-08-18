@@ -26,7 +26,8 @@ export function UserProfile() {
   const [profile, setProfile] = useState<{ id: string; username: string; display_name: string | null; avatar_url: string | null; created_at: string } | null>(null);
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
 
-  const isOwnProfile = currentProfile?.username === username;
+  const resolvedUsername = profile?.username || username;
+  const isOwnProfile = currentProfile?.username === resolvedUsername;
 
   useEffect(() => {
     if (!username) return;
@@ -41,6 +42,9 @@ export function UserProfile() {
       if (!active) return;
       if (prof) {
         setProfile(prof);
+        if (prof.username !== username) {
+          void navigate(`/user/${encodeURIComponent(prof.username)}`, { replace: true });
+        }
         const status = await getPrayerCircleStatus(prof.id);
         if (!active) return;
         setCircleStatus(status);
@@ -53,7 +57,7 @@ export function UserProfile() {
     return () => {
       active = false;
     };
-  }, [username]);
+  }, [navigate, username]);
 
   const handleInvite = async () => {
     if (!profile) return;
@@ -111,16 +115,16 @@ export function UserProfile() {
           <div className="flex items-start gap-4 mb-6 mt-4">
             <AvatarImage
               src={profile?.avatar_url}
-              name={profile?.display_name || username || "User"}
-              alt={profile?.display_name || username || "User"}
+              name={profile?.display_name || resolvedUsername || "User"}
+              alt={profile?.display_name || resolvedUsername || "User"}
               className="h-20 w-20 flex-shrink-0 text-2xl"
             />
             <div className="flex-1 min-w-0 pt-1">
-              <h1 className="text-text font-heading text-base font-medium mb-0.5">{profile?.display_name || username}</h1>
-              <p className="text-text-dim text-xs mb-1">@{username}</p>
+              <h1 className="text-text font-heading text-base font-medium mb-0.5">{profile?.display_name || resolvedUsername}</h1>
+              <p className="text-text-dim text-xs mb-1">@{resolvedUsername}</p>
               {!isOwnProfile && (
                 <CircleAction
-                  username={username}
+                  username={resolvedUsername}
                   status={circleStatus}
                   busy={circleBusy}
                   onInvite={() => void handleInvite()}

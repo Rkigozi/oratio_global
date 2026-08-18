@@ -1195,17 +1195,38 @@ export async function getProfileByUsername(username: string): Promise<{
   avatar_url: string | null;
   created_at: string;
 } | null> {
+  const normalizedUsername = username.trim().toLowerCase();
   const { data, error } = await supabase
     .from('profiles')
     .select('id, username, display_name, avatar_url, created_at')
-    .eq('username', username)
-    .single();
+    .eq('username', normalizedUsername)
+    .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
     logError('fetch profile', error);
     return null;
   }
-  return data;
+
+  if (data) return data;
+
+  const resolveResult = (await supabase.rpc('resolve_profile_by_username', {
+    p_username: normalizedUsername,
+  })) as unknown as RpcResponse<
+    Array<{
+      id: string;
+      username: string;
+      display_name: string | null;
+      avatar_url: string | null;
+      created_at: string;
+    }>
+  >;
+
+  if (resolveResult.error) {
+    logError('resolve profile username', resolveResult.error);
+    return null;
+  }
+
+  return resolveResult.data?.[0] ?? null;
 }
 
 export async function getUserPrayers(username: string): Promise<PrayerRequest[]> {
