@@ -31,6 +31,17 @@ function startPostHog() {
       posthog.init(key, {
         api_host: import.meta.env.VITE_POSTHOG_HOST || "https://eu.i.posthog.com",
         capture_pageview: false,
+        // V1 uses PostHog for lightweight product analytics only. These
+        // optional products each load extra browser code and are not used.
+        disable_session_recording: true,
+        disable_surveys: true,
+        disable_external_dependency_loading: true,
+        advanced_disable_decide: true,
+        advanced_disable_feature_flags: true,
+        advanced_disable_feature_flags_on_first_load: true,
+        capture_heatmaps: false,
+        capture_dead_clicks: false,
+        capture_performance: false,
         defaults: "2026-05-30",
         loaded: (ph) => {
           if (!import.meta.env.PROD) ph.opt_out_capturing();

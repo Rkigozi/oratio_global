@@ -8,56 +8,11 @@ import { useEffect, useRef } from 'react';
 import { capturePageView } from '../lib/analytics';
 import { useAuth } from './hooks/auth-context';
 import { getLaunchRedirect, isStandaloneLaunch } from './launch-route';
-import { preloadAuthenticatedRoutes } from './route-loaders';
 
 const SERVICE_WORKER_RELOAD_KEY = 'oratio:sw-controller-reload-at';
 const UPDATE_CHECK_INTERVAL_MS = 15 * 60 * 1000;
 const CONTROLLER_RELOAD_COOLDOWN_MS = 30_000;
-const WEB_SERVICE_WORKER_REGISTRATION_DELAY_MS = 4_000;
-const DESKTOP_ROUTE_PRELOAD_DELAY_MS = 1_800;
-const MOBILE_ROUTE_PRELOAD_DELAY_MS = 5_000;
-
-type NetworkInformationLike = {
-  saveData?: boolean;
-  effectiveType?: string;
-  downlink?: number;
-};
-
-type NavigatorWithConnection = Navigator & {
-  connection?: NetworkInformationLike;
-  mozConnection?: NetworkInformationLike;
-  webkitConnection?: NetworkInformationLike;
-};
-
-type WindowWithIdleCallback = Window & {
-  requestIdleCallback?: (
-    callback: IdleRequestCallback,
-    options?: IdleRequestOptions
-  ) => number;
-  cancelIdleCallback?: (handle: number) => void;
-};
-
-function getConnectionInfo(): NetworkInformationLike | undefined {
-  const nav = navigator as NavigatorWithConnection;
-  return nav.connection ?? nav.mozConnection ?? nav.webkitConnection;
-}
-
-function shouldSkipRoutePreload() {
-  const connection = getConnectionInfo();
-  if (!connection) return false;
-
-  return (
-    connection.saveData === true ||
-    connection.effectiveType === 'slow-2g' ||
-    connection.effectiveType === '2g' ||
-    (typeof connection.downlink === 'number' && connection.downlink < 1.5)
-  );
-}
-
-function getRoutePreloadDelay() {
-  const isLikelyMobile = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-  return isLikelyMobile ? MOBILE_ROUTE_PRELOAD_DELAY_MS : DESKTOP_ROUTE_PRELOAD_DELAY_MS;
-}
+const WEB_SERVICE_WORKER_REGISTRATION_DELAY_MS = 30_000;
 
 function ServiceWorkerUpdater() {
   useEffect(() => {
@@ -117,8 +72,9 @@ function ServiceWorkerUpdater() {
       }
     };
 
-    // Installed PWAs should check immediately. In a normal browser, let the
-    // visible page finish loading before precaching the offline app shell.
+    // Installed PWAs should check immediately. A normal browser does not need
+    // the complete offline shell during startup, so keep that download well
+    // away from the first screen and early interactions.
     const registrationTimerId = window.setTimeout(
       registerServiceWorker,
       isStandaloneLaunch() ? 0 : WEB_SERVICE_WORKER_REGISTRATION_DELAY_MS
@@ -150,41 +106,6 @@ function AnalyticsRouteTracker() {
     trackCurrentRoute();
     return router.subscribe(trackCurrentRoute);
   }, []);
-
-  return null;
-}
-
-function RouteModulePreloader() {
-  const { loading, user } = useAuth();
-
-  useEffect(() => {
-    if (loading) return;
-    if (shouldSkipRoutePreload()) return;
-
-    let idleCallbackId: number | undefined;
-
-    const timerId = window.setTimeout(() => {
-      const preloadRoutes = () => {
-        if (document.visibilityState !== 'visible') return;
-
-        if (user) preloadAuthenticatedRoutes();
-      };
-
-      const win = window as WindowWithIdleCallback;
-      if (win.requestIdleCallback) {
-        idleCallbackId = win.requestIdleCallback(preloadRoutes, { timeout: 3_000 });
-      } else {
-        preloadRoutes();
-      }
-    }, getRoutePreloadDelay());
-
-    return () => {
-      window.clearTimeout(timerId);
-      if (idleCallbackId !== undefined) {
-        (window as WindowWithIdleCallback).cancelIdleCallback?.(idleCallbackId);
-      }
-    };
-  }, [loading, user]);
 
   return null;
 }
@@ -242,7 +163,6 @@ export default function App() {
               <RouterProvider router={router} />
               <LaunchRouteNormalizer />
               <AnalyticsRouteTracker />
-              <RouteModulePreloader />
               <ServiceWorkerUpdater />
             </div>
           </ActivityUpdatesProvider>

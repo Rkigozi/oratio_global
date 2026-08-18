@@ -24,6 +24,15 @@ describe('analytics', () => {
       expect.objectContaining({
         api_host: 'https://eu.i.posthog.com',
         capture_pageview: false,
+        disable_session_recording: true,
+        disable_surveys: true,
+        disable_external_dependency_loading: true,
+        advanced_disable_decide: true,
+        advanced_disable_feature_flags: true,
+        advanced_disable_feature_flags_on_first_load: true,
+        capture_heatmaps: false,
+        capture_dead_clicks: false,
+        capture_performance: false,
       })
     );
     expect(posthog.capture).toHaveBeenCalledWith(

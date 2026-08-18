@@ -10,6 +10,8 @@ type IdleWindow = Window &
     requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
   };
 
+const PASSIVE_MONITORING_DELAY_MS = 20_000;
+
 function runWhenIdle(callback: () => void) {
   const idleWindow = window as IdleWindow;
   if (typeof idleWindow.requestIdleCallback === "function") {
@@ -20,11 +22,16 @@ function runWhenIdle(callback: () => void) {
   globalThis.setTimeout(callback, 1200);
 }
 
+function runAfterDelayWhenIdle(callback: () => void, delayMs: number) {
+  globalThis.setTimeout(() => runWhenIdle(callback), delayMs);
+}
+
 installModuleScriptRecovery();
 
 createRoot(document.getElementById("root")!).render(<App />);
 
 runWhenIdle(() => {
-  initMonitoring();
   initAnalytics();
 });
+
+runAfterDelayWhenIdle(initMonitoring, PASSIVE_MONITORING_DELAY_MS);
