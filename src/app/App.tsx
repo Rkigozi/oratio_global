@@ -14,6 +14,18 @@ const UPDATE_CHECK_INTERVAL_MS = 15 * 60 * 1000;
 const CONTROLLER_RELOAD_COOLDOWN_MS = 30_000;
 const WEB_SERVICE_WORKER_REGISTRATION_DELAY_MS = 30_000;
 
+// These screens don't need a session to paint, so the auth bootstrap can wait
+// until after first paint on them (see AuthProvider's defer prop).
+const AUTH_DEFERRED_PATHS = new Set([
+  '/landing',
+  '/login',
+  '/reset-password',
+  '/update-password',
+  '/privacy',
+  '/terms',
+  '/onboarding',
+]);
+
 function ServiceWorkerUpdater() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
@@ -144,10 +156,12 @@ function LaunchRouteNormalizer() {
 }
 
 export default function App() {
+  const deferAuthBootstrap = AUTH_DEFERRED_PATHS.has(router.state.location.pathname);
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <AuthProvider>
+        <AuthProvider defer={deferAuthBootstrap}>
           <ActivityUpdatesProvider>
             <div
               style={{

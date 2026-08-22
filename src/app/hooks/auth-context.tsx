@@ -54,7 +54,13 @@ function getOAuthRedirectUrl(path = '/feed') {
   return `${window.location.origin}${safePath}`;
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({
+  children,
+  defer = false,
+}: {
+  children: ReactNode;
+  defer?: boolean;
+}) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<{ username: string; display_name: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     let subscription: { unsubscribe: () => void } | null = null;
+    let idleRequestId: number | undefined;
+    let timeoutId: number | undefined;
 
     const initAuth = async () => {
       try {
@@ -109,13 +117,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    void initAuth();
+    if (defer) {
+      // Public screens (landing, login, legal) don't need the session to
+      // paint. Wait until after first paint before downloading the Supabase
+      // client so it never competes with the first screen.
+      const idleWindow = window as Window & {
+        requestIdleCallback?: (
+          callback: () => void,
+          options?: { timeout?: number }
+        ) => number;
+      };
+      if (typeof idleWindow.requestIdleCallback === 'function') {
+        idleRequestId = idleWindow.requestIdleCallback(
+          () => {
+            if (active) void initAuth();
+          },
+          { timeout: 3000 }
+        );
+      } else {
+        timeoutId = window.setTimeout(() => {
+          if (active) void initAuth();
+        }, 1200);
+      }
+    } else {
+      void initAuth();
+    }
 
     return () => {
       active = false;
       subscription?.unsubscribe();
+      if (idleRequestId !== undefined) {
+        const idleWindow = window as Window & { cancelIdleCallback?: (id: number) => void };
+        idleWindow.cancelIdleCallback?.(idleRequestId);
+      }
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, defer]);
 
   useEffect(() => {
     if (!user?.id) return;

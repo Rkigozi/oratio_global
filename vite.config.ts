@@ -53,15 +53,19 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Keep the installed PWA internally consistent across deploys. Route
-        // chunks are hashed, so precaching every JS asset prevents the app shell
-        // from asking for a lazy route file that disappeared after a new deploy.
+        // Precache only the app shell: the files needed to boot the app and
+        // render the first screen offline. Lazy route chunks are cached as
+        // they are visited (see the /assets runtime cache below), which keeps
+        // first install/update downloads small instead of shipping every
+        // route to every user.
         globPatterns: [
           'index.html',
           'manifest.webmanifest',
           'icons/*.{svg,png,ico}',
           'assets/*.css',
-          'assets/*.js',
+          'assets/index-*.js',
+          'assets/shell-vendor-*.js',
+          'assets/supabase-*.js',
         ],
         globIgnores: [
           // Loaded only when someone uploads an iPhone HEIC photo. Keeping it
@@ -76,6 +80,17 @@ export default defineConfig({
         skipWaiting: true,
         cleanupOutdatedCaches: true,
         runtimeCaching: [
+          {
+            // Hashed asset chunks not in the precache (lazy routes, map,
+            // telemetry, photo transcoding). CacheFirst because hashed URLs
+            // are immutable; maxEntries bounds the cache size.
+            urlPattern: ({ url }) => url.pathname.startsWith('/assets/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'oratio-assets-cache',
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
@@ -108,6 +123,25 @@ export default defineConfig({
     alias: {
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
+    },
+  },
+
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React + router boot the app; keep the name stable so the workbox
+          // precache glob can match it as part of the app shell.
+          'shell-vendor': ['react', 'react-dom', 'react-router'],
+          // Heavy libraries that are only needed on specific routes. Stable
+          // names keep them out of the precache globs (index-*, shell-vendor-*,
+          // supabase-*) so they are cached lazily at runtime instead.
+          supabase: ['@supabase/supabase-js'],
+          map: ['leaflet'],
+          telemetry: ['@sentry/react', 'posthog-js'],
+          heic2any: ['heic2any'],
+        },
+      },
     },
   },
 
