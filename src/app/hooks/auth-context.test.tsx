@@ -260,36 +260,6 @@ describe('AuthProvider', () => {
     expect(error).toBe('Invalid login credentials');
   });
 
-  it('signInWithGoogle calls OAuth', async () => {
-    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    await act(async () => {
-      await result.current.signInWithGoogle();
-    });
-
-    expect(supabase.auth.signInWithOAuth).toHaveBeenCalledWith({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/feed` },
-    });
-  });
-
-  it('signInWithGoogle supports a safe return path', async () => {
-    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-
-    await act(async () => {
-      await result.current.signInWithGoogle('/prayer/p1');
-    });
-
-    expect(supabase.auth.signInWithOAuth).toHaveBeenCalledWith({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/prayer/p1` },
-    });
-  });
-
   it('signOut clears user and profile', async () => {
     vi.mocked(supabase.auth.getSession).mockResolvedValue({
       data: { session: { user: { id: 'user-1', email: 'test@example.com' } } },

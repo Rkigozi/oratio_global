@@ -7,7 +7,6 @@ interface MockAuthState {
   loading: boolean;
   signUp: ReturnType<typeof vi.fn>;
   signIn: ReturnType<typeof vi.fn>;
-  signInWithGoogle: ReturnType<typeof vi.fn>;
   signOut: ReturnType<typeof vi.fn>;
   resetPassword: ReturnType<typeof vi.fn>;
   updatePassword: ReturnType<typeof vi.fn>;
@@ -20,7 +19,6 @@ const defaultAuth: MockAuthState = {
   loading: false,
   signUp: vi.fn().mockResolvedValue(null),
   signIn: vi.fn().mockResolvedValue(null),
-  signInWithGoogle: vi.fn().mockResolvedValue(undefined),
   signOut: vi.fn().mockResolvedValue(undefined),
   resetPassword: vi.fn().mockResolvedValue(null),
   updatePassword: vi.fn().mockResolvedValue(null),

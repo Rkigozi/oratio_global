@@ -4,25 +4,20 @@ import { motion, AnimatePresence } from 'motion/react';
 import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
-  Check,
-  Clock,
   MapPin,
-  X,
   MoreHorizontal,
   Share2,
   Flag,
   Bookmark,
   MessageCircle,
-  UserPlus,
   Pencil,
-  Loader,
   Users,
   Lock,
 } from 'lucide-react';
 import { timeAgo, getAttributionText } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { CommentSection } from '../../components/comments/comment-section';
-import { reportContent } from '../../services/api';
+import { reportContent } from '../../services/supabase-queries';
 import { renderHashtags } from '../../services/hashtags';
 import { translateText, needsTranslation, detectLanguage } from '../../services/translate';
 import { validatePrayerSubmission, sanitizePrayerText } from '../../../lib/validation';
@@ -47,6 +42,9 @@ import { useAuth } from '../../hooks/auth-context';
 import { logError } from '../../../lib/logger';
 import { captureEvent } from '../../../lib/analytics';
 import { getPrayerReportStatusTitle } from './report-status-title';
+import { PrayerCircleMiniButton } from './prayer-circle-mini-button';
+import { EditPrayerDialog } from './edit-prayer-dialog';
+import { ReportPrayerDialog } from './report-prayer-dialog';
 
 export function PrayerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -468,6 +466,7 @@ export function PrayerDetail() {
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
+              aria-label="More options"
               className="w-8 h-8 flex items-center justify-center rounded-full text-text-dim hover:text-text-muted hover:bg-accent/6 transition-all cursor-pointer"
             >
               <MoreHorizontal size={16} />
@@ -724,215 +723,32 @@ export function PrayerDetail() {
         </div>
       </div>
 
-      {/* Report dialog */}
+      {/* Edit + report dialogs */}
       {createPortal(
         <AnimatePresence>
           {showEdit && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-6"
-              style={{ background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)' }}
-              onClick={() => setShowEdit(false)}
-            >
-              <motion.div
-                initial={{ y: 24, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 24, opacity: 0 }}
-                className="w-full max-w-md rounded-t-2xl p-5 sm:rounded-2xl border border-accent/10"
-                style={{ background: 'rgba(var(--rgb-surface), 0.98)' }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-text-secondary text-sm">Edit prayer</p>
-                  <button
-                    onClick={() => setShowEdit(false)}
-                    className="h-9 w-9 rounded-full flex items-center justify-center text-text-faint hover:text-text-muted hover:bg-accent/8 transition-colors cursor-pointer"
-                    aria-label="Close edit prayer"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <textarea
-                  value={editText}
-                  onChange={(e) => {
-                    setEditText(e.target.value);
-                    setEditError('');
-                  }}
-                  rows={6}
-                  maxLength={500}
-                  className="w-full rounded-xl px-4 py-3 text-text placeholder-text-dim text-sm focus:outline-none border border-accent/12 resize-none"
-                  style={{
-                    background: 'rgba(var(--rgb-bg), 0.35)',
-                    lineHeight: 1.7,
-                  }}
-                />
-                <div className="mt-2 flex items-center gap-3">
-                  {editError ? (
-                    <p className="text-danger text-xs flex-1">{editError}</p>
-                  ) : (
-                    <p className="text-text-dim text-xs flex-1">Update wording for clarity.</p>
-                  )}
-                  <p
-                    className={`text-xs ${editText.length > 500 || editText.trim().length < 10 ? 'text-danger' : 'text-text-dim'}`}
-                  >
-                    {editText.length}/500
-                  </p>
-                </div>
-                <div className="mt-5 flex gap-3">
-                  <button
-                    onClick={() => setShowEdit(false)}
-                    className="flex-1 rounded-full border border-accent/12 px-4 py-3 text-sm text-text-muted transition-colors hover:bg-accent/6 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => void handleSavePrayerEdit()}
-                    disabled={savingEdit}
-                    className="flex-1 rounded-full px-4 py-3 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
-                      color: 'rgb(var(--rgb-text))',
-                    }}
-                  >
-                    <span className="inline-flex items-center justify-center gap-2">
-                      {savingEdit && <Loader size={14} className="animate-spin" />}
-                      {savingEdit ? 'Saving...' : 'Save update'}
-                    </span>
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
+            <EditPrayerDialog
+              text={editText}
+              error={editError}
+              saving={savingEdit}
+              onClose={() => setShowEdit(false)}
+              onChange={(value) => {
+                setEditText(value);
+                setEditError('');
+              }}
+              onSave={() => void handleSavePrayerEdit()}
+            />
           )}
           {showReport && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-6"
-              style={{ background: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)' }}
-              onClick={() => setShowReport(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.92, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.92, opacity: 0 }}
-                className="w-full max-w-sm rounded-2xl p-5 border border-accent/10"
-                style={{ background: 'rgba(var(--rgb-surface), 0.98)' }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-text-secondary text-sm">Why are you reporting this?</p>
-                  <button
-                    onClick={() => setShowReport(false)}
-                    className="text-text-faint hover:text-text-muted transition-colors cursor-pointer"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {[
-                    'Spam or fake',
-                    'Upsetting or graphic',
-                    'Harmful or unsafe',
-                    'Something else',
-                  ].map((reason) => (
-                    <button
-                      key={reason}
-                      onClick={() => void handleReport(reason)}
-                      disabled={reporting}
-                      className="w-full text-left px-4 py-3 rounded-xl text-xs text-text-muted hover:text-text-secondary hover:bg-accent/8 border border-accent/6 transition-all cursor-pointer"
-                    >
-                      {reason}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            </motion.div>
+            <ReportPrayerDialog
+              submitting={reporting}
+              onClose={() => setShowReport(false)}
+              onReport={(reason) => void handleReport(reason)}
+            />
           )}
         </AnimatePresence>,
         document.body
       )}
     </div>
-  );
-}
-
-function PrayerCircleMiniButton({
-  username,
-  status,
-  busy,
-  onInvite,
-  onCancel,
-  onAccept,
-}: {
-  username: string;
-  status: PrayerCircleStatus;
-  busy: boolean;
-  onInvite: () => void;
-  onCancel: () => void;
-  onAccept: () => void;
-}) {
-  if (status.state === 'connected') {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full text-accent bg-accent/10 border border-accent/15">
-        <Check size={11} />
-        In Prayer Circle
-      </span>
-    );
-  }
-
-  if (status.state === 'pending_sent') {
-    return (
-      <button
-        onClick={onCancel}
-        disabled={busy}
-        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer disabled:opacity-60"
-        style={{
-          background: 'rgba(var(--rgb-accent), 0.08)',
-          border: '1px solid rgba(var(--rgb-accent), 0.16)',
-          color: 'rgb(var(--rgb-accent))',
-        }}
-        aria-label={`Cancel Prayer Circle invite to @${username}`}
-      >
-        <Clock size={11} />
-        Invite sent
-      </button>
-    );
-  }
-
-  if (status.state === 'pending_received') {
-    return (
-      <button
-        onClick={onAccept}
-        disabled={busy}
-        className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer disabled:opacity-60"
-        style={{
-          background:
-            'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
-          color: 'rgb(var(--rgb-text))',
-        }}
-      >
-        <Check size={11} />
-        Accept invite
-      </button>
-    );
-  }
-
-  return (
-    <button
-      onClick={onInvite}
-      disabled={busy}
-      className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-all cursor-pointer disabled:opacity-60"
-      style={{
-        background: 'rgba(var(--rgb-accent), 0.04)',
-        border: '1px solid rgba(var(--rgb-accent), 0.08)',
-        color: 'rgb(var(--rgb-text-dim))',
-      }}
-    >
-      <UserPlus size={11} />
-      Invite @{username}
-    </button>
   );
 }

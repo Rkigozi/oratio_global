@@ -1,82 +1,56 @@
-# Oratio Quick Start Guide
+# Oratio Quick Start
 
-## 🚀 Starting Development Server
+## Start the dev server
 
-### Option 1: Auto-Cleanup Script (Recommended)
 ```bash
 ./start-dev.sh
 ```
-- Auto-cleans orphaned servers on ports 5173-5176
-- Kills orphaned esbuild processes  
-- Shows clean startup with access URLs
-- Default port: 5173 (or specify: `./start-dev.sh 5174`)
 
-### Option 2: Direct Vite Command
+This script cleans orphaned servers on ports 5173–5176 and stray esbuild processes, then starts a fresh Vite server (default http://localhost:5173).
+
+### Why not `npm run dev`?
+
+This repo lives on an external drive (Samsung T5), which triggers a known npm bug: `ENOENT: no such file or directory, uv_cwd`. Workarounds, in order of preference:
+
+1. `./start-dev.sh` — recommended
+2. `node node_modules/vite/bin/vite.js` — direct Vite
+3. `alias npm='node /opt/homebrew/lib/node_modules/npm/bin/npm-cli.js'` — shell alias
+
+## Quality gates
+
 ```bash
-node node_modules/vite/bin/vite.js
+npm run type-check   # tsc --noEmit
+npm run lint         # eslint
+npm test             # vitest (unit + component + integration)
+npm run build        # production build + PWA generation
 ```
 
-### Option 3: NPM Wrapper
+## Tests
+
 ```bash
-node /opt/homebrew/lib/node_modules/npm/bin/npm-cli.js run dev
+npm run test:watch       # vitest watch mode
+npm run test:coverage    # coverage report (html in coverage/)
+
+# Playwright E2E — needs browsers installed once:
+npx playwright install webkit
+npm run test:e2e                       # local dev server, mobile WebKit + desktop Chrome
+npm run test:e2e:remote                # live site at oratiotest.netlify.app
+npm run test:e2e:ui                    # Playwright UI mode
+
+# Authenticated journeys (sign in, submit, pray, comment):
+E2E_TEST_EMAIL=you@example.com E2E_TEST_PASSWORD=secret npm run test:e2e
 ```
 
-## 🛑 Stopping the Server
-- **In terminal**: Press `Ctrl+C`
-- **If frozen**: Close terminal or use `pkill -f "vite"`
+## Deploy
 
-## 🔧 Server Management Commands
+No manual steps. `git push` to `main`:
+1. GitHub Actions runs type-check, lint, tests, build
+2. Netlify (Git-connected) builds and publishes
 
-### Cleanup Orphaned Servers
-```bash
-# Kill vite servers on common ports
-for port in 5173 5174 5175 5176; do
-  lsof -ti:$port 2>/dev/null | xargs kill -9 2>/dev/null
-done
+Roll back from the Netlify deploys list. Preview builds run automatically on pull requests.
 
-# Clean orphaned esbuild processes
-pkill -f "esbuild.*Oratio_Prototype_MVP" 2>/dev/null
-```
+## Troubleshooting
 
-### Check Server Status
-```bash
-# See what's running on dev ports
-lsof -i :5173-5176 2>/dev/null | grep -E "(LISTEN|vite|node)"
-
-# Check if specific port is in use
-lsof -ti:5173 2>/dev/null && echo "Port 5173 in use" || echo "Port 5173 free"
-```
-
-## 📱 Accessing the App
-Once server starts, open in browser:
-- **Local**: http://localhost:5173/ (or whichever port is shown)
-- **Network**: http://[your-computer-name]:[port]/
-
-## 🐛 Common Issues
-
-### "npm run dev" fails with "ENOENT: no such file or directory, uv_cwd"
-**Cause**: npm bug with external drives (like Samsung T5)
-**Fix**: Use the workarounds above
-
-### Port already in use
-**Fix**: The `./start-dev.sh` script auto-cleans ports. Or manually:
-```bash
-lsof -ti:5173 | xargs kill -9 2>/dev/null
-```
-
-### Server starts but app doesn't load
-**Check**: 
-1. Wait for "✓ ready in X ms" message
-2. Refresh browser
-3. Check browser console for errors (F12 → Console)
-
-## ✅ Testing Prayer Submission
-1. Navigate to **Submit** page
-2. Enter prayer text (minimum 10 characters)
-3. Select location & category
-4. Click **Submit Prayer Request**
-5. Should see success screen with "View in Feed" button
-
----
-
-**Tip**: Bookmark http://localhost:5173/ for quick access during development.
+- **Orphaned dev server**: `lsof -ti:5173 | xargs kill -9` (or any port 5173–5176)
+- **Stale service worker locally**: Dev server doesn't use the production SW; for the live site, hard-refresh or wait for the SW update
+- **Supabase errors in dev**: check `.env` has `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` matching the project

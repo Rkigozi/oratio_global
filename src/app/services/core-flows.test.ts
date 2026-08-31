@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { timeAgo, getAttributionText } from './prayer-data';
-import { mockFeedPrayers, mockHotspots } from './mock-prayers';
+import { mockFeedPrayers, mockHotspots } from '../../test/mocks/mock-prayers';
 import type { PrayerRequest } from './prayer-data';
 
 // ─── Prayer Data Integrity ─────────────────────────────────────────────

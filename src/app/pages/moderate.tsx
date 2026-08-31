@@ -12,7 +12,7 @@ import {
   Clock,
   UserCheck,
 } from 'lucide-react';
-import { getReports, isCurrentUserModerator, resolveReport } from '../services/api';
+import { getReports, isCurrentUserModerator, resolveReport } from '../services/supabase-queries';
 import { timeAgo } from '../services/prayer-data';
 import type {
   ReportProfile,
@@ -70,7 +70,7 @@ export function Moderate() {
 
   const loadReports = useCallback(async () => {
     setLoading(true);
-    const { data: canModerate } = await isCurrentUserModerator();
+    const canModerate = await isCurrentUserModerator();
     setAuthorized(canModerate);
 
     if (!canModerate) {
@@ -79,7 +79,7 @@ export function Moderate() {
       return;
     }
 
-    const { data } = await getReports('all');
+    const data = await getReports('all');
     if (data) setReports(data);
     setLoading(false);
   }, []);
@@ -109,9 +109,9 @@ export function Moderate() {
       status === 'resolved'
         ? 'Reviewed and resolved from the moderation queue.'
         : 'Reviewed and dismissed from the moderation queue.';
-    const { error } = await resolveReport(reportId, status, moderatorNote);
+    const ok = await resolveReport(reportId, status, moderatorNote);
 
-    if (error) {
+    if (!ok) {
       setNotice('Sorry, that report could not be updated. Please refresh and try again.');
       setActioningReportId(null);
       return;

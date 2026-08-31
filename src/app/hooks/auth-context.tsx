@@ -1,5 +1,4 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { logError } from '../../lib/logger';
 import { captureEvent } from '../../lib/analytics';
 import type { User } from '@supabase/supabase-js';
 
@@ -9,7 +8,6 @@ interface AuthState {
   loading: boolean;
   signUp: (email: string, password: string, username: string) => Promise<string | null>;
   signIn: (email: string, password: string) => Promise<string | null>;
-  signInWithGoogle: (redirectPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<string | null>;
   updatePassword: (password: string) => Promise<string | null>;
@@ -22,7 +20,6 @@ const AuthContext = createContext<AuthState>({
   loading: true,
   signUp: () => Promise.resolve(null),
   signIn: () => Promise.resolve(null),
-  signInWithGoogle: () => Promise.resolve(),
   signOut: () => Promise.resolve(),
   resetPassword: () => Promise.resolve(null),
   updatePassword: () => Promise.resolve(null),
@@ -47,11 +44,6 @@ async function withStartupTimeout<T>(promise: Promise<T>): Promise<T | null> {
 async function getSupabaseClient() {
   const { supabase } = await import('../services/supabase');
   return supabase;
-}
-
-function getOAuthRedirectUrl(path = '/feed') {
-  const safePath = path.startsWith('/') && !path.startsWith('//') ? path : '/feed';
-  return `${window.location.origin}${safePath}`;
 }
 
 export function AuthProvider({
@@ -194,16 +186,6 @@ export function AuthProvider({
     return error?.message || null;
   };
 
-  const signInWithGoogle = async (redirectPath?: string) => {
-    const supabase = await getSupabaseClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: getOAuthRedirectUrl(redirectPath) },
-    });
-    if (error) logError('google sign-in', error);
-    else captureEvent('user_signed_in', { method: 'google' });
-  };
-
   const signOut = async () => {
     const supabase = await getSupabaseClient();
     await supabase.auth.signOut();
@@ -236,7 +218,6 @@ export function AuthProvider({
         loading,
         signUp,
         signIn,
-        signInWithGoogle,
         signOut,
         resetPassword,
         updatePassword,

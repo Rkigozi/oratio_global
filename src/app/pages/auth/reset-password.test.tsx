@@ -20,7 +20,6 @@ describe("ResetPassword", () => {
       loading: false,
       signUp: vi.fn(),
       signIn: vi.fn(),
-      signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
       resetPassword: mockResetPassword,
       updatePassword: vi.fn(),

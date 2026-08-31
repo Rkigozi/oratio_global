@@ -12,7 +12,6 @@ import {
   Settings,
   Users,
 } from 'lucide-react';
-import { Drawer } from 'vaul';
 import { useNavigate } from 'react-router';
 import { validateProfile } from '../../../lib/validation';
 import { useAuth } from '../../hooks/auth-context';
@@ -30,6 +29,8 @@ import {
 } from '../../services/supabase-queries';
 import { useGeolocation } from '../../hooks/use-geolocation';
 import { useActivityUpdates } from '../../hooks/activity-updates-context';
+import { ProfileEditDrawer } from './profile-edit-drawer';
+import { ProfileLoadingState } from './profile-loading-state';
 
 const PRAYER_CIRCLE_LIMIT = 12;
 
@@ -603,273 +604,40 @@ export function Profile() {
       </div>
 
       {/* Edit Profile Drawer */}
-      <Drawer.Root open={editOpen} onOpenChange={setEditOpen}>
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[600]" />
-          <Drawer.Content
-            className="fixed bottom-0 left-0 right-0 z-[600] bg-bg rounded-t-2xl p-6 outline-none"
-            style={{
-              borderTop: '1px solid rgba(var(--rgb-accent), 0.1)',
-              boxShadow: '0 -20px 60px rgba(0, 0, 0, 0.3)',
-            }}
-          >
-            <div className="mx-auto w-12 h-1.5 bg-accent/20 rounded-full mb-6" />
-            <Drawer.Title className="sr-only">Edit Profile</Drawer.Title>
-            <Drawer.Description className="sr-only">
-              Update your username and display name
-            </Drawer.Description>
-
-            <div className="max-w-md mx-auto">
-              <h3 className="text-text text-center mb-4 font-heading text-lg">Edit Profile</h3>
-
-              {/* Photo upload */}
-              <div className="flex justify-center mb-6">
-                <label
-                  className={`flex flex-col items-center gap-2 ${uploadingPhoto ? 'cursor-wait' : 'cursor-pointer'}`}
-                >
-                  <div className="relative">
-                    <AvatarImage
-                      src={avatarSource}
-                      name={displayName || username}
-                      alt={username || 'User'}
-                      className="h-16 w-16 text-xl"
-                    />
-                    <div
-                      className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center"
-                      aria-hidden="true"
-                    >
-                      <Camera size={16} className="text-white" />
-                    </div>
-                  </div>
-                  <span className="text-accent text-xs" aria-live="polite">
-                    {uploadingPhoto ? photoUploadStatus || 'Uploading photo...' : 'Change Photo'}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-                    onChange={(e) => void handlePhotoUpload(e)}
-                    className="hidden"
-                    disabled={uploadingPhoto}
-                  />
-                </label>
-              </div>
-
-              <div className="mb-4">
-                <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">
-                  Username
-                </p>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim text-sm">
-                    @
-                  </span>
-                  <input
-                    type="text"
-                    value={newUsername}
-                    onChange={(e) => {
-                      setNewUsername(e.target.value.toLowerCase());
-                      setEditError('');
-                    }}
-                    onKeyDown={(e) => e.key === 'Enter' && void handleSaveProfile()}
-                    placeholder="your_username"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    className={`w-full rounded-xl py-3.5 pl-8 pr-4 text-text placeholder-text-dim text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-danger' : 'border-accent/12'}`}
-                    style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
-                  />
-                </div>
-                <p className="text-text-dim text-[10px] mt-1 text-center">
-                  Lowercase letters, numbers, underscores, and dots.
-                </p>
-                <p className="text-text-dim text-[10px] mt-1 text-center leading-relaxed">
-                  Your prayers and Prayer Circle stay connected. Old profile links will still work.
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">
-                  Display Name
-                </p>
-                <input
-                  type="text"
-                  value={newDisplayName}
-                  onChange={(e) => {
-                    setNewDisplayName(e.target.value);
-                    setEditError('');
-                  }}
-                  onKeyDown={(e) => e.key === 'Enter' && void handleSaveProfile()}
-                  placeholder="Leave empty to use username"
-                  className={`w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border transition-colors text-center ${editError ? 'border-danger' : 'border-accent/12'}`}
-                  style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
-                />
-              </div>
-
-              <div className="mb-4">
-                <p className="text-text-muted text-xs uppercase tracking-[0.15em] mb-2 text-center">
-                  Bio
-                </p>
-                <textarea
-                  value={newBio}
-                  onChange={(e) => setNewBio(e.target.value)}
-                  placeholder="Tell people a bit about yourself..."
-                  rows={2}
-                  maxLength={150}
-                  className="w-full rounded-xl px-4 py-3 text-text placeholder-text-dim text-sm focus:outline-none border border-accent/12 resize-none text-center"
-                  style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
-                />
-                <p className="text-text-dim text-[10px] text-right mt-1">{newBio.length}/150</p>
-              </div>
-
-              <div className="mb-6">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <p className="text-text-muted text-xs uppercase tracking-[0.15em]">Location</p>
-                  <button
-                    type="button"
-                    onClick={handleAutoLocationToggle}
-                    className="relative w-9 h-5 rounded-full transition-colors duration-200 cursor-pointer flex-shrink-0"
-                    style={{
-                      background: useAutoLocation
-                        ? 'rgba(var(--rgb-accent), 0.35)'
-                        : 'rgba(var(--rgb-accent), 0.12)',
-                    }}
-                    aria-label="Auto-detect location"
-                  >
-                    <div
-                      className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 shadow-md"
-                      style={{
-                        transform: useAutoLocation ? 'translateX(18px)' : 'translateX(2px)',
-                      }}
-                    />
-                  </button>
-                </div>
-                <p className="text-text-dim text-[10px] text-center mb-2">
-                  Toggle to auto-detect from your browser
-                </p>
-                {useAutoLocation ? (
-                  geoLocation ? (
-                    <div
-                      className="rounded-xl px-4 py-3 flex items-center gap-2 border border-accent/12 justify-center"
-                      style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
-                    >
-                      <span className="text-text text-sm">
-                        {geoLocation.city}, {geoLocation.country}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-text-dim text-xs">
-                        {geoLoading
-                          ? 'Detecting...'
-                          : geoDenied
-                            ? 'Location access denied'
-                            : 'Location not available'}
-                      </p>
-                      {!geoLoading && !geoDenied && (
-                        <button
-                          onClick={() => void requestLocation()}
-                          className="text-accent text-xs mt-1 cursor-pointer"
-                        >
-                          Try again
-                        </button>
-                      )}
-                    </div>
-                  )
-                ) : (
-                  <input
-                    type="text"
-                    value={newLocation}
-                    onChange={(e) => setNewLocation(e.target.value)}
-                    placeholder="e.g. London, UK"
-                    className="w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border border-accent/12 transition-colors text-center"
-                    style={{ background: 'rgba(var(--rgb-surface), 0.6)' }}
-                  />
-                )}
-              </div>
-
-              {editError && <p className="text-danger text-xs text-center mb-3">{editError}</p>}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setEditOpen(false)}
-                  className="flex-1 py-3.5 rounded-full text-sm text-text-muted bg-accent/6 border border-accent/10 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => void handleSaveProfile()}
-                  disabled={savingProfile || detectingAutoLocation || uploadingPhoto}
-                  className="flex-1 py-3.5 rounded-full text-sm font-semibold cursor-pointer active:scale-[0.98] transition-transform disabled:opacity-60"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
-                    color: '#fff',
-                    boxShadow: '0 10px 24px rgba(var(--rgb-accent), 0.24)',
-                  }}
-                >
-                  {uploadingPhoto
-                    ? 'Uploading photo...'
-                    : savingProfile
-                      ? 'Saving...'
-                      : detectingAutoLocation
-                        ? 'Detecting...'
-                        : 'Save Changes'}
-                </button>
-              </div>
-            </div>
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
-    </div>
-  );
-}
-
-function ProfileLoadingState() {
-  return (
-    <div
-      className="w-full h-full flex flex-col overflow-hidden"
-      style={{ background: 'rgb(var(--rgb-bg))' }}
-    >
-      <div className="relative z-10 px-5 overflow-y-auto overflow-x-hidden flex-1 h-full pt-24 pb-28">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-start gap-4 mb-6 animate-pulse">
-            <div className="w-20 h-20 rounded-full bg-accent/10 flex-shrink-0" />
-            <div className="flex-1 min-w-0 pt-1">
-              <div className="h-5 w-36 rounded-full bg-accent/10 mb-2" />
-              <div className="h-3 w-24 rounded-full bg-accent/8 mb-4" />
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-accent/8" />
-                <div className="w-10 h-10 rounded-full bg-accent/8" />
-                <div className="w-10 h-10 rounded-full bg-accent/8" />
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="flex justify-center gap-6 mb-6 py-3 rounded-xl animate-pulse"
-            style={{
-              background: 'rgba(var(--rgb-surface), 0.4)',
-              border: '1px solid rgba(var(--rgb-accent), 0.06)',
-            }}
-          >
-            <div className="h-8 w-12 rounded-lg bg-accent/8" />
-            <div className="h-8 w-12 rounded-lg bg-accent/8" />
-            <div className="w-px bg-accent/10" />
-            <div className="h-8 w-20 rounded-lg bg-accent/8" />
-          </div>
-
-          <div
-            className="w-full rounded-xl px-4 py-3 mb-6 animate-pulse"
-            style={{
-              background:
-                'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
-              border: '1px solid rgba(var(--rgb-accent), 0.08)',
-            }}
-          >
-            <div className="h-4 w-32 rounded-full bg-accent/10 mb-2" />
-            <div className="h-3 w-56 rounded-full bg-accent/8" />
-          </div>
-        </div>
-      </div>
+      <ProfileEditDrawer
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        avatarSource={avatarSource}
+        displayName={displayName}
+        username={username}
+        uploadingPhoto={uploadingPhoto}
+        photoUploadStatus={photoUploadStatus}
+        newUsername={newUsername}
+        newDisplayName={newDisplayName}
+        newBio={newBio}
+        newLocation={newLocation}
+        useAutoLocation={useAutoLocation}
+        geoLocation={geoLocation}
+        geoLoading={geoLoading}
+        geoDenied={geoDenied}
+        editError={editError}
+        savingProfile={savingProfile}
+        detectingAutoLocation={detectingAutoLocation}
+        onPhotoUpload={(e) => void handlePhotoUpload(e)}
+        onUsernameChange={(value) => {
+          setNewUsername(value);
+          setEditError('');
+        }}
+        onDisplayNameChange={(value) => {
+          setNewDisplayName(value);
+          setEditError('');
+        }}
+        onBioChange={setNewBio}
+        onLocationChange={setNewLocation}
+        onAutoLocationToggle={handleAutoLocationToggle}
+        onSave={() => void handleSaveProfile()}
+        onRequestLocation={() => void requestLocation()}
+      />
     </div>
   );
 }

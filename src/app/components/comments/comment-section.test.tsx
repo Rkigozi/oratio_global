@@ -10,9 +10,6 @@ vi.mock('../../services/supabase-queries', () => ({
   updateComment: vi.fn(),
   deleteComment: vi.fn(),
   subscribeToPrayerCommentChanges: vi.fn(() => vi.fn()),
-}));
-
-vi.mock('../../services/api', () => ({
   reportContent: vi.fn(),
 }));
 
@@ -29,7 +26,7 @@ import {
   subscribeToPrayerCommentChanges,
 } from '../../services/supabase-queries';
 import { useAuth } from '../../hooks/auth-context';
-import { reportContent } from '../../services/api';
+import { reportContent } from '../../services/supabase-queries';
 
 const mockPrayer: PrayerRequest = {
   id: 'p1',
@@ -49,7 +46,6 @@ describe('CommentSection', () => {
     loading: false,
     signUp: vi.fn(),
     signIn: vi.fn(),
-    signInWithGoogle: vi.fn(),
     signOut: vi.fn(),
     resetPassword: vi.fn(),
     updatePassword: vi.fn(),

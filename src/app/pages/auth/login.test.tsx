@@ -11,7 +11,6 @@ import { useAuth } from '../../hooks/auth-context';
 
 describe('Login', () => {
   const mockSignIn = vi.fn();
-  const mockSignInWithGoogle = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -21,7 +20,6 @@ describe('Login', () => {
       loading: false,
       signUp: vi.fn(),
       signIn: mockSignIn,
-      signInWithGoogle: mockSignInWithGoogle,
       signOut: vi.fn(),
       resetPassword: vi.fn(),
       updatePassword: vi.fn(),
@@ -123,15 +121,6 @@ describe('Login', () => {
     });
   });
 
-  it('renders Google sign in button', () => {
-    render(
-      <MemoryRouter>
-        <Login />
-      </MemoryRouter>
-    );
-    expect(screen.getByText('Continue with Google')).toBeInTheDocument();
-  });
-
   it('returns to a shared prayer after successful sign in', async () => {
     mockSignIn.mockResolvedValue(null);
     render(
@@ -157,18 +146,6 @@ describe('Login', () => {
     });
 
     expect(screen.getByText('Shared Prayer')).toBeInTheDocument();
-  });
-
-  it('passes the safe return path to Google sign in', () => {
-    render(
-      <MemoryRouter initialEntries={['/login?next=/prayer/shared-prayer']}>
-        <Login />
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getByText('Continue with Google'));
-
-    expect(mockSignInWithGoogle).toHaveBeenCalledWith('/prayer/shared-prayer');
   });
 
   it('renders back button', () => {

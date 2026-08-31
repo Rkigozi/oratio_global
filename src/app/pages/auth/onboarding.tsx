@@ -13,7 +13,7 @@ function getSafeNextPath(next: string | null) {
 export function Onboarding() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signUp, signInWithGoogle, needsEmailVerification } = useAuth();
+  const { signUp, needsEmailVerification } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -170,36 +170,6 @@ export function Onboarding() {
           >
             {loading ? <Loader size={15} className="animate-spin" /> : <Check size={15} />}
             {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-          <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px bg-text-faint/20" />
-            <span className="text-text-dim text-[10px]">or</span>
-            <div className="flex-1 h-px bg-text-faint/20" />
-          </div>
-          <button
-            onClick={() => void signInWithGoogle(nextPath)}
-            className="w-full py-3.5 rounded-full text-sm flex items-center justify-center gap-2.5 cursor-pointer transition-all active:scale-95 border border-text-faint/22 hover:border-text-faint/40"
-            style={{ background: 'rgba(var(--rgb-surface), 0.6)', color: 'rgb(var(--rgb-text))' }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18a11.96 11.96 0 0 0 0 10.95l3.66-2.93z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A11.96 11.96 0 0 0 12 0a11.96 11.96 0 0 0-9.82 5.47l3.66 2.93A7.17 7.17 0 0 1 12 5.38z"
-              />
-            </svg>
-            Continue with Google
           </button>
           <p className="text-text-dim text-[10px] text-center mt-3">Secure sign-in for Oratio.</p>
         </motion.div>

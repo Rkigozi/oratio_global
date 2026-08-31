@@ -1,46 +1,46 @@
-# Project Brief - Oratio Prayer Platform
+# Project Brief — Oratio
 
-## Project Identity
-- **Project Name**: Oratio
-- **Current Phase**: Native App Development (Expo/React Native)
-- **Status**: Web PWA prototype complete. Shifting to native mobile app.
-- **Target Platform**: iOS first (v2.0), Android (v2.1)
+## Identity
+
+- **Product**: Oratio — a global Christian prayer platform
+- **Current state**: V1 release candidate, deployed at https://oratiotest.netlify.app
+- **Form**: Web PWA (installable), mobile-first
+- **Backend**: Supabase (Auth, PostgreSQL + RLS, Storage, Edge Functions, Realtime)
 
 ## Core Purpose
-Oratio is a global Christian prayer platform that connects people through shared prayer. The platform enables users to explore prayer activity globally, submit prayer requests, pray for others, and view personal activity.
 
-## Current Reality
-- **Web PWA (oratiotest.netlify.app)**: Complete prototype — will become informational landing page
-- **Native App (Expo/React Native)**: In development — the real product
-- **Backend**: Supabase (already configured and ready)
-- **Shared Code**: All TypeScript types, API client, validation, utilities carry over from web PWA
+Connect people through shared prayer: submit prayer requests, pray for others, encourage through comments, and share privately through the Prayer Circle.
 
-## Architecture
-```
-oratio_global/
-├── oratio-web/          # Web PWA → becomes landing/info site
-│   ├── src/             # Current web app code
-│   └── netlify.toml
-└── oratio-app/          # New native app (Expo)
-    ├── src/
-    │   ├── lib/         # Shared code (types, API, validation, hashtags)
-    │   ├── screens/     # Auth, Feed, Submit, Profile, Comments, Map
-    │   └── components/  # Reusable UI components
-    └── app.json
-```
+## Core Loop
 
-## Business Objectives
-1. Ship a real, installable app to the App Store
-2. Validate with St Paul's congregation via TestFlight
-3. Scale based on engagement
+submit → feed → pray → comment → updates → return
 
-## Key Constraints
-1. Privacy First: Never store exact user locations
-2. iOS First: Single platform focus for v2.0
-3. Shared Code: Maximum reuse from web prototype
+## Product Surface
 
-## Stakeholder Priorities
-1. Authentic app experience (not a web wrapper)
-2. Beautiful, calm design matching the web prototype
-3. Core prayer loop: submit → feed → pray → comment
-4. Push notifications for prayer responses
+- Map of global prayer hotspots (privacy-safe, city-level aggregation)
+- Public feed with search, saved prayers, and location filters
+- Prayer detail with "I Prayed", comments/replies, translation, sharing, reporting
+- Prayer Circle: private mutual connections with circle-only prayers
+- Profile: stats, prayer library, avatar, settings
+- Updates inbox for comments, replies, circle events, report outcomes
+- Moderator report-review queue
+
+## Success Criteria
+
+- Users submit prayers and receive "I Prayed" responses
+- Engagement across locations and repeat visits
+- Prayer Circle retains its early adopters
+
+## Constraints
+
+1. **Privacy first** — never store exact locations; city/country only
+2. **One deploy pipeline** — Netlify Git-connected; CI is quality gates only
+3. **No dead weight** — features shipped must be maintained; cut what is not used
+4. **Launch something real, not perfect** — V1 scope is complete; improvements queue post-launch
+
+## Out Of Scope (deliberately deferred)
+
+- Push notifications (schema exists but no client)
+- Messaging/DMs
+- Monetisation
+- Native apps (Expo/React Native was considered and shelved; the PWA is the product for now)

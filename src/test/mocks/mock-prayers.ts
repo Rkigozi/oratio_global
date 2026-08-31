@@ -1,7 +1,7 @@
-import type { PrayerRequest } from "./prayer-data";
-import { cityDatabase, getApproximateCoordinates } from "./prayer-data";
+import type { PrayerRequest } from "../../app/services/prayer-data";
+import { cityDatabase, getApproximateCoordinates } from "../../app/services/prayer-data";
 import { generateUsernameFromDisplayName } from "../../lib/username";
-import { addHashtagsToMockData } from './hashtags';
+import { addHashtagsToMockData } from '../../app/services/hashtags';
 
 const prayerTexts = [
   "My dad was just diagnosed with stage 3 colon cancer. He starts chemo next week and he's scared. Please pray for peace and for the treatment to work.",

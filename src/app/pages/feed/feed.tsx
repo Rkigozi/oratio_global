@@ -1,83 +1,21 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapPin, X, Search, ChevronDown, Users } from 'lucide-react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router';
-import {
-  countries,
-  getPrayerLocationKey,
-  normalizePrayerLocation,
-} from '../../services/prayer-data';
-import type { PrayerRequest } from '../../services/prayer-data';
+import { countries, normalizePrayerLocation, type PrayerRequest } from '../../services/prayer-data';
 import { FeedCard } from '../../components/feed/feed-card';
 import { getHashtagCounts } from '../../services/hashtags';
 import { useGeolocation } from '../../hooks/use-geolocation';
+import { useFeedData } from './use-feed-data';
+import { useFeedSearch } from './use-feed-search';
 import {
-  getFeedPrayers,
-  searchUsers,
-  togglePray,
-  getPrayerCircleMemberIds,
-  getMyPrayedIds,
-  getMySavedIds,
-} from '../../services/supabase-queries';
+  clearFeedScrollSnapshot,
+  getFeedPath,
+  readFeedScrollSnapshot,
+  writeFeedScrollSnapshot,
+  type FeedScrollSnapshot,
+} from './feed-scroll-snapshot';
 import { LoadingSpinner, ErrorState } from '../../components/loading-spinner';
-import { captureEvent } from '../../../lib/analytics';
-
-function readRecentSearches(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem('oratio_recent_searches') || '[]') as string[];
-  } catch {
-    return [];
-  }
-}
-
-const FEED_SCROLL_SNAPSHOT_KEY = 'oratio_feed_scroll_snapshot';
-const FEED_SCROLL_SNAPSHOT_MAX_AGE_MS = 10 * 60 * 1000;
-
-type FeedScrollSnapshot = {
-  path: string;
-  scrollTop: number;
-  prayerId?: string;
-  showSaved: boolean;
-  showPrayerCircle: boolean;
-  searchQuery: string;
-  activeSearch: string;
-  savedAt: number;
-};
-
-function getFeedPath(search: string) {
-  return `/feed${search}`;
-}
-
-function readFeedScrollSnapshot(search: string): FeedScrollSnapshot | null {
-  try {
-    const raw = sessionStorage.getItem(FEED_SCROLL_SNAPSHOT_KEY);
-    if (!raw) return null;
-
-    const snapshot = JSON.parse(raw) as FeedScrollSnapshot;
-    const isFresh = Date.now() - snapshot.savedAt < FEED_SCROLL_SNAPSHOT_MAX_AGE_MS;
-    if (!isFresh || snapshot.path !== getFeedPath(search)) return null;
-
-    return snapshot;
-  } catch {
-    return null;
-  }
-}
-
-function writeFeedScrollSnapshot(snapshot: FeedScrollSnapshot) {
-  try {
-    sessionStorage.setItem(FEED_SCROLL_SNAPSHOT_KEY, JSON.stringify(snapshot));
-  } catch {
-    /* ignore */
-  }
-}
-
-function clearFeedScrollSnapshot() {
-  try {
-    sessionStorage.removeItem(FEED_SCROLL_SNAPSHOT_KEY);
-  } catch {
-    /* ignore */
-  }
-}
 
 export function Feed() {
   const navigate = useNavigate();
@@ -98,90 +36,36 @@ export function Feed() {
         : null,
     [hasLocationFilter, locationCity, locationCountry]
   );
-  const locationDisplayName = normalizedLocationFilter
-    ? [
-        locationCity ? normalizedLocationFilter.city : null,
-        normalizedLocationFilter.country !== 'Unknown' ? normalizedLocationFilter.country : null,
-      ]
-        .filter(Boolean)
-        .join(', ') || normalizedLocationFilter.city
-    : '';
 
   const clearLocationFilter = () => {
     setSearchParams({});
   };
 
   const [showSaved, setShowSaved] = useState(() => initialScrollSnapshot?.showSaved ?? false);
-  const [savedIds, setSavedIds] = useState<string[]>([]);
   const [showPrayerCircle, setShowPrayerCircle] = useState(
     () => searchParams.get('circle') === '1'
   );
-  const [prayerCircleMemberIds, setPrayerCircleMemberIds] = useState<string[]>([]);
+
   const searchParamActive = searchParams.get('search') || '';
-  const [searchQuery, setSearchQuery] = useState(
-    () => searchParamActive || initialScrollSnapshot?.searchQuery || ''
-  );
-  const [activeSearch, setActiveSearch] = useState(
-    () => searchParamActive || initialScrollSnapshot?.activeSearch || ''
-  );
-  const [showRecent, setShowRecent] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => readRecentSearches());
-  const [userResults, setUserResults] = useState<
-    Array<{ username: string; display_name: string | null }>
-  >([]);
-  const [searchingUsers, setSearchingUsers] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
+  const initialSearchQuery = searchParamActive || initialScrollSnapshot?.searchQuery || '';
 
-  const addRecentSearch = (q: string) => {
-    if (!q.trim()) return;
-    try {
-      const existing = readRecentSearches();
-      const filtered = existing.filter((s) => s !== q);
-      filtered.unshift(q);
-      const next = filtered.slice(0, 10);
-      localStorage.setItem('oratio_recent_searches', JSON.stringify(next));
-      setRecentSearches(next);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const removeRecentSearch = (q: string) => {
-    try {
-      const existing = readRecentSearches();
-      const next = existing.filter((s) => s !== q);
-      localStorage.setItem('oratio_recent_searches', JSON.stringify(next));
-      setRecentSearches(next);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const handleSearchSubmit = () => {
-    const q = searchQuery.trim();
-    setActiveSearch(q);
-    addRecentSearch(q);
-    setShowRecent(false);
-    if (q) captureEvent('search_performed', { query: q });
-  };
-
-  const handleRecentClick = (q: string) => {
-    setSearchQuery(q);
-    setActiveSearch(q);
-    setShowRecent(false);
-  };
-
-  // Close recent dropdown on outside click
-  useEffect(() => {
-    if (!showRecent) return;
-    const handler = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowRecent(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showRecent]);
+  const search = useFeedSearch(initialSearchQuery);
+  const {
+    searchQuery,
+    setSearchQuery,
+    activeSearch,
+    setActiveSearch,
+    showRecent,
+    setShowRecent,
+    recentSearches,
+    userResults,
+    searchingUsers,
+    searchRef,
+    removeRecentSearch,
+    handleSearchSubmit,
+    handleRecentClick,
+    handleTagClick,
+  } = search;
 
   const locationFilterKey = `${locationCity || ''}:${locationCountry || ''}`;
   const [openCountryFilterKey, setOpenCountryFilterKey] = useState<string | null>(null);
@@ -193,26 +77,28 @@ export function Feed() {
     [locationFilterKey]
   );
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
 
-  const loadPrayers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getFeedPrayers(undefined, 20, showPrayerCircle ? 'circle' : 'public');
-      setPrayers(data);
-      setCursor(data.length > 0 ? data[data.length - 1].createdAt : undefined);
-      setHasMore(data.length >= 20);
-    } catch {
-      setError('Failed to load prayers');
-    }
-    setLoading(false);
-  }, [showPrayerCircle]);
+  const {
+    loading,
+    error,
+    hasMore,
+    sentinelRef,
+    loadPrayers,
+    filteredPrayers,
+    emptyStateTitle,
+    emptyStateDescription,
+    prayedIds,
+    togglePrayed,
+    prayerCircleMemberIds,
+    locationDisplayName,
+  } = useFeedData({
+    locationCity,
+    locationCountry,
+    normalizedLocationFilter,
+    showSaved,
+    showPrayerCircle,
+    activeSearch,
+  });
 
   const [showWelcome, setShowWelcome] = useState(() => {
     try {
@@ -221,84 +107,8 @@ export function Feed() {
       return true;
     }
   });
-  const [prayedIds, setPrayedIds] = useState<string[]>([]);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const trendingHashtags = useMemo(() => getHashtagCounts(prayers), [prayers]);
-
-  // Load Prayer Circle list, prayed IDs, and saved IDs from Supabase
-  useEffect(() => {
-    let active = true;
-
-    const loadUserState = async () => {
-      const [circleIds, prayed, saved] = await Promise.all([
-        getPrayerCircleMemberIds(true),
-        getMyPrayedIds(),
-        getMySavedIds(),
-      ]);
-
-      if (!active) return;
-      setPrayerCircleMemberIds(circleIds);
-      setPrayedIds(prayed);
-      setSavedIds(saved);
-    };
-
-    void loadUserState();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // Listen for prayer addition/deletion via custom events
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const handleAdd = (e: Event) => {
-      const prayer = (e as CustomEvent).detail as PrayerRequest;
-      const prayerAudience = prayer.audience || 'public';
-      const belongsInCurrentView = showPrayerCircle
-        ? prayerAudience === 'circle'
-        : prayerAudience === 'public';
-
-      if (!belongsInCurrentView) return;
-
-      setPrayers((prev) => {
-        if (prev.some((p) => p.id === prayer.id)) return prev;
-        return [prayer, ...prev];
-      });
-    };
-
-    const handleRemove = (e: Event) => {
-      const prayerId = (e as CustomEvent).detail as string;
-      setPrayers((prev) => prev.filter((p) => p.id !== prayerId));
-    };
-
-    const handleUpdate = (e: Event) => {
-      const update = (e as CustomEvent).detail as {
-        prayerId: string;
-        text: string;
-        editedAt: string;
-      };
-      setPrayers((prev) =>
-        prev.map((prayer) =>
-          prayer.id === update.prayerId
-            ? { ...prayer, text: update.text, editedAt: update.editedAt }
-            : prayer
-        )
-      );
-    };
-
-    window.addEventListener('oratio-prayer-added', handleAdd);
-    window.addEventListener('oratio-prayer-removed', handleRemove);
-    window.addEventListener('oratio-prayer-updated', handleUpdate);
-
-    return () => {
-      window.removeEventListener('oratio-prayer-added', handleAdd);
-      window.removeEventListener('oratio-prayer-removed', handleRemove);
-      window.removeEventListener('oratio-prayer-updated', handleUpdate);
-    };
-  }, [showPrayerCircle]);
+  const trendingHashtags = useMemo(() => getHashtagCounts(filteredPrayers), [filteredPrayers]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -313,31 +123,6 @@ export function Feed() {
     }
   }, [setShowCountryFilter, showCountryFilter]);
 
-  // Search users from Supabase when query changes
-  useEffect(() => {
-    let active = true;
-
-    const loadUsers = async () => {
-      if (!activeSearch) {
-        setUserResults([]);
-        setSearchingUsers(false);
-        return;
-      }
-
-      setSearchingUsers(true);
-      const results = await searchUsers(activeSearch);
-      if (!active) return;
-      setUserResults(results);
-      setSearchingUsers(false);
-    };
-
-    void loadUsers();
-
-    return () => {
-      active = false;
-    };
-  }, [activeSearch]);
-
   const dismissWelcome = () => {
     setShowWelcome(false);
     try {
@@ -346,121 +131,6 @@ export function Feed() {
       /* ignore */
     }
   };
-
-  // Build search index from prayers data (locations, people, categories)
-
-  const filteredPrayers = useMemo(() => {
-    let result = prayers;
-
-    if (showPrayerCircle && prayerCircleMemberIds.length <= 1) {
-      return [];
-    }
-
-    // Location filter from map hotspot or country filter
-    if (locationCity && normalizedLocationFilter) {
-      const filterKey = getPrayerLocationKey(
-        normalizedLocationFilter.city,
-        normalizedLocationFilter.country
-      );
-      result = result.filter((p) => getPrayerLocationKey(p.city, p.country) === filterKey);
-    } else if (locationCountry && normalizedLocationFilter) {
-      // Country-only filter
-      result = result.filter((p) => {
-        const location = normalizePrayerLocation(p.city, p.country);
-        return location.country.toLowerCase() === normalizedLocationFilter.country.toLowerCase();
-      });
-    }
-
-    // Saved filter
-    if (showSaved) {
-      result = result.filter((p) => savedIds.includes(p.id));
-    }
-
-    // Search filter
-    if (activeSearch) {
-      const q = activeSearch.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.text.toLowerCase().includes(q) ||
-          p.city.toLowerCase().includes(q) ||
-          p.country.toLowerCase().includes(q) ||
-          (p.category || '').toLowerCase().includes(q)
-      );
-    }
-
-    return result;
-  }, [
-    prayers,
-    locationCity,
-    locationCountry,
-    normalizedLocationFilter,
-    showSaved,
-    showPrayerCircle,
-    prayerCircleMemberIds.length,
-    savedIds,
-    activeSearch,
-  ]);
-
-  // All filtered prayers are rendered (server-side pagination)
-  const visiblePrayers = filteredPrayers;
-  const emptyStateTitle = showSaved
-    ? 'No saved prayers yet'
-    : showPrayerCircle
-      ? prayerCircleMemberIds.length <= 1
-        ? 'Your Prayer Circle is empty'
-        : 'No Prayer Circle prayers yet'
-      : hasLocationFilter
-        ? `No prayers in ${locationDisplayName}`
-        : 'No prayers found';
-  const emptyStateDescription = showSaved
-    ? 'Tap ⋯ on a prayer and choose Save, or save from the prayer detail page'
-    : showPrayerCircle
-      ? prayerCircleMemberIds.length <= 1
-        ? 'Invite someone from a prayer or profile to start your Prayer Circle'
-        : 'Prayers shared with your Prayer Circle will appear here'
-      : hasLocationFilter
-        ? 'View all prayers'
-        : 'View all prayers';
-
-  // Infinite scroll — load more prayers when sentinel enters viewport
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || loadingMore || !hasMore) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loadingMore && hasMore) {
-          setLoadingMore(true);
-          getFeedPrayers(cursor, 20, showPrayerCircle ? 'circle' : 'public')
-            .then((data) => {
-              if (data.length < 20) setHasMore(false);
-              if (data.length > 0) setCursor(data[data.length - 1].createdAt);
-              setPrayers((prev) => {
-                const existingIds = new Set(prev.map((prayer) => prayer.id));
-                return [...prev, ...data.filter((prayer) => !existingIds.has(prayer.id))];
-              });
-              setLoadingMore(false);
-            })
-            .catch(() => setLoadingMore(false));
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [cursor, hasMore, loadingMore, showPrayerCircle]);
-
-  // Reload prayers when filters change
-  useEffect(() => {
-    const reload = async () => {
-      setCursor(undefined);
-      setHasMore(true);
-      await loadPrayers();
-    };
-
-    void reload();
-  }, [loadPrayers, locationCity, locationCountry, showSaved, showPrayerCircle]);
 
   useEffect(() => {
     const snapshot = initialScrollSnapshotRef.current;
@@ -480,65 +150,40 @@ export function Feed() {
     }, 80);
 
     return () => window.clearTimeout(timerId);
-  }, [error, hasMore, loading, visiblePrayers.length]);
+  }, [error, hasMore, loading, filteredPrayers.length]);
 
   useEffect(() => {
     setShowPrayerCircle(searchParams.get('circle') === '1');
   }, [searchParams]);
 
-  const togglePrayed = useCallback((id: string) => {
-    setPrayedIds((prev) => {
-      const isCurrentlyPrayed = prev.includes(id);
-      const newPrayed = !isCurrentlyPrayed;
-
-      // Update prayer count in state
-      setPrayers((prayersPrev) => {
-        return prayersPrev.map((p) =>
-          p.id === id ? { ...p, prayerCount: p.prayerCount + (newPrayed ? 1 : -1) } : p
-        );
-      });
-
-      // Sync to Supabase
-      void togglePray(id, newPrayed);
-
-      // Return updated prayed IDs
-      if (newPrayed && !prev.includes(id)) {
-        return [...prev, id];
-      } else if (!newPrayed && prev.includes(id)) {
-        return prev.filter((pId) => pId !== id);
-      }
-      return prev;
+  const handleTap = (prayer: PrayerRequest) => {
+    writeFeedScrollSnapshot({
+      path: getFeedPath(location.search),
+      scrollTop: scrollContainerRef.current?.scrollTop ?? 0,
+      prayerId: prayer.id,
+      showSaved,
+      showPrayerCircle,
+      searchQuery,
+      activeSearch,
+      savedAt: Date.now(),
     });
-  }, []);
 
-  const handleTap = useCallback(
-    (prayer: PrayerRequest) => {
-      writeFeedScrollSnapshot({
-        path: getFeedPath(location.search),
-        scrollTop: scrollContainerRef.current?.scrollTop ?? 0,
-        prayerId: prayer.id,
-        showSaved,
-        showPrayerCircle,
-        searchQuery,
-        activeSearch,
-        savedAt: Date.now(),
-      });
-
-      void navigate(`/prayer/${prayer.id}`);
-    },
-    [activeSearch, location.search, navigate, searchQuery, showPrayerCircle, showSaved]
-  );
-
-  const handleTagClick = (tag: string) => {
-    const q = tag.startsWith('#') ? tag : `#${tag}`;
-    setSearchQuery(q);
-    setActiveSearch(q);
-    addRecentSearch(q);
+    void navigate(`/prayer/${prayer.id}`);
   };
 
   const filterPillClass =
     'flex-shrink-0 min-h-11 px-4 py-2 rounded-full text-[13px] transition-all duration-300 cursor-pointer';
   const filterPillWithIconClass = `${filterPillClass} flex items-center gap-1.5`;
+
+  const activePillStyle = (isActive: boolean) => ({
+    background: isActive
+      ? 'rgba(var(--rgb-accent), 0.12)'
+      : 'rgba(var(--rgb-accent), 0.04)',
+    border: isActive ? '1px solid rgba(var(--rgb-accent), 0.2)' : '1px solid rgba(var(--rgb-accent), 0.06)',
+    color: isActive ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text-muted))',
+  });
+
+  const visiblePrayers = filteredPrayers;
 
   return (
     <div className="w-full h-full flex flex-col" style={{ background: 'rgb(var(--rgb-bg))' }}>
@@ -561,20 +206,7 @@ export function Feed() {
               setShowPrayerCircle(false);
             }}
             className={filterPillClass}
-            style={{
-              background:
-                !hasLocationFilter && !showSaved && !showPrayerCircle
-                  ? 'rgba(var(--rgb-accent), 0.12)'
-                  : 'rgba(var(--rgb-accent), 0.04)',
-              border:
-                !hasLocationFilter && !showSaved && !showPrayerCircle
-                  ? '1px solid rgba(var(--rgb-accent), 0.2)'
-                  : '1px solid rgba(var(--rgb-accent), 0.06)',
-              color:
-                !hasLocationFilter && !showSaved && !showPrayerCircle
-                  ? 'rgb(var(--rgb-accent))'
-                  : 'rgb(var(--rgb-text-muted))',
-            }}
+            style={activePillStyle(!hasLocationFilter && !showSaved && !showPrayerCircle)}
           >
             All
           </button>
@@ -594,15 +226,7 @@ export function Feed() {
                 }
               }}
               className={filterPillWithIconClass}
-              style={{
-                background: hasLocationFilter
-                  ? 'rgba(var(--rgb-accent), 0.12)'
-                  : 'rgba(var(--rgb-accent), 0.04)',
-                border: hasLocationFilter
-                  ? '1px solid rgba(var(--rgb-accent), 0.2)'
-                  : '1px solid rgba(var(--rgb-accent), 0.06)',
-                color: hasLocationFilter ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text-muted))',
-              }}
+              style={activePillStyle(hasLocationFilter)}
             >
               <MapPin size={12} />
               Near Me
@@ -619,13 +243,7 @@ export function Feed() {
             }}
             className={filterPillClass}
             style={{
-              background: showPrayerCircle
-                ? 'rgba(var(--rgb-accent), 0.12)'
-                : 'rgba(var(--rgb-accent), 0.04)',
-              border: showPrayerCircle
-                ? '1px solid rgba(var(--rgb-accent), 0.2)'
-                : '1px solid rgba(var(--rgb-accent), 0.06)',
-              color: showPrayerCircle ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text-muted))',
+              ...activePillStyle(showPrayerCircle),
               opacity: prayerCircleMemberIds.length <= 1 ? 0.65 : 1,
             }}
           >
@@ -641,15 +259,7 @@ export function Feed() {
               if (next) setSearchParams({});
             }}
             className={filterPillClass}
-            style={{
-              background: showSaved
-                ? 'rgba(var(--rgb-accent), 0.12)'
-                : 'rgba(var(--rgb-accent), 0.04)',
-              border: showSaved
-                ? '1px solid rgba(var(--rgb-accent), 0.2)'
-                : '1px solid rgba(var(--rgb-accent), 0.06)',
-              color: showSaved ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text-muted))',
-            }}
+            style={activePillStyle(showSaved)}
           >
             Saved
           </button>
@@ -658,15 +268,7 @@ export function Feed() {
           <button
             onClick={() => setShowCountryFilter(!showCountryFilter)}
             className={filterPillWithIconClass}
-            style={{
-              background: hasLocationFilter
-                ? 'rgba(var(--rgb-accent), 0.12)'
-                : 'rgba(var(--rgb-accent), 0.04)',
-              border: hasLocationFilter
-                ? '1px solid rgba(var(--rgb-accent), 0.2)'
-                : '1px solid rgba(var(--rgb-accent), 0.06)',
-              color: hasLocationFilter ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text-muted))',
-            }}
+            style={activePillStyle(hasLocationFilter)}
           >
             <span>{locationCountry || 'Country'}</span>
             <ChevronDown size={12} />
@@ -873,9 +475,7 @@ export function Feed() {
               transition={{ duration: 0.3 }}
               className="overflow-hidden mb-4"
             >
-              <div
-                className="oratio-surface rounded-xl px-4 py-3.5 flex items-start gap-3"
-              >
+              <div className="oratio-surface rounded-xl px-4 py-3.5 flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-text-secondary text-sm mb-0.5">Prayer feed</p>
                   <p className="text-text-muted text-xs">

@@ -1,220 +1,76 @@
-# Oratio v1.0 — QA Checklist
+# Oratio V1 — QA Checklist
 
-## Authentication
+Use this before release and after any deploy touching auth, feed, or prayer flows. Sign-up items require disposable test accounts (E2E credentials in `.env` are used by Playwright for the automated journeys).
 
-### Sign Up
+## Authentication (email/password only)
 
-- [ ] Landing page loads with "Start Praying" and "I already have an account" buttons
-- [ ] Tap "Start Praying" → Onboarding page shows Google + Email options
-- [ ] Google sign-up redirects to Google, comes back to `/`
-- [ ] Email sign-up creates account and navigates to `/`
-- [ ] Profile is auto-created (check Supabase `profiles` table)
-- [ ] Signscreen shows onboarding only for first-time users
+**Sign up**
+- [ ] Landing page shows "Create Account" and "Sign in"
+- [ ] Onboarding creates an account with email + password + username
+- [ ] Email verification screen appears when Supabase requires confirmation
+- [ ] Profile row auto-created in Supabase
 
-### Sign In
+**Sign in / out**
+- [ ] Valid credentials sign in and land on the feed
+- [ ] Wrong password shows an error; empty fields show a validation message
+- [ ] "Forgot password?" → reset email → `/update-password` sets the new password
+- [ ] Sign out returns to landing
 
-- [ ] Tap "I already have an account" → Login page shows email + password + Google
-- [ ] Email sign-in works with correct credentials
-- [ ] Google sign-in works
-- [ ] Wrong password shows error message
-- [ ] Sign-in with unregistered email shows error
+**Guards**
+- [ ] Logged-out users hitting `/`, `/feed`, `/submit`, `/profile*`, `/updates`, `/moderate` are redirected
+- [ ] Shared prayer links prompt sign-in, then return to the prayer
 
-### Sign Out
+## Feed & Map
 
-- [ ] Profile page → "Sign Out" → redirects to landing page
-- [ ] After sign-out, navigating to `/` redirects to landing
+- [ ] Feed loads recent public prayers (pagination on scroll)
+- [ ] Search filters prayers; recent searches appear and are removable
+- [ ] Location filter (country pill + map hotspot) filters correctly
+- [ ] Saved filter shows saved prayers; "Prayer Circle" filter shows circle-only prayers or the empty invite state
+- [ ] Map shows hotspots; tapping a hotspot opens the location-filtered feed
+- [ ] Unknown locations never appear as map hotspots
 
----
+## Submit
 
-## Feed
+- [ ] Text required (10–500 chars); validation messages shown
+- [ ] Location (city/country) required
+- [ ] Anonymous toggle hides attribution on the feed
+- [ ] Audience: public / Prayer Circle / private — private prayers only in the owner's private list
+- [ ] Success screen offers "View in Feed"; new prayer appears at the top of the feed
 
-### Core
+## Prayer Detail
 
-- [ ] Feed loads with 20 prayers initially
-- [ ] Scrolling loads more (infinite scroll)
-- [ ] Prayer cards show: avatar, username, text, comment button, pray button
-- [ ] City/location is NOT shown on feed cards
-- [ ] Trending hashtags row appears at top
-- [ ] Each prayer shows correct time ago
+- [ ] "Pray for this" toggles to "Prayed for this" and increments the count
+- [ ] Comments: add, reply, edit, delete, report all work
+- [ ] Author can turn comments off/on (public prayers)
+- [ ] Translation appears for non-native text and can be reverted
+- [ ] Share copies a link (or opens the native share sheet)
+- [ ] Report flow shows confirmation; duplicate reports are blocked
+- [ ] Author can edit their prayer text; "Edited" label shows
 
-### Search
+## Prayer Circle
 
-- [ ] Search bar is present
-- [ ] Type query → press Enter → prayers filtered
-- [ ] Tap a trending hashtag → feed filtered by that hashtag
-- [ ] Recent searches appear on focus
-- [ ] Hover recent search → X shows → tap to delete
-- [ ] Clear search with X button
-- [ ] Search banner shows active search
+- [ ] Invite by username; recipient sees and accepts/declines
+- [ ] Connected members see each other's circle-only prayers
+- [ ] Circle capacity limit respected
 
-### Filters
+## Profile & Settings
 
-- [ ] "All" filter pill resets all filters
-- [ ] "Near Me" filters by geolocation country (if allowed)
-- [ ] "Saved" filter shows only saved prayers
-- [ ] "Country" dropdown opens country list
-- [ ] Selecting a country filters prayers
-- [ ] Location filter updates the section title; use "All" or filter pills to reset
+- [ ] Stats (public/circle/private, prayed for, saved) are accurate
+- [ ] Edit profile: username (lowercased), display name, bio, location save correctly
+- [ ] Username change keeps old profile links working
+- [ ] Avatar upload works, including iPhone HEIC photos
+- [ ] Theme (light/dark/system) persists and stays readable
 
-### Pray Interaction
+## Updates & Moderation
 
-- [ ] Tap 🙏 button → count increments, state toggles to "Prayed"
-- [ ] Tap again → count decrements, toggles back to "Pray"
-- [ ] Count persists on page reload (localStorage)
+- [ ] Updates inbox lists events; unread badge counts and clears
+- [ ] Delete an update removes it
+- [ ] Non-moderators see "Moderator access required" at `/moderate`
+- [ ] Moderators can resolve/dismiss reports; audit trail visible
 
-### Comments
+## PWA / Mobile
 
-- [ ] Tap "Comment" button → navigates to prayer detail page
-- [ ] Comment section loads below prayer
-- [ ] Type comment → press Enter → comment appears
-- [ ] Reply to a comment → reply appears under parent
-- [ ] "View X replies" shows for 2+ replies
-- [ ] Delete your own comment → comment removed, counter updates
-- [ ] Prayer author can remove another user's comment from their prayer
-- [ ] Report comment → shows "Thanks for reporting"
-
-### Save
-
-- [ ] Tap prayer → detail page → ⋯ → "Save" → returns to feed → "Saved" filter shows it
-- [ ] Tap "Saved" again → unsaves
-
----
-
-## Prayer Detail Page
-
-- [ ] Opens with correct prayer text
-- [ ] "Back" returns to previous page
-- [ ] Share via ⋯ → native share sheet or clipboard
-- [ ] Report via ⋯ → reason picker → "Thanks" message
-- [ ] Translate via ⋯ → translates Spanish/French/German prayers to English
-- [ ] 🙏 button toggles pray state
-- [ ] Comment section loads existing comments
-- [ ] Comment input works
-
----
-
-## Submit Prayer
-
-- [ ] Submit page has text area + anonymous toggle
-- [ ] Placeholder hints at #hashtags
-- [ ] Text shorter than 10 characters → error
-- [ ] Text longer than 500 → counter turns red
-- [ ] Anonymous toggle changes display text
-- [ ] Submit → shows success screen
-- [ ] "View in Feed" navigates to feed
-- [ ] "Share prayer link" generates URL to /prayer/:id
-- [ ] "Submit Another Request" resets form
-
----
-
-## Map (Home)
-
-- [ ] Map loads with ESRI Light Gray tiles
-- [ ] Country borders visible
-- [ ] Gold circle markers appear on cities
-- [ ] Tap marker → drawer opens with city info
-- [ ] "View Prayers" navigates to feed filtered by city
-- [ ] No "Unknown, Unknown" marker or drawer appears
-- [ ] Geolocation prompt appears on first visit
-- [ ] "Allow" → flies to your location
-- [ ] Locate button (crosshair) appears bottom-right when location known
-- [ ] Tap locate → flies back to location
-- [ ] "Tap a location to pray" hint fades on first visit
-
----
-
-## Profile
-
-- [ ] Avatar shows initial letter
-- [ ] "Change Photo" uploads image
-- [ ] Username shows with @
-- [ ] Stats show: Submitted, Prayed For, Saved counts
-- [ ] Tapping a stat navigates to detail page
-- [ ] "Info" shows info page with install guide
-- [ ] "Sign Out" signs out
-- [ ] Edit drawer: change display name
-- [ ] Edit drawer: change username
-
----
-
-## Updates
-
-- [ ] When another user prays for your prayer, Updates shows "[Name] prayed with you"
-- [ ] When multiple users pray for the same prayer, Updates groups them as "[Name] and X others prayed with you"
-- [ ] Tapping "View prayer" opens the related prayer
-- [ ] Praying for your own prayer does not create an update
-- [ ] Re-praying the same prayer by the same user does not create duplicate update rows
-
----
-
-## Info Page
-
-- [ ] Prototype notice visible
-- [ ] Install Oratio guide shows iOS or Android steps
-- [ ] Roadmap shows upcoming features
-- [ ] Changelog shows version history
-
----
-
-## Translation
-
-- [ ] Spanish prayers appear in feed (mixed with English)
-- [ ] Open Spanish prayer → ⋯ → "Translate" → English translation appears
-- [ ] "Translated from Spanish" text appears below
-- [ ] Tap "Translate" again → "Original" → returns to Spanish
-- [ ] French, Portuguese, German, Italian prayers also translate
-
----
-
-## PWA
-
-- [ ] Manifest.webmanifest is served
-- [ ] Service worker is registered (check Application → Service Workers)
-- [ ] App can be added to home screen on mobile
-- [ ] Install guide in Info page shows correctly for iOS vs Android
-
----
-
-## Edge Cases
-
-- [ ] Rapidly tap 🙏 multiple times → no double-count
-- [ ] Submit with empty text → disabled button
-- [ ] Delete all comments → counter shows 0
-- [ ] Empty search → shows all prayers
-- [ ] Country filter with no matches → "No prayers found"
-- [ ] Saved filter with no saved prayers → "No saved prayers yet"
-- [ ] Back-to-back translation toggles work
-- [ ] Comment while offline → fallback localStorage
-- [ ] Report same prayer twice → only shows "Reported"
-
----
-
-## Performance
-
-- [ ] Cold load < 3s on mobile 3G
-- [ ] Feed scrolls smoothly at 60fps
-- [ ] Search response is instant (< 100ms)
-- [ ] Map zoom/pan is smooth
-- [ ] No console errors in production build
-
----
-
-## Responsive
-
-- [ ] iPhone SE (375px) — all pages fit
-- [ ] iPhone 14 Pro (390px) — all pages fit
-- [ ] Desktop (1280px) — max-width content, centered
-- [ ] Landscape orientation — no broken layouts
-- [ ] Bottom nav visible on all main pages
-
----
-
-## Test Results
-
-**Run:** `npm test`
-**Expected:** 50 tests passing
-**Current:** **\_** passing
-
-**QA Sign-off:** **\*\*\*\***\_\_\_\_**\*\*\*\***
-**Date:** **\*\*\*\***\_\_\_\_**\*\*\*\***
-**Notes:** **\*\*\*\***\_\_\_\_**\*\*\*\***
+- [ ] Installable from mobile Safari/Chrome; standalone launch works
+- [ ] After a deploy, the app refreshes to the new version (service worker update)
+- [ ] Offline app shell renders (landing at minimum)
+- [ ] Safe-area insets respected on iPhone (notch) in light and dark mode

@@ -7,7 +7,7 @@ import {
   normalizePrayerLocation,
   timeAgo,
 } from './prayer-data';
-import { mockFeedPrayers, mockHotspots } from './mock-prayers';
+import { mockFeedPrayers, mockHotspots } from '../../test/mocks/mock-prayers';
 
 describe('timeAgo', () => {
   it('returns "just now" for recent times', () => {

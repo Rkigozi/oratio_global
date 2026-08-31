@@ -1,219 +1,119 @@
+# Oratio — Global Prayer Platform
 
-# Oratio - Global Prayer Platform
+Oratio connects people through shared prayer: explore prayer activity around the world, submit prayer requests, pray for others, comment and encourage, and build a private Prayer Circle.
 
-Oratio is a global Christian prayer platform designed to connect people through shared prayer. This MVP enables users to explore prayer activity globally, submit prayer requests, pray for others, and view personal activity.
+## Status
 
-## Project Status
+**V1 release candidate** — deployed and monitored at https://oratiotest.netlify.app (the app's only Netlify site; a custom domain is planned after launch).
 
-**Status**: Beta — deployed & collecting user feedback  
-**Phase**: v0.2 — Supabase backend integration  
-**Target Platform**: Progressive Web App (PWA) with Supabase backend  
-**Git Repository**: Initialized ✅
-
-## Development Server Note
-
-**⚠️ External Drive Issue**: If you're running this project from an external drive (like a Samsung T5), npm may fail with "ENOENT: no such file or directory, uv_cwd". This is a known npm bug with external drives.
-
-**Workarounds**:
-1. **Direct Vite**: `node node_modules/vite/bin/vite.js`
-2. **NPM Wrapper**: `node /opt/homebrew/lib/node_modules/npm/bin/npm-cli.js run dev`
-3. **Script**: Use `./start-dev.sh` (created in project root) - **Recommended**
-   - Auto-cleans orphaned servers on ports 5173-5176
-   - Kills orphaned esbuild processes
-   - Shows clean startup with access URLs
-4. **Alias**: Add `alias npm='node /opt/homebrew/lib/node_modules/npm/bin/npm-cli.js'` to your shell profile.
-
-The enhanced `start-dev.sh` script automatically cleans up any orphaned dev servers and starts a fresh development server. It's the recommended approach.
+| Area | State |
+| --- | --- |
+| Backend | Supabase (Auth, PostgreSQL, Storage, Edge Functions, RLS) |
+| Deploys | Netlify, Git-connected: every push to `main` builds and ships |
+| Monitoring | Sentry (errors) + PostHog (product analytics), both live in production |
+| Tests | 411 unit/component/integration tests (Vitest) + 38 E2E tests (Playwright, mobile + desktop) |
+| Coverage | ~60% line coverage across the codebase |
 
 ## Quick Start
 
-### Start Development Server
 ```bash
-# Auto-cleanup & start (recommended)
+# Start the dev server (auto-cleans orphaned servers on this external drive)
 ./start-dev.sh
 
-# Or direct vite command
-node node_modules/vite/bin/vite.js
-```
-
-### Additional Resources
-- **Codebase Navigation Guide**: See [CODEBASE_NAVIGATION_GUIDE.md](docs/CODEBASE_NAVIGATION_GUIDE.md) for a V1-focused guide to the routes, flows, Supabase structure, and cleanup priorities.
-- **Quick Start Guide**: See [QUICK-START.md](docs/QUICK-START.md) for detailed commands
-- **Development Aliases**: Source `.oratio-aliases` for convenient shortcuts
-- **Port**: Default 5173 (or next available)
-
-### Testing Prayer Submission
-1. Navigate to **Submit** page
-2. Enter prayer text (minimum 10 characters)
-3. Select location & category
-4. Click **Submit Prayer Request**
-5. Should see success screen with "View in Feed" button
-
-## Key Features
-
-- **Interactive World Map**: Visual discovery of prayer hotspots (React Leaflet)
-- **Prayer Feed**: Filterable feed with trending prayers, categories, search
-- **Submit Prayers**: Simple form with location, category, optional name
-- **User Profiles**: Track submitted prayers, prayed-for prayers, answered prayers
-- **Community Interactions**: "I Prayed" button, mutual Prayer Circle invites, sharing
-- **Privacy-First**: No exact location storage (city/country only)
-
-## Technology Stack
-
-- **Frontend**: React 19 + TypeScript 6 + Vite
-- **Styling**: Tailwind CSS v4 + CSS Variables (design tokens)
-- **Maps**: React Leaflet with custom hotspots
-- **Animations**: Motion (Framer Motion v12)
-- **Routing**: React Router v7
-- **State**: React hooks + Supabase (PostgreSQL)
-- **Backend**: Supabase (Auth, Database, Storage, Edge Functions)
-- **Monitoring**: Sentry (error tracking) + PostHog (analytics)
-
-## Quick Start
-
-### Prerequisites
-- Node.js 20+ and npm/yarn/pnpm
-- Modern browser with ES2022 support
-
-### Installation
-
-```bash
-# Clone repository
-git clone https://github.com/Rkigozi/oratio_global.git
-cd Oratio_Prototype_MVP
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-### Development Commands
-
-```bash
-# Development server (http://localhost:5173)
-npm run dev
-
-# Build for production
+# Quality gates
+npm run type-check
+npm run lint
+npm test
 npm run build
 
-# Lint code
-npm run lint
+# E2E (local server, mobile WebKit + desktop Chrome)
+npx playwright install webkit   # once
+npm run test:e2e
 
-# Format code
-npm run format
-
-# TypeScript type checking
-npm run type-check
+# E2E against the live Netlify site
+npm run test:e2e:remote
 ```
+
+Running from an external drive? `npm` can fail with an `ENOENT uv_cwd` bug — use `./start-dev.sh` (documented in `docs/QUICK-START.md`).
+
+## Product
+
+- **Map** — global prayer hotspots aggregated by city (never exact locations)
+- **Feed** — public feed with cursor pagination, search, location and saved filters
+- **Submit** — text, location, visibility (public / Prayer Circle / private), anonymous option
+- **Prayer detail** — "I Prayed", comments & replies, translation, sharing, reporting
+- **Prayer Circle** — private mutual connections; circle-only prayers
+- **Profile** — stats, prayer library, saved/prayed lists, settings, avatar upload
+- **Updates** — activity inbox (comments, replies, circle events, report outcomes)
+- **Moderation** — moderator-only report review queue
+
+## Stack
+
+- React 19 + TypeScript + Vite
+- Tailwind CSS v4 (design tokens in `src/styles/theme.css`)
+- Supabase (auth, DB, storage, realtime, edge functions)
+- React Leaflet, Motion, vaul (drawers)
+- Sentry + PostHog
+- PWA (Workbox service worker, installable, offline app shell)
 
 ## Project Structure
 
 ```
-Oratio_Prototype_MVP/
-├── src/
-│   ├── app/                    # Main application
-│   │   ├── components/         # Reusable UI components
-│   │   ├── pages/             # Page components (Home, Feed, Submit, Profile)
-│   │   ├── data/              # Mock data generation
-│   │   └── routes.ts          # React Router configuration
-│   ├── styles/                # CSS, Tailwind config, design tokens
-│   └── lib/                   # Utilities, error handling
-├── project_scope/             # Project documentation
-├── .clinerules/memory-bank/   # Development context and documentation
-└── guidelines/                # Design guidelines
+src/
+├── app/
+│   ├── components/        # Reusable UI (auth, comments, feed, layout, map)
+│   ├── hooks/             # Auth, theme, geolocation, activity-updates contexts
+│   ├── pages/             # One folder per route (auth, feed, prayer, profile, info)
+│   ├── services/
+│   │   ├── supabase.ts    # Client setup
+│   │   ├── queries/       # Domain query modules (prayers, comments, circle, ...)
+│   │   └── ...            # prayer-data, hashtags, translate, upload
+│   └── routes.tsx         # Route map
+├── lib/                   # Validation, analytics, monitoring, utils
+├── styles/                # Tailwind entry + theme tokens
+└── test/                  # Test setup + shared mocks
+supabase/
+├── migrations/            # 36 sequential SQL migrations (never edit applied ones)
+└── functions/             # Edge functions: translate, delete-account
+e2e/                       # Playwright specs + config
 ```
 
-## Development Workflow
+`src/app/services/supabase-queries.ts` is a barrel that re-exports the domain modules in `services/queries/` — new queries belong in the matching module.
 
-### Current State
-- ✅ Core features built (map, feed, submit, pray, profile)
-- ✅ Deployed on Netlify for beta testing
-- ✅ ESLint, Prettier, TypeScript configured
-- ✅ Supabase backend integrated (Auth, Database, Edge Functions)
-- ✅ Sentry error monitoring + PostHog analytics
-- ✅ CI/CD pipeline (GitHub Actions → Netlify)
-- ✅ PWA support (service worker, manifest, offline)
-- ✅ Input validation (Zod schemas)
-- ✅ Privacy-first (approximate coordinates only)
-- ✅ Fonts loaded (DM Sans + Sora)
-- ✅ 249 unit tests (validation, hashtags, data integrity, Supabase flows)
+## Workflow
 
-### v0.2 — Feedback & Hardening (Current)
-1. **Completed**: Supabase backend integration (map, feed, prayers, comments, Prayer Circle, reports, auth)
-2. **Completed**: Saved prayers persistence (cross-device)
-3. **Completed**: Sentry + PostHog monitoring
-4. **Completed**: CI/CD pipeline
+- **Ship**: `git push` → CI (type-check, lint, tests, build) → Netlify auto-deploy. One pipeline, no manual steps.
+- **Roll back**: Netlify deploy list → publish a previous deploy.
+- **Schema changes**: add a new numbered migration in `supabase/migrations/`, never edit an applied one.
 
-### v0.3 — Production Hardening
-1. **Testing**: Add component + E2E tests (Playwright)
-2. **Performance**: Pagination, Lighthouse > 90
-3. **Accessibility**: ARIA labels, contrast audit
-4. **Moderation**: Report resolution dashboard
+## Environment Variables
 
-### v1.0 — Public Launch
-1. **Refinement**: Feed UX clarity, readability improvements
-2. **Mobile**: Expo React Native app integration
-3. **Localization**: Full i18n via Google Cloud Translation
-4. **Community**: Moderation tools, crisis resources
+Set in Netlify (build) and GitHub Actions secrets (CI):
 
-## Key Documentation
+| Variable | Purpose |
+| --- | --- |
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Public Supabase anon key (safe to expose; security is via RLS) |
+| `VITE_SENTRY_DSN` | Sentry error tracking |
+| `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` | Product analytics |
 
-- **Memory Bank**: Comprehensive project context in `.clinerules/memory-bank/`
-- **Project Scope**: MVP requirements, user flows, data model in `project_scope/`
-- **Developer Audit**: Preparation document in `developer-audit-package.md`
-- **Design System**: Visual guidelines in `project_scope/Design-System.md`
+## Docs To Read
 
-## Browser Support
+- `docs/CODEBASE_NAVIGATION_GUIDE.md` — the mental model of the whole codebase
+- `docs/V1_RELEASE_READINESS.md` — release-control checklist
+- `docs/ARCHITECTURE.md` — architecture detail
+- `docs/QUICK-START.md` — dev-server troubleshooting on this machine
+- `.clinerules/memory-bank/` — project context for AI-assisted sessions
+- `docs/archive/` — historical docs (outdated, kept for reference)
 
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
-- Mobile browsers (PWA-ready)
+## Known Deferred Work (post-launch)
 
-## Known Issues & Technical Debt
-
-### Known Issues
-- **Performance**: No pagination, loads all data at once
-- **Tests**: Only 41 unit tests — no component, integration, or E2E tests
-- **Accessibility**: Needs ARIA labels and contrast audit
-- **Large files**: `feed.tsx` (785 lines), `supabase-queries.ts` (600+ lines) should be split
-- **Console error handling**: Some production paths use `console.error` instead of Sentry
-
-### Already Fixed
-- ✅ **Backend**: Supabase fully integrated (Auth, DB, Storage, Edge Functions)
-- ✅ **Saved prayers**: Cross-device persistence via Supabase
-- ✅ **Monitoring**: Sentry error tracking + PostHog analytics
-- ✅ **PWA**: Service worker, manifest, offline support
-- ✅ **CI/CD**: Automated type-check, lint, test, build, deploy
-- ✅ **Privacy**: Exact coordinates removed, city/country only
-- ✅ **Input Validation**: Zod schemas for forms
-- ✅ **Dependencies**: Unused packages removed (~20 kept)
-- ✅ **Fonts**: DM Sans + Sora now loading properly
-- ✅ **Scrolling**: Feed & Profile scroll issues resolved
-
-## Contributing
-
-1. **Fork the repository** and create a feature branch
-2. **Follow coding standards**:
-   - ESLint + Prettier configuration
-   - TypeScript strict mode compliance
-   - Component documentation
-3. **Write tests** for new features
-4. **Update documentation** including Memory Bank
-5. **Submit pull request** with clear description
+- Split remaining large UI files further (`feed.tsx` render layer, `prayer-detail.tsx`)
+- Drop unused tables (`waitlist`, `push_subscriptions`, `follows`) via a new migration
+- Bundle analysis: the lazy HEIC-converter chunk (~1MB) is the biggest item
+- Lighthouse/performance pass, RLS security review
+- Custom domain + production OAuth branding
 
 ## License
 
-All rights reserved. This is a prototype for the Oratio prayer platform.
-
-## Contact
-
-For development inquiries, refer to the Memory Bank documentation for context and next steps.
-
----
-
-**Important**: Supabase backend is now integrated. The app reads/writes from Supabase (PostgreSQL) with localStorage as a legacy fallback. Run the migrations in `supabase/migrations/` to set up your database schema.
-  
+All rights reserved. Prototype for the Oratio prayer platform.

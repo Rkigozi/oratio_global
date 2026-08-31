@@ -18,7 +18,6 @@ describe("Onboarding", () => {
       loading: false,
       signUp: vi.fn(),
       signIn: vi.fn(),
-      signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
       resetPassword: vi.fn(),
       updatePassword: vi.fn(),

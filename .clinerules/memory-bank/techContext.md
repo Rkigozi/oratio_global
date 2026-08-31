@@ -1,76 +1,48 @@
-# Tech Context - Oratio Prayer Platform
+# Tech Context — Oratio
 
-## Technology Stack
+## Stack
 
-### Core:
-- **Frontend**: React 19.0.0 + TypeScript 6.0.2
-- **Build**: Vite 6.3.5
-- **Styling**: Tailwind CSS 4.1.12 + CSS variables (theme.css)
-- **Routing**: React Router 7.13.0
-- **Maps**: Leaflet 1.9.4 (React Leaflet)
-- **Animations**: Motion (Framer Motion) 12.23.24
-- **Icons**: Lucide React 0.487.0
-- **Validation**: Zod 4.3.6
-- **Drawers**: Vaul 1.1.2
+| Layer | Choice |
+| --- | --- |
+| UI | React 19 + TypeScript (strict) + Vite 6 |
+| Styling | Tailwind CSS v4, CSS-variable design tokens, DM Sans + Sora |
+| Routing | react-router v7 (`react-router` package) |
+| State | React contexts + local state (no external store) |
+| Backend | Supabase: Auth, PostgreSQL, Storage, Realtime, Edge Functions |
+| Maps | Leaflet + React Leaflet wrapper |
+| Motion | `motion` (Framer Motion v12) |
+| Drawers | `vaul` |
+| Monitoring | `@sentry/react`, `posthog-js` (lazy-loaded) |
+| PWA | `vite-plugin-pwa` (Workbox), custom recovery in `src/lib/pwa-recovery.ts` |
+| Tests | Vitest + Testing Library; Playwright for E2E |
+| Lint/Format | ESLint + Prettier |
+| CI/CD | GitHub Actions (quality gates) → Netlify (Git-connected deploy) |
 
-### Backend:
-- **Database**: Supabase (PostgreSQL) — 7 tables, RLS, auto-profile trigger
-- **Auth**: Supabase Auth (email/password + Google OAuth)
-- **Storage**: Supabase Storage (avatars bucket)
-- **Edge Functions**: Google Cloud Translation proxy
-- **Monitoring**: Sentry 10.57.0 (error tracking)
-- **Analytics**: PostHog 1.386.6
+## Runtime
 
-### PWA:
-- `vite-plugin-pwa` 1.3.0 (Workbox service worker, manifest, precaching)
+- Node 22 (`.nvmrc`, Netlify `NODE_VERSION`, CI all aligned)
+- ES2022 target, modern evergreen browsers + iOS Safari
 
-### Dev Tools:
-- **ESLint** 8.57.1 + TypeScript + React + Prettier
-- **Prettier** 3.8.1
-- **Vitest** 3.2.6 + Testing Library (jsdom)
-- **sharp** 0.35.0 (icon generation)
+## Environment Variables
 
-## Database Schema (7 active tables)
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`, `VITE_POSTHOG_KEY`, `VITE_POSTHOG_HOST` — set in Netlify production env and GitHub Actions secrets.
 
-| Table | Purpose | Status |
-|---|---|---|
-| `profiles` | User profiles (id, username, display_name, avatar_url, bio, location) | ✅ Active |
-| `prayer_requests` | Prayer content with location, category, prayer_count | ✅ Active |
-| `prayer_interactions` | "I prayed" tracking (user_id, prayer_id) | ✅ Active |
-| `comments` | Threaded comments on prayers | ✅ Active |
-| `reports` | Content moderation reports | ✅ Active |
-| `follows` | User follow relationships | ✅ Active |
-| `waitlist` | Email subscriptions | ✅ Active |
-| `saved_prayers` | Cross-device saved prayers | ✅ Active (new) |
+## Local Development
 
-### Removed (dead):
-- `push_subscriptions` — no push notification infra
-- `tags` column on `prayer_requests` — never populated
-- `is_answered`/`answered_at` on `prayer_requests` — no UI
-- `language_preference` on `profiles` — never read
+- This repo lives on an external drive (Samsung T5), which triggers an npm `uv_cwd` bug — use `./start-dev.sh`
+- `npm run dev` runs Vite on 5173 (or next free port)
 
-## Data Flow
-```
-UI Components → supabase-queries.ts → Supabase SDK → PostgreSQL
-                                       ↕
-                              localStorage (legacy fallback)
+## Supabase Project
+
+- Single project (URL in `.env`); anon key is public by design
+- Migrations in `supabase/migrations/` — apply in order, never edit applied ones
+- Edge functions: `translate` (Google Cloud Translation), `delete-account`
+
+## Quality Gates
+
+```bash
+npm run type-check && npm run lint && npm test && npm run build
 ```
 
-All pages now use Supabase as primary data source, with localStorage as fallback for unauthenticated users.
-
-## Production Build Output
-- JS: ~716KB (main) + code-split chunks per route
-- CSS: ~52KB
-- Service worker: precaches 59 entries (~1.4MB)
-- PWA manifest: branded ORATIO icons
-
-## Known Gaps
-- 74 lint warnings (floating promises, any types, unescaped entities)
-- `feed.tsx` (785 lines) and `supabase-queries.ts` (700+ lines) need splitting
-- No component/E2E tests (50 unit tests exist)
-- No pagination (loads all 100 prayers at once)
-- Inline styles throughout (no CSS variable adoption)
-- `oratio-app/` is an empty React Native scaffold
-
----
-*Last Updated: 2026-06-14*
+- 411 Vitest tests, ~60% line coverage
+- E2E: `npm run test:e2e` (local, mobile+desktop) / `npm run test:e2e:remote` (live site)
