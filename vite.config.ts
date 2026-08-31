@@ -127,7 +127,10 @@ export default defineConfig({
           // supabase-*) so they are cached lazily at runtime instead.
           supabase: ['@supabase/supabase-js'],
           map: ['leaflet'],
-          telemetry: ['@sentry/react', 'posthog-js'],
+          // Split telemetry so the two idle-loaded libraries download in
+          // parallel instead of one large chunk.
+          sentry: ['@sentry/react'],
+          posthog: ['posthog-js'],
           heic2any: ['heic2any'],
         },
       },

@@ -34,6 +34,7 @@ vi.mock('leaflet', () => ({
     canvas: vi.fn(() => ({})),
     circleMarker: vi.fn(() => layer),
     latLngBounds: vi.fn(() => ({})),
+    control: { attribution: vi.fn(() => ({ addTo: vi.fn() })) },
   },
 }));
 
@@ -42,6 +43,7 @@ vi.mock('../hooks/theme-context', () => ({
 }));
 
 import L from 'leaflet';
+import { useTheme } from '../hooks/theme-context';
 
 const prayer: PrayerRequest = {
   id: 'p1',
@@ -152,5 +154,48 @@ describe('WorldMapClean', () => {
 
     unmount();
     expect(mapInstance.remove).toHaveBeenCalled();
+  });
+
+  it('uses keyless Esri tiles in dark mode', async () => {
+    render(<WorldMapClean prayers={[prayer]} onPrayerTap={() => {}} />);
+
+    await waitFor(() => expect(L.tileLayer).toHaveBeenCalled());
+
+    const tileUrls = vi
+      .mocked(L.tileLayer)
+      .mock.calls.map((call) => (call as unknown as [string])[0]);
+
+    expect(tileUrls.some((url) => url.includes('World_Dark_Gray_Base'))).toBe(true);
+    expect(tileUrls.some((url) => url.includes('World_Dark_Gray_Reference'))).toBe(true);
+    expect(tileUrls.every((url) => url.startsWith('https://services.arcgisonline.com'))).toBe(true);
+    expect(tileUrls.some((url) => url.includes('cartocdn'))).toBe(false);
+  });
+
+  it('uses keyless Esri light tiles in light mode', async () => {
+    vi.mocked(useTheme).mockReturnValue({
+      theme: 'light',
+      themeMode: 'light',
+      setThemeMode: vi.fn(),
+      toggleTheme: vi.fn(),
+    });
+    render(<WorldMapClean prayers={[prayer]} onPrayerTap={() => {}} />);
+
+    await waitFor(() => expect(L.tileLayer).toHaveBeenCalled());
+
+    const tileUrls = vi
+      .mocked(L.tileLayer)
+      .mock.calls.map((call) => (call as unknown as [string])[0]);
+
+    expect(tileUrls.some((url) => url.includes('World_Light_Gray_Base'))).toBe(true);
+    expect(tileUrls.some((url) => url.includes('World_Light_Gray_Reference'))).toBe(true);
+    expect(tileUrls.every((url) => url.startsWith('https://services.arcgisonline.com'))).toBe(true);
+  });
+
+  it('adds a visible attribution control for the tile provider', async () => {
+    render(<WorldMapClean prayers={[prayer]} onPrayerTap={() => {}} />);
+
+    await waitFor(() => expect(L.map).toHaveBeenCalled());
+
+    expect(L.control.attribution).toHaveBeenCalledWith({ prefix: false });
   });
 });

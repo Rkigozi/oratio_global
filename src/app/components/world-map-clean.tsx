@@ -1,8 +1,8 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import type { PrayerRequest } from '../services/prayer-data';
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { useTheme } from '../hooks/theme-context';
-// Leaflet CSS is imported in src/styles/index.css
 
 interface NearbyPrayerArea {
    lat: number;
@@ -68,23 +68,29 @@ export function WorldMapClean({
         maxBoundsViscosity: 0.8,
       });
 
-      // Theme-aware tile layers
+      // Esri attribution is required for their free basemaps.
+      L.control.attribution({ prefix: false }).addTo(map);
+
+      // Theme-aware tile layers. Both themes use Esri Canvas (no API key).
       const isDark = theme === "dark";
       const baseTiles = isDark
-        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        ? "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
         : "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 
       const refTiles = isDark
-        ? "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+        ? "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
         : "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}";
 
+      const esriAttribution = '&copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors';
+
       L.tileLayer(baseTiles, {
-        attribution: '&copy; OpenStreetMap',
+        attribution: esriAttribution,
         maxZoom: 10,
         crossOrigin: true,
       }).addTo(map);
 
       L.tileLayer(refTiles, {
+        attribution: esriAttribution,
         maxZoom: 10,
         crossOrigin: true,
       }).addTo(map);
