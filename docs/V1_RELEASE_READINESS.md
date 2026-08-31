@@ -53,4 +53,4 @@ Authenticated E2E journeys run when `E2E_TEST_EMAIL`/`E2E_TEST_PASSWORD` are exp
 - Android physical-device testing deferred; mobile Chrome/WebKit is the proxy
 - OG image URLs in `index.html` point to the Netlify test domain until a custom domain exists
 - Multi-circle support is a post-V1 decision pending usage data
-- `waitlist`, `push_subscriptions`, and `follows` tables are unused; drop them via migration 037 after launch
+- `push_subscriptions` and `follows` tables are unused; drop them via migration 037 after launch (the `waitlist` table backs the landing beta-updates form)

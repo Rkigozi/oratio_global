@@ -26,7 +26,7 @@
 
 ## Deferred (post-launch)
 
-- Drop unused tables (`waitlist`, `push_subscriptions`, `follows`) — migration 037
+- Drop unused tables (`push_subscriptions`, `follows`) — migration 037
 - Bundle analysis and Lighthouse pass (biggest chunk: HEIC converter)
 - RLS security review
 - Custom domain; production OAuth branding if Google sign-in returns

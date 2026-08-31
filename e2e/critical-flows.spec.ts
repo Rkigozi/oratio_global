@@ -34,8 +34,10 @@ test.describe('Critical Flows', () => {
     ];
 
     for (const route of privateRoutes) {
-      await page.goto(route);
-      await expect(page).toHaveURL(/\/landing|\/login/);
+      // The auth guard can redirect mid-navigation (double navigation is
+      // normal here); we only care that the final URL is a public screen.
+      await page.goto(route).catch(() => {});
+      await expect(page).toHaveURL(/\/landing|\/login/, { timeout: 10_000 });
     }
   });
 

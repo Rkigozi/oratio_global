@@ -23,7 +23,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(self)"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://eu-assets.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tfwgoavbbudkxthjhnrx.supabase.co wss://tfwgoavbbudkxthjhnrx.supabase.co https://o4511569776607232.ingest.de.sentry.io https://eu.i.posthog.com https://eu.posthog.com https://nominatim.openstreetmap.org; img-src 'self' data: blob: https://tfwgoavbbudkxthjhnrx.supabase.co https://ui-avatars.com https://*.basemaps.cartocdn.com https://services.arcgisonline.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; worker-src 'self' blob:;"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://eu-assets.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://tfwgoavbbudkxthjhnrx.supabase.co wss://tfwgoavbbudkxthjhnrx.supabase.co https://o4511569776607232.ingest.de.sentry.io https://eu.i.posthog.com https://eu.posthog.com https://nominatim.openstreetmap.org; img-src 'self' data: blob: https://tfwgoavbbudkxthjhnrx.supabase.co https://ui-avatars.com https://services.arcgisonline.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; worker-src 'self' blob:;"
 
 [[headers]]
   for = "/assets/*"

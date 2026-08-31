@@ -109,7 +109,7 @@ Set in Netlify (build) and GitHub Actions secrets (CI):
 ## Known Deferred Work (post-launch)
 
 - Split remaining large UI files further (`feed.tsx` render layer, `prayer-detail.tsx`)
-- Drop unused tables (`waitlist`, `push_subscriptions`, `follows`) via a new migration
+- Drop unused tables (`push_subscriptions`, `follows`) via a new migration. Note: `waitlist` IS used — the landing beta-updates form writes to it.
 - Bundle analysis: the lazy HEIC-converter chunk (~1MB) is the biggest item
 - Lighthouse/performance pass, RLS security review
 - Custom domain + production OAuth branding

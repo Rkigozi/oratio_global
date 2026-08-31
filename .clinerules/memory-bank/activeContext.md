@@ -25,7 +25,7 @@ V1 launch preparation. The product is feature-complete and hardened; the recent 
 
 ## Next Up
 
-- Post-launch: drop unused tables (`waitlist`, `push_subscriptions`, `follows`) via migration 037
+- Post-launch: drop unused tables (`push_subscriptions`, `follows`) via migration 037
 - Post-launch: bundle analysis (HEIC chunk), Lighthouse, RLS audit
 - Custom domain + Netlify site rename (oratio site) when ready
 - Decide Prayer Circle prominence based on real usage data

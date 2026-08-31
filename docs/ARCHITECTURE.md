@@ -44,7 +44,7 @@ Pages <—> window CustomEvents      (cross-screen sync: prayer added/removed/up
 
 ## 4. Data Model (14 tables)
 
-`profiles` (+ `profile_username_aliases` for username changes), `prayer_requests`, `prayer_interactions`, `comments`, `saved_prayers`, `follows` (unused, to drop), `prayer_circle_connections`, `prayer_circle_invites`, `activity_events`, `reports`, `rate_limits`, `waitlist` (unused, to drop), `push_subscriptions` (unused, to drop).
+`profiles` (+ `profile_username_aliases` for username changes), `prayer_requests`, `prayer_interactions`, `comments`, `saved_prayers`, `follows` (unused, to drop), `prayer_circle_connections`, `prayer_circle_invites`, `activity_events`, `reports`, `rate_limits`, `waitlist` (landing beta-updates form), `push_subscriptions` (unused, to drop).
 
 36 migrations define the schema; applied migrations are immutable.
 
