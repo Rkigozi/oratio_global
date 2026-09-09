@@ -9,6 +9,7 @@ Oratio is a global Christian prayer platform designed to connect people through 
 ## 2. MVP Goal
 
 Enable users to:
+
 - explore prayer activity globally
 - submit prayer requests
 - pray for others
@@ -19,6 +20,7 @@ Enable users to:
 ## 3. Core Features
 
 ### Map
+
 - global prayer activity view
 - aggregated markers
 - privacy-safe
@@ -26,6 +28,7 @@ Enable users to:
 ---
 
 ### Feed
+
 - list of prayer requests
 - trending + recent
 - category filters
@@ -33,6 +36,7 @@ Enable users to:
 ---
 
 ### Submit Prayer
+
 - message input (required)
 - category (optional)
 - location (required)
@@ -41,6 +45,7 @@ Enable users to:
 ---
 
 ### Prayer Interaction
+
 - “I Prayed” button
 - count increment
 - confirmation feedback
@@ -48,6 +53,7 @@ Enable users to:
 ---
 
 ### Profile
+
 - stats
 - activity views:
   - My Prayers

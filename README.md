@@ -103,8 +103,8 @@ Set in Netlify (build) and GitHub Actions secrets (CI):
 - `docs/V1_RELEASE_READINESS.md` — release-control checklist
 - `docs/ARCHITECTURE.md` — architecture detail
 - `docs/QUICK-START.md` — dev-server troubleshooting on this machine
-- `.clinerules/memory-bank/` — project context for AI-assisted sessions
-- `docs/archive/` — historical docs (outdated, kept for reference)
+- `docs/specs/` + `docs/guidelines/` — product specs and testing guidelines (historical reference)
+- `docs/backlog/` — agile working agreement + JIRA sync source
 
 ## Known Deferred Work (post-launch)
 

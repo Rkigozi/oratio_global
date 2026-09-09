@@ -11,11 +11,13 @@ It translates product requirements and user flows into clear UI-level specificat
 ## 2. Onboarding Screen
 
 ### Purpose
+
 Allow users to enter the app with minimal friction by selecting a profile icon and display name.
 
 ---
 
 ### UI Components
+
 - App title (Oratio)
 - Subtitle (supportive / welcoming tone)
 - Icon selection grid (preset icons)
@@ -25,6 +27,7 @@ Allow users to enter the app with minimal friction by selecting a profile icon a
 ---
 
 ### Behaviour
+
 - user must select an icon to proceed
 - name input is optional:
   - if empty → system generates default name (e.g. “Anonymous Dove”)
@@ -36,6 +39,7 @@ Allow users to enter the app with minimal friction by selecting a profile icon a
 ---
 
 ### States
+
 - button disabled when no icon selected
 - button active when icon selected
 - loading state on submit (optional)
@@ -45,11 +49,13 @@ Allow users to enter the app with minimal friction by selecting a profile icon a
 ## 3. Map Screen
 
 ### Purpose
+
 Provide a global, high-level view of prayer activity while preserving user privacy.
 
 ---
 
 ### UI Components
+
 - interactive world map
 - aggregated prayer markers (city / regional level)
 - recenter button (return to user location)
@@ -58,6 +64,7 @@ Provide a global, high-level view of prayer activity while preserving user priva
 ---
 
 ### Behaviour
+
 - loads data from `GET /map/aggregates`
 - markers represent aggregated activity (not individuals)
 - user can:
@@ -71,6 +78,7 @@ Provide a global, high-level view of prayer activity while preserving user priva
 ---
 
 ### Recenter Behaviour
+
 - uses device location (if permitted)
 - does NOT store exact location in backend
 - recenters map to general user area
@@ -78,6 +86,7 @@ Provide a global, high-level view of prayer activity while preserving user priva
 ---
 
 ### States
+
 - loading (map + data)
 - empty state:
   - “No activity here yet”
@@ -87,11 +96,13 @@ Provide a global, high-level view of prayer activity while preserving user priva
 ## 4. Feed Screen
 
 ### Purpose
+
 Allow users to browse, filter, and interact with prayer requests.
 
 ---
 
 ### UI Components
+
 - feed tabs:
   - Global
   - Community (optional / placeholder)
@@ -105,6 +116,7 @@ Allow users to browse, filter, and interact with prayer requests.
 ---
 
 ### Prayer Card Components
+
 - prayer message
 - location (city, country)
 - category (if present)
@@ -115,6 +127,7 @@ Allow users to browse, filter, and interact with prayer requests.
 ---
 
 ### Behaviour
+
 - loads from `GET /prayers`
 - supports:
   - category filtering
@@ -125,6 +138,7 @@ Allow users to browse, filter, and interact with prayer requests.
 ---
 
 ### Prayer Interaction
+
 - tapping “I Prayed”:
   - calls `POST /prayers/:id/pray`
   - increments prayer count
@@ -134,6 +148,7 @@ Allow users to browse, filter, and interact with prayer requests.
 ---
 
 ### Translation Behaviour
+
 - visible when language differs from user locale
 - tapping “Translate”:
   - calls translation endpoint
@@ -143,6 +158,7 @@ Allow users to browse, filter, and interact with prayer requests.
 ---
 
 ### States
+
 - loading state
 - empty state:
   - “No prayers yet — be the first”
@@ -152,11 +168,13 @@ Allow users to browse, filter, and interact with prayer requests.
 ## 5. Submit Prayer Screen
 
 ### Purpose
+
 Allow users to create and submit a prayer request.
 
 ---
 
 ### UI Components
+
 - multi-line text input (message)
 - category selector (optional)
 - location display:
@@ -167,6 +185,7 @@ Allow users to create and submit a prayer request.
 ---
 
 ### Behaviour
+
 - message is required
 - category optional
 - location:
@@ -179,6 +198,7 @@ Allow users to create and submit a prayer request.
 ---
 
 ### Submit Action
+
 - tapping submit:
   - calls `POST /prayers`
   - validates input
@@ -189,6 +209,7 @@ Allow users to create and submit a prayer request.
 ---
 
 ### States
+
 - disabled button when message empty
 - loading state on submit
 
@@ -197,11 +218,13 @@ Allow users to create and submit a prayer request.
 ## 6. Profile Screen
 
 ### Purpose
+
 Allow users to view and manage their activity and contributions.
 
 ---
 
 ### UI Components
+
 - profile icon
 - display name
 - member since
@@ -220,6 +243,7 @@ Allow users to view and manage their activity and contributions.
 ---
 
 ### Behaviour
+
 - loads from `GET /users/:userId/profile`
 - toggle switches between views:
   - user’s own prayers
@@ -228,6 +252,7 @@ Allow users to view and manage their activity and contributions.
 ---
 
 ### States
+
 - loading state
 - empty states:
   - My Prayers: “You haven’t submitted any prayers yet”
@@ -238,11 +263,13 @@ Allow users to view and manage their activity and contributions.
 ## 7. My Prayers View
 
 ### Purpose
+
 Display prayers submitted by the user and allow management actions.
 
 ---
 
 ### UI Components
+
 - list of prayer cards (owned)
 - actions per item:
   - edit
@@ -252,6 +279,7 @@ Display prayers submitted by the user and allow management actions.
 ---
 
 ### Behaviour
+
 - loads from `GET /users/:userId/prayers`
 - user can:
   - edit (`PATCH /prayers/:id`)
@@ -261,6 +289,7 @@ Display prayers submitted by the user and allow management actions.
 ---
 
 ### States
+
 - empty:
   - “Submit your first prayer”
 
@@ -269,23 +298,27 @@ Display prayers submitted by the user and allow management actions.
 ## 8. Prayed For View
 
 ### Purpose
+
 Display prayers the user has prayed for.
 
 ---
 
 ### UI Components
+
 - list of prayer cards
 - read-only display
 
 ---
 
 ### Behaviour
+
 - loads from `GET /users/:userId/prayed-for`
 - no edit controls
 
 ---
 
 ### States
+
 - empty:
   - “You haven’t prayed for anyone yet”
 
@@ -294,7 +327,9 @@ Display prayers the user has prayed for.
 ## 9. Global Behaviour Rules
 
 ### Navigation
+
 Users can move between:
+
 - Map
 - Feed
 - Submit
@@ -303,6 +338,7 @@ Users can move between:
 ---
 
 ### Ownership Rules
+
 - only owner can:
   - edit
   - delete
@@ -314,6 +350,7 @@ Users can move between:
 ---
 
 ### Privacy Rules
+
 - no exact user location stored or displayed
 - only city and country visible
 - anonymous hides identity but not content

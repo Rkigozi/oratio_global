@@ -37,16 +37,19 @@ Defines visual consistency and UI behaviour for MVP.
 ## 5. Components
 
 ### Buttons
+
 - rounded
 - full width (primary)
 - gradient background
 
 ### Cards
+
 - rounded
 - padded
 - readable
 
 ### Inputs
+
 - simple
 - minimal fields
 

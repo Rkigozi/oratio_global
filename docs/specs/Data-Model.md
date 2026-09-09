@@ -8,6 +8,7 @@
 This document defines the core data structures required to support the MVP.
 
 This model supports:
+
 - lightweight onboarding
 - submitting prayer requests
 - responding with “I Prayed”
@@ -272,18 +273,23 @@ Stores translated versions of prayer messages.
 ## 8. Relationships
 
 ### User → PrayerRequest
+
 - one user can submit many prayer requests
 
 ### User → PrayerInteraction
+
 - one user can create many prayer interactions
 
 ### PrayerRequest → PrayerInteraction
+
 - one prayer request can have many prayer interactions
 
 ### PrayerRequest → TranslationCache
+
 - one prayer request can have many cached translations
 
 ### LocationAggregate
+
 - summarises many prayer requests and many prayer interactions for one city/country pair
 
 ---
@@ -291,6 +297,7 @@ Stores translated versions of prayer messages.
 ## 9. Suggested MVP Schema Shape
 
 ### User
+
 - `id`
 - `displayName`
 - `profileIcon`
@@ -300,6 +307,7 @@ Stores translated versions of prayer messages.
 - `updatedAt`
 
 ### PrayerRequest
+
 - `id`
 - `userId`
 - `message`
@@ -316,12 +324,14 @@ Stores translated versions of prayer messages.
 - `updatedAt`
 
 ### PrayerInteraction
+
 - `id`
 - `prayerRequestId`
 - `userId`
 - `createdAt`
 
 ### LocationAggregate
+
 - `id`
 - `city`
 - `country`
@@ -331,6 +341,7 @@ Stores translated versions of prayer messages.
 - `updatedAt`
 
 ### TranslationCache
+
 - `id`
 - `prayerRequestId`
 - `targetLanguage`

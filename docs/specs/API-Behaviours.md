@@ -8,6 +8,7 @@
 This document defines the API endpoints, behaviours, and interaction patterns for the MVP.
 
 It ensures:
+
 - consistent data handling
 - clear frontend ↔ backend communication
 - alignment with the data model and user flows
@@ -28,6 +29,7 @@ It ensures:
 ## 3. Authentication (MVP)
 
 ### Approach
+
 - lightweight identity (no full auth system)
 - `userId` stored locally on device
 - passed with requests when needed
@@ -41,6 +43,7 @@ It ensures:
 **POST /users**
 
 #### Request
+
 ```json
 {
   "displayName": "John",
@@ -50,11 +53,13 @@ It ensures:
 ```
 
 #### Behaviour
+
 - creates new user record
 - assigns unique `userId`
 - stores creation timestamp
 
 #### Response
+
 ```json
 {
   "id": "user_123",
@@ -72,12 +77,14 @@ It ensures:
 **GET /prayers**
 
 #### Query Parameters (optional)
+
 - `category`
 - `city`
 - `country`
 - `sort` (trending | recent)
 
 #### Behaviour
+
 - returns list of prayer requests
 - sorted based on query
 - includes metadata (counts, location)
@@ -89,6 +96,7 @@ It ensures:
 **POST /prayers**
 
 #### Request
+
 ```json
 {
   "userId": "user_123",
@@ -101,12 +109,14 @@ It ensures:
 ```
 
 #### Behaviour
+
 - validates input (message required)
 - creates prayer request
 - initializes prayer count = 0
 - updates location aggregate
 
 #### Response
+
 ```json
 {
   "id": "prayer_123",
@@ -124,6 +134,7 @@ It ensures:
 **POST /prayers/:id/pray**
 
 #### Request
+
 ```json
 {
   "userId": "user_123"
@@ -131,6 +142,7 @@ It ensures:
 ```
 
 #### Behaviour
+
 - checks if user already prayed
 - if not:
   - creates interaction record
@@ -139,6 +151,7 @@ It ensures:
 - prevents duplicate interactions
 
 #### Response
+
 ```json
 {
   "success": true,
@@ -155,6 +168,7 @@ It ensures:
 **GET /map/aggregates**
 
 #### Behaviour
+
 - returns aggregated data by location
 - grouped at city / regional level
 - includes:
@@ -163,6 +177,7 @@ It ensures:
   - last activity timestamp
 
 #### Response
+
 ```json
 [
   {
@@ -183,6 +198,7 @@ It ensures:
 **GET /users/:userId/profile**
 
 #### Behaviour
+
 - returns:
   - display info
   - counts (submitted, prayed, answered)
@@ -241,6 +257,7 @@ It ensures:
 **POST /translate**
 
 #### Request
+
 ```json
 {
   "prayerId": "prayer_123",
@@ -249,6 +266,7 @@ It ensures:
 ```
 
 #### Behaviour
+
 - checks cache first
 - if not found:
   - calls translation API
@@ -265,6 +283,7 @@ It ensures:
 - avoid exposing internal details
 
 #### Example
+
 ```json
 {
   "error": "Invalid request"
