@@ -7,8 +7,9 @@
 ## In Progress
 
 - **SCRUM-63: Monorepo restructure** — DONE (in JIRA: In Review — the workflow has no Done status). npm workspaces live: `apps/web` + `apps/mobile`, root lockfile, Netlify deploys `apps/web`.
-- **SCRUM-65: Expo scaffold** — `apps/mobile` created (Expo SDK 57, blank-typescript, slug `oratio`, bundle id `com.oratio.app`). Type-checks. Next: Supabase auth screens, then run via `npx expo start` with Expo Go on a real iPhone.
-- **SCRUM-64 (next): Extract shared logic** — move queries, validation, types, hashtags, prayer-data into `packages/shared`; rewire web imports; the Expo app consumes the same modules.
+- **SCRUM-65: Expo scaffold** — DONE. `apps/mobile` (Expo SDK 57, slug `oratio`, bundle id `com.oratio.app`, owner `oratio_global`) runs on a real iPhone via Expo Go; starter screen imports `@oratio/shared` (timeAgo) and type-checks.
+- **SCRUM-64: Shared package** — DONE (In Review). `packages/shared` holds prayer-data, validation, username, hashtags (pure parts); web consumes it via thin re-export shims (zero import churn, 420 tests green); the Expo app imports `@oratio/shared` and type-checks.
+- **SCRUM-65 (next): Supabase auth + feed screens in the app.**
 
 ## Apple Distribution Reality
 
