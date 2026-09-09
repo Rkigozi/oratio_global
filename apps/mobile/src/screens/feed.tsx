@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../hooks/auth-context';
 import { useFeed } from '../hooks/use-feed';
@@ -9,10 +10,18 @@ import type { RootStackParamList } from '../navigation';
 
 export function FeedScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Feed'>) {
   const { profile, signOut } = useAuth();
-  const { prayers, loading, refreshing, loadingMore, hasMore, error, refresh, loadMore } =
+  const { prayers, loading, refreshing, loadingMore, hasMore, error, refresh, loadMore, load } =
     useFeed();
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = profile?.display_name || profile?.username || 'friend';
+
+  // Reload whenever the feed regains focus so prayers submitted elsewhere
+  // (submit screen, another device) show up on return.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load])
+  );
 
   return (
     <View style={styles.screen}>
@@ -21,9 +30,14 @@ export function FeedScreen({ navigation }: NativeStackScreenProps<RootStackParam
           <Text style={styles.headerTitle}>ORATIO</Text>
           <Text style={styles.headerSubtitle}>Prayer feed</Text>
         </View>
-        <Pressable onPress={() => setMenuOpen((v) => !v)} style={styles.menuButton}>
-          <Text style={styles.menuButtonText}>{displayName.charAt(0).toUpperCase()}</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable onPress={() => navigation.navigate('Submit')} style={styles.menuButton}>
+            <Text style={styles.menuButtonText}>+</Text>
+          </Pressable>
+          <Pressable onPress={() => setMenuOpen((v) => !v)} style={styles.menuButton}>
+            <Text style={styles.menuButtonText}>{displayName.charAt(0).toUpperCase()}</Text>
+          </Pressable>
+        </View>
         {menuOpen && (
           <View style={styles.menu}>
             <Pressable
@@ -107,6 +121,10 @@ const styles = StyleSheet.create({
     color: colors.textDim,
     fontSize: 11,
     marginTop: 2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
   },
   menuButton: {
     width: 36,

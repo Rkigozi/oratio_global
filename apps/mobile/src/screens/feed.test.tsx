@@ -6,6 +6,10 @@ jest.mock('@react-navigation/native-stack', () => ({
   createNativeStackNavigator: jest.fn(),
 }));
 
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: jest.fn(),
+}));
+
 jest.mock('../hooks/auth-context', () => ({
   useAuth: jest.fn(),
 }));

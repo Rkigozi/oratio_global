@@ -54,5 +54,5 @@ export function useFeed() {
     void load();
   }, [load]);
 
-  return { prayers, loading, refreshing, loadingMore, hasMore, error, refresh, loadMore };
+  return { prayers, loading, refreshing, loadingMore, hasMore, error, refresh, loadMore, load };
 }
