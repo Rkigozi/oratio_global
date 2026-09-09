@@ -39,7 +39,12 @@ vi.mock('leaflet', () => ({
 }));
 
 vi.mock('../hooks/theme-context', () => ({
-  useTheme: vi.fn(() => ({ theme: 'dark', themeMode: 'dark', setThemeMode: vi.fn(), toggleTheme: vi.fn() })),
+  useTheme: vi.fn(() => ({
+    theme: 'dark',
+    themeMode: 'dark',
+    setThemeMode: vi.fn(),
+    toggleTheme: vi.fn(),
+  })),
 }));
 
 import L from 'leaflet';
@@ -129,9 +134,9 @@ describe('WorldMapClean', () => {
 
     await waitFor(() => expect(L.circleMarker).toHaveBeenCalled());
 
-    const bindTooltipCalls = vi.mocked(layer.bindTooltip).mock.calls.map(
-      (call) => (call as unknown as [string])[0]
-    );
+    const bindTooltipCalls = vi
+      .mocked(layer.bindTooltip)
+      .mock.calls.map((call) => (call as unknown as [string])[0]);
     expect(bindTooltipCalls).toContain('London');
   });
 
@@ -141,9 +146,9 @@ describe('WorldMapClean', () => {
 
     await waitFor(() => expect(L.circleMarker).toHaveBeenCalled());
 
-    const bindTooltipCalls = vi.mocked(layer.bindTooltip).mock.calls.map(
-      (call) => (call as unknown as [string])[0]
-    );
+    const bindTooltipCalls = vi
+      .mocked(layer.bindTooltip)
+      .mock.calls.map((call) => (call as unknown as [string])[0]);
     expect(bindTooltipCalls).not.toContain('London');
   });
 

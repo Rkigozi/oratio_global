@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
-import { MemoryRouter } from "react-router";
-import { MockAuthProvider } from "./auth-context";
+import type { ReactNode } from 'react';
+import { MemoryRouter } from 'react-router';
+import { MockAuthProvider } from './auth-context';
 
 interface TestWrapperProps {
   children: ReactNode;
@@ -8,12 +8,10 @@ interface TestWrapperProps {
   authOverrides?: Record<string, unknown>;
 }
 
-export function TestWrapper({ children, initialEntries = ["/"] }: TestWrapperProps) {
+export function TestWrapper({ children, initialEntries = ['/'] }: TestWrapperProps) {
   return (
     <MemoryRouter initialEntries={initialEntries}>
-      <MockAuthProvider>
-        {children}
-      </MockAuthProvider>
+      <MockAuthProvider>{children}</MockAuthProvider>
     </MemoryRouter>
   );
 }

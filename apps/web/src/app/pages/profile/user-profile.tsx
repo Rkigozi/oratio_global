@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router";
-import { ArrowLeft, Check, Clock, Send, UserPlus, Users, X } from "lucide-react";
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router';
+import { ArrowLeft, Check, Clock, Send, UserPlus, Users, X } from 'lucide-react';
 import { timeAgo } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { useAuth } from '../../hooks/auth-context';
-import { AvatarImage } from "../../components/avatar-image";
+import { AvatarImage } from '../../components/avatar-image';
 import {
   getProfileByUsername,
   getUserPrayers,
@@ -20,10 +20,16 @@ export function UserProfile() {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const { profile: currentProfile } = useAuth();
-  const username = name ? decodeURIComponent(name) : "";
-  const [circleStatus, setCircleStatus] = useState<PrayerCircleStatus>({ state: "none" });
+  const username = name ? decodeURIComponent(name) : '';
+  const [circleStatus, setCircleStatus] = useState<PrayerCircleStatus>({ state: 'none' });
   const [circleBusy, setCircleBusy] = useState(false);
-  const [profile, setProfile] = useState<{ id: string; username: string; display_name: string | null; avatar_url: string | null; created_at: string } | null>(null);
+  const [profile, setProfile] = useState<{
+    id: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    created_at: string;
+  } | null>(null);
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
 
   const resolvedUsername = profile?.username || username;
@@ -74,34 +80,42 @@ export function UserProfile() {
     if (!profile || !circleStatus.inviteId) return;
     setCircleBusy(true);
     const ok = await cancelPrayerCircleInvite(circleStatus.inviteId);
-    if (ok) setCircleStatus({ state: "none" });
+    if (ok) setCircleStatus({ state: 'none' });
     setCircleBusy(false);
   };
 
-  const handleRespond = async (response: "accepted" | "declined") => {
+  const handleRespond = async (response: 'accepted' | 'declined') => {
     if (!profile || !circleStatus.inviteId) return;
     setCircleBusy(true);
     const ok = await respondToPrayerCircleInvite(circleStatus.inviteId, response);
     if (ok) {
-      setCircleStatus(response === "accepted" ? { state: "connected" } : { state: "none" });
+      setCircleStatus(response === 'accepted' ? { state: 'connected' } : { state: 'none' });
     }
     setCircleBusy(false);
   };
 
   if (!username) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div
+        className="flex flex-col items-center justify-center min-h-dvh"
+        style={{ background: 'rgb(var(--rgb-bg))' }}
+      >
         <p className="text-text-muted text-sm">User not found</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-dvh flex flex-col" style={{ background: "rgb(var(--rgb-bg))" }}>
-      <div className="flex-shrink-0 pt-[max(1.5rem,env(safe-area-inset-top))] pb-2 px-4"
-        style={{ background: "linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98), rgba(var(--rgb-bg), 0))" }}
+    <div className="w-full min-h-dvh flex flex-col" style={{ background: 'rgb(var(--rgb-bg))' }}>
+      <div
+        className="flex-shrink-0 pt-[max(1.5rem,env(safe-area-inset-top))] pb-2 px-4"
+        style={{
+          background:
+            'linear-gradient(to bottom, rgba(var(--rgb-bg), 0.98), rgba(var(--rgb-bg), 0))',
+        }}
       >
-        <button onClick={() => void navigate(-1)}
+        <button
+          onClick={() => void navigate(-1)}
           className="flex items-center gap-2 text-text-muted hover:text-text-muted transition-colors cursor-pointer mt-12"
         >
           <ArrowLeft size={16} />
@@ -115,12 +129,14 @@ export function UserProfile() {
           <div className="flex items-start gap-4 mb-6 mt-4">
             <AvatarImage
               src={profile?.avatar_url}
-              name={profile?.display_name || resolvedUsername || "User"}
-              alt={profile?.display_name || resolvedUsername || "User"}
+              name={profile?.display_name || resolvedUsername || 'User'}
+              alt={profile?.display_name || resolvedUsername || 'User'}
               className="h-20 w-20 flex-shrink-0 text-2xl"
             />
             <div className="flex-1 min-w-0 pt-1">
-              <h1 className="text-text font-heading text-base font-medium mb-0.5">{profile?.display_name || resolvedUsername}</h1>
+              <h1 className="text-text font-heading text-base font-medium mb-0.5">
+                {profile?.display_name || resolvedUsername}
+              </h1>
               <p className="text-text-dim text-xs mb-1">@{resolvedUsername}</p>
               {!isOwnProfile && (
                 <CircleAction
@@ -129,16 +145,20 @@ export function UserProfile() {
                   busy={circleBusy}
                   onInvite={() => void handleInvite()}
                   onCancel={() => void handleCancelInvite()}
-                  onAccept={() => void handleRespond("accepted")}
-                  onDecline={() => void handleRespond("declined")}
+                  onAccept={() => void handleRespond('accepted')}
+                  onDecline={() => void handleRespond('declined')}
                 />
               )}
             </div>
           </div>
 
           {/* Prayer presence row */}
-          <div className="flex items-center gap-4 mb-6 py-3 px-4 rounded-xl"
-            style={{ background: "rgba(var(--rgb-surface), 0.4)", border: "1px solid rgba(var(--rgb-accent), 0.06)" }}
+          <div
+            className="flex items-center gap-4 mb-6 py-3 px-4 rounded-xl"
+            style={{
+              background: 'rgba(var(--rgb-surface), 0.4)',
+              border: '1px solid rgba(var(--rgb-accent), 0.06)',
+            }}
           >
             <div className="text-center">
               <p className="text-text text-sm font-medium">{prayers.length}</p>
@@ -164,9 +184,9 @@ export function UserProfile() {
 
           {/* Prayer list */}
           <div className="space-y-2">
-            {prayers.length > 0 ? prayers.map((prayer) => (
-              <PrayerCard key={prayer.id} prayer={prayer} />
-            )) : (
+            {prayers.length > 0 ? (
+              prayers.map((prayer) => <PrayerCard key={prayer.id} prayer={prayer} />)
+            ) : (
               <p className="text-center text-text-dim text-xs py-8">No prayers from this user</p>
             )}
           </div>
@@ -193,7 +213,7 @@ function CircleAction({
   onAccept: () => void;
   onDecline: () => void;
 }) {
-  if (status.state === "connected") {
+  if (status.state === 'connected') {
     return (
       <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-accent bg-accent/10 border border-accent/15">
         <Check size={12} />
@@ -202,16 +222,16 @@ function CircleAction({
     );
   }
 
-  if (status.state === "pending_sent") {
+  if (status.state === 'pending_sent') {
     return (
       <button
         onClick={onCancel}
         disabled={busy}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer disabled:opacity-60"
         style={{
-          background: "rgba(var(--rgb-accent), 0.08)",
-          border: "1px solid rgba(var(--rgb-accent), 0.16)",
-          color: "rgb(var(--rgb-accent))",
+          background: 'rgba(var(--rgb-accent), 0.08)',
+          border: '1px solid rgba(var(--rgb-accent), 0.16)',
+          color: 'rgb(var(--rgb-accent))',
         }}
         aria-label={`Cancel Prayer Circle invite to @${username}`}
       >
@@ -221,14 +241,17 @@ function CircleAction({
     );
   }
 
-  if (status.state === "pending_received") {
+  if (status.state === 'pending_received') {
     return (
       <div className="flex items-center gap-1.5">
         <button
           onClick={onAccept}
           disabled={busy}
           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs text-text cursor-pointer disabled:opacity-60"
-          style={{ background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))" }}
+          style={{
+            background:
+              'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
+          }}
         >
           <Check size={12} />
           <span>Accept</span>
@@ -251,8 +274,8 @@ function CircleAction({
       disabled={busy}
       className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs transition-all cursor-pointer disabled:opacity-60"
       style={{
-        background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
-        color: "rgb(var(--rgb-text))",
+        background: 'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
+        color: 'rgb(var(--rgb-text))',
       }}
     >
       <UserPlus size={12} />
@@ -266,38 +289,45 @@ function PrayerCard({ prayer }: { prayer: PrayerRequest }) {
   const [prayed, setPrayed] = useState(false);
   const [count, setCount] = useState(prayer.prayerCount);
 
-  const handlePray = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    const newState = !prayed;
-    setPrayed(newState);
-    setCount(c => c + (newState ? 1 : -1));
-    void togglePray(prayer.id, newState);
-  }, [prayed, prayer.id]);
+  const handlePray = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const newState = !prayed;
+      setPrayed(newState);
+      setCount((c) => c + (newState ? 1 : -1));
+      void togglePray(prayer.id, newState);
+    },
+    [prayed, prayer.id]
+  );
 
   return (
-    <div onClick={() => void navigate(`/prayer/${prayer.id}`)}
+    <div
+      onClick={() => void navigate(`/prayer/${prayer.id}`)}
       className="rounded-xl px-4 py-3 cursor-pointer active:scale-[0.99] transition-transform"
       style={{
-        background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))",
-        border: "1px solid rgba(var(--rgb-accent), 0.05)",
+        background:
+          'linear-gradient(160deg, rgba(var(--rgb-surface), 0.5), rgba(var(--rgb-surface), 0.3))',
+        border: '1px solid rgba(var(--rgb-accent), 0.05)',
       }}
     >
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-text-muted text-[10px]">{prayer.city || "Unknown"}</span>
+        <span className="text-text-muted text-[10px]">{prayer.city || 'Unknown'}</span>
         <span className="text-text-faint text-[10px]">·</span>
-        <span className="text-text-dim text-[10px]">{prayer.createdAt ? timeAgo(prayer.createdAt) : ""}</span>
+        <span className="text-text-dim text-[10px]">
+          {prayer.createdAt ? timeAgo(prayer.createdAt) : ''}
+        </span>
       </div>
       <p className="text-text-secondary text-sm line-clamp-2 leading-relaxed mb-2">{prayer.text}</p>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={handlePray}
+          <button
+            onClick={handlePray}
             className="flex items-center gap-1 text-xs transition-colors cursor-pointer"
-            style={{ color: prayed ? "rgb(var(--rgb-accent))" : "rgb(var(--rgb-text-dim))" }}
+            style={{ color: prayed ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text-dim))' }}
           >
             <span>🙏</span>
             <span>{count}</span>
           </button>
-
         </div>
       </div>
     </div>

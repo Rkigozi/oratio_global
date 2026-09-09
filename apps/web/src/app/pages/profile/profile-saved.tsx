@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Bookmark, MapPin } from "lucide-react";
-import { Drawer } from "vaul";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Bookmark, MapPin } from 'lucide-react';
+import { Drawer } from 'vaul';
+import { useNavigate } from 'react-router';
 import { timeAgo, getAttributionText } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { getSavedPrayers, toggleSavePrayer } from '../../services/supabase-queries';
-import { LoadingSpinner } from "../../components/loading-spinner";
+import { LoadingSpinner } from '../../components/loading-spinner';
 
 export function ProfileSaved() {
   const navigate = useNavigate();
@@ -43,7 +43,7 @@ export function ProfileSaved() {
   return (
     <div
       className="w-full min-h-full flex flex-col px-6 pb-28"
-      style={{ background: "rgb(var(--rgb-bg))" }}
+      style={{ background: 'rgb(var(--rgb-bg))' }}
     >
       <div className="flex-1 overflow-y-auto pt-24">
         {loading ? (
@@ -78,15 +78,16 @@ export function ProfileSaved() {
                   onClick={() => void navigate(`/prayer/${prayer.id}`)}
                   className="rounded-xl px-4 py-3.5 cursor-pointer active:bg-accent/5 transition-colors duration-150"
                   style={{
-                    background: "linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))",
-                    border: "1px solid rgba(var(--rgb-accent), 0.06)",
+                    background:
+                      'linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))',
+                    border: '1px solid rgba(var(--rgb-accent), 0.06)',
                   }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p
                         className="text-text-secondary line-clamp-2 mb-1"
-                        style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
+                        style={{ fontSize: '0.85rem', lineHeight: 1.6 }}
                       >
                         {prayer.text}
                       </p>
@@ -95,16 +96,22 @@ export function ProfileSaved() {
                       </span>
                       <div className="flex items-center gap-2">
                         <MapPin size={10} className="text-text-dim" />
-                        <span className="text-text-dim text-[11px]">{prayer.city || "Unknown"}</span>
+                        <span className="text-text-dim text-[11px]">
+                          {prayer.city || 'Unknown'}
+                        </span>
                         {prayer.createdAt && (
                           <span className="text-text-muted text-[10px] ml-auto">
-                            {prayer.editedAt ? "Edited · " : ""}
+                            {prayer.editedAt ? 'Edited · ' : ''}
                             {timeAgo(prayer.createdAt)}
                           </span>
                         )}
                       </div>
                     </div>
-                    <Bookmark size={12} className="text-text-dim flex-shrink-0 mt-1" fill="#5a6080" />
+                    <Bookmark
+                      size={12}
+                      className="text-text-dim flex-shrink-0 mt-1"
+                      fill="#5a6080"
+                    />
                   </div>
                 </motion.div>
               );
@@ -116,21 +123,22 @@ export function ProfileSaved() {
       {/* Prayer Detail Drawer */}
       <Drawer.Root
         open={!!selectedPrayer}
-        onOpenChange={(o) => { if (!o) setSelectedPrayer(null); }}
+        onOpenChange={(o) => {
+          if (!o) setSelectedPrayer(null);
+        }}
       >
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[600]" />
           <Drawer.Content
             className="flex flex-col rounded-t-[1.5rem] fixed bottom-0 left-0 right-0 z-[600] max-h-[85vh] focus:outline-none"
             style={{
-              background: "linear-gradient(180deg, rgb(var(--rgb-surface)), rgb(var(--rgb-surface)))",
-              borderTop: "1px solid rgba(var(--rgb-accent), 0.1)",
+              background:
+                'linear-gradient(180deg, rgb(var(--rgb-surface)), rgb(var(--rgb-surface)))',
+              borderTop: '1px solid rgba(var(--rgb-accent), 0.1)',
             }}
           >
             <Drawer.Title className="sr-only">Saved Prayer</Drawer.Title>
-            <Drawer.Description className="sr-only">
-              View saved prayer details
-            </Drawer.Description>
+            <Drawer.Description className="sr-only">View saved prayer details</Drawer.Description>
 
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-accent/20" />
@@ -149,19 +157,19 @@ export function ProfileSaved() {
                     <div className="flex items-center gap-2 mb-1 justify-center">
                       <MapPin size={12} className="text-text-dim" />
                       <p className="text-text-muted text-xs">
-                        {(selectedPrayer.city || "Unknown")}, {selectedPrayer.country}
+                        {selectedPrayer.city || 'Unknown'}, {selectedPrayer.country}
                       </p>
                     </div>
                     {selectedPrayer.createdAt && (
                       <p className="text-text-muted text-[11px] mb-5 text-center">
-                        {selectedPrayer.editedAt ? "Edited · " : ""}
+                        {selectedPrayer.editedAt ? 'Edited · ' : ''}
                         {timeAgo(selectedPrayer.createdAt)}
                       </p>
                     )}
 
                     <p
                       className="text-text-secondary text-center mb-4"
-                      style={{ fontSize: "0.95rem", lineHeight: 1.7 }}
+                      style={{ fontSize: '0.95rem', lineHeight: 1.7 }}
                     >
                       {selectedPrayer.text}
                     </p>
@@ -172,7 +180,10 @@ export function ProfileSaved() {
 
                     <div className="flex items-center gap-1.5 justify-center text-text-dim text-xs mb-6">
                       <span className="text-xs opacity-60">🙏</span>
-                      <span>{(selectedPrayer.prayerCount ?? 0)} {(selectedPrayer.prayerCount ?? 0) === 1 ? "person" : "people"} prayed</span>
+                      <span>
+                        {selectedPrayer.prayerCount ?? 0}{' '}
+                        {(selectedPrayer.prayerCount ?? 0) === 1 ? 'person' : 'people'} prayed
+                      </span>
                     </div>
 
                     <button

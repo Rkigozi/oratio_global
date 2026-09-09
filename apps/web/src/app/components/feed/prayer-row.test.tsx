@@ -1,24 +1,24 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
-import { PrayerRow } from "./prayer-row";
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
+import { PrayerRow } from './prayer-row';
 import type { PrayerRequest } from '../services/prayer-data';
 
 const mockPrayer: PrayerRequest = {
-  id: "p1",
-  city: "London",
-  country: "UK",
-  text: "Healing for my family #healing",
-  username: "testuser",
+  id: 'p1',
+  city: 'London',
+  country: 'UK',
+  text: 'Healing for my family #healing',
+  username: 'testuser',
   prayerCount: 3,
   lat: 51.5,
   lng: -0.1,
-  category: "Health",
+  category: 'Health',
   createdAt: new Date().toISOString(),
 };
 
-describe("PrayerRow", () => {
-  it("renders prayer text and city", () => {
+describe('PrayerRow', () => {
+  it('renders prayer text and city', () => {
     render(
       <MemoryRouter>
         <PrayerRow
@@ -31,10 +31,10 @@ describe("PrayerRow", () => {
       </MemoryRouter>
     );
     expect(screen.getByText(/Healing for my family/)).toBeTruthy();
-    expect(screen.getByText("London")).toBeTruthy();
+    expect(screen.getByText('London')).toBeTruthy();
   });
 
-  it("does not render category badge (categories removed)", () => {
+  it('does not render category badge (categories removed)', () => {
     render(
       <MemoryRouter>
         <PrayerRow
@@ -46,10 +46,10 @@ describe("PrayerRow", () => {
         />
       </MemoryRouter>
     );
-    expect(screen.queryByText("Health")).toBeNull();
+    expect(screen.queryByText('Health')).toBeNull();
   });
 
-  it("shows prayer count when showCount is true", () => {
+  it('shows prayer count when showCount is true', () => {
     render(
       <MemoryRouter>
         <PrayerRow
@@ -61,10 +61,10 @@ describe("PrayerRow", () => {
         />
       </MemoryRouter>
     );
-    expect(screen.getByText("3")).toBeTruthy();
+    expect(screen.getByText('3')).toBeTruthy();
   });
 
-  it("shows edited text next to the timestamp for edited prayers", () => {
+  it('shows edited text next to the timestamp for edited prayers', () => {
     render(
       <MemoryRouter>
         <PrayerRow
@@ -79,7 +79,7 @@ describe("PrayerRow", () => {
     expect(screen.getByText(/Edited/)).toBeTruthy();
   });
 
-  it("shows delete button when canManage is true", () => {
+  it('shows delete button when canManage is true', () => {
     render(
       <MemoryRouter>
         <PrayerRow
@@ -92,11 +92,11 @@ describe("PrayerRow", () => {
         />
       </MemoryRouter>
     );
-    const deleteBtn = screen.getByTitle("Delete prayer");
+    const deleteBtn = screen.getByTitle('Delete prayer');
     expect(deleteBtn).toBeTruthy();
   });
 
-  it("calls onDelete when delete is clicked", () => {
+  it('calls onDelete when delete is clicked', () => {
     const onDelete = vi.fn();
     render(
       <MemoryRouter>
@@ -111,11 +111,11 @@ describe("PrayerRow", () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByTitle("Delete prayer"));
-    expect(onDelete).toHaveBeenCalledWith("p1");
+    fireEvent.click(screen.getByTitle('Delete prayer'));
+    expect(onDelete).toHaveBeenCalledWith('p1');
   });
 
-  it("calls onTogglePrayed when pray button is clicked", () => {
+  it('calls onTogglePrayed when pray button is clicked', () => {
     const onTogglePrayed = vi.fn();
     render(
       <MemoryRouter>
@@ -131,7 +131,7 @@ describe("PrayerRow", () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByTitle("Pray"));
-    expect(onTogglePrayed).toHaveBeenCalledWith("p1");
+    fireEvent.click(screen.getByTitle('Pray'));
+    expect(onTogglePrayed).toHaveBeenCalledWith('p1');
   });
 });

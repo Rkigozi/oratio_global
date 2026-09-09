@@ -219,7 +219,9 @@ describe('Moderate', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Reviewed and resolved from the moderation queue.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Reviewed and resolved from the moderation queue.')
+      ).toBeInTheDocument();
     });
   });
 });

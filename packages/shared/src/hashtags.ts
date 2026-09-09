@@ -23,31 +23,31 @@ export function getHashtagCounts(
 
 export function addHashtagsToMockData(text: string): string {
   const prayerHashtags: Record<string, string[]> = {
-    cancer: ["#healing", "#cancer"],
-    chemo: ["#healing", "#cancer"],
-    surgery: ["#healing", "#surgery"],
-    migraine: ["#healing", "#chronic"],
-    anxiety: ["#mentalhealth", "#peace"],
-    panic: ["#mentalhealth", "#peace"],
-    depression: ["#mentalhealth"],
-    marriage: ["#marriage", "#family"],
-    divorce: ["#family", "#healing"],
-    pregnant: ["#family", "#pregnancy"],
-    infertility: ["#family", "#healing"],
-    lost: ["#grief", "#comfort"],
-    layoff: ["#provision", "#career"],
-    unemployed: ["#provision", "#career"],
-    job: ["#career", "#provision"],
-    burned: ["#rest", "#career"],
-    move: ["#guidance", "#faith"],
-    wisdom: ["#guidance", "#faith"],
-    anxiety_peace: ["#peace", "#mentalhealth"],
-    lonely: ["#community", "#comfort"],
-    church: ["#church", "#community"],
-    persecuted: ["#persecution", "#faith"],
-    baptism: ["#faith", "#testimony"],
-    fast: ["#faith"],
-    prodigal: ["#family", "#hope"],
+    cancer: ['#healing', '#cancer'],
+    chemo: ['#healing', '#cancer'],
+    surgery: ['#healing', '#surgery'],
+    migraine: ['#healing', '#chronic'],
+    anxiety: ['#mentalhealth', '#peace'],
+    panic: ['#mentalhealth', '#peace'],
+    depression: ['#mentalhealth'],
+    marriage: ['#marriage', '#family'],
+    divorce: ['#family', '#healing'],
+    pregnant: ['#family', '#pregnancy'],
+    infertility: ['#family', '#healing'],
+    lost: ['#grief', '#comfort'],
+    layoff: ['#provision', '#career'],
+    unemployed: ['#provision', '#career'],
+    job: ['#career', '#provision'],
+    burned: ['#rest', '#career'],
+    move: ['#guidance', '#faith'],
+    wisdom: ['#guidance', '#faith'],
+    anxiety_peace: ['#peace', '#mentalhealth'],
+    lonely: ['#community', '#comfort'],
+    church: ['#church', '#community'],
+    persecuted: ['#persecution', '#faith'],
+    baptism: ['#faith', '#testimony'],
+    fast: ['#faith'],
+    prodigal: ['#family', '#hope'],
   };
 
   const lower = text.toLowerCase();
@@ -60,5 +60,5 @@ export function addHashtagsToMockData(text: string): string {
   if (tags.size === 0) return text;
 
   // Add hashtags at the end
-  return text + "\n\n" + [...tags].join(" ");
+  return text + '\n\n' + [...tags].join(' ');
 }

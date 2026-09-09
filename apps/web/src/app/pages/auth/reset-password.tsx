@@ -1,22 +1,22 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import { motion } from "motion/react";
-import { Mail, Loader, Check } from "lucide-react";
-import { AuthBackButton } from "../../components/auth/auth-back-button";
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
+import { motion } from 'motion/react';
+import { Mail, Loader, Check } from 'lucide-react';
+import { AuthBackButton } from '../../components/auth/auth-back-button';
 import { useAuth } from '../../hooks/auth-context';
 
 export function ResetPassword() {
   const navigate = useNavigate();
   const { resetPassword } = useAuth();
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
   const handleReset = async () => {
-    setError("");
+    setError('');
     if (!email.trim()) {
-      setError("Enter your email address");
+      setError('Enter your email address');
       return;
     }
     setLoading(true);
@@ -31,15 +31,22 @@ export function ResetPassword() {
 
   if (sent) {
     return (
-      <div className="auth-page-scroll flex w-full flex-col text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
+      <div
+        className="auth-page-scroll flex w-full flex-col text-text relative"
+        style={{ background: 'rgb(var(--rgb-bg))' }}
+      >
         <div className="relative z-10 flex flex-col flex-1 justify-center px-6 max-w-sm mx-auto w-full">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="text-center"
           >
-            <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center"
-              style={{ background: "radial-gradient(circle, rgba(var(--rgb-accent), 0.2), rgba(var(--rgb-accent), 0.05))" }}
+            <div
+              className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center"
+              style={{
+                background:
+                  'radial-gradient(circle, rgba(var(--rgb-accent), 0.2), rgba(var(--rgb-accent), 0.05))',
+              }}
             >
               <Check size={28} className="text-accent" />
             </div>
@@ -51,7 +58,7 @@ export function ResetPassword() {
               Click the link in the email to reset your password. It expires in 1 hour.
             </p>
             <button
-              onClick={() => void navigate("/login")}
+              onClick={() => void navigate('/login')}
               className="px-8 py-3 rounded-full text-sm text-accent border border-accent/25 hover:border-accent/50 transition-all cursor-pointer"
             >
               Back to Sign In
@@ -63,11 +70,17 @@ export function ResetPassword() {
   }
 
   return (
-    <div className="auth-page-scroll flex w-full flex-col text-text relative" style={{ background: "rgb(var(--rgb-bg))" }}>
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(var(--rgb-accent), 0.12), transparent 70%)" }}
+    <div
+      className="auth-page-scroll flex w-full flex-col text-text relative"
+      style={{ background: 'rgb(var(--rgb-bg))' }}
+    >
+      <div
+        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(var(--rgb-accent), 0.12), transparent 70%)',
+        }}
       />
-      <AuthBackButton onClick={() => void navigate("/login")} />
+      <AuthBackButton onClick={() => void navigate('/login')} />
 
       <div className="relative z-10 flex flex-col flex-1 justify-center px-6 max-w-sm mx-auto w-full">
         <motion.div
@@ -77,7 +90,10 @@ export function ResetPassword() {
           className="text-center mb-10"
         >
           <p className="text-accent text-xs tracking-[0.25em] uppercase mb-4">Reset Password</p>
-          <h1 className="font-heading font-light tracking-[0.2em] text-text-secondary mb-3" style={{ fontSize: "2rem" }}>
+          <h1
+            className="font-heading font-light tracking-[0.2em] text-text-secondary mb-3"
+            style={{ fontSize: '2rem' }}
+          >
             ORATIO
           </h1>
         </motion.div>
@@ -91,14 +107,19 @@ export function ResetPassword() {
           <p className="text-text-muted text-sm text-center mb-4">
             Enter your email and we&apos;ll send you a reset link.
           </p>
-          <input type="email" value={email}
-            onChange={(e) => { setEmail(e.target.value); setError(""); }}
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError('');
+            }}
             placeholder="your@email.com"
             autoFocus
-            onKeyDown={(e) => e.key === "Enter" && void handleReset()}
+            onKeyDown={(e) => e.key === 'Enter' && void handleReset()}
             className="w-full rounded-xl px-4 py-3.5 text-text placeholder-text-dim text-sm focus:outline-none border transition-colors text-center"
             style={{
-              background: "rgba(var(--rgb-surface), 0.6)",
+              background: 'rgba(var(--rgb-surface), 0.6)',
               borderColor: error ? 'rgb(var(--rgb-danger))' : 'rgba(var(--rgb-accent), 0.12)',
             }}
           />
@@ -110,16 +131,19 @@ export function ResetPassword() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.5 }}
         >
-          <button onClick={() => void handleReset()} disabled={loading}
+          <button
+            onClick={() => void handleReset()}
+            disabled={loading}
             className="w-full py-4 rounded-full text-sm flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
             style={{
-              background: "linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))",
-              color: "rgb(var(--rgb-text))",
-              boxShadow: "0 4px 28px rgba(var(--rgb-accent), 0.3)",
+              background:
+                'linear-gradient(135deg, rgb(var(--rgb-accent)), rgb(var(--rgb-accent-dark)))',
+              color: 'rgb(var(--rgb-text))',
+              boxShadow: '0 4px 28px rgba(var(--rgb-accent), 0.3)',
             }}
           >
             {loading ? <Loader size={15} className="animate-spin" /> : <Mail size={15} />}
-            {loading ? "Sending..." : "Send Reset Link"}
+            {loading ? 'Sending...' : 'Send Reset Link'}
           </button>
         </motion.div>
       </div>

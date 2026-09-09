@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+test-results/
+outputs/
+.netlify/
+package-lock.json
+docs/archive/
+project_scope/
+guidelines/
+supabase/

@@ -150,7 +150,11 @@ describe('Feed prayer event integration', () => {
     await act(async () => {
       window.dispatchEvent(
         new CustomEvent('oratio-prayer-updated', {
-          detail: { prayerId: 'p1', text: 'Updated prayer wording', editedAt: new Date().toISOString() },
+          detail: {
+            prayerId: 'p1',
+            text: 'Updated prayer wording',
+            editedAt: new Date().toISOString(),
+          },
         })
       );
     });

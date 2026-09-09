@@ -37,12 +37,12 @@ function likelyItalian(text: string): boolean {
 }
 
 export function detectLanguage(text: string): string {
-  if (likelySpanish(text)) return "es";
-  if (likelyFrench(text)) return "fr";
-  if (likelyPortuguese(text)) return "pt";
-  if (likelyGerman(text)) return "de";
-  if (likelyItalian(text)) return "it";
-  return "en";
+  if (likelySpanish(text)) return 'es';
+  if (likelyFrench(text)) return 'fr';
+  if (likelyPortuguese(text)) return 'pt';
+  if (likelyGerman(text)) return 'de';
+  if (likelyItalian(text)) return 'it';
+  return 'en';
 }
 
 export function needsTranslation(text: string, userLang: string): boolean {
@@ -58,17 +58,14 @@ export async function translateText(text: string, targetLang: string): Promise<s
   if (cached) return cached;
 
   try {
-    const res = await fetch(
-      `${supabaseUrl}/functions/v1/translate`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          q: text.slice(0, 500),
-          target: targetLang,
-        }),
-      }
-    );
+    const res = await fetch(`${supabaseUrl}/functions/v1/translate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        q: text.slice(0, 500),
+        target: targetLang,
+      }),
+    });
 
     if (!res.ok) return null;
 

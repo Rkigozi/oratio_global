@@ -1,15 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 
-vi.mock("../../hooks/auth-context", () => ({
+vi.mock('../../hooks/auth-context', () => ({
   useAuth: vi.fn(),
 }));
 
-import { ResetPassword } from "./reset-password";
-import { useAuth } from "../../hooks/auth-context";
+import { ResetPassword } from './reset-password';
+import { useAuth } from '../../hooks/auth-context';
 
-describe("ResetPassword", () => {
+describe('ResetPassword', () => {
   const mockResetPassword = vi.fn();
 
   beforeEach(() => {
@@ -27,21 +27,21 @@ describe("ResetPassword", () => {
     });
   });
 
-  it("renders a safe-area aware back button with a mobile tap target", () => {
+  it('renders a safe-area aware back button with a mobile tap target', () => {
     render(
       <MemoryRouter>
         <ResetPassword />
       </MemoryRouter>
     );
 
-    const backButton = screen.getByRole("button", { name: /back/i });
+    const backButton = screen.getByRole('button', { name: /back/i });
     expect(backButton).toHaveStyle({
-      top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)",
+      top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
     });
-    expect(backButton).toHaveClass("min-h-11");
+    expect(backButton).toHaveClass('min-h-11');
   });
 
-  it("shows a non-enumerating confirmation after requesting a reset link", async () => {
+  it('shows a non-enumerating confirmation after requesting a reset link', async () => {
     mockResetPassword.mockResolvedValue(null);
 
     render(
@@ -50,16 +50,16 @@ describe("ResetPassword", () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByPlaceholderText("your@email.com"), {
-      target: { value: "person@example.com" },
+    fireEvent.change(screen.getByPlaceholderText('your@email.com'), {
+      target: { value: 'person@example.com' },
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
+      fireEvent.click(screen.getByRole('button', { name: /send reset link/i }));
     });
 
-    expect(screen.getByText("Check Your Email")).toBeInTheDocument();
+    expect(screen.getByText('Check Your Email')).toBeInTheDocument();
     expect(screen.getByText(/If that email is linked to an Oratio account/)).toBeInTheDocument();
-    expect(screen.queryByText("person@example.com")).not.toBeInTheDocument();
+    expect(screen.queryByText('person@example.com')).not.toBeInTheDocument();
   });
 });

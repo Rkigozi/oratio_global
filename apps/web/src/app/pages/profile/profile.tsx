@@ -116,7 +116,9 @@ export function Profile() {
         getMySavedIds(),
       ]);
       if (!active) return;
-      setPublicPrayers(submitted.filter((prayer) => (prayer.audience || 'public') === 'public').length);
+      setPublicPrayers(
+        submitted.filter((prayer) => (prayer.audience || 'public') === 'public').length
+      );
       setCirclePrayers(submitted.filter((prayer) => prayer.audience === 'circle').length);
       setPrivatePrayers(submitted.filter((prayer) => prayer.audience === 'private').length);
       setMyPrayedFor(prayedFor.length);
@@ -489,9 +491,7 @@ export function Profile() {
 
           <div className="space-y-5">
             <section>
-              <p className="oratio-section-label mb-2 px-1">
-                Prayer Library
-              </p>
+              <p className="oratio-section-label mb-2 px-1">Prayer Library</p>
               <div className="space-y-2">
                 <button
                   onClick={() => void navigate('/profile/submitted?view=public')}
@@ -535,9 +535,7 @@ export function Profile() {
             </section>
 
             <section>
-              <p className="oratio-section-label mb-2 px-1">
-                Activity
-              </p>
+              <p className="oratio-section-label mb-2 px-1">Activity</p>
               <div className="space-y-2">
                 <button
                   onClick={() => void navigate('/updates')}
@@ -583,9 +581,7 @@ export function Profile() {
             </section>
 
             <section>
-              <p className="oratio-section-label mb-2 px-1">
-                People
-              </p>
+              <p className="oratio-section-label mb-2 px-1">People</p>
               <button
                 onClick={() => void navigate('/profile/circle')}
                 className="oratio-quiet-row w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left cursor-pointer"

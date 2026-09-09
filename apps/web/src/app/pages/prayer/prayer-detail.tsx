@@ -591,9 +591,7 @@ export function PrayerDetail() {
                 </span>
               )}
               {prayer.editedAt && (
-                <span className="oratio-pill rounded-full px-2 py-0.5 text-[10px]">
-                  Edited
-                </span>
+                <span className="oratio-pill rounded-full px-2 py-0.5 text-[10px]">Edited</span>
               )}
             </p>
           )}

@@ -1,5 +1,5 @@
-import { createContext, useContext, type ReactNode } from "react";
-import { vi } from "vitest";
+import { createContext, useContext, type ReactNode } from 'react';
+import { vi } from 'vitest';
 
 interface MockAuthState {
   user: { id: string; email?: string } | null;
@@ -14,8 +14,8 @@ interface MockAuthState {
 }
 
 const defaultAuth: MockAuthState = {
-  user: { id: "test-user-id", email: "test@example.com" },
-  profile: { username: "testuser", display_name: "Test User" },
+  user: { id: 'test-user-id', email: 'test@example.com' },
+  profile: { username: 'testuser', display_name: 'Test User' },
   loading: false,
   signUp: vi.fn().mockResolvedValue(null),
   signIn: vi.fn().mockResolvedValue(null),

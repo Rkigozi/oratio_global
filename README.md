@@ -90,12 +90,12 @@ docs/                              # HLD, backlog, QA, guides
 
 Set in Netlify (build) and GitHub Actions secrets (CI):
 
-| Variable | Purpose |
-| --- | --- |
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Public Supabase anon key (safe to expose; security is via RLS) |
-| `VITE_SENTRY_DSN` | Sentry error tracking |
-| `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` | Product analytics |
+| Variable                                 | Purpose                                                        |
+| ---------------------------------------- | -------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`                      | Supabase project URL                                           |
+| `VITE_SUPABASE_ANON_KEY`                 | Public Supabase anon key (safe to expose; security is via RLS) |
+| `VITE_SENTRY_DSN`                        | Sentry error tracking                                          |
+| `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` | Product analytics                                              |
 
 ## Docs To Read
 

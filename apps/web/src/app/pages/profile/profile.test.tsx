@@ -216,9 +216,7 @@ describe('Profile', () => {
     });
 
     await waitFor(() => {
-      expect(updateProfile).toHaveBeenCalledWith(
-        expect.objectContaining({ username: 'newname' })
-      );
+      expect(updateProfile).toHaveBeenCalledWith(expect.objectContaining({ username: 'newname' }));
     });
     expect(updateProfilePreferences).toHaveBeenCalledWith({
       profile_location_mode: 'manual',

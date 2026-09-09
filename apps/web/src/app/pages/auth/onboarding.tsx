@@ -116,9 +116,7 @@ export function Onboarding() {
           className="mb-6 space-y-4"
         >
           <div>
-            <p className="oratio-section-label mb-2 text-center">
-              Email
-            </p>
+            <p className="oratio-section-label mb-2 text-center">Email</p>
             <input
               type="email"
               value={email}
@@ -130,9 +128,7 @@ export function Onboarding() {
             />
           </div>
           <div>
-            <p className="oratio-section-label mb-2 text-center">
-              Password
-            </p>
+            <p className="oratio-section-label mb-2 text-center">Password</p>
             <PasswordInput
               value={password}
               onChange={setPassword}
@@ -142,9 +138,7 @@ export function Onboarding() {
             />
           </div>
           <div>
-            <p className="oratio-section-label mb-2 text-center">
-              Username
-            </p>
+            <p className="oratio-section-label mb-2 text-center">Username</p>
             <input
               type="text"
               value={username}

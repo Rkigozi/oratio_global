@@ -78,9 +78,7 @@ export function FeedCard({
             </span>
           )}
           {prayer.editedAt && (
-            <span className="oratio-pill rounded-full px-1.5 py-0.5 text-[9px]">
-              Edited
-            </span>
+            <span className="oratio-pill rounded-full px-1.5 py-0.5 text-[9px]">Edited</span>
           )}
           <span className="text-text-dim text-[10px]">
             {prayer.createdAt ? timeAgo(prayer.createdAt) : ''}

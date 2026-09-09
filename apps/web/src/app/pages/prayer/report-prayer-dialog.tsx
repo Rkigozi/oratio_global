@@ -7,7 +7,12 @@ type Props = {
   onReport: (reason: string) => void;
 };
 
-const REPORT_REASONS = ['Spam or fake', 'Upsetting or graphic', 'Harmful or unsafe', 'Something else'];
+const REPORT_REASONS = [
+  'Spam or fake',
+  'Upsetting or graphic',
+  'Harmful or unsafe',
+  'Something else',
+];
 
 export function ReportPrayerDialog({ submitting, onClose, onReport }: Props) {
   return (

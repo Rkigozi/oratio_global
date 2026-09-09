@@ -228,9 +228,7 @@ export function Home() {
       return false;
     }
   });
-  const nearbyAreaKey = nearbyArea
-    ? `${nearbyArea.city}:${nearbyArea.country}`
-    : '';
+  const nearbyAreaKey = nearbyArea ? `${nearbyArea.city}:${nearbyArea.country}` : '';
 
   // Fly to user location when it's resolved
   useEffect(() => {

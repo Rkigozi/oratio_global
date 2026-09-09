@@ -5,18 +5,21 @@ Use this before release and after any deploy touching auth, feed, or prayer flow
 ## Authentication (email/password only)
 
 **Sign up**
+
 - [ ] Landing page shows "Create Account" and "Sign in"
 - [ ] Onboarding creates an account with email + password + username
 - [ ] Email verification screen appears when Supabase requires confirmation
 - [ ] Profile row auto-created in Supabase
 
 **Sign in / out**
+
 - [ ] Valid credentials sign in and land on the feed
 - [ ] Wrong password shows an error; empty fields show a validation message
 - [ ] "Forgot password?" → reset email → `/update-password` sets the new password
 - [ ] Sign out returns to landing
 
 **Guards**
+
 - [ ] Logged-out users hitting `/`, `/feed`, `/submit`, `/profile*`, `/updates`, `/moderate` are redirected
 - [ ] Shared prayer links prompt sign-in, then return to the prayer
 

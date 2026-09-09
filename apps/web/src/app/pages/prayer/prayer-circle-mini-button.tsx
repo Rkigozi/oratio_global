@@ -10,7 +10,14 @@ type Props = {
   onAccept: () => void;
 };
 
-export function PrayerCircleMiniButton({ username, status, busy, onInvite, onCancel, onAccept }: Props) {
+export function PrayerCircleMiniButton({
+  username,
+  status,
+  busy,
+  onInvite,
+  onCancel,
+  onAccept,
+}: Props) {
   if (status.state === 'connected') {
     return (
       <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full text-accent bg-accent/10 border border-accent/15">

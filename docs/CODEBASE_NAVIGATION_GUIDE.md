@@ -22,17 +22,17 @@ The browser loads a React PWA from Netlify. React handles screens and UI state. 
 
 ## Important Entry Points
 
-| Area | File |
-| --- | --- |
-| Browser entry | `src/main.tsx` |
-| App shell | `src/app/App.tsx` |
-| Route map | `src/app/routes.tsx` |
-| Auth guard | `src/app/components/auth/auth-guard.tsx` |
-| Layout / header / bottom nav | `src/app/components/layout/` |
-| Supabase client | `src/app/services/supabase.ts` |
-| Data layer (barrel) | `src/app/services/supabase-queries.ts` → `services/queries/` |
-| Monitoring | `src/lib/monitoring.ts` (Sentry), `src/lib/analytics.ts` (PostHog) |
-| Styling tokens | `src/styles/theme.css` |
+| Area                         | File                                                               |
+| ---------------------------- | ------------------------------------------------------------------ |
+| Browser entry                | `src/main.tsx`                                                     |
+| App shell                    | `src/app/App.tsx`                                                  |
+| Route map                    | `src/app/routes.tsx`                                               |
+| Auth guard                   | `src/app/components/auth/auth-guard.tsx`                           |
+| Layout / header / bottom nav | `src/app/components/layout/`                                       |
+| Supabase client              | `src/app/services/supabase.ts`                                     |
+| Data layer (barrel)          | `src/app/services/supabase-queries.ts` → `services/queries/`       |
+| Monitoring                   | `src/lib/monitoring.ts` (Sentry), `src/lib/analytics.ts` (PostHog) |
+| Styling tokens               | `src/styles/theme.css`                                             |
 
 ## Product Routes
 
@@ -42,31 +42,31 @@ Authenticated: `/` (map), `/feed`, `/submit`, `/prayer/:id`, `/profile`, `/profi
 
 ## Core Flows → Files
 
-| Flow | Where |
-| --- | --- |
-| Auth (email only) | `src/app/hooks/auth-context.tsx`, `src/app/pages/auth/` |
-| Submit prayer | `src/app/pages/prayer/submit.tsx`, `src/lib/validation.ts`, `services/queries/prayers.ts` |
-| Feed (data/filters) | `src/app/pages/feed/feed.tsx` + `use-feed-data.ts` / `use-feed-search.ts` |
-| Feed cards | `src/app/components/feed/feed-card.tsx`, `prayer-row.tsx` |
-| Map | `src/app/pages/feed/home.tsx`, `src/app/components/world-map-clean.tsx` |
-| Prayer detail | `src/app/pages/prayer/prayer-detail.tsx` (+ `edit-prayer-dialog`, `report-prayer-dialog`, `prayer-circle-mini-button`) |
-| Comments | `src/app/components/comments/comment-section.tsx` + `comment-thread.tsx`, `services/queries/comments.ts` |
-| Prayer Circle | `src/app/pages/profile/prayer-circle.tsx`, `services/queries/circle.ts`, migrations 016/023/032 |
-| Updates inbox | `src/app/pages/updates.tsx`, `src/app/hooks/activity-updates-context.tsx`, `services/queries/updates.ts` |
-| Moderation | `src/app/pages/moderate.tsx`, `services/queries/reports.ts` |
-| Profile/settings | `src/app/pages/profile/profile.tsx` (+ `profile-edit-drawer`), `profile-settings.tsx`, `services/queries/profiles.ts` |
-| PWA | `src/main.tsx`, `src/lib/pwa-recovery.ts`, `vite.config.ts`, `netlify.toml` |
+| Flow                | Where                                                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Auth (email only)   | `src/app/hooks/auth-context.tsx`, `src/app/pages/auth/`                                                                |
+| Submit prayer       | `src/app/pages/prayer/submit.tsx`, `src/lib/validation.ts`, `services/queries/prayers.ts`                              |
+| Feed (data/filters) | `src/app/pages/feed/feed.tsx` + `use-feed-data.ts` / `use-feed-search.ts`                                              |
+| Feed cards          | `src/app/components/feed/feed-card.tsx`, `prayer-row.tsx`                                                              |
+| Map                 | `src/app/pages/feed/home.tsx`, `src/app/components/world-map-clean.tsx`                                                |
+| Prayer detail       | `src/app/pages/prayer/prayer-detail.tsx` (+ `edit-prayer-dialog`, `report-prayer-dialog`, `prayer-circle-mini-button`) |
+| Comments            | `src/app/components/comments/comment-section.tsx` + `comment-thread.tsx`, `services/queries/comments.ts`               |
+| Prayer Circle       | `src/app/pages/profile/prayer-circle.tsx`, `services/queries/circle.ts`, migrations 016/023/032                        |
+| Updates inbox       | `src/app/pages/updates.tsx`, `src/app/hooks/activity-updates-context.tsx`, `services/queries/updates.ts`               |
+| Moderation          | `src/app/pages/moderate.tsx`, `services/queries/reports.ts`                                                            |
+| Profile/settings    | `src/app/pages/profile/profile.tsx` (+ `profile-edit-drawer`), `profile-settings.tsx`, `services/queries/profiles.ts`  |
+| PWA                 | `src/main.tsx`, `src/lib/pwa-recovery.ts`, `vite.config.ts`, `netlify.toml`                                            |
 
 ## Supabase Map
 
-| Area | Location |
-| --- | --- |
-| Client | `src/app/services/supabase.ts` |
+| Area           | Location                                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Client         | `src/app/services/supabase.ts`                                                                                     |
 | Domain queries | `src/app/services/queries/{prayers,comments,circle,updates,reports,profiles,saved,interactions,account,shared}.ts` |
-| Barrel | `src/app/services/supabase-queries.ts` (re-exports only) |
-| Uploads | `src/app/services/upload.ts` |
-| Migrations | `supabase/migrations/` (36, immutable once applied) |
-| Edge functions | `supabase/functions/` (translate, delete-account) |
+| Barrel         | `src/app/services/supabase-queries.ts` (re-exports only)                                                           |
+| Uploads        | `src/app/services/upload.ts`                                                                                       |
+| Migrations     | `supabase/migrations/` (36, immutable once applied)                                                                |
+| Edge functions | `supabase/functions/` (translate, delete-account)                                                                  |
 
 ## Environment Variables
 

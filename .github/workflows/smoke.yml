@@ -1,0 +1,30 @@
+name: Production Smoke
+
+# Daily smoke check against the live site, plus on-demand runs.
+# Covers the public surfaces only; authenticated journeys need
+# E2E_TEST_EMAIL / E2E_TEST_PASSWORD secrets to be set.
+
+on:
+  schedule:
+    - cron: '30 7 * * *' # 07:30 UTC daily
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run public E2E suite against production
+        working-directory: apps/web
+        run: npm run test:e2e:remote -- --grep-invert "Signed-in product journeys"

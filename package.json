@@ -14,7 +14,7 @@
     "build": "npm run build --workspace @oratio/web",
     "preview": "npm run preview --workspace @oratio/web",
     "lint": "npm run lint --workspace @oratio/web",
-    "format": "npm run format --workspace @oratio/web",
+    "format": "prettier --write .",
     "type-check": "npm run type-check --workspace @oratio/web",
     "test": "npm run test --workspace @oratio/web",
     "test:watch": "npm run test:watch --workspace @oratio/web",
@@ -23,6 +23,26 @@
     "test:e2e:remote": "npm run test:e2e:remote --workspace @oratio/web",
     "dev:mobile": "npm run start --workspace @oratio/mobile",
     "ios": "npm run ios --workspace @oratio/mobile",
-    "type-check:mobile": "npm run typecheck --workspace @oratio/mobile"
+    "type-check:mobile": "npm run typecheck --workspace @oratio/mobile",
+    "prepare": "husky",
+    "format:check": "prettier --check .",
+    "test:mobile": "npm run test --workspace @oratio/mobile",
+    "audit:web": "npm audit -w @oratio/web --omit=dev --audit-level=high"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{ts,tsx}": [
+      "prettier --write",
+      "node scripts/lint-web.mjs"
+    ],
+    "apps/mobile/**/*.{ts,tsx}": [
+      "prettier --write"
+    ],
+    "packages/shared/**/*.ts": [
+      "prettier --write"
+    ]
   }
 }

@@ -39,30 +39,30 @@ Out of scope:
 
 ## Priority semantics
 
-| Priority | Meaning |
-| --- | --- |
-| Highest | Blocks the V1 launch |
-| High | Should land before launch; safe to defer only with a written reason |
-| Medium | Post-launch backlog |
-| Low | Nice-to-have; only with spare capacity |
+| Priority | Meaning                                                             |
+| -------- | ------------------------------------------------------------------- |
+| Highest  | Blocks the V1 launch                                                |
+| High     | Should land before launch; safe to defer only with a written reason |
+| Medium   | Post-launch backlog                                                 |
+| Low      | Nice-to-have; only with spare capacity                              |
 
 ## Labels
 
-| Label | Meaning |
-| --- | --- |
-| `v1-launch` | Must be done for the V1 launch |
-| `post-launch` | After launch week |
-| `platform` | Infrastructure, security, ops |
-| `product` | User-facing product work |
+| Label            | Meaning                             |
+| ---------------- | ----------------------------------- |
+| `v1-launch`      | Must be done for the V1 launch      |
+| `post-launch`    | After launch week                   |
+| `platform`       | Infrastructure, security, ops       |
+| `product`        | User-facing product work            |
 | `dev-experience` | Testing, structure, maintainability |
 
 ## Versions (Fix Version)
 
-| Version | Purpose |
-| --- | --- |
-| V1 Launch | Everything in this release ships before the public launch |
-| Post-Launch | The next wave after launch week |
-| Backlog | Uncommitted future work |
+| Version     | Purpose                                                   |
+| ----------- | --------------------------------------------------------- |
+| V1 Launch   | Everything in this release ships before the public launch |
+| Post-Launch | The next wave after launch week                           |
+| Backlog     | Uncommitted future work                                   |
 
 ## Estimation
 
@@ -71,13 +71,13 @@ load. Introduce points (or T-shirt sizes) only when a second developer joins.
 
 ## Epics
 
-| Epic | Key | Stories |
-| --- | --- | --- |
-| LAUNCH: Launch Readiness | SCRUM-31 | SCRUM-36…40 |
+| Epic                                   | Key      | Stories     |
+| -------------------------------------- | -------- | ----------- |
+| LAUNCH: Launch Readiness               | SCRUM-31 | SCRUM-36…40 |
 | TEST: Testing & Observability Maturity | SCRUM-32 | SCRUM-41…44 |
-| HARD: Post-Launch Hardening | SCRUM-33 | SCRUM-45…48 |
-| COMM: Community & Retention | SCRUM-34 | SCRUM-49…52 |
-| OPS: Platform & Operations | SCRUM-35 | SCRUM-53…56 |
+| HARD: Post-Launch Hardening            | SCRUM-33 | SCRUM-45…48 |
+| COMM: Community & Retention            | SCRUM-34 | SCRUM-49…52 |
+| OPS: Platform & Operations             | SCRUM-35 | SCRUM-53…56 |
 
 Each epic description contains an Outcome statement and Success metrics —
 track those, not task counts.

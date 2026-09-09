@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Lock, Send, Users } from "lucide-react";
-import { Drawer } from "vaul";
-import { useNavigate, useSearchParams } from "react-router";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Lock, Send, Users } from 'lucide-react';
+import { Drawer } from 'vaul';
+import { useNavigate, useSearchParams } from 'react-router';
 import type { PrayerRequest } from '../../services/prayer-data';
-import { PrayerRow } from "../../components/feed/prayer-row";
+import { PrayerRow } from '../../components/feed/prayer-row';
 import { getMyPrayers, deletePrayerRequest } from '../../services/supabase-queries';
-import { LoadingSpinner } from "../../components/loading-spinner";
+import { LoadingSpinner } from '../../components/loading-spinner';
 
 type PrayerLibraryView = 'public' | 'circle' | 'private';
 
@@ -51,7 +51,7 @@ export function ProfileSubmitted() {
   const [searchParams] = useSearchParams();
   // Delete confirmation
   const [prayerToDelete, setPrayerToDelete] = useState<PrayerRequest | null>(null);
-  
+
   const [mySubmitted, setMySubmitted] = useState<PrayerRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const activeView = getPrayerLibraryView(searchParams);
@@ -89,30 +89,27 @@ export function ProfileSubmitted() {
   const performDeletePrayer = (prayerId: string) => {
     void deletePrayerRequest(prayerId);
 
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("oratio-prayer-removed", { detail: prayerId }));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('oratio-prayer-removed', { detail: prayerId }));
     }
 
-    setMySubmitted(prev => prev.filter(p => p.id !== prayerId));
+    setMySubmitted((prev) => prev.filter((p) => p.id !== prayerId));
   };
 
   const handleTagClick = (tag: string) => {
-    const q = tag.startsWith("#") ? tag : `#${tag}`;
+    const q = tag.startsWith('#') ? tag : `#${tag}`;
     void navigate(`/feed?search=${encodeURIComponent(q)}`);
   };
 
   const handleDeleteClick = (prayerId: string) => {
-    const prayer = mySubmitted.find(p => p.id === prayerId);
+    const prayer = mySubmitted.find((p) => p.id === prayerId);
     if (prayer) {
       setPrayerToDelete(prayer);
     }
   };
 
   return (
-    <div
-      className="w-full h-full flex flex-col"
-      style={{ background: "rgb(var(--rgb-bg))" }}
-    >
+    <div className="w-full h-full flex flex-col" style={{ background: 'rgb(var(--rgb-bg))' }}>
       {/* Scrollable content */}
       <div className="flex-1 px-4 pb-28 overflow-y-auto pt-24">
         {loading ? (
@@ -123,8 +120,8 @@ export function ProfileSubmitted() {
               className="rounded-xl px-4 py-3.5"
               style={{
                 background:
-                  "linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))",
-                border: "1px solid rgba(var(--rgb-accent), 0.08)",
+                  'linear-gradient(160deg, rgba(var(--rgb-accent), 0.08), rgba(var(--rgb-surface), 0.35))',
+                border: '1px solid rgba(var(--rgb-accent), 0.08)',
               }}
             >
               <div className="flex gap-3">
@@ -159,8 +156,8 @@ export function ProfileSubmitted() {
                 animate={{ opacity: 1 }}
                 className="text-center py-8 rounded-xl"
                 style={{
-                  background: "rgba(var(--rgb-surface), 0.4)",
-                  border: "1px solid rgba(var(--rgb-accent), 0.05)",
+                  background: 'rgba(var(--rgb-surface), 0.4)',
+                  border: '1px solid rgba(var(--rgb-accent), 0.05)',
                 }}
               >
                 <Icon size={20} className="text-text-dim mx-auto mb-2" />
@@ -192,8 +189,9 @@ export function ProfileSubmitted() {
           <Drawer.Content
             className="flex flex-col rounded-t-[1.5rem] fixed bottom-0 left-0 right-0 z-[700] max-h-[60vh] focus:outline-none"
             style={{
-              background: "linear-gradient(180deg, rgb(var(--rgb-surface)), rgb(var(--rgb-surface)))",
-              borderTop: "1px solid rgba(var(--rgb-accent), 0.1)",
+              background:
+                'linear-gradient(180deg, rgb(var(--rgb-surface)), rgb(var(--rgb-surface)))',
+              borderTop: '1px solid rgba(var(--rgb-accent), 0.1)',
             }}
           >
             <Drawer.Title className="sr-only">Delete Confirmation</Drawer.Title>
@@ -231,7 +229,7 @@ export function ProfileSubmitted() {
                     </div>
 
                     <div className="flex flex-col gap-3">
-                       <button
+                      <button
                         type="button"
                         autoFocus
                         onClick={() => {
@@ -242,9 +240,9 @@ export function ProfileSubmitted() {
                         }}
                         className="w-full py-3.5 rounded-full text-sm font-medium cursor-pointer"
                         style={{
-                          background: "linear-gradient(135deg, rgb(var(--rgb-danger)), #d65a5a)",
-                          color: "rgb(var(--rgb-text))",
-                          boxShadow: "0 4px 25px rgba(var(--rgb-danger), 0.3)",
+                          background: 'linear-gradient(135deg, rgb(var(--rgb-danger)), #d65a5a)',
+                          color: 'rgb(var(--rgb-text))',
+                          boxShadow: '0 4px 25px rgba(var(--rgb-danger), 0.3)',
                         }}
                       >
                         Delete Prayer

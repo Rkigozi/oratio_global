@@ -1,1 +1,1 @@
-export * from "@oratio/shared/prayer-data";
+export * from '@oratio/shared/prayer-data';

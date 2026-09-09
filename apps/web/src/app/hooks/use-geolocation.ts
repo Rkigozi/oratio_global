@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { normalizePrayerLocation } from "../services/prayer-data";
+import { useState, useCallback } from 'react';
+import { normalizePrayerLocation } from '../services/prayer-data';
 
 export interface LocationInfo {
   city: string;
@@ -22,7 +22,7 @@ export function useGeolocation() {
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState<LocationInfo | null>(() => {
     try {
-      const cached = sessionStorage.getItem("oratio_location");
+      const cached = sessionStorage.getItem('oratio_location');
       if (cached) {
         const parsed = JSON.parse(cached) as LocationInfo;
         return { ...parsed, ...normalizePrayerLocation(parsed.city, parsed.country) };
@@ -54,13 +54,13 @@ export function useGeolocation() {
 
       const res = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&accept-language=en`,
-        { headers: { "User-Agent": "Oratio/1.0" } }
+        { headers: { 'User-Agent': 'Oratio/1.0' } }
       );
       const data = (await res.json()) as ReverseGeocodeResponse;
       const address = data.address || {};
       const location = normalizePrayerLocation(
-        address.city || address.town || address.village || address.county || "Unknown",
-        address.country || "Unknown"
+        address.city || address.town || address.village || address.county || 'Unknown',
+        address.country || 'Unknown'
       );
 
       const info: LocationInfo = {
@@ -70,23 +70,18 @@ export function useGeolocation() {
         lng,
       };
 
-      sessionStorage.setItem("oratio_location", JSON.stringify(info));
+      sessionStorage.setItem('oratio_location', JSON.stringify(info));
       setLocation(info);
       return info;
     } catch (err) {
-      const code = typeof err === "object" && err !== null && "code" in err
-        ? Number((err as { code?: unknown }).code)
-        : undefined;
+      const code =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? Number((err as { code?: unknown }).code)
+          : undefined;
       const isPermission = code === 1;
       const isTimeout = code === 3;
       setDenied(isPermission);
-      setError(
-        isPermission
-          ? "permission"
-          : isTimeout
-            ? "timeout"
-            : "error"
-      );
+      setError(isPermission ? 'permission' : isTimeout ? 'timeout' : 'error');
       return null;
     } finally {
       setLoading(false);

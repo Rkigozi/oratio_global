@@ -1,4 +1,4 @@
-type SentryModule = typeof import("@sentry/react");
+type SentryModule = typeof import('@sentry/react');
 
 let sentryInit: Promise<SentryModule | null> | null = null;
 
@@ -6,13 +6,13 @@ function startSentry() {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
   if (!dsn) return Promise.resolve(null);
 
-  sentryInit ??= import("@sentry/react")
+  sentryInit ??= import('@sentry/react')
     .then((Sentry) => {
       Sentry.init({
         dsn,
         integrations: [Sentry.browserTracingIntegration()],
         tracesSampleRate: 0.1,
-        environment: import.meta.env.PROD ? "production" : "development",
+        environment: import.meta.env.PROD ? 'production' : 'development',
       });
       return Sentry;
     })
@@ -28,7 +28,7 @@ export function initMonitoring() {
 export function captureException(
   exception: Error,
   context: string,
-  extra?: Record<string, unknown>,
+  extra?: Record<string, unknown>
 ) {
   if (!import.meta.env.PROD) return;
 

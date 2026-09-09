@@ -212,9 +212,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
   const emptyText = isPrivatePrayer
     ? 'No notes yet. Add a thought, reflection, or update for later.'
     : 'No comments yet. Be the first to encourage them.';
-  const signedOutPrompt = isPrivatePrayer
-    ? 'to add a private note.'
-    : 'to leave an encouragement.';
+  const signedOutPrompt = isPrivatePrayer ? 'to add a private note.' : 'to leave an encouragement.';
   const placeholder = replyTo
     ? 'Write a reply...'
     : isPrivatePrayer

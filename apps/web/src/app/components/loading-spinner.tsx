@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 interface LoadingSpinnerProps {
   text?: string | null;
@@ -25,7 +25,7 @@ export function useDelayedVisibility(delayMs = 180) {
   return visible;
 }
 
-export function LoadingSpinner({ text = "Loading...", delayMs = 180 }: LoadingSpinnerProps) {
+export function LoadingSpinner({ text = 'Loading...', delayMs = 180 }: LoadingSpinnerProps) {
   const visible = useDelayedVisibility(delayMs);
 
   if (!visible) {
@@ -46,8 +46,8 @@ export function FullPageLoadingSpinner({ delayMs = 180 }: { delayMs?: number }) 
   return (
     <div
       className="flex h-full w-full items-center justify-center"
-      style={{ background: "rgb(var(--rgb-bg))" }}
-      aria-busy={visible ? "true" : undefined}
+      style={{ background: 'rgb(var(--rgb-bg))' }}
+      aria-busy={visible ? 'true' : undefined}
     >
       {visible && (
         <div
@@ -61,7 +61,7 @@ export function FullPageLoadingSpinner({ delayMs = 180 }: { delayMs?: number }) 
 }
 
 export function ErrorState({
-  message = "Something went wrong",
+  message = 'Something went wrong',
   onRetry,
 }: {
   message?: string;
@@ -72,7 +72,7 @@ export function ErrorState({
       <div
         className="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center"
         style={{
-          background: "radial-gradient(circle, rgba(var(--rgb-danger), 0.08), transparent)",
+          background: 'radial-gradient(circle, rgba(var(--rgb-danger), 0.08), transparent)',
         }}
       >
         <span className="text-xl">⚠️</span>

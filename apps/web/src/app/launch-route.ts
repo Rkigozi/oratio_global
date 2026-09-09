@@ -45,5 +45,7 @@ export function getLaunchRedirect({
 
 export function isStandaloneLaunch() {
   const iosNavigator = navigator as Navigator & { standalone?: boolean };
-  return window.matchMedia('(display-mode: standalone)').matches || iosNavigator.standalone === true;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches || iosNavigator.standalone === true
+  );
 }

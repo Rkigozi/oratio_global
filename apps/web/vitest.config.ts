@@ -1,5 +1,5 @@
-import { defineConfig } from 'vitest/config'
-import path from 'path'
+import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
   test: {
@@ -18,12 +18,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: [
-        'src/test/**',
-        'src/**/*.test.{ts,tsx}',
-        'src/**/*.d.ts',
-        'src/vite-env.d.ts',
-      ],
+      exclude: ['src/test/**', 'src/**/*.test.{ts,tsx}', 'src/**/*.d.ts', 'src/vite-env.d.ts'],
     },
   },
   resolve: {
@@ -31,4 +26,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-})
+});

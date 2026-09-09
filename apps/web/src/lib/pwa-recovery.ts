@@ -1,4 +1,4 @@
-const RECOVERY_KEY = "oratio:module-script-recovery-at";
+const RECOVERY_KEY = 'oratio:module-script-recovery-at';
 const RECOVERY_COOLDOWN_MS = 30_000;
 
 const MODULE_SCRIPT_ERROR_PATTERNS = [
@@ -16,7 +16,7 @@ type VitePreloadErrorEvent = Event & {
 };
 
 export function installModuleScriptRecovery() {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   let pendingModuleScriptError: unknown;
 
@@ -25,26 +25,26 @@ export function installModuleScriptRecovery() {
     void recoverFromModuleScriptLoadError(error);
   };
 
-  window.addEventListener("vite:preloadError", (event) => {
+  window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault();
     const preloadEvent = event as VitePreloadErrorEvent;
-    attemptRecovery(preloadEvent.payload ?? "vite:preloadError");
+    attemptRecovery(preloadEvent.payload ?? 'vite:preloadError');
   });
 
-  window.addEventListener("unhandledrejection", (event) => {
+  window.addEventListener('unhandledrejection', (event) => {
     if (!isModuleScriptLoadError(event.reason)) return;
     event.preventDefault();
     attemptRecovery(event.reason);
   });
 
-  window.addEventListener("error", (event) => {
+  window.addEventListener('error', (event) => {
     const error: unknown = event.error ?? event.message;
     if (!isModuleScriptLoadError(error)) return;
     event.preventDefault();
     attemptRecovery(error);
   });
 
-  window.addEventListener("online", () => {
+  window.addEventListener('online', () => {
     if (!pendingModuleScriptError) return;
     attemptRecovery(pendingModuleScriptError);
   });
@@ -61,32 +61,29 @@ export async function recoverFromModuleScriptLoadError(error: unknown) {
 
   markRecoveryAttempt();
 
-  await Promise.allSettled([
-    unregisterServiceWorkers(),
-    clearOriginCaches(),
-  ]);
+  await Promise.allSettled([unregisterServiceWorkers(), clearOriginCaches()]);
 
   window.location.reload();
   return true;
 }
 
 export function shouldWaitForConnectionBeforeRecovery() {
-  return typeof navigator !== "undefined" && navigator.onLine === false;
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
 }
 
 function errorText(error: unknown): string {
   if (error instanceof Error) {
-    return [error.name, error.message, error.stack].filter(Boolean).join(" ");
+    return [error.name, error.message, error.stack].filter(Boolean).join(' ');
   }
 
-  if (typeof error === "string") return error;
+  if (typeof error === 'string') return error;
 
-  if (typeof error === "object" && error !== null) {
+  if (typeof error === 'object' && error !== null) {
     const record = error as Record<string, unknown>;
-    return ["name", "message", "reason", "error", "type"]
+    return ['name', 'message', 'reason', 'error', 'type']
       .map((key) => record[key])
-      .filter((value): value is string => typeof value === "string")
-      .join(" ");
+      .filter((value): value is string => typeof value === 'string')
+      .join(' ');
   }
 
   return String(error);
@@ -110,13 +107,13 @@ function markRecoveryAttempt() {
 }
 
 async function unregisterServiceWorkers() {
-  if (!("serviceWorker" in navigator)) return;
+  if (!('serviceWorker' in navigator)) return;
   const registrations = await navigator.serviceWorker.getRegistrations();
   await Promise.all(registrations.map((registration) => registration.unregister()));
 }
 
 async function clearOriginCaches() {
-  if (!("caches" in window)) return;
+  if (!('caches' in window)) return;
   const keys = await window.caches.keys();
   await Promise.all(keys.map((key) => window.caches.delete(key)));
 }

@@ -114,10 +114,7 @@ export function AuthProvider({
       // paint. Wait until after first paint before downloading the Supabase
       // client so it never competes with the first screen.
       const idleWindow = window as Window & {
-        requestIdleCallback?: (
-          callback: () => void,
-          options?: { timeout?: number }
-        ) => number;
+        requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
       };
       if (typeof idleWindow.requestIdleCallback === 'function') {
         idleRequestId = idleWindow.requestIdleCallback(

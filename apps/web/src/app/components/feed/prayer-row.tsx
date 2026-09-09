@@ -1,5 +1,5 @@
-import { motion } from "motion/react";
-import { Lock, MapPin, Trash2, Users } from "lucide-react";
+import { motion } from 'motion/react';
+import { Lock, MapPin, Trash2, Users } from 'lucide-react';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { timeAgo, getAttributionText } from '../../services/prayer-data';
 import { renderHashtags } from '../../services/hashtags';
@@ -42,18 +42,18 @@ export function PrayerRow({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.5), duration: 0.35 }}
       onClick={canManage ? () => onTap(prayer) : undefined}
-      className={`rounded-xl px-4 py-3.5 relative overflow-hidden ${canManage ? "cursor-pointer active:bg-accent/5 transition-colors duration-150" : ""}`}
+      className={`rounded-xl px-4 py-3.5 relative overflow-hidden ${canManage ? 'cursor-pointer active:bg-accent/5 transition-colors duration-150' : ''}`}
       style={{
         background:
-          "linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))",
-        border: "1px solid rgba(var(--rgb-accent), 0.06)",
+          'linear-gradient(160deg, rgba(var(--rgb-surface), 0.6), rgba(var(--rgb-surface), 0.4))',
+        border: '1px solid rgba(var(--rgb-accent), 0.06)',
       }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p
             className="text-text-secondary line-clamp-2 mb-1"
-            style={{ fontSize: "0.85rem", lineHeight: 1.6 }}
+            style={{ fontSize: '0.85rem', lineHeight: 1.6 }}
           >
             {onTagClick ? renderHashtags(prayer.text, onTagClick) : prayer.text}
           </p>
@@ -62,9 +62,7 @@ export function PrayerRow({
           </span>
           <div className="flex items-center gap-2">
             <MapPin size={10} className="text-text-dim flex-shrink-0" />
-            <span className="text-text-dim text-[11px]">
-              {prayer.city || "Unknown"}
-            </span>
+            <span className="text-text-dim text-[11px]">{prayer.city || 'Unknown'}</span>
             {prayer.audience === 'circle' && (
               <span className="inline-flex items-center gap-1 rounded-full bg-accent/6 px-1.5 py-0.5 text-[9px] text-text-dim">
                 <Users size={9} />
@@ -79,7 +77,7 @@ export function PrayerRow({
             )}
             {prayer.createdAt && (
               <span className="text-text-muted text-[10px] ml-auto">
-                {prayer.editedAt ? "Edited · " : ""}
+                {prayer.editedAt ? 'Edited · ' : ''}
                 {timeAgo(prayer.createdAt)}
               </span>
             )}
@@ -90,9 +88,7 @@ export function PrayerRow({
           {showCount && (
             <div className="flex items-center gap-1">
               <span className="text-xs opacity-60">🙏</span>
-              <span className="text-text-muted text-[11px]">
-                {prayer.prayerCount ?? 0}
-              </span>
+              <span className="text-text-muted text-[11px]">{prayer.prayerCount ?? 0}</span>
             </div>
           )}
           {showPrayedToggle && onTogglePrayed && (
@@ -101,15 +97,17 @@ export function PrayerRow({
               className="flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300 cursor-pointer"
               style={{
                 background: prayed
-                  ? "rgba(var(--rgb-accent), 0.1)"
-                  : "rgba(var(--rgb-accent), 0.06)",
+                  ? 'rgba(var(--rgb-accent), 0.1)'
+                  : 'rgba(var(--rgb-accent), 0.06)',
                 border: `1px solid ${
-                  prayed ? "rgba(var(--rgb-accent), 0.2)" : "rgba(var(--rgb-accent), 0.1)"
+                  prayed ? 'rgba(var(--rgb-accent), 0.2)' : 'rgba(var(--rgb-accent), 0.1)'
                 }`,
               }}
-              title={prayed ? "Unpray" : "Pray"}
+              title={prayed ? 'Unpray' : 'Pray'}
             >
-              <span className={`text-sm transition-all duration-300 ${prayed ? "opacity-100" : "opacity-60"}`}>
+              <span
+                className={`text-sm transition-all duration-300 ${prayed ? 'opacity-100' : 'opacity-60'}`}
+              >
                 🙏
               </span>
             </button>
@@ -118,8 +116,12 @@ export function PrayerRow({
             <button
               type="button"
               tabIndex={-1}
-              onMouseDown={(e) => { e.preventDefault(); }}
-              onTouchStart={(e) => { e.preventDefault(); }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+              }}
+              onTouchStart={(e) => {
+                e.preventDefault();
+              }}
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();

@@ -1,8 +1,5 @@
 import type { ReactNode } from 'react';
-import {
-  isModuleScriptLoadError,
-  recoverFromModuleScriptLoadError,
-} from '../lib/pwa-recovery';
+import { isModuleScriptLoadError, recoverFromModuleScriptLoadError } from '../lib/pwa-recovery';
 
 type RouteComponent = () => ReactNode;
 type RouteLoader = () => Promise<{ default: RouteComponent }>;

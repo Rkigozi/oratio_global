@@ -1,21 +1,21 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { MapPin } from "lucide-react";
-import { Drawer } from "vaul";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { MapPin } from 'lucide-react';
+import { Drawer } from 'vaul';
+import { useNavigate } from 'react-router';
 import { timeAgo, getAttributionText } from '../../services/prayer-data';
 import type { PrayerRequest } from '../../services/prayer-data';
-import { PrayerRow } from "../../components/feed/prayer-row";
+import { PrayerRow } from '../../components/feed/prayer-row';
 import { getMyPrayedForPrayers, togglePray, getMyPrayedIds } from '../../services/supabase-queries';
-import { LoadingSpinner } from "../../components/loading-spinner";
+import { LoadingSpinner } from '../../components/loading-spinner';
 
 export function ProfilePrayed() {
   const navigate = useNavigate();
   const [version, setVersion] = useState(0);
-  
+
   // Prayer detail / action drawer
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
-  
+
   const [myPrayed, setMyPrayed] = useState<PrayerRequest[]>([]);
   const [prayedIds, setPrayedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,10 +26,7 @@ export function ProfilePrayed() {
     const loadPrayed = async () => {
       setLoading(true);
       try {
-        const [prayers, ids] = await Promise.all([
-          getMyPrayedForPrayers(),
-          getMyPrayedIds(),
-        ]);
+        const [prayers, ids] = await Promise.all([getMyPrayedForPrayers(), getMyPrayedIds()]);
         if (!active) return;
         setMyPrayed(prayers);
         setPrayedIds(ids);
@@ -46,7 +43,7 @@ export function ProfilePrayed() {
   }, [version]);
 
   const handleTagClick = (tag: string) => {
-    const q = tag.startsWith("#") ? tag : `#${tag}`;
+    const q = tag.startsWith('#') ? tag : `#${tag}`;
     void navigate(`/feed?search=${encodeURIComponent(q)}`);
   };
 
@@ -58,17 +55,12 @@ export function ProfilePrayed() {
     const isCurrentlyPrayed = prayedIds.includes(id);
     const newPrayed = !isCurrentlyPrayed;
     void togglePray(id, newPrayed);
-    setPrayedIds(prev =>
-      newPrayed ? [...prev, id] : prev.filter(pId => pId !== id)
-    );
-    setVersion(v => v + 1);
+    setPrayedIds((prev) => (newPrayed ? [...prev, id] : prev.filter((pId) => pId !== id)));
+    setVersion((v) => v + 1);
   };
 
   return (
-    <div
-      className="w-full h-full flex flex-col"
-      style={{ background: "rgb(var(--rgb-bg))" }}
-    >
+    <div className="w-full h-full flex flex-col" style={{ background: 'rgb(var(--rgb-bg))' }}>
       {/* Scrollable content */}
       <div className="flex-1 px-4 pb-28 overflow-y-auto pt-24">
         {loading ? (
@@ -96,15 +88,13 @@ export function ProfilePrayed() {
             animate={{ opacity: 1 }}
             className="text-center py-8 rounded-xl mt-8"
             style={{
-              background: "rgba(var(--rgb-surface), 0.4)",
-              border: "1px solid rgba(var(--rgb-accent), 0.05)",
+              background: 'rgba(var(--rgb-surface), 0.4)',
+              border: '1px solid rgba(var(--rgb-accent), 0.05)',
             }}
           >
             <span className="text-xl opacity-50 block mb-2">🙏</span>
             <p className="text-text-muted text-sm mb-1">No prayers yet</p>
-            <p className="text-text-dim text-xs">
-              Pray for someone to see them here
-            </p>
+            <p className="text-text-dim text-xs">Pray for someone to see them here</p>
             <button
               onClick={() => void navigate('/feed')}
               className="mt-3 px-4 py-2 rounded-full text-xs text-accent bg-accent/8 border border-accent/12 cursor-pointer hover:bg-accent/12 transition-all"
@@ -129,14 +119,13 @@ export function ProfilePrayed() {
           <Drawer.Content
             className="flex flex-col rounded-t-[1.5rem] fixed bottom-0 left-0 right-0 z-[600] max-h-[85vh] focus:outline-none"
             style={{
-              background: "linear-gradient(180deg, rgb(var(--rgb-surface)), rgb(var(--rgb-surface)))",
-              borderTop: "1px solid rgba(var(--rgb-accent), 0.1)",
+              background:
+                'linear-gradient(180deg, rgb(var(--rgb-surface)), rgb(var(--rgb-surface)))',
+              borderTop: '1px solid rgba(var(--rgb-accent), 0.1)',
             }}
           >
             <Drawer.Title className="sr-only">Prayer Options</Drawer.Title>
-            <Drawer.Description className="sr-only">
-              View prayer details
-            </Drawer.Description>
+            <Drawer.Description className="sr-only">View prayer details</Drawer.Description>
 
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-1">
@@ -157,30 +146,33 @@ export function ProfilePrayed() {
                     <div className="flex items-center gap-2 mb-1 justify-center">
                       <MapPin size={12} className="text-text-dim" />
                       <p className="text-text-muted text-xs">
-                        {(selectedPrayer.city || "Unknown")}, {selectedPrayer.country}
+                        {selectedPrayer.city || 'Unknown'}, {selectedPrayer.country}
                       </p>
                     </div>
                     {selectedPrayer.createdAt && (
                       <p className="text-text-muted text-[11px] mb-5 text-center">
-                        {selectedPrayer.editedAt ? "Edited · " : ""}
+                        {selectedPrayer.editedAt ? 'Edited · ' : ''}
                         {timeAgo(selectedPrayer.createdAt)}
                       </p>
                     )}
 
                     <p
                       className="text-text-secondary text-center mb-3 max-w-xs mx-auto"
-                      style={{ fontSize: "0.95rem", lineHeight: 1.7 }}
+                      style={{ fontSize: '0.95rem', lineHeight: 1.7 }}
                     >
                       {selectedPrayer.text}
                     </p>
 
-                      <p className="text-text-dim text-xs text-center mb-2">
-                        {getAttributionText(selectedPrayer)}
-                      </p>
+                    <p className="text-text-dim text-xs text-center mb-2">
+                      {getAttributionText(selectedPrayer)}
+                    </p>
 
                     <div className="flex items-center gap-1.5 justify-center text-text-dim text-xs mb-8">
                       <span className="text-xs opacity-60">🙏</span>
-                      <span>{(selectedPrayer.prayerCount ?? 0)} {(selectedPrayer.prayerCount ?? 0) === 1 ? "person" : "people"} prayed</span>
+                      <span>
+                        {selectedPrayer.prayerCount ?? 0}{' '}
+                        {(selectedPrayer.prayerCount ?? 0) === 1 ? 'person' : 'people'} prayed
+                      </span>
                     </div>
                   </motion.div>
                 </AnimatePresence>

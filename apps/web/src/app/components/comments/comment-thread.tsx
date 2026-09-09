@@ -217,9 +217,7 @@ export function CommentThread({
           <button
             onClick={() => onDelete(target.id)}
             aria-label={
-              isOwn
-                ? `Delete ${kind} by ${targetUsername}`
-                : `Remove ${kind} by ${targetUsername}`
+              isOwn ? `Delete ${kind} by ${targetUsername}` : `Remove ${kind} by ${targetUsername}`
             }
             className="text-text-faint hover:text-danger text-[10px] transition-colors cursor-pointer"
           >

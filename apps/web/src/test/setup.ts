@@ -1,5 +1,5 @@
-import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // jsdom does not implement GeolocationPositionError
 class MockGeolocationPositionError extends Error {
@@ -8,20 +8,17 @@ class MockGeolocationPositionError extends Error {
   static POSITION_UNAVAILABLE = 2;
   static TIMEOUT = 3;
 }
-Object.defineProperty(globalThis, "GeolocationPositionError", {
+Object.defineProperty(globalThis, 'GeolocationPositionError', {
   value: MockGeolocationPositionError,
 });
 
-vi.mock("posthog-js", () => {
+vi.mock('posthog-js', () => {
   const posthog = {
     capture: vi.fn(),
     init: vi.fn(
-      (
-        _key: string,
-        config?: { loaded?: (client: { opt_out_capturing: () => void }) => void },
-      ) => {
+      (_key: string, config?: { loaded?: (client: { opt_out_capturing: () => void }) => void }) => {
         config?.loaded?.(posthog);
-      },
+      }
     ),
     opt_out_capturing: vi.fn(),
   };
@@ -29,11 +26,11 @@ vi.mock("posthog-js", () => {
   return { default: posthog };
 });
 
-vi.mock("@sentry/react", () => ({
+vi.mock('@sentry/react', () => ({
   captureException: vi.fn(),
 }));
 
-vi.mock("virtual:pwa-register/react", () => ({
+vi.mock('virtual:pwa-register/react', () => ({
   useRegisterSW: vi.fn().mockReturnValue({
     needRefresh: [false, vi.fn()],
     offlineReady: [false, vi.fn()],
@@ -41,7 +38,7 @@ vi.mock("virtual:pwa-register/react", () => ({
   }),
 }));
 
-Object.defineProperty(window, "matchMedia", {
+Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({
     matches: false,

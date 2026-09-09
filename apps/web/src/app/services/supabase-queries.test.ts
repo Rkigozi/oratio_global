@@ -347,11 +347,7 @@ describe('getPrayerById', () => {
     setAlways(null, new Error('database unavailable'));
 
     expect(await m.getPrayerById('missing')).toBeNull();
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      '[fetch prayer]',
-      'database unavailable',
-      ''
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith('[fetch prayer]', 'database unavailable', '');
   });
 });
 

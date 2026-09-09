@@ -323,9 +323,7 @@ export function Submit() {
                       className="min-h-[70px] rounded-lg px-3 py-3 text-left transition-all cursor-pointer"
                       style={{
                         background:
-                          audience === 'private'
-                            ? 'rgba(var(--rgb-text), 0.08)'
-                            : 'transparent',
+                          audience === 'private' ? 'rgba(var(--rgb-text), 0.08)' : 'transparent',
                         border:
                           audience === 'private'
                             ? '1px solid rgba(var(--rgb-text-faint), 0.32)'

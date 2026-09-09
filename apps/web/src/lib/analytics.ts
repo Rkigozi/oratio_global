@@ -1,4 +1,4 @@
-type PostHogClient = typeof import("posthog-js").default;
+type PostHogClient = typeof import('posthog-js').default;
 
 type PendingCapture = {
   event: string;
@@ -15,9 +15,7 @@ let appOpenedCaptured = false;
 const pendingCaptures: PendingCapture[] = [];
 
 function loadPostHog() {
-  posthogImport ??= import("posthog-js")
-    .then((module) => module.default)
-    .catch(() => null);
+  posthogImport ??= import('posthog-js').then((module) => module.default).catch(() => null);
   return posthogImport;
 }
 
@@ -29,7 +27,7 @@ function startPostHog() {
     if (!posthog) return null;
     if (!initialized) {
       posthog.init(key, {
-        api_host: import.meta.env.VITE_POSTHOG_HOST || "https://eu.i.posthog.com",
+        api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://eu.i.posthog.com',
         capture_pageview: false,
         // V1 uses PostHog for lightweight product analytics only. These
         // optional products each load extra browser code and are not used.
@@ -42,7 +40,7 @@ function startPostHog() {
         capture_heatmaps: false,
         capture_dead_clicks: false,
         capture_performance: false,
-        defaults: "2026-05-30",
+        defaults: '2026-05-30',
         loaded: (ph) => {
           if (!import.meta.env.PROD) ph.opt_out_capturing();
         },
@@ -56,15 +54,15 @@ function startPostHog() {
 }
 
 function getRuntimeProperties() {
-  if (typeof window === "undefined") return {};
+  if (typeof window === 'undefined') return {};
 
   const iosNavigator = navigator as Navigator & { standalone?: boolean };
 
   return {
     display_mode:
-      window.matchMedia("(display-mode: standalone)").matches || iosNavigator.standalone
-        ? "standalone"
-        : "browser",
+      window.matchMedia('(display-mode: standalone)').matches || iosNavigator.standalone
+        ? 'standalone'
+        : 'browser',
     path: window.location.pathname,
     url: window.location.href,
   };
@@ -79,7 +77,7 @@ function flushPendingCaptures(posthog: PostHogClient) {
 
 function schedulePassiveTelemetry() {
   if (passiveTelemetryTimer !== null) return;
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   passiveTelemetryTimer = window.setTimeout(() => {
     passiveTelemetryTimer = null;
@@ -109,11 +107,11 @@ function captureImmediately(event: string, properties: Record<string, unknown>) 
 export function initAnalytics() {
   if (appOpenedCaptured) return;
   appOpenedCaptured = true;
-  queuePassiveCapture("app_opened", getRuntimeProperties());
+  queuePassiveCapture('app_opened', getRuntimeProperties());
 }
 
 export function capturePageView(path: string) {
-  queuePassiveCapture("$pageview", {
+  queuePassiveCapture('$pageview', {
     ...getRuntimeProperties(),
     path,
     $current_url: window.location.href,
@@ -121,11 +119,8 @@ export function capturePageView(path: string) {
 }
 
 export function captureEvent(event: string, properties?: Record<string, unknown>) {
-  captureImmediately(
-    event,
-    {
-      ...getRuntimeProperties(),
-      ...properties,
-    }
-  );
+  captureImmediately(event, {
+    ...getRuntimeProperties(),
+    ...properties,
+  });
 }

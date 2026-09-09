@@ -44,6 +44,7 @@ E2E_TEST_EMAIL=you@example.com E2E_TEST_PASSWORD=secret npm run test:e2e
 ## Deploy
 
 No manual steps. `git push` to `main`:
+
 1. GitHub Actions runs type-check, lint, tests, build
 2. Netlify (Git-connected) builds and publishes
 

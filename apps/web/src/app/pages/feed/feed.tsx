@@ -176,10 +176,10 @@ export function Feed() {
   const filterPillWithIconClass = `${filterPillClass} flex items-center gap-1.5`;
 
   const activePillStyle = (isActive: boolean) => ({
-    background: isActive
-      ? 'rgba(var(--rgb-accent), 0.12)'
-      : 'rgba(var(--rgb-accent), 0.04)',
-    border: isActive ? '1px solid rgba(var(--rgb-accent), 0.2)' : '1px solid rgba(var(--rgb-accent), 0.06)',
+    background: isActive ? 'rgba(var(--rgb-accent), 0.12)' : 'rgba(var(--rgb-accent), 0.04)',
+    border: isActive
+      ? '1px solid rgba(var(--rgb-accent), 0.2)'
+      : '1px solid rgba(var(--rgb-accent), 0.06)',
     color: isActive ? 'rgb(var(--rgb-accent))' : 'rgb(var(--rgb-text-muted))',
   });
 
