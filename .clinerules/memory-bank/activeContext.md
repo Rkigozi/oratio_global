@@ -6,9 +6,9 @@
 
 ## In Progress
 
-- **SCRUM-63: Monorepo restructure** — repo now uses npm workspaces: `apps/web` (moved, builds/tests/deploys unchanged), `apps/mobile` and `packages/shared` next. Netlify deploys from `apps/web`; CI gates run from the root lockfile.
+- **SCRUM-63: Monorepo restructure** — DONE (in JIRA: In Review — the workflow has no Done status). npm workspaces live: `apps/web` + `apps/mobile`, root lockfile, Netlify deploys `apps/web`.
+- **SCRUM-65: Expo scaffold** — `apps/mobile` created (Expo SDK 57, blank-typescript, slug `oratio`, bundle id `com.oratio.app`). Type-checks. Next: Supabase auth screens, then run via `npx expo start` with Expo Go on a real iPhone.
 - **SCRUM-64 (next): Extract shared logic** — move queries, validation, types, hashtags, prayer-data into `packages/shared`; rewire web imports; the Expo app consumes the same modules.
-- **SCRUM-65 (after): Expo scaffold** — `apps/mobile` with Supabase email/password auth.
 
 ## Apple Distribution Reality
 
