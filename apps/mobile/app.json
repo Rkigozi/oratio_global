@@ -22,6 +22,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "oratio"
+    "scheme": "oratio",
+    "owner": "oratio_global"
   }
 }
