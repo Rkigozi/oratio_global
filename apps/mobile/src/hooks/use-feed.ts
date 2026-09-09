@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { getFeedPrayers } from '@oratio/shared/queries';
 import type { PrayerRequest } from '@oratio/shared/prayer-data';
 
@@ -50,9 +50,7 @@ export function useFeed() {
     setLoadingMore(false);
   }, [hasMore, loadingMore]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
+  // The screen drives loading: FeedScreen calls load() via useFocusEffect so
+  // the list refreshes on first focus and whenever the user returns to it.
   return { prayers, loading, refreshing, loadingMore, hasMore, error, refresh, loadMore, load };
 }

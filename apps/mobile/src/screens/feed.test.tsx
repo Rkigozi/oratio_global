@@ -6,9 +6,14 @@ jest.mock('@react-navigation/native-stack', () => ({
   createNativeStackNavigator: jest.fn(),
 }));
 
-jest.mock('@react-navigation/native', () => ({
-  useFocusEffect: jest.fn(),
-}));
+jest.mock('@react-navigation/native', () => {
+  const { useEffect } = require('react');
+  return {
+    useFocusEffect: (callback: () => void | (() => void)) => {
+      useEffect(callback, [callback]);
+    },
+  };
+});
 
 jest.mock('../hooks/auth-context', () => ({
   useAuth: jest.fn(),
