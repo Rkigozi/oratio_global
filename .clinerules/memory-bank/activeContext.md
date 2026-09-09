@@ -2,30 +2,28 @@
 
 ## Current Focus
 
-V1 launch preparation. The product is feature-complete and hardened; the recent work was a **pre-launch cleanup and audit**:
+**iOS-first pivot.** The product is now the iOS app (Expo/React Native); the web PWA becomes the landing page. Work is tracked in JIRA (`SCRUM` project, https://oratio.atlassian.net), sprint `V1 Launch` active (2 weeks).
 
-1. **Deploy consolidation** — removed the manual GitHub Actions deploy; Netlify Git-connected deploys are now the single pipeline. Added `VITE_POSTHOG_KEY` to Netlify env (PostHog was silently disabled on Netlify builds).
-2. **Auth simplification** — Google OAuth removed from UI and code; email/password only. (Re-enable later if needed.)
-3. **Dead code removal** — deleted `services/api.ts` wrapper, moved mock data into `src/test/mocks/`, removed the unused shadcn/Base UI layer (`components/ui`, `components.json`, `@base-ui/react`, `class-variance-authority`, `tw-animate-css`, `shadcn`).
-4. **Code structure** — split `supabase-queries.ts` (1,586 lines) into domain modules under `services/queries/`; split `feed.tsx` into `use-feed-data`/`use-feed-search` hooks + `feed-scroll-snapshot`; split `comment-section.tsx` into `comment-thread.tsx`; extracted dialogs and drawer from `prayer-detail.tsx`/`profile.tsx`.
-5. **Testing** — added component tests for the previously-untested UI (header, world map, moderate, landing, update-password, profile), integration tests (feed↔submit events, activity-updates context), and real Playwright journeys (mobile + desktop). Coverage ~44% → ~60%; 350 → 411 unit tests; E2E grew from 3 smoke tests to 38.
-6. **Docs** — full refresh: README, memory bank, navigation guide, release readiness, QA checklist. Stale docs archived under `docs/archive/`.
+## In Progress
 
-## What Changed Recently (last 2 weeks)
+- **SCRUM-63: Monorepo restructure** — repo now uses npm workspaces: `apps/web` (moved, builds/tests/deploys unchanged), `apps/mobile` and `packages/shared` next. Netlify deploys from `apps/web`; CI gates run from the root lockfile.
+- **SCRUM-64 (next): Extract shared logic** — move queries, validation, types, hashtags, prayer-data into `packages/shared`; rewire web imports; the Expo app consumes the same modules.
+- **SCRUM-65 (after): Expo scaffold** — `apps/mobile` with Supabase email/password auth.
 
-- One deploy pipeline: `git push` → Netlify. Rollbacks via Netlify UI.
-- PostHog now receives production events.
-- Google sign-in buttons removed from login/onboarding.
+## Apple Distribution Reality
 
-## Known Issues / Watch Items
+- TestFlight requires the paid Apple Developer Program ($99/yr) — not enrolled yet (SCRUM-75).
+- Until then: development on the owner's iPhone via free provisioning; early demos via Expo Go.
+- Xcode + TestFlight app are installed.
 
-- OG image URLs in `index.html` still point to `oratiotest.netlify.app` — update when a custom domain exists
-- Password reset email flow needs an end-to-end check once (manual)
-- Android physical-device testing deferred; mobile Chrome/WebKit used as proxy
+## Recent Changes
 
-## Next Up
+- Monorepo restructure (repo root now workspaces: `npm ci`/`npm test`/`npm run build` run from root)
+- JIRA backlog rebuilt with agile format (epics SCRUM-31–35 + 62, stories with user-story format, GIVEN/WHEN/THEN, versions, labels)
+- Sprint `V1 Launch` started with v1-launch stories
 
-- Post-launch: drop unused tables (`push_subscriptions`, `follows`) via migration 037
-- Post-launch: bundle analysis (HEIC chunk), Lighthouse, RLS audit
-- Custom domain + Netlify site rename (oratio site) when ready
-- Decide Prayer Circle prominence based on real usage data
+## Watch Items
+
+- Netlify must keep deploying `apps/web` after the monorepo move (verify on next push)
+- The old `oratiotest.netlify.app` domain still serves the landing until a custom domain lands
+- `scripts/rebuild-backlog.py` (now in apps/web/scripts) may need to move to the repo root as a monorepo-level tool

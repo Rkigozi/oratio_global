@@ -1,40 +1,33 @@
 # Oratio — Global Prayer Platform
 
-Oratio connects people through shared prayer: explore prayer activity around the world, submit prayer requests, pray for others, comment and encourage, and build a private Prayer Circle.
+Oratio connects people through shared prayer. The **iOS app (Expo/React Native) is the product**; this repo is a monorepo that also holds the web PWA, which becomes the landing/marketing site.
 
 ## Status
 
-**V1 release candidate** — deployed and monitored at https://oratiotest.netlify.app (the app's only Netlify site; a custom domain is planned after launch).
+**Pivot: iOS-first.** The web PWA is live at https://oratiotest.netlify.app as the landing site; the iOS app is in development (Expo) targeting TestFlight, with Supabase as the shared backend. Tracked in the JIRA `SCRUM` project — sprint `V1 Launch` is active.
 
-| Area | State |
-| --- | --- |
-| Backend | Supabase (Auth, PostgreSQL, Storage, Edge Functions, RLS) |
-| Deploys | Netlify, Git-connected: every push to `main` builds and ships |
-| Monitoring | Sentry (errors) + PostHog (product analytics), both live in production |
-| Tests | 411 unit/component/integration tests (Vitest) + 38 E2E tests (Playwright, mobile + desktop) |
-| Coverage | ~60% line coverage across the codebase |
+## Layout
+
+```
+apps/
+├── web/                  # React 19 PWA — landing + web presence (Netlify)
+└── mobile/               # iOS app (Expo) — the product (planned)
+packages/
+└── shared/               # Platform-agnostic logic: queries, validation, types
+supabase/                 # Migrations + edge functions (shared backend)
+docs/                     # HLD, backlog, QA, guides
+```
 
 ## Quick Start
 
 ```bash
-# Start the dev server (auto-cleans orphaned servers on this external drive)
-./start-dev.sh
-
-# Quality gates
-npm run type-check
-npm run lint
-npm test
-npm run build
-
-# E2E (local server, mobile WebKit + desktop Chrome)
-npx playwright install webkit   # once
-npm run test:e2e
-
-# E2E against the live Netlify site
-npm run test:e2e:remote
+npm install               # once, at the repo root (npm workspaces)
+./start-dev.sh            # web dev server
+npm test                  # all tests (runs the web suite)
+npm run type-check && npm run lint && npm run build
 ```
 
-Running from an external drive? `npm` can fail with an `ENOENT uv_cwd` bug — use `./start-dev.sh` (documented in `docs/QUICK-START.md`).
+Quality: 420 unit/component/integration tests (Vitest, ~65% coverage) + 38 Playwright E2E tests (mobile + desktop). Every push: CI gates → Netlify auto-deploy from `apps/web`.
 
 ## Product
 
@@ -59,26 +52,33 @@ Running from an external drive? `npm` can fail with an `ENOENT uv_cwd` bug — u
 ## Project Structure
 
 ```
-src/
-├── app/
-│   ├── components/        # Reusable UI (auth, comments, feed, layout, map)
-│   ├── hooks/             # Auth, theme, geolocation, activity-updates contexts
-│   ├── pages/             # One folder per route (auth, feed, prayer, profile, info)
-│   ├── services/
-│   │   ├── supabase.ts    # Client setup
-│   │   ├── queries/       # Domain query modules (prayers, comments, circle, ...)
-│   │   └── ...            # prayer-data, hashtags, translate, upload
-│   └── routes.tsx         # Route map
-├── lib/                   # Validation, analytics, monitoring, utils
-├── styles/                # Tailwind entry + theme tokens
-└── test/                  # Test setup + shared mocks
+apps/
+├── web/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── components/        # Reusable UI (auth, comments, feed, layout, map)
+│   │   │   ├── hooks/             # Auth, theme, geolocation, activity-updates contexts
+│   │   │   ├── pages/             # One folder per route (auth, feed, prayer, profile, info)
+│   │   │   ├── services/
+│   │   │   │   ├── supabase.ts    # Client setup
+│   │   │   │   └── queries/       # Domain query modules (prayers, comments, circle, ...)
+│   │   │   └── routes.tsx         # Route map
+│   │   ├── lib/                   # Validation, analytics, monitoring, utils
+│   │   ├── styles/                # Tailwind entry + theme tokens
+│   │   └── test/                  # Test setup + shared mocks
+│   ├── e2e/                       # Playwright specs + config
+│   ├── public/                    # PWA icons + manifest
+│   └── netlify.toml               # Build + headers + redirects
+└── mobile/                        # Expo iOS app (the product — planned)
+packages/
+└── shared/                        # Shared logic consumed by web + mobile (planned)
 supabase/
-├── migrations/            # 36 sequential SQL migrations (never edit applied ones)
-└── functions/             # Edge functions: translate, delete-account
-e2e/                       # Playwright specs + config
+├── migrations/                    # 36 sequential SQL migrations (never edit applied ones)
+└── functions/                     # Edge functions: translate, delete-account
+docs/                              # HLD, backlog, QA, guides
 ```
 
-`src/app/services/supabase-queries.ts` is a barrel that re-exports the domain modules in `services/queries/` — new queries belong in the matching module.
+`apps/web/src/app/services/supabase-queries.ts` is a barrel that re-exports the domain modules in `services/queries/` — new queries belong in the matching module. The same modules are the extraction candidates for `packages/shared`.
 
 ## Workflow
 

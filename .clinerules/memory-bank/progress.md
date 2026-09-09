@@ -2,6 +2,12 @@
 
 ## Completed
 
+### Pivot (Sept 2026)
+- ✅ Decision: iOS-first — Expo app is the product, web PWA becomes the landing page
+- ✅ JIRA backlog rebuilt (agile format) + `V1 Launch` sprint started
+- ✅ Monorepo restructure: npm workspaces, `apps/web` moved, builds/tests/deploys verified
+
+
 ### v0.1 — Prototype
 - ✅ World map, feed, submit, "I Prayed", profile — full product loop
 - ✅ PWA (manifest, service worker, installable, offline shell)
@@ -18,7 +24,7 @@
 ### v0.3 — Hardening
 - ✅ Sentry + PostHog live in production (PostHog key added to Netlify Aug 2026)
 - ✅ CI quality gates on every push; Netlify Git-connected deploys (single pipeline)
-- ✅ 411 unit/component/integration tests, ~60% coverage
+- ✅ 420 unit/component/integration tests, ~65% coverage
 - ✅ Playwright E2E: 38 tests across mobile WebKit + desktop Chrome
 - ✅ Domain-module split of the Supabase data layer; UI file splits
 - ✅ Docs refresh + archive of stale docs

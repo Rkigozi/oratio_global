@@ -17,18 +17,26 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      # Monorepo: the lockfile lives at the repo root.
       - run: npm ci
 
-      - run: npm run type-check
+      - name: Type check
+        working-directory: apps/web
+        run: npm run type-check
 
-      - run: npm run lint
+      - name: Lint
+        working-directory: apps/web
+        run: npm run lint
 
-      - run: npm test
+      - name: Tests
+        working-directory: apps/web
+        run: npm test
 
-      - run: npm run build
+      - name: Build
+        working-directory: apps/web
+        run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
           VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
-

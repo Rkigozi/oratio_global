@@ -2,7 +2,18 @@
 
 ## Architecture
 
-React 19 SPA (Vite) + Supabase backend, served by Netlify as a PWA.
+Monorepo (npm workspaces). Two frontends — web PWA (React 19 + Vite) and iOS app (Expo) —
+share one Supabase backend and (increasingly) one `packages/shared` logic layer.
+
+```
+apps/web (React PWA, Netlify)  apps/mobile (Expo iOS)
+         \                   /
+          packages/shared     — queries, validation, types
+                |
+            Supabase           — auth, PostgreSQL + RLS, realtime, storage, edge functions
+                |
+       Sentry + PostHog        — errors + analytics
+```
 
 ```
 Browser (PWA)
@@ -13,10 +24,11 @@ Browser (PWA)
 
 ## Key Patterns
 
-### Data Layer
-- `src/app/services/supabase.ts` — single browser client
-- `src/app/services/queries/*.ts` — one module per domain (`prayers`, `comments`, `circle`, `updates`, `reports`, `profiles`, `saved`, `interactions`, `account`, `shared` mappers)
-- `src/app/services/supabase-queries.ts` — barrel re-export; **do not add logic here**
+### Data Layer (web paths; moving to packages/shared)
+- `apps/web/src/app/services/supabase.ts` — single browser client
+- `apps/web/src/app/services/queries/*.ts` — one module per domain (`prayers`, `comments`, `circle`, `updates`, `reports`, `profiles`, `saved`, `interactions`, `account`, `shared` mappers)
+- `apps/web/src/app/services/supabase-queries.ts` — barrel re-export; **do not add logic here**
+- The domain modules are platform-agnostic: they become `packages/shared` and are consumed by the Expo app
 - All queries return empty/null on error (never throw to the UI) and log via `src/lib/logger.ts`
 
 ### State

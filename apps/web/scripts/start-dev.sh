@@ -10,6 +10,9 @@ echo "========================================"
 # Default port
 PORT="${1:-5173}"
 
+# Always run from the web app directory so Vite finds index.html
+cd "$(dirname "$0")/.."
+
 # Cleanup function
 cleanup_servers() {
     echo "🔧 Performing cleanup..."
@@ -37,7 +40,7 @@ cleanup_servers() {
 }
 
 # Check if vite exists
-if [ ! -f "node_modules/vite/bin/vite.js" ]; then
+if [ ! -f "../../node_modules/vite/bin/vite.js" ]; then
     echo "❌ Error: vite not found. Run 'npm install' first."
     exit 1
 fi
@@ -56,4 +59,4 @@ echo "🛑 Press Ctrl+C to stop the server"
 echo "========================================"
 
 # Start dev server
-exec node node_modules/vite/bin/vite.js --port "$PORT"
+exec node ../../node_modules/vite/bin/vite.js --port "$PORT"
