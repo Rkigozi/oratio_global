@@ -10,7 +10,10 @@
     "./prayer-data": "./src/prayer-data.ts",
     "./validation": "./src/validation.ts",
     "./username": "./src/username.ts",
-    "./hashtags": "./src/hashtags.ts"
+    "./hashtags": "./src/hashtags.ts",
+    "./client": "./src/client.ts",
+    "./logger": "./src/logger.ts",
+    "./queries": "./src/queries/index.ts"
   },
   "dependencies": {
     "zod": "^4.3.6"

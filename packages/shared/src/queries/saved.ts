@@ -1,7 +1,9 @@
-import { supabase } from '../supabase';
+import { getSupabaseClient } from '../client';
 import { mapPrayerRequest, PRAYER_SELECT } from './shared';
 import type { PrayerRequest } from '../prayer-data';
-import { logError } from '../../../lib/logger';
+import { logError } from '../logger';
+
+const supabase = getSupabaseClient();
 
 export async function toggleSavePrayer(prayerId: string, save: boolean): Promise<boolean> {
   const {

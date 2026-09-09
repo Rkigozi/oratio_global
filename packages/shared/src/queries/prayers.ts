@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+import { getSupabaseClient } from '../client';
 import {
   hasMappablePrayerLocation,
   mapHotspotTotal,
@@ -12,7 +12,9 @@ import {
 } from './shared';
 import { normalizePrayerLocation, type PrayerRequest } from '../prayer-data';
 import { getProfileByUsername } from './profiles';
-import { logError } from '../../../lib/logger';
+import { logError } from '../logger';
+
+const supabase = getSupabaseClient();
 
 // ─── Map Hotspots ──────────────────────────────────────────────────────
 

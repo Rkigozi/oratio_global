@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest';
 
-vi.mock('./supabase', () => {
+const fake = vi.hoisted(() => {
   const makeQb = () => {
     const qb: Record<string, ReturnType<typeof vi.fn>> = {};
     qb.select = vi.fn().mockReturnThis();
@@ -43,6 +43,15 @@ vi.mock('./supabase', () => {
     },
   };
 });
+
+vi.mock('./supabase', () => ({
+  supabase: fake.supabase,
+}));
+
+vi.mock('@oratio/shared/client', () => ({
+  getSupabaseClient: () => fake.supabase,
+  setSupabaseClientProvider: vi.fn(),
+}));
 
 let m: typeof import('./supabase-queries');
 let qb: Record<string, ReturnType<typeof vi.fn>>;

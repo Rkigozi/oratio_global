@@ -1,6 +1,8 @@
-import { supabase } from '../supabase';
-import { logError } from '../../../lib/logger';
+import { getSupabaseClient } from '../client';
+import { logError } from '../logger';
 import type { RpcResponse } from './shared';
+
+const supabase = getSupabaseClient();
 
 export async function updateProfile(data: {
   username?: string;

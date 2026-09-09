@@ -1,3 +1,5 @@
+// Register the Supabase client before anything imports the shared query layer.
+import './src/services/supabase';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';

@@ -1,5 +1,7 @@
-import { supabase } from '../supabase';
-import { logError } from '../../../lib/logger';
+import { getSupabaseClient } from '../client';
+import { logError } from '../logger';
+
+const supabase = getSupabaseClient();
 
 export interface Comment {
   id: string;
