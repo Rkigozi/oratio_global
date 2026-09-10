@@ -5,17 +5,11 @@ import { initMonitoring } from './lib/monitoring';
 import { installModuleScriptRecovery } from './lib/pwa-recovery';
 import './styles/index.css';
 
-type IdleWindow = Window &
-  typeof globalThis & {
-    requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
-  };
-
 const PASSIVE_MONITORING_DELAY_MS = 20_000;
 
 function runWhenIdle(callback: () => void) {
-  const idleWindow = window as IdleWindow;
-  if (typeof idleWindow.requestIdleCallback === 'function') {
-    idleWindow.requestIdleCallback(callback, { timeout: 3000 });
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(callback, { timeout: 3000 });
     return;
   }
 
