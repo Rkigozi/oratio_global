@@ -32,7 +32,11 @@
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^17.5.0",
-    "react-test-renderer": "19.2.3"
+    "react-test-renderer": "19.2.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "expo": "~57.0.21"
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx}": [
@@ -53,11 +57,5 @@
     "@testing-library/react-native": {
       "react-test-renderer": "19.2.3"
     }
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.63.1",
-    "@rollup/rollup-darwin-arm64": "4.63.1",
-    "@rollup/rollup-darwin-x64": "4.63.1",
-    "@rollup/rollup-win32-x64-msvc": "4.63.1"
   }
 }
