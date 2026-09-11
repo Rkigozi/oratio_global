@@ -1,6 +1,6 @@
 # Oratio Backlog — Working Agreement
 
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 
 Canonical source for the JIRA backlog (project `SCRUM` at
 https://oratio.atlassian.net). This file and JIRA must stay in sync: change
@@ -71,17 +71,22 @@ load. Introduce points (or T-shirt sizes) only when a second developer joins.
 
 ## Epics
 
-| Epic                                   | Key      | Stories     |
-| -------------------------------------- | -------- | ----------- |
-| LAUNCH: Launch Readiness               | SCRUM-31 | SCRUM-36…40 |
-| TEST: Testing & Observability Maturity | SCRUM-32 | SCRUM-41…44 |
-| HARD: Post-Launch Hardening            | SCRUM-33 | SCRUM-45…48 |
-| COMM: Community & Retention            | SCRUM-34 | SCRUM-49…52 |
-| OPS: Platform & Operations             | SCRUM-35 | SCRUM-53…56 |
-| NATIVE: iOS Product Migration          | SCRUM-62 | SCRUM-63…75 |
+| Epic                                       | Key      | Stories              |
+| ------------------------------------------ | -------- | -------------------- |
+| LAUNCH: Launch Readiness                   | SCRUM-31 | SCRUM-36…40          |
+| TEST: Testing & Observability Maturity     | SCRUM-32 | SCRUM-41…44          |
+| HARD: Post-Launch Hardening                | SCRUM-33 | SCRUM-45…48          |
+| COMM: Community & Retention                | SCRUM-34 | SCRUM-49…52          |
+| OPS: Platform & Operations                 | SCRUM-35 | SCRUM-53…56          |
+| NATIVE: iOS Product Migration              | SCRUM-62 | SCRUM-63…75          |
+| MAP: Map Scalability & Canonical Locations | Pending  | Six proposed stories |
 
 Each epic description contains an Outcome statement and Success metrics —
 track those, not task counts.
+
+The proposed MAP epic and its story-level acceptance criteria live in
+[`MAP-SCALABILITY.md`](./MAP-SCALABILITY.md). Jira keys must replace the pending
+references here and in that file when the issues are created.
 
 ## Native migration snapshot
 
