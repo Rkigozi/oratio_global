@@ -8,6 +8,7 @@ import { getMyPrayers } from '@oratio/shared/queries';
 import type { PrayerRequest } from '@oratio/shared/prayer-data';
 import { PrayerCard } from '../components/prayer-card';
 import { asNativeIcon } from '../components/icon';
+import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -46,9 +47,9 @@ export function PrivatePrayersScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>PRIVATE PRAYERS</Text>
-          <Text style={styles.subtitle}>Only visible to you</Text>
+        <View style={styles.headerSide} />
+        <View style={styles.headerCopy}>
+          <ScreenHeaderTitle subtitle="Only visible to you" title="Private Prayers" />
         </View>
         <Pressable
           accessibilityLabel="Write a private prayer"
@@ -111,25 +112,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     minHeight: 70,
     paddingTop: 10,
     paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.divider,
   },
-  title: {
-    color: colors.textSecondary,
-    fontFamily: fontFamilies.heading,
-    fontSize: 17,
-    letterSpacing: 3,
+  headerSide: {
+    width: 44,
   },
-  subtitle: {
-    color: colors.textDim,
-    fontFamily: fontFamilies.body,
-    fontSize: 11,
-    marginTop: 2,
+  headerCopy: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 8,
   },
   addButton: {
     width: 44,

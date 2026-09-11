@@ -26,6 +26,8 @@ import { getMapHotspots, getPublicPrayersAtLocation } from '@oratio/shared/queri
 import type { PrayerRequest } from '@oratio/shared/prayer-data';
 import { PrayerCard } from '../components/prayer-card';
 import { asNativeIcon } from '../components/icon';
+import { BrandLockup } from '../components/brand-lockup';
+import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -150,9 +152,9 @@ export function MapScreen() {
 
       <SafeAreaView edges={['top']} pointerEvents="box-none" style={styles.mapHeaderSafeArea}>
         <View style={styles.mapHeader} pointerEvents="box-none">
-          <View>
-            <Text style={styles.mapTitle}>ORATIO</Text>
-            <Text style={styles.mapSubtitle}>Prayer across the world</Text>
+          <View style={styles.mapHeaderSide} />
+          <View style={styles.mapHeaderBrand}>
+            <BrandLockup align="center" subtitle="Prayer across the world" />
           </View>
           <Pressable
             accessibilityLabel="Refresh prayer map"
@@ -279,12 +281,7 @@ export function LocationPrayersScreen({
           <ArrowLeftIcon color={colors.textMuted} size={20} strokeWidth={1.7} />
         </Pressable>
         <View style={styles.listHeading}>
-          <Text numberOfLines={1} style={styles.listTitle}>
-            {city}
-          </Text>
-          <Text numberOfLines={1} style={styles.listSubtitle}>
-            Public prayers in {country}
-          </Text>
+          <ScreenHeaderTitle subtitle={`Public prayers in ${country}`} title={city} />
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -346,27 +343,22 @@ const styles = StyleSheet.create({
   },
   mapHeader: {
     minHeight: 68,
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: 'rgba(10, 26, 58, 0.86)',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.surfaceBorder,
   },
-  mapTitle: {
-    color: colors.textSecondary,
-    fontFamily: fontFamilies.heading,
-    fontSize: 18,
-    letterSpacing: 5,
+  mapHeaderSide: {
+    width: 44,
   },
-  mapSubtitle: {
-    color: colors.textMuted,
-    fontFamily: fontFamilies.body,
-    fontSize: 11,
-    marginTop: 2,
+  mapHeaderBrand: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 8,
   },
   mapIconButton: {
     width: 44,
@@ -535,17 +527,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingHorizontal: 8,
-  },
-  listTitle: {
-    color: colors.text,
-    fontFamily: fontFamilies.headingMedium,
-    fontSize: 17,
-  },
-  listSubtitle: {
-    color: colors.textMuted,
-    fontFamily: fontFamilies.body,
-    fontSize: 11,
-    marginTop: 2,
   },
   headerSpacer: {
     width: 44,

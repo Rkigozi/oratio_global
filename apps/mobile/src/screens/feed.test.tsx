@@ -102,6 +102,7 @@ describe('FeedScreen', () => {
 
     await waitFor(() => expect(screen.getByText('Please pray for my family')).toBeTruthy());
     expect(screen.getByText('Praying for peace at home')).toBeTruthy();
+    expect(screen.getByText('Beta')).toBeTruthy();
   });
 
   it('shows attribution and location on each card', async () => {

@@ -31,6 +31,7 @@ import {
 import { timeAgo } from '@oratio/shared/prayer-data';
 import { Avatar } from '../components/avatar';
 import { asNativeIcon, type NativeIcon } from '../components/icon';
+import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useActivityUpdates } from '../hooks/activity-updates-context';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
@@ -275,8 +276,7 @@ export function UpdatesScreen({
           <ArrowLeftIcon color={colors.textMuted} size={20} strokeWidth={1.7} />
         </Pressable>
         <View style={styles.headerCopy}>
-          <Text style={styles.title}>UPDATES</Text>
-          <Text style={styles.subtitle}>Prayer and Circle activity</Text>
+          <ScreenHeaderTitle subtitle="Prayer and Circle activity" title="Updates" />
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -423,18 +423,6 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 44,
-  },
-  title: {
-    color: colors.textSecondary,
-    fontFamily: fontFamilies.heading,
-    fontSize: 18,
-    letterSpacing: 4,
-  },
-  subtitle: {
-    color: colors.textDim,
-    fontFamily: fontFamilies.body,
-    fontSize: 11,
-    marginTop: 2,
   },
   list: {
     paddingHorizontal: 20,

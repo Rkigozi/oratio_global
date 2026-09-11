@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { asNativeIcon } from './icon';
+import { BrandLockup } from './brand-lockup';
 import { colors, fontFamilies, radii } from '../theme';
 
 const EyeIcon = asNativeIcon(Eye);
@@ -41,8 +42,7 @@ export function Screen({ children }: { children: ReactNode }) {
 export function Brand({ subtitle }: { subtitle?: string }) {
   return (
     <View style={styles.brandBlock}>
-      <Text style={styles.brand}>ORATIO</Text>
-      {subtitle ? <Text style={styles.brandSubtitle}>{subtitle}</Text> : null}
+      <BrandLockup align="center" size="hero" subtitle={subtitle} />
     </View>
   );
 }
@@ -161,18 +161,6 @@ const styles = StyleSheet.create({
   brandBlock: {
     alignItems: 'center',
     marginBottom: 32,
-    gap: 10,
-  },
-  brand: {
-    color: colors.textSecondary,
-    fontFamily: fontFamilies.heading,
-    fontSize: 30,
-    letterSpacing: 8,
-  },
-  brandSubtitle: {
-    color: colors.textMuted,
-    fontFamily: fontFamilies.body,
-    fontSize: 13,
   },
   fieldBlock: {
     marginBottom: 16,

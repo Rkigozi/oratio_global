@@ -18,6 +18,7 @@ import { validateProfile } from '@oratio/shared/validation';
 import { getMyPrayers, getMyProfile, updateProfile } from '@oratio/shared/queries';
 import { Avatar } from '../components/avatar';
 import { asNativeIcon } from '../components/icon';
+import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
 import { chooseAndUploadAvatar } from '../services/avatar-upload';
 import { colors, fontFamilies, radii } from '../theme';
@@ -211,8 +212,7 @@ export function ProfileScreen() {
           <View style={styles.iconButton} />
         )}
         <View style={styles.headerText}>
-          <Text style={styles.title}>PROFILE</Text>
-          <Text style={styles.subtitle}>@{profile?.username || ''}</Text>
+          <ScreenHeaderTitle subtitle={`@${profile?.username || ''}`} title="Profile" />
         </View>
         <Pressable
           accessibilityLabel="Open settings"
@@ -439,18 +439,6 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     alignItems: 'center',
-  },
-  title: {
-    color: colors.textSecondary,
-    fontFamily: fontFamilies.heading,
-    fontSize: 17,
-    letterSpacing: 3,
-  },
-  subtitle: {
-    color: colors.textDim,
-    fontFamily: fontFamilies.body,
-    fontSize: 11,
-    marginTop: 2,
   },
   content: {
     paddingHorizontal: 20,

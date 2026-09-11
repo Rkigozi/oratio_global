@@ -75,6 +75,8 @@ describe('MapScreen', () => {
     render(<MapScreen />);
 
     expect(screen.getByLabelText('Global prayer map')).toBeTruthy();
+    expect(screen.getByText('ORATIO')).toBeTruthy();
+    expect(screen.getByText('Beta')).toBeTruthy();
     await waitFor(() =>
       expect(screen.getByLabelText('View prayer activity in London')).toBeTruthy()
     );

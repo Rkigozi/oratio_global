@@ -2,6 +2,14 @@
 
 Use this on a physical iPhone in Expo Go after native changes. Repeat the critical set in TestFlight once EAS distribution is introduced. Web/PWA regression checks remain separate during the migration.
 
+## Before You Start
+
+- [ ] Test the latest `main` commit with no local changes affecting the build
+- [ ] Apply all Supabase migrations through `038_canonical_prayer_locations.sql`
+- [ ] Prepare two verified test accounts with distinct usernames, profiles, and avatars
+- [ ] Keep Account A signed in on the physical iPhone and Account B in a separate PWA browser session or second device
+- [ ] Confirm both sessions can reach the same Supabase project before testing Circle, privacy, comments, and Updates
+
 ## Authentication (email/password only)
 
 **Sign up**
@@ -114,7 +122,9 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 
 ## Visual Parity
 
-- [ ] ORATIO branding and screen headings use Sora; interface copy uses Inter
+- [ ] Every compact top-bar lockup and contextual heading is horizontally centered, independent of its left/right actions
+- [ ] The compact ORATIO + Beta lockup is visually consistent on authentication, Public, and Map; contextual screens retain clear titles
+- [ ] ORATIO branding and contextual screen headings use Sora; profile identity and interface copy use Inter
 - [ ] Public, Circle, Private, and location feeds use the same quiet row rhythm and dividers
 - [ ] Public feed filters switch between All, Saved, and a selected Country without losing pull-to-refresh or pagination
 - [ ] Public feed search matches prayer text, city, country, and category; clearing search restores the active All/Saved/Country feed
@@ -122,6 +132,7 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Header actions and bottom navigation use familiar icons without visible icon labels
 - [ ] Back, submit, pray, retry, and password visibility controls have clear 44pt+ targets
 - [ ] Prayer detail save/unsave updates the bookmark state and Saved filter after returning to Public
+- [ ] Profile headers show public identity only; account email appears under Settings and nowhere on the public-facing profile
 - [ ] Long prayers, usernames, and locations wrap or truncate without shifting nearby controls
 - [ ] The map remains full-screen, selects hotspots reliably, and never zooms abruptly on selection
 - [ ] No screen shows oversized cards, nested panels, clipped copy, or accidental colour changes

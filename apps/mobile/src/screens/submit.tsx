@@ -8,6 +8,7 @@ import { sanitizePrayerText, validatePrayerSubmission } from '@oratio/shared/val
 import { useAuth } from '../hooks/auth-context';
 import { Brand, ErrorText, Field, PrimaryButton, Screen } from '../components/ui';
 import { asNativeIcon } from '../components/icon';
+import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -136,7 +137,7 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
         >
           <ArrowLeftIcon color={colors.textMuted} size={20} strokeWidth={1.7} />
         </Pressable>
-        <Text style={styles.screenTitle}>SHARE A PRAYER</Text>
+        <ScreenHeaderTitle title="Share a Prayer" />
         <View style={styles.headerSpacer} />
       </View>
 
@@ -249,12 +250,6 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  screenTitle: {
-    color: colors.textSecondary,
-    fontFamily: fontFamilies.heading,
-    fontSize: 15,
-    letterSpacing: 2.4,
   },
   headerSpacer: {
     width: 44,

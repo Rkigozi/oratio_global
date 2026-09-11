@@ -30,6 +30,7 @@ import { timeAgo } from '@oratio/shared/prayer-data';
 import { useAuth } from '../hooks/auth-context';
 import { Avatar } from '../components/avatar';
 import { asNativeIcon } from '../components/icon';
+import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -208,10 +209,7 @@ export function PrayerCircleManagementScreen({
           <ArrowLeftIcon color={colors.textMuted} size={20} strokeWidth={1.7} />
         </Pressable>
         <View style={styles.headerCopy}>
-          <Text numberOfLines={1} style={styles.headerTitle}>
-            PRAYER CIRCLE
-          </Text>
-          <Text style={styles.headerSubtitle}>Manage your circle</Text>
+          <ScreenHeaderTitle subtitle="Manage your circle" title="Prayer Circle" />
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -510,18 +508,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingHorizontal: 8,
-  },
-  headerTitle: {
-    color: colors.textSecondary,
-    fontFamily: fontFamilies.heading,
-    fontSize: 15,
-    letterSpacing: 2.4,
-  },
-  headerSubtitle: {
-    color: colors.textDim,
-    fontFamily: fontFamilies.body,
-    fontSize: 11,
-    marginTop: 2,
   },
   headerSpacer: {
     width: 44,

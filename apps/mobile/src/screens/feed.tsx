@@ -17,6 +17,8 @@ import { Bell, Bookmark, ChevronDown, Plus, Search, UsersRound, X } from 'lucide
 import { useFeed } from '../hooks/use-feed';
 import { PrayerCard } from '../components/prayer-card';
 import { asNativeIcon } from '../components/icon';
+import { BrandLockup } from '../components/brand-lockup';
+import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { colors, fontFamilies } from '../theme';
 import { useActivityUpdates } from '../hooks/activity-updates-context';
 import type { RootStackParamList } from '../navigation';
@@ -169,6 +171,7 @@ function PrayerFeedScreen({
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { unreadCount } = useActivityUpdates();
   const filtersEnabled = audienceMode === 'public';
+  const brandedHeader = title === 'ORATIO';
   const [filterMode, setFilterMode] = useState<PublicFeedFilter>('all');
   const [selectedCountry, setSelectedCountry] = useState<string | undefined>(undefined);
   const [countryPickerOpen, setCountryPickerOpen] = useState(false);
@@ -219,12 +222,16 @@ function PrayerFeedScreen({
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>{title}</Text>
-          <Text style={styles.headerSubtitle}>{subtitle}</Text>
+      <View style={[styles.header, styles.balancedHeader]}>
+        <View style={styles.headerSide} />
+        <View style={styles.headerCenter}>
+          {brandedHeader ? (
+            <BrandLockup align="center" subtitle={subtitle} />
+          ) : (
+            <ScreenHeaderTitle subtitle={subtitle} title={title} />
+          )}
         </View>
-        <View style={styles.headerActions}>
+        <View style={[styles.headerActions, styles.balancedHeaderActions]}>
           <Pressable
             accessibilityLabel="Share a prayer"
             accessibilityRole="button"
@@ -452,7 +459,7 @@ export function CircleScreen() {
   return (
     <PrayerFeedScreen
       audienceMode="circle"
-      title="PRAYER CIRCLE"
+      title="Prayer Circle"
       subtitle="Shared with your circle"
       emptyText="No prayers have been shared with your circle yet."
       manageCircle
@@ -476,21 +483,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.divider,
   },
-  headerTitle: {
-    color: colors.textSecondary,
-    fontFamily: fontFamilies.heading,
-    fontSize: 18,
-    letterSpacing: 5,
+  balancedHeader: {
+    paddingHorizontal: 12,
   },
-  headerSubtitle: {
-    color: colors.textDim,
-    fontFamily: fontFamilies.body,
-    fontSize: 11,
-    marginTop: 2,
+  headerSide: {
+    width: 96,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 4,
   },
   headerActions: {
     flexDirection: 'row',
     gap: 8,
+  },
+  balancedHeaderActions: {
+    width: 96,
+    justifyContent: 'flex-end',
   },
   filtersShell: {
     paddingTop: 6,

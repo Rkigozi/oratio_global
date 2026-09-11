@@ -19,6 +19,7 @@ import {
   type ProfilePreferences,
 } from '@oratio/shared/queries';
 import { asNativeIcon } from '../components/icon';
+import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
@@ -119,8 +120,10 @@ export function SettingsScreen({
           <ArrowLeftIcon color={colors.textSecondary} size={20} strokeWidth={1.7} />
         </Pressable>
         <View style={styles.headerText}>
-          <Text style={styles.title}>SETTINGS</Text>
-          <Text style={styles.subtitle}>{saving ? 'Saving...' : 'Profile preferences'}</Text>
+          <ScreenHeaderTitle
+            subtitle={saving ? 'Saving...' : 'Profile preferences'}
+            title="Settings"
+          />
         </View>
         <View style={styles.iconButton} />
       </View>
@@ -261,18 +264,6 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     alignItems: 'center',
-  },
-  title: {
-    color: colors.textSecondary,
-    fontFamily: fontFamilies.heading,
-    fontSize: 17,
-    letterSpacing: 3,
-  },
-  subtitle: {
-    color: colors.textDim,
-    fontFamily: fontFamilies.body,
-    fontSize: 11,
-    marginTop: 2,
   },
   content: {
     paddingHorizontal: 20,

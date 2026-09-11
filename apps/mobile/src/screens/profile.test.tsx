@@ -81,7 +81,7 @@ describe('ProfileScreen', () => {
   it('loads profile details and prayer counts', async () => {
     renderProfile();
 
-    await screen.findByText('PROFILE');
+    await screen.findByText('Profile');
     expect(screen.getAllByText('Test User').length).toBeGreaterThan(0);
     expect(screen.getAllByText('@testuser').length).toBeGreaterThan(0);
     expect(screen.queryByText('miriam@example.com')).toBeNull();
