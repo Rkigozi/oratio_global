@@ -21,7 +21,6 @@ export async function togglePray(prayerId: string, prayed: boolean): Promise<boo
       logError('add prayer interaction', error);
       return false;
     }
-    await supabase.rpc('increment_prayer_count', { p_prayer_id: prayerId });
   } else {
     const { error } = await supabase
       .from('prayer_interactions')
@@ -32,7 +31,6 @@ export async function togglePray(prayerId: string, prayed: boolean): Promise<boo
       logError('remove prayer interaction', error);
       return false;
     }
-    await supabase.rpc('decrement_prayer_count', { p_prayer_id: prayerId });
   }
   return true;
 }

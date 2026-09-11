@@ -255,6 +255,35 @@ describe('getMapHotspots', () => {
   });
 });
 
+describe('getPublicPrayersAtLocation', () => {
+  it('normalizes and applies an indexed public location filter', async () => {
+    setAlways([
+      {
+        id: 'location-prayer',
+        body: 'Prayer in London',
+        location_city: 'London',
+        location_country: 'United Kingdom',
+        location_lat: 51.5,
+        location_lng: -0.1,
+        is_anonymous: true,
+        audience: 'public',
+        prayer_count: 2,
+        created_at: '2024-01-01',
+        comments_enabled: true,
+        profiles: { username: 'user1', display_name: 'User One' },
+      },
+    ]);
+
+    const result = await m.getPublicPrayersAtLocation('Greater London', 'England');
+
+    expect(qb.eq).toHaveBeenCalledWith('audience', 'public');
+    expect(qb.eq).toHaveBeenCalledWith('location_city', 'London');
+    expect(qb.eq).toHaveBeenCalledWith('location_country', 'United Kingdom');
+    expect(qb.limit).toHaveBeenCalledWith(50);
+    expect(result).toEqual([expect.objectContaining({ id: 'location-prayer', city: 'London' })]);
+  });
+});
+
 describe('getFeedPrayers', () => {
   it('returns mapped prayers on success', async () => {
     setAlways([
@@ -286,6 +315,65 @@ describe('getFeedPrayers', () => {
 
     expect(qb.eq).toHaveBeenCalledWith('audience', 'circle');
     expect(qb.or).not.toHaveBeenCalled();
+  });
+
+  it('applies a normalized country filter', async () => {
+    setAlways([]);
+    await m.getFeedPrayers(undefined, 20, 'public', { country: 'UK' });
+
+    expect(qb.eq).toHaveBeenCalledWith('audience', 'public');
+    expect(qb.eq).toHaveBeenCalledWith('location_country', 'United Kingdom');
+  });
+
+  it('searches public prayer text, location, and category', async () => {
+    setAlways([]);
+    await m.getFeedPrayers(undefined, 20, 'public', { search: ' peace ' });
+
+    expect(qb.or).toHaveBeenCalledWith(
+      'body.ilike.*peace*,location_city.ilike.*peace*,location_country.ilike.*peace*,category.ilike.*peace*'
+    );
+  });
+
+  it('removes PostgREST filter syntax from feed searches', async () => {
+    setAlways([]);
+    await m.getFeedPrayers(undefined, 20, 'public', { search: 'peace,(*)' });
+
+    expect(qb.or).toHaveBeenCalledWith(
+      'body.ilike.*peace*,location_city.ilike.*peace*,location_country.ilike.*peace*,category.ilike.*peace*'
+    );
+  });
+
+  it('limits saved feed results to the current user saved prayers', async () => {
+    setOnce([{ prayer_id: 'saved-1' }]);
+    setOnce([
+      {
+        id: 'saved-1',
+        body: 'Saved feed prayer',
+        category: 'Other',
+        location_city: 'Paris',
+        location_country: 'France',
+        location_lat: 48.9,
+        location_lng: 2.4,
+        is_anonymous: false,
+        prayer_count: 2,
+        created_at: '2024-01-01',
+        comments_enabled: true,
+        profiles: { username: 'u1', display_name: 'U1' },
+      },
+    ]);
+
+    const result = await m.getFeedPrayers(undefined, 20, 'public', { savedOnly: true });
+
+    expect(qb.eq).toHaveBeenCalledWith('user_id', 'test-user');
+    expect(qb.in).toHaveBeenCalledWith('id', ['saved-1']);
+    expect(result).toEqual([expect.objectContaining({ id: 'saved-1' })]);
+  });
+
+  it('returns an empty saved feed when the user has not saved prayers', async () => {
+    setAlways([]);
+
+    expect(await m.getFeedPrayers(undefined, 20, 'public', { savedOnly: true })).toEqual([]);
+    expect(qb.in).not.toHaveBeenCalled();
   });
 
   it('returns empty array on error', async () => {
@@ -459,18 +547,20 @@ describe('deletePrayerRequest', () => {
 });
 
 describe('togglePray', () => {
-  it('inserts interaction and increments count when praying', async () => {
+  it('inserts an interaction when praying', async () => {
     setAlways(null);
     const result = await m.togglePray('p1', true);
     expect(result).toBe(true);
-    expect(rpc).toHaveBeenCalledWith('increment_prayer_count', { p_prayer_id: 'p1' });
+    expect(qb.insert).toHaveBeenCalledWith({ user_id: 'test-user', prayer_id: 'p1' });
+    expect(rpc).not.toHaveBeenCalledWith('increment_prayer_count', expect.anything());
   });
 
-  it('deletes interaction and decrements count when unpraying', async () => {
+  it('deletes an interaction when unpraying', async () => {
     setAlways(null);
     const result = await m.togglePray('p1', false);
     expect(result).toBe(true);
-    expect(rpc).toHaveBeenCalledWith('decrement_prayer_count', { p_prayer_id: 'p1' });
+    expect(qb.delete).toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalledWith('decrement_prayer_count', expect.anything());
   });
 
   it('returns failed if no user', async () => {
@@ -818,6 +908,38 @@ describe('getPrayerCircleCount', () => {
 });
 
 describe('activity updates', () => {
+  it('subscribes to activity changes for one recipient', () => {
+    const onChange = vi.fn();
+    const unsubscribe = m.subscribeToActivityEventChanges('test-user', onChange);
+
+    expect(fake.supabase.channel).toHaveBeenCalledWith('activity-events:test-user');
+    expect(realtimeChannel.on).toHaveBeenCalledWith(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'activity_events',
+        filter: 'recipient_user_id=eq.test-user',
+      },
+      onChange
+    );
+
+    unsubscribe();
+    expect(fake.supabase.removeChannel).toHaveBeenCalled();
+  });
+
+  it('falls back quietly when activity realtime is unavailable', () => {
+    realtimeChannel.subscribe.mockImplementationOnce(() => {
+      throw new DOMException('The operation is insecure.', 'SecurityError');
+    });
+
+    const unsubscribe = m.subscribeToActivityEventChanges('test-user', vi.fn());
+
+    expect(unsubscribe).toEqual(expect.any(Function));
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(() => unsubscribe()).not.toThrow();
+  });
+
   it('returns activity events with actor profiles', async () => {
     setOnce([
       {
@@ -1226,6 +1348,14 @@ describe('getMyPrayers', () => {
     expect(result[0].id).toBe('p1');
     expect(result[0].username).toBe('qa_miriam');
     expect(result[0].commentCount).toBe(4);
+  });
+
+  it('can restrict my prayers to one audience', async () => {
+    setAlways([]);
+
+    await m.getMyPrayers('private');
+
+    expect(qb.eq).toHaveBeenCalledWith('audience', 'private');
   });
 
   it('shows profile identity for legacy anonymous rows in my prayers', async () => {

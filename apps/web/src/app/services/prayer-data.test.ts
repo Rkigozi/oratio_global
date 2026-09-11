@@ -85,6 +85,10 @@ describe('normalizePrayerLocation', () => {
     );
   });
 
+  it('does not fabricate coordinates for an unsupported city', () => {
+    expect(getApproximateCoordinates('Manchester', 'United Kingdom')).toEqual({ lat: 0, lng: 0 });
+  });
+
   it('does not treat unknown or 0,0 locations as mappable', () => {
     expect(
       hasMappablePrayerLocation({

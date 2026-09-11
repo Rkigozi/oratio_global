@@ -184,3 +184,31 @@ export async function deleteActivityEvent(eventId: string): Promise<boolean> {
 
   return true;
 }
+
+export function subscribeToActivityEventChanges(
+  recipientUserId: string,
+  onChange: () => void
+): () => void {
+  try {
+    const channel = supabase
+      .channel(`activity-events:${recipientUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'activity_events',
+          filter: `recipient_user_id=eq.${recipientUserId}`,
+        },
+        onChange
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  } catch {
+    // Realtime is enhancement-only. Foreground refresh and polling remain available.
+    return () => {};
+  }
+}

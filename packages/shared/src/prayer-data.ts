@@ -201,7 +201,8 @@ export function getApproximateCoordinates(
   const location = normalizePrayerLocation(cityName, country);
   const city = cityDatabase.find((c) => c.name === location.city && c.country === location.country);
   if (!city) {
-    return { lat: 20 + (Math.random() - 0.5) * 40, lng: (Math.random() - 0.5) * 180 };
+    // An unknown location must not be represented by a fabricated map point.
+    return { lat: 0, lng: 0 };
   }
   let seed = 0;
   for (let i = 0; i < location.city.length; i++) seed += location.city.charCodeAt(i);

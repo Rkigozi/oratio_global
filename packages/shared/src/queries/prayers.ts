@@ -16,9 +16,30 @@ import { logError } from '../logger';
 
 const supabase = getSupabaseClient();
 
+type QueryBehavior = {
+  throwOnError?: boolean;
+};
+
+export type FeedPrayerFilters = {
+  country?: string;
+  savedOnly?: boolean;
+  search?: string;
+};
+
+function normalizeFeedSearchTerm(value?: string): string {
+  return (value || '')
+    .trim()
+    .slice(0, 80)
+    .replace(/[^\p{L}\p{N}\s#@'_-]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // ─── Map Hotspots ──────────────────────────────────────────────────────
 
-export async function getMapHotspots(): Promise<PrayerRequest[]> {
+export async function getMapHotspots({ throwOnError = false }: QueryBehavior = {}): Promise<
+  PrayerRequest[]
+> {
   const aggregateResult = (await supabase.rpc('get_map_hotspot_totals')) as unknown as RpcResponse<
     MapHotspotTotalRow[]
   >;
@@ -36,8 +57,13 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
     .order('created_at', { ascending: false })
     .limit(200);
 
-  if (error || !data) {
+  if (error) {
     logError('getMapHotspots', error);
+    if (throwOnError) throw error;
+    return [];
+  }
+
+  if (!data) {
     return [];
   }
 
@@ -48,11 +74,64 @@ export async function getMapHotspots(): Promise<PrayerRequest[]> {
 
 // ─── Feed ──────────────────────────────────────────────────────────────
 
+export async function getPublicPrayersAtLocation(
+  city: string,
+  country: string,
+  pageLimit = 50,
+  { throwOnError = false }: QueryBehavior = {}
+): Promise<PrayerRequest[]> {
+  const location = normalizePrayerLocation(city, country);
+  const safeLimit = Math.max(1, Math.min(pageLimit, 100));
+  const { data, error } = await supabase
+    .from('prayer_requests')
+    .select(PRAYER_SELECT)
+    .eq('audience', 'public')
+    .eq('location_city', location.city)
+    .eq('location_country', location.country)
+    .order('created_at', { ascending: false })
+    .limit(safeLimit);
+
+  if (error) {
+    logError('getPublicPrayersAtLocation', error);
+    if (throwOnError) throw error;
+    return [];
+  }
+
+  if (!data) {
+    return [];
+  }
+
+  return data.map((row: Record<string, unknown>) => mapPrayerRequest(row));
+}
+
 export async function getFeedPrayers(
   cursor?: string,
   pageLimit = 20,
-  audienceMode: FeedAudienceMode = 'public'
+  audienceMode: FeedAudienceMode = 'public',
+  filters: FeedPrayerFilters = {}
 ): Promise<PrayerRequest[]> {
+  let savedPrayerIds: string[] | null = null;
+
+  if (filters.savedOnly) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('saved_prayers')
+      .select('prayer_id')
+      .eq('user_id', user.id);
+
+    if (error || !data) {
+      logError('fetch saved feed IDs', error);
+      return [];
+    }
+
+    savedPrayerIds = data.map((row: { prayer_id: string }) => row.prayer_id);
+    if (savedPrayerIds.length === 0) return [];
+  }
+
   let query = supabase
     .from('prayer_requests')
     .select(PRAYER_SELECT)
@@ -67,6 +146,23 @@ export async function getFeedPrayers(
 
   if (cursor) {
     query = query.lt('created_at', cursor);
+  }
+
+  if (filters.country) {
+    const location = normalizePrayerLocation('Unknown', filters.country);
+    query = query.eq('location_country', location.country);
+  }
+
+  if (savedPrayerIds) {
+    query = query.in('id', savedPrayerIds);
+  }
+
+  const searchTerm = normalizeFeedSearchTerm(filters.search);
+  if (searchTerm) {
+    const pattern = `*${searchTerm}*`;
+    query = query.or(
+      `body.ilike.${pattern},location_city.ilike.${pattern},location_country.ilike.${pattern},category.ilike.${pattern}`
+    );
   }
 
   const { data, error } = await query;
@@ -214,18 +310,19 @@ export async function getUserPrayers(username: string): Promise<PrayerRequest[]>
   return (data as Array<Record<string, unknown>>).map((row) => mapPrayerRequest(row, profile));
 }
 
-export async function getMyPrayers(): Promise<PrayerRequest[]> {
+export async function getMyPrayers(
+  audience?: NonNullable<PrayerRequest['audience']>
+): Promise<PrayerRequest[]> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data, error } = await supabase
-    .from('prayer_requests')
-    .select(PRAYER_SELECT)
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(50);
+  let query = supabase.from('prayer_requests').select(PRAYER_SELECT).eq('user_id', user.id);
+
+  if (audience) query = query.eq('audience', audience);
+
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
 
   if (error || !data) {
     logError('fetch my prayers', error);
