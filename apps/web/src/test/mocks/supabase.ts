@@ -119,7 +119,6 @@ interface MockAuth {
   onAuthStateChange: ReturnType<typeof vi.fn>;
   signUp: ReturnType<typeof vi.fn>;
   signInWithPassword: ReturnType<typeof vi.fn>;
-  signInWithOAuth: ReturnType<typeof vi.fn>;
   signOut: ReturnType<typeof vi.fn>;
   resetPasswordForEmail: ReturnType<typeof vi.fn>;
   updateUser: ReturnType<typeof vi.fn>;
@@ -150,9 +149,6 @@ export function createMockSupabase(responses?: Record<string, QueryResult>) {
     signInWithPassword: vi
       .fn()
       .mockResolvedValue({ data: { user: { id: 'test-user-id' } }, error: null }),
-    signInWithOAuth: vi
-      .fn()
-      .mockResolvedValue({ data: { url: 'https://example.com/oauth' }, error: null }),
     signOut: vi.fn().mockResolvedValue({ error: null }),
     resetPasswordForEmail: vi.fn().mockResolvedValue({ data: {}, error: null }),
     updateUser: vi.fn().mockResolvedValue({ data: { user: { id: 'test-user-id' } }, error: null }),

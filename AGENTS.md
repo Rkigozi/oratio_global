@@ -24,7 +24,7 @@ docs/           HLD, backlog, QA checklist, guides
 npm install              # once — root lockfile
 ./start-dev.sh           # web dev server
 npm run dev:mobile       # Expo dev server (scan QR with Expo Go)
-npm test                 # web suite (Vitest, 420 tests)
+npm test                 # web suite (Vitest, 423 tests)
 npm run test:mobile      # mobile suite (jest-expo)
 npm run type-check       # web tsc
 npm run type-check:mobile

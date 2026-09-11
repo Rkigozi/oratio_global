@@ -1,21 +1,25 @@
 # Oratio V1 Release Readiness
 
-Last updated: 2026-08-31
+Last updated: 2026-09-10
 
-Release-control checklist before the public V1 launch.
+Release-control checklist for the first small-group iOS beta. Expo Go is the current development channel; TestFlight and public App Store release are later gates.
 
 ## Release Gates
 
 ```bash
 npm run type-check
+npm run type-check:mobile
 npm run lint
 npm test
+npm run test:mobile
 npm run test:coverage
 npm run build
 npm audit --omit=dev --audit-level=moderate
+npx expo-doctor
+npx expo export --platform ios
 ```
 
-Browser tests:
+Web regression tests while the PWA remains live:
 
 ```bash
 npm run test:e2e          # local server, mobile WebKit + desktop Chrome
@@ -24,33 +28,35 @@ npm run test:e2e:remote   # live site at oratiotest.netlify.app
 
 Authenticated E2E journeys run when `E2E_TEST_EMAIL`/`E2E_TEST_PASSWORD` are exported.
 
-## Production Configuration
+## Native Beta Configuration
 
-- Netlify env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`, `VITE_POSTHOG_KEY`, `VITE_POSTHOG_HOST` ✅
-- Deploys: Git-connected — every push to `main` builds and ships; roll back via the Netlify deploys list
+- Expo environment supplies `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- Apple Developer membership and EAS project are required before TestFlight, but not for Expo Go development
+- Bundle identifier is `com.oratio.app`; version/build numbers must be set for every distributed build
 - Supabase migrations applied in order before schema-dependent deploys
-- Google OAuth intentionally disabled for V1 (email/password only); re-enabling requires Supabase provider setup + login/onboarding UI
+- Email/password is the only supported native authentication path; social sign-in providers remain disabled
+- Native Sentry/PostHog must be configured and verified before external beta distribution
 
 ## Product Checks
 
-- Logged-out users cannot browse authenticated routes
-- Public prayers appear on the public feed/map only when location is known
-- Prayer Circle prayers only appear to included members; private prayers only to their owner
-- Comments: add, reply, edit, delete, report all work on mobile PWA
-- Avatar upload works with iPhone images (HEIC conversion)
-- Light/dark/system theme persist and stay readable
-- PWA launch, install icon, service-worker recovery, and refresh-after-deploy work on iPhone Safari/Chrome
+- Logged-out users see only the native auth stack
+- Public, Prayer Circle, and Private are distinct spaces in the signed-in tab bar
+- Public prayers appear only in Public; circle prayers only to accepted connections; private prayers only to their owner
+- Submission, detail, and "Pray for this" work without double-counting
+- Profile editing, avatar upload, Settings preferences, session restoration, and sign-out work after foreground/background transitions
+- Safe areas and 44pt touch targets hold on a physical iPhone
+- Remaining parity story `SCRUM-71` is complete before calling the native app V1-ready
 
 ## Observability Checks
 
-- Sentry receives a deliberate test error from the deployed app
-- PostHog receives page views and key product events (now enabled on Netlify builds)
-- A deploy issue is diagnosable from Sentry event → GitHub commit → Netlify deploy
+- Native Sentry receives a deliberate test error tagged with app version/build
+- Native PostHog receives app-open and core prayer events without prayer text or personal data
+- A beta issue is traceable from Sentry version/build to the matching Git commit and EAS build
 
 ## Known V1 Tradeoffs
 
-- The production build warns about large chunks; the largest is the lazy-loaded HEIC converter (~1MB) — post-launch bundle task
-- Android physical-device testing deferred; mobile Chrome/WebKit is the proxy
-- OG image URLs in `index.html` point to the Netlify test domain until a custom domain exists
-- Multi-circle support is a post-V1 decision pending usage data
-- `push_subscriptions` and `follows` tables are unused; drop them via migration 037 after launch (the `waitlist` table backs the landing beta-updates form)
+- Expo Go is suitable for development and internal checks, not the final release artifact
+- Android native QA is deferred while the product is explicitly iOS-first
+- Multi-circle support is not implemented; the current Prayer Circle is one accepted-connection space capped by product rules
+- The live PWA still contains the full legacy product until the native cutover is complete
+- Custom domain and app-link configuration remain separate launch tasks

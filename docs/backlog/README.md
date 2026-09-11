@@ -1,13 +1,12 @@
 # Oratio Backlog — Working Agreement
 
-Last updated: 2026-08-31
+Last updated: 2026-09-10
 
 Canonical source for the JIRA backlog (project `SCRUM` at
 https://oratio.atlassian.net). This file and JIRA must stay in sync: change
 work in one place, mirror it in the other (OPS: SCRUM-56).
 
-Live keys: epics `SCRUM-31`–`SCRUM-35`, stories `SCRUM-36`–`SCRUM-56`,
-subtasks `SCRUM-57`–`SCRUM-61`.
+Native migration keys: epic `SCRUM-62`, stories `SCRUM-63`–`SCRUM-75`.
 
 ## Story template
 
@@ -51,6 +50,7 @@ Out of scope:
 | Label            | Meaning                             |
 | ---------------- | ----------------------------------- |
 | `v1-launch`      | Must be done for the V1 launch      |
+| `native`         | Expo/React Native product migration |
 | `post-launch`    | After launch week                   |
 | `platform`       | Infrastructure, security, ops       |
 | `product`        | User-facing product work            |
@@ -78,9 +78,30 @@ load. Introduce points (or T-shirt sizes) only when a second developer joins.
 | HARD: Post-Launch Hardening            | SCRUM-33 | SCRUM-45…48 |
 | COMM: Community & Retention            | SCRUM-34 | SCRUM-49…52 |
 | OPS: Platform & Operations             | SCRUM-35 | SCRUM-53…56 |
+| NATIVE: iOS Product Migration          | SCRUM-62 | SCRUM-63…75 |
 
 Each epic description contains an Outcome statement and Success metrics —
 track those, not task counts.
+
+## Native migration snapshot
+
+| Key      | Scope                                       | Jira status / repo state                                                                   |
+| -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| SCRUM-63 | Monorepo foundation                         | In Review; acceptance met                                                                  |
+| SCRUM-64 | Shared platform-neutral logic               | In Review; acceptance met                                                                  |
+| SCRUM-65 | Native email/password auth                  | In Review; acceptance met in Expo Go                                                       |
+| SCRUM-66 | Native feed, detail, and prayer interaction | In Review; acceptance met; public filters, search/trending, save, and count integrity done |
+| SCRUM-67 | Native prayer submission and visibility     | In Review; acceptance met across all three prayer spaces                                   |
+| SCRUM-68 | Native comments and replies                 | In Review; comments, replies, and private Notes complete                                   |
+| SCRUM-69 | Native Circle management and updates        | In Review; Circle management and live Updates complete                                     |
+| SCRUM-70 | Native profile, settings, and avatar        | In Review; profile edit, avatar upload, preferences, and sign-out complete                 |
+| SCRUM-71 | Native reporting and moderation             | To Do                                                                                      |
+| SCRUM-72 | EAS/TestFlight beta distribution            | To Do; deferred until feature-complete beta + membership                                   |
+| SCRUM-73 | App Store submission                        | To Do                                                                                      |
+| SCRUM-74 | Reduce web to landing/web presence          | To Do; full PWA remains live during migration                                              |
+| SCRUM-75 | Apple Developer membership                  | To Do; external prerequisite                                                               |
+
+`SCRUM-63`–`SCRUM-67` are ready to close. The current Jira workflow has no correctly named Done transition; its only Done-category transition is named Blocked. They remain In Review until that workflow status is corrected rather than being inaccurately marked Blocked.
 
 ## Import into JIRA (new instance / re-import)
 

@@ -108,7 +108,7 @@ STORIES = {
          ["GIVEN I request a password reset WHEN I click the email link THEN I land on /update-password on the new domain and can set a password",
           "GIVEN a new signup requires confirmation WHEN the confirmation link is clicked THEN the account activates and signs in"],
          "Manual reset walkthrough + update-password.test.tsx",
-         "Google OAuth (disabled for V1)"),
+         "Social sign-in (disabled for initial release)"),
         ("Never-blank hardening: static loader, noscript message, early JS error card", "Highest", ["v1-launch", "dev-experience"], "V1 Launch",
          "As a visitor on any device, I want to see either the app or a clear error message, so that I never stare at a blank screen.",
          ["GIVEN JavaScript fails to load WHEN I open the site THEN a visible diagnostic card renders instead of a blank page",

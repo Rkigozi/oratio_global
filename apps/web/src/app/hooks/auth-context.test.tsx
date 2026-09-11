@@ -13,7 +13,6 @@ vi.mock('../services/supabase', () => {
     onAuthStateChange: vi.fn(),
     signUp: vi.fn(),
     signInWithPassword: vi.fn(),
-    signInWithOAuth: vi.fn(),
     signOut: vi.fn(),
     resetPasswordForEmail: vi.fn(),
     updateUser: vi.fn(),
@@ -65,10 +64,6 @@ function setupDefaults() {
   });
   vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
     data: { user: { id: 'user-1' } },
-    error: null,
-  });
-  vi.mocked(supabase.auth.signInWithOAuth).mockResolvedValue({
-    data: { url: 'https://accounts.google.com/o/oauth2/auth' },
     error: null,
   });
   vi.mocked(supabase.auth.signOut).mockResolvedValue({ error: null });

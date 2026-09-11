@@ -4,14 +4,14 @@ Oratio connects people through shared prayer. The **iOS app (Expo/React Native) 
 
 ## Status
 
-**Pivot: iOS-first.** The web PWA is live at https://oratiotest.netlify.app as the landing site; the iOS app is in development (Expo) targeting TestFlight, with Supabase as the shared backend. Tracked in the JIRA `SCRUM` project — sprint `V1 Launch` is active.
+**iOS-first migration in progress.** The Expo app now covers authentication and the core prayer journey in Expo Go. The existing web PWA remains live at https://oratiotest.netlify.app while it is reduced to the landing/web presence. TestFlight distribution is deliberately deferred until the first native beta is feature-complete and the Apple Developer membership is active.
 
 ## Layout
 
 ```
 apps/
 ├── web/                  # React 19 PWA — landing + web presence (Netlify)
-└── mobile/               # iOS app (Expo) — the product (planned)
+└── mobile/               # Expo/React Native iOS app — the product
 packages/
 └── shared/               # Platform-agnostic logic: queries, validation, types
 supabase/                 # Migrations + edge functions (shared backend)
@@ -23,31 +23,36 @@ docs/                     # HLD, backlog, QA, guides
 ```bash
 npm install               # once, at the repo root (npm workspaces)
 ./start-dev.sh            # web dev server
-npm test                  # all tests (runs the web suite)
-npm run type-check && npm run lint && npm run build
+npm run dev:mobile        # Expo dev server; scan the QR code with Expo Go
+npm test                  # web tests
+npm run test:mobile       # native tests
+npm run type-check && npm run type-check:mobile
+npm run lint && npm run build
 ```
 
-Quality: 420 unit/component/integration tests (Vitest, ~65% coverage) + 38 Playwright E2E tests (mobile + desktop). Every push: CI gates → Netlify auto-deploy from `apps/web`.
+Current automated baseline: 423 web tests and 34 native tests, plus the existing Playwright web journeys. Pushing `main` deploys `apps/web` to Netlify; it does not distribute a native build.
 
 ## Product
 
-- **Map** — global prayer hotspots aggregated by city (never exact locations)
-- **Feed** — public feed with cursor pagination, search, location and saved filters
-- **Submit** — text, location, visibility (public / Prayer Circle / private), anonymous option
-- **Prayer detail** — "I Prayed", comments & replies, translation, sharing, reporting
-- **Prayer Circle** — private mutual connections; circle-only prayers
-- **Profile** — stats, prayer library, saved/prayed lists, settings, avatar upload
-- **Updates** — activity inbox (comments, replies, circle events, report outcomes)
-- **Moderation** — moderator-only report review queue
+Native today:
+
+- Email/password authentication and session restoration
+- Public, Map, Prayer Circle, and Private prayer spaces
+- Prayer submission with public/circle/private visibility and public anonymity
+- Prayer detail, "Pray for this" interactions, comments/replies, and private Notes
+- Prayer Circle invitations, management, and live in-app Updates
+- Profile editing, avatar upload, Settings preferences, and sign-out
+- Global prayer hotspots with location-specific public prayer lists
+
+Still to port before the native V1 beta: prayer edit/delete, native sharing, reporting/moderation, observability, and complete light/dark/system theming.
 
 ## Stack
 
-- React 19 + TypeScript + Vite
-- Tailwind CSS v4 (design tokens in `src/styles/theme.css`)
+- Expo 57 + React Native 0.86 + React Navigation
+- React 19 + TypeScript + Vite for the web presence
+- Tailwind CSS v4 in `apps/web`
 - Supabase (auth, DB, storage, realtime, edge functions)
-- React Leaflet, Motion, vaul (drawers)
-- Sentry + PostHog
-- PWA (Workbox service worker, installable, offline app shell)
+- Sentry + PostHog on the web; native observability is still to be wired
 
 ## Project Structure
 
@@ -69,21 +74,28 @@ apps/
 │   ├── e2e/                       # Playwright specs + config
 │   ├── public/                    # PWA icons + manifest
 │   └── netlify.toml               # Build + headers + redirects
-└── mobile/                        # Expo iOS app (the product — planned)
+└── mobile/
+    ├── App.tsx                    # providers + navigation root
+    └── src/
+        ├── navigation/            # auth stack + signed-in bottom tabs
+        ├── screens/               # native product screens
+        ├── hooks/                 # auth and feed state
+        └── services/supabase.ts   # native Supabase client registration
 packages/
-└── shared/                        # Shared logic consumed by web + mobile (planned)
+└── shared/                        # Queries, validation, types used by both apps
 supabase/
-├── migrations/                    # 36 sequential SQL migrations (never edit applied ones)
+├── migrations/                    # 37 sequential SQL migrations (never edit applied ones)
 └── functions/                     # Edge functions: translate, delete-account
 docs/                              # HLD, backlog, QA, guides
 ```
 
-`apps/web/src/app/services/supabase-queries.ts` is a barrel that re-exports the domain modules in `services/queries/` — new queries belong in the matching module. The same modules are the extraction candidates for `packages/shared`.
+New platform-neutral queries and validation belong in `packages/shared`; app folders should retain UI and platform integration only. The web service files are thin compatibility re-exports while the native migration is underway.
 
 ## Workflow
 
-- **Ship**: `git push` → CI (type-check, lint, tests, build) → Netlify auto-deploy. One pipeline, no manual steps.
-- **Roll back**: Netlify deploy list → publish a previous deploy.
+- **Web**: `git push` → CI → Netlify auto-deploy. Roll back from the Netlify deploy list.
+- **Native development**: `npm run dev:mobile` → Expo Go. This is development distribution, not a release.
+- **Native beta (later)**: EAS build → TestFlight → invited testers.
 - **Schema changes**: add a new numbered migration in `supabase/migrations/`, never edit an applied one.
 
 ## Environment Variables
@@ -97,6 +109,8 @@ Set in Netlify (build) and GitHub Actions secrets (CI):
 | `VITE_SENTRY_DSN`                        | Sentry error tracking                                          |
 | `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` | Product analytics                                              |
 
+Native development uses `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` in the local environment. These are public client credentials; authorization is enforced by Supabase RLS.
+
 ## Docs To Read
 
 - `docs/CODEBASE_NAVIGATION_GUIDE.md` — the mental model of the whole codebase
@@ -108,11 +122,11 @@ Set in Netlify (build) and GitHub Actions secrets (CI):
 
 ## Known Deferred Work (post-launch)
 
-- Split remaining large UI files further (`feed.tsx` render layer, `prayer-detail.tsx`)
-- Drop unused tables (`push_subscriptions`, `follows`) via a new migration. Note: `waitlist` IS used — the landing beta-updates form writes to it.
-- Bundle analysis: the lazy HEIC-converter chunk (~1MB) is the biggest item
-- Lighthouse/performance pass, RLS security review
-- Custom domain + production OAuth branding
+- Complete native feature parity needed for the beta journey
+- Add native Sentry/PostHog and EAS/TestFlight configuration
+- Reduce `apps/web` to landing, policy, and support pages after native cutover
+- Drop unused tables (`push_subscriptions`, `follows`) only through a future migration; `waitlist` backs the landing beta-updates form
+- Custom domain and production app-link configuration
 
 ## License
 
