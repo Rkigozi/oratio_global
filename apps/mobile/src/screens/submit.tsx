@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { ArrowLeft } from 'lucide-react-native';
 import { createPrayerRequest } from '@oratio/shared/queries';
 import { getApproximateCoordinates } from '@oratio/shared/prayer-data';
 import { sanitizePrayerText, validatePrayerSubmission } from '@oratio/shared/validation';
 import { useAuth } from '../hooks/auth-context';
 import { Brand, ErrorText, Field, PrimaryButton, Screen } from '../components/ui';
-import { colors } from '../theme';
+import { asNativeIcon } from '../components/icon';
+import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
 type Audience = 'public' | 'circle' | 'private';
+
+const ArrowLeftIcon = asNativeIcon(ArrowLeft);
 
 const AUDIENCE_OPTIONS: Array<{ value: Audience; label: string; hint: string }> = [
   { value: 'public', label: 'Public', hint: 'Anyone can see and pray' },
@@ -24,9 +28,11 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
   const [country, setCountry] = useState('');
   const [audience, setAudience] = useState<Audience>('public');
   const [anonymous, setAnonymous] = useState(false);
+  const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [submittedPrayerId, setSubmittedPrayerId] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setError('');
@@ -42,28 +48,42 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
       return;
     }
 
+    const effectiveAnonymous = audience === 'public' && anonymous;
+    const profileUsername = profile?.username;
+    if (!effectiveAnonymous && !profileUsername) {
+      setError("We couldn't load your profile. Please go back and try again.");
+      return;
+    }
+
     const trimmedCity = city.trim() || 'Unknown';
     const trimmedCountry = country.trim() || 'Unknown';
     const coords = getApproximateCoordinates(trimmedCity, trimmedCountry);
 
     setSubmitting(true);
-    const prayerId = await createPrayerRequest({
-      text: sanitizePrayerText(validation.data?.text ?? text),
-      city: trimmedCity,
-      country: trimmedCountry,
-      lat: coords.lat,
-      lng: coords.lng,
-      username: anonymous ? undefined : profile?.username || undefined,
-      audience,
-      commentsEnabled: true,
-      prayerCount: 0,
-    });
-    setSubmitting(false);
+    let prayerId: string | null = null;
+    try {
+      prayerId = await createPrayerRequest({
+        text: sanitizePrayerText(validation.data?.text ?? text),
+        city: trimmedCity,
+        country: trimmedCountry,
+        lat: coords.lat,
+        lng: coords.lng,
+        username: effectiveAnonymous ? undefined : profileUsername,
+        audience,
+        commentsEnabled: audience === 'public' ? commentsEnabled : true,
+        prayerCount: 0,
+      });
+    } catch {
+      prayerId = null;
+    } finally {
+      setSubmitting(false);
+    }
 
     if (!prayerId) {
       setError("We couldn't share your prayer. Please try again.");
       return;
     }
+    setSubmittedPrayerId(prayerId);
     setDone(true);
   };
 
@@ -71,8 +91,21 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
     return (
       <Screen>
         <Brand subtitle="Amen 🙏" />
-        <Text style={styles.successText}>Your prayer is live.</Text>
-        <PrimaryButton title="View in Feed" onPress={() => navigation.navigate('Feed')} />
+        <Text style={styles.successText}>
+          {audience === 'public'
+            ? 'Your prayer is live.'
+            : audience === 'circle'
+              ? 'Shared with your Prayer Circle.'
+              : 'Your private prayer is saved.'}
+        </Text>
+        <PrimaryButton
+          title="View Prayer"
+          onPress={() =>
+            submittedPrayerId
+              ? navigation.navigate('PrayerDetail', { prayerId: submittedPrayerId })
+              : navigation.navigate('Main')
+          }
+        />
         <Pressable
           onPress={() => {
             setDone(false);
@@ -81,6 +114,8 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
             setCountry('');
             setAudience('public');
             setAnonymous(false);
+            setCommentsEnabled(true);
+            setSubmittedPrayerId(null);
           }}
           style={styles.againButton}
         >
@@ -92,11 +127,17 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
 
   return (
     <Screen>
-      <Brand subtitle="Share your prayer" />
       <View style={styles.headerRow}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>‹ Back</Text>
+        <Pressable
+          accessibilityLabel="Back"
+          accessibilityRole="button"
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <ArrowLeftIcon color={colors.textMuted} size={20} strokeWidth={1.7} />
         </Pressable>
+        <Text style={styles.screenTitle}>SHARE A PRAYER</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <Field
@@ -144,7 +185,10 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
           return (
             <Pressable
               key={option.value}
-              onPress={() => setAudience(option.value)}
+              onPress={() => {
+                setAudience(option.value);
+                if (option.value !== 'public') setAnonymous(false);
+              }}
               style={[styles.audiencePill, selected && styles.audiencePillSelected]}
             >
               <Text style={[styles.audienceText, selected && styles.audienceTextSelected]}>
@@ -158,15 +202,30 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
         {AUDIENCE_OPTIONS.find((o) => o.value === audience)?.hint}
       </Text>
 
-      <View style={styles.anonymousRow}>
-        <Text style={styles.anonymousText}>Share anonymously</Text>
-        <Switch
-          value={anonymous}
-          onValueChange={setAnonymous}
-          trackColor={{ false: colors.surfaceBorder, true: colors.accentDark }}
-          thumbColor={anonymous ? colors.accent : colors.textDim}
-        />
-      </View>
+      {audience === 'public' && (
+        <View style={styles.publicPreferences}>
+          <View style={styles.preferenceRow}>
+            <Text style={styles.preferenceText}>Share anonymously</Text>
+            <Switch
+              accessibilityLabel="Share anonymously"
+              value={anonymous}
+              onValueChange={setAnonymous}
+              trackColor={{ false: colors.surfaceBorder, true: colors.accentDark }}
+              thumbColor={anonymous ? colors.accent : colors.textDim}
+            />
+          </View>
+          <View style={styles.preferenceRow}>
+            <Text style={styles.preferenceText}>Let people encourage me</Text>
+            <Switch
+              accessibilityLabel="Let people encourage me"
+              value={commentsEnabled}
+              onValueChange={setCommentsEnabled}
+              trackColor={{ false: colors.surfaceBorder, true: colors.accentDark }}
+              thumbColor={commentsEnabled ? colors.accent : colors.textDim}
+            />
+          </View>
+        </View>
+      )}
 
       <ErrorText>{error}</ErrorText>
       <PrimaryButton
@@ -181,15 +240,24 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
 const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 28,
   },
   backButton: {
-    paddingVertical: 8,
-    paddingRight: 16,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  backText: {
-    color: colors.textMuted,
+  screenTitle: {
+    color: colors.textSecondary,
+    fontFamily: fontFamilies.heading,
     fontSize: 15,
+    letterSpacing: 2.4,
+  },
+  headerSpacer: {
+    width: 44,
   },
   prayerInput: {
     minHeight: 120,
@@ -197,6 +265,7 @@ const styles = StyleSheet.create({
   },
   counter: {
     color: colors.textDim,
+    fontFamily: fontFamilies.body,
     fontSize: 11,
     textAlign: 'right',
     marginTop: -10,
@@ -207,6 +276,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: colors.textMuted,
+    fontFamily: fontFamilies.bodyMedium,
     fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
@@ -215,49 +285,58 @@ const styles = StyleSheet.create({
   },
   audienceRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 2,
+    padding: 3,
     marginBottom: 6,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.divider,
   },
   audiencePill: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    backgroundColor: colors.surface,
+    minHeight: 42,
+    justifyContent: 'center',
+    borderRadius: 6,
     alignItems: 'center',
   },
   audiencePillSelected: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.surfaceHover,
   },
   audienceText: {
     color: colors.textMuted,
+    fontFamily: fontFamilies.bodyMedium,
     fontSize: 12,
-    fontWeight: '600',
   },
   audienceTextSelected: {
-    color: colors.white,
+    color: colors.accentLight,
   },
   audienceHint: {
     color: colors.textDim,
+    fontFamily: fontFamilies.body,
     fontSize: 11,
     textAlign: 'center',
     marginBottom: 16,
   },
-  anonymousRow: {
+  publicPreferences: {
+    gap: 2,
+    marginBottom: 12,
+  },
+  preferenceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    minHeight: 48,
     paddingHorizontal: 4,
-    marginBottom: 12,
   },
-  anonymousText: {
+  preferenceText: {
     color: colors.textSecondary,
+    fontFamily: fontFamilies.body,
     fontSize: 14,
   },
   successText: {
     color: colors.textMuted,
+    fontFamily: fontFamilies.body,
     fontSize: 15,
     textAlign: 'center',
     marginBottom: 16,
@@ -268,6 +347,7 @@ const styles = StyleSheet.create({
   },
   againText: {
     color: colors.accent,
+    fontFamily: fontFamilies.bodyMedium,
     fontSize: 14,
   },
 });

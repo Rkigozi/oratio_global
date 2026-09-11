@@ -2,6 +2,12 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { SubmitScreen } from './submit';
 
+jest.mock('lucide-react-native', () => ({
+  ArrowLeft: () => null,
+  Eye: () => null,
+  EyeOff: () => null,
+}));
+
 jest.mock('../hooks/auth-context', () => ({
   useAuth: jest.fn(),
 }));
@@ -40,7 +46,7 @@ describe('SubmitScreen', () => {
     jest.mocked(createPrayerRequest).mockResolvedValue('prayer-new' as never);
   });
 
-  it('renders the prayer, location, audience, and anonymous controls', () => {
+  it('renders the prayer, location, audience, and public preferences', () => {
     render(<SubmitScreen navigation={navigation} route={route} />);
 
     expect(screen.getByPlaceholderText("Share what's on your heart…")).toBeTruthy();
@@ -50,6 +56,7 @@ describe('SubmitScreen', () => {
     expect(screen.getByText('Prayer Circle')).toBeTruthy();
     expect(screen.getByText('Private')).toBeTruthy();
     expect(screen.getByText('Share anonymously')).toBeTruthy();
+    expect(screen.getByText('Let people encourage me')).toBeTruthy();
   });
 
   it('rejects prayers shorter than 10 characters', async () => {
@@ -91,7 +98,7 @@ describe('SubmitScreen', () => {
     fireEvent.changeText(screen.getByPlaceholderText('e.g. London'), 'Nairobi');
     fireEvent.changeText(screen.getByPlaceholderText('e.g. United Kingdom'), 'Kenya');
 
-    fireEvent(screen.getByRole('switch'), 'valueChange', true);
+    fireEvent(screen.getByLabelText('Share anonymously'), 'valueChange', true);
 
     fireEvent.press(screen.getByText('Submit Prayer'));
 
@@ -100,20 +107,34 @@ describe('SubmitScreen', () => {
     expect(payload.username).toBeUndefined();
   });
 
+  it('lets a public prayer turn encouragements off', async () => {
+    render(<SubmitScreen navigation={navigation} route={route} />);
+
+    fillForm('Please pray for wisdom as I make this decision');
+    fireEvent(screen.getByLabelText('Let people encourage me'), 'valueChange', false);
+    fireEvent.press(screen.getByText('Submit Prayer'));
+
+    await waitFor(() => expect(createPrayerRequest).toHaveBeenCalled());
+    expect(jest.mocked(createPrayerRequest).mock.calls[0][0].commentsEnabled).toBe(false);
+  });
+
   it('submits with the selected audience', async () => {
     render(<SubmitScreen navigation={navigation} route={route} />);
 
     fillForm('A private prayer only for me to keep');
     fireEvent.press(screen.getByText('Private'));
 
+    expect(screen.queryByText('Share anonymously')).toBeNull();
+
     fireEvent.press(screen.getByText('Submit Prayer'));
 
     await waitFor(() => expect(createPrayerRequest).toHaveBeenCalled());
     const payload = jest.mocked(createPrayerRequest).mock.calls[0][0];
     expect(payload.audience).toBe('private');
+    expect(payload.commentsEnabled).toBe(true);
   });
 
-  it('shows the success state and links back to the feed', async () => {
+  it('shows the success state and links to the submitted prayer', async () => {
     render(<SubmitScreen navigation={navigation} route={route} />);
 
     fillForm('Thank you Lord for another day of grace');
@@ -121,9 +142,10 @@ describe('SubmitScreen', () => {
 
     await waitFor(() => expect(screen.getByText('Your prayer is live.')).toBeTruthy());
 
-    fireEvent.press(screen.getByText('View in Feed'));
+    fireEvent.press(screen.getByText('View Prayer'));
     expect((navigation as unknown as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith(
-      'Feed'
+      'PrayerDetail',
+      { prayerId: 'prayer-new' }
     );
   });
 

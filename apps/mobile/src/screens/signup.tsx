@@ -9,6 +9,7 @@ import {
   Field,
   InfoText,
   LinkButton,
+  PasswordField,
   PrimaryButton,
   Screen,
 } from '../components/ui';
@@ -74,12 +75,11 @@ export function SignUpScreen() {
         keyboardType="email-address"
         error={Boolean(error)}
       />
-      <Field
+      <PasswordField
         label="Password"
         placeholder="At least 6 characters"
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
         error={error.toLowerCase().includes('password')}
       />
       <Field

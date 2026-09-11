@@ -21,6 +21,8 @@ jest.mock('../services/supabase', () => {
         signInWithPassword: jest.fn(),
         signOut: jest.fn().mockResolvedValue({ error: null } as never),
         resetPasswordForEmail: jest.fn(),
+        startAutoRefresh: jest.fn(),
+        stopAutoRefresh: jest.fn(),
       },
       from: () => qb,
     },

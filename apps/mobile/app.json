@@ -23,6 +23,15 @@
       "favicon": "./assets/favicon.png"
     },
     "scheme": "oratio",
-    "owner": "oratio_global"
+    "owner": "oratio_global",
+    "plugins": [
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Oratio lets you choose a profile photo."
+        }
+      ]
+    ]
   }
 }

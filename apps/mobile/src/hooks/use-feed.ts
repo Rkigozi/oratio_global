@@ -1,10 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
 import { getFeedPrayers } from '@oratio/shared/queries';
 import type { PrayerRequest } from '@oratio/shared/prayer-data';
+import type { FeedAudienceMode, FeedPrayerFilters } from '@oratio/shared/queries';
 
 const PAGE_SIZE = 20;
 
-export function useFeed() {
+type UseFeedOptions = Pick<FeedPrayerFilters, 'country' | 'savedOnly' | 'search'>;
+
+export function useFeed(audienceMode: FeedAudienceMode = 'public', options: UseFeedOptions = {}) {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -12,12 +15,29 @@ export function useFeed() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const cursorRef = useRef<string | undefined>(undefined);
+  const country = options.country?.trim() || undefined;
+  const savedOnly = options.savedOnly === true;
+  const search = options.search?.trim() || undefined;
+
+  const fetchPage = useCallback(
+    (cursor?: string) => {
+      const filters: FeedPrayerFilters = {};
+      if (country) filters.country = country;
+      if (savedOnly) filters.savedOnly = true;
+      if (search) filters.search = search;
+
+      return Object.keys(filters).length > 0
+        ? getFeedPrayers(cursor, PAGE_SIZE, audienceMode, filters)
+        : getFeedPrayers(cursor, PAGE_SIZE, audienceMode);
+    },
+    [audienceMode, country, savedOnly, search]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getFeedPrayers(undefined, PAGE_SIZE, 'public');
+      const data = await fetchPage();
       setPrayers(data);
       cursorRef.current = data.length > 0 ? data[data.length - 1].createdAt : undefined;
       setHasMore(data.length >= PAGE_SIZE);
@@ -25,7 +45,7 @@ export function useFeed() {
       setError('Failed to load prayers');
     }
     setLoading(false);
-  }, []);
+  }, [fetchPage]);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -37,7 +57,7 @@ export function useFeed() {
     if (!hasMore || loadingMore) return;
     setLoadingMore(true);
     try {
-      const data = await getFeedPrayers(cursorRef.current, PAGE_SIZE, 'public');
+      const data = await fetchPage(cursorRef.current);
       if (data.length < PAGE_SIZE) setHasMore(false);
       if (data.length > 0) cursorRef.current = data[data.length - 1].createdAt;
       setPrayers((prev) => {
@@ -48,7 +68,7 @@ export function useFeed() {
       // Pagination failures are non-fatal; the next scroll retries.
     }
     setLoadingMore(false);
-  }, [hasMore, loadingMore]);
+  }, [fetchPage, hasMore, loadingMore]);
 
   // The screen drives loading: FeedScreen calls load() via useFocusEffect so
   // the list refreshes on first focus and whenever the user returns to it.

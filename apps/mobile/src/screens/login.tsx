@@ -2,7 +2,15 @@ import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../hooks/auth-context';
-import { Brand, ErrorText, Field, LinkButton, PrimaryButton, Screen } from '../components/ui';
+import {
+  Brand,
+  ErrorText,
+  Field,
+  LinkButton,
+  PasswordField,
+  PrimaryButton,
+  Screen,
+} from '../components/ui';
 import type { RootStackParamList } from '../navigation';
 
 export function LoginScreen() {
@@ -38,12 +46,11 @@ export function LoginScreen() {
         keyboardType="email-address"
         error={Boolean(error)}
       />
-      <Field
+      <PasswordField
         label="Password"
         placeholder="Your password"
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
         error={Boolean(error)}
       />
       <ErrorText>{error}</ErrorText>

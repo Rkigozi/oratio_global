@@ -1,12 +1,16 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { getAttributionText, timeAgo, type PrayerRequest } from '@oratio/shared/prayer-data';
-import { colors } from '../theme';
+import { colors, fontFamilies } from '../theme';
 
 export function PrayerCard({ prayer, onPress }: { prayer: PrayerRequest; onPress: () => void }) {
   const count = prayer.prayerCount ?? 0;
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    >
       <Text style={styles.text} numberOfLines={4}>
         {prayer.text}
       </Text>
@@ -30,21 +34,22 @@ export function PrayerCard({ prayer, onPress }: { prayer: PrayerRequest; onPress
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.surfaceBorder,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 10,
-    gap: 10,
+    minHeight: 132,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    paddingVertical: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.divider,
+    gap: 11,
   },
   pressed: {
-    opacity: 0.85,
+    backgroundColor: colors.surface,
   },
   text: {
     color: colors.text,
-    fontSize: 15,
-    lineHeight: 22,
+    fontFamily: fontFamilies.body,
+    fontSize: 16,
+    lineHeight: 25,
   },
   metaRow: {
     flexDirection: 'row',
@@ -53,11 +58,13 @@ const styles = StyleSheet.create({
   },
   attribution: {
     color: colors.textSecondary,
+    fontFamily: fontFamilies.bodyMedium,
     fontSize: 12,
     flexShrink: 1,
   },
   location: {
     color: colors.textDim,
+    fontFamily: fontFamilies.body,
     fontSize: 11,
     flexShrink: 1,
   },
@@ -68,10 +75,12 @@ const styles = StyleSheet.create({
   },
   time: {
     color: colors.textDim,
+    fontFamily: fontFamilies.body,
     fontSize: 11,
   },
   count: {
     color: colors.accent,
+    fontFamily: fontFamilies.bodyMedium,
     fontSize: 11,
   },
 });

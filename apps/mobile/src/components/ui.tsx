@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,7 +12,12 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '../theme';
+import { Eye, EyeOff } from 'lucide-react-native';
+import { asNativeIcon } from './icon';
+import { colors, fontFamilies, radii } from '../theme';
+
+const EyeIcon = asNativeIcon(Eye);
+const EyeOffIcon = asNativeIcon(EyeOff);
 
 export function Screen({ children }: { children: ReactNode }) {
   return (
@@ -59,6 +64,38 @@ export function Field({
   );
 }
 
+export function PasswordField({
+  label,
+  error,
+  ...props
+}: Omit<TextInputProps, 'secureTextEntry'> & { label: string; error?: boolean }) {
+  const [visible, setVisible] = useState(false);
+  const VisibilityIcon = visible ? EyeOffIcon : EyeIcon;
+
+  return (
+    <View style={styles.fieldBlock}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={[styles.passwordShell, error ? styles.fieldError : null]}>
+        <TextInput
+          placeholderTextColor={colors.textDim}
+          secureTextEntry={!visible}
+          style={styles.passwordInput}
+          {...props}
+        />
+        <Pressable
+          accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => setVisible((current) => !current)}
+          style={styles.visibilityButton}
+        >
+          <VisibilityIcon color={colors.textMuted} size={19} strokeWidth={1.7} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 export function PrimaryButton({
   title,
   onPress,
@@ -72,9 +109,14 @@ export function PrimaryButton({
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
       onPress={onPress}
       disabled={disabled || loading}
-      style={[styles.button, (disabled || loading) && styles.buttonDisabled]}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && !(disabled || loading) && styles.buttonPressed,
+        (disabled || loading) && styles.buttonDisabled,
+      ]}
     >
       {loading ? (
         <ActivityIndicator color={colors.white} />
@@ -87,7 +129,7 @@ export function PrimaryButton({
 
 export function LinkButton({ title, onPress }: { title: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={styles.linkButton}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.linkButton}>
       <Text style={styles.linkText}>{title}</Text>
     </Pressable>
   );
@@ -113,7 +155,8 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
   },
   brandBlock: {
     alignItems: 'center',
@@ -122,12 +165,13 @@ const styles = StyleSheet.create({
   },
   brand: {
     color: colors.textSecondary,
+    fontFamily: fontFamilies.heading,
     fontSize: 30,
-    fontWeight: '300',
     letterSpacing: 8,
   },
   brandSubtitle: {
     color: colors.textMuted,
+    fontFamily: fontFamilies.body,
     fontSize: 13,
   },
   fieldBlock: {
@@ -135,6 +179,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: colors.textMuted,
+    fontFamily: fontFamilies.bodyMedium,
     fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
@@ -145,30 +190,61 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.surfaceBorder,
-    borderRadius: 14,
+    borderRadius: radii.control,
     color: colors.text,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    minHeight: 50,
+    paddingVertical: 13,
+    fontFamily: fontFamilies.body,
     fontSize: 15,
     textAlign: 'center',
   },
   fieldError: {
     borderColor: colors.danger,
   },
+  passwordShell: {
+    minHeight: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+    borderRadius: radii.control,
+  },
+  passwordInput: {
+    flex: 1,
+    minHeight: 48,
+    paddingLeft: 52,
+    paddingRight: 8,
+    color: colors.text,
+    fontFamily: fontFamilies.body,
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  visibilityButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   button: {
-    backgroundColor: colors.accent,
-    borderRadius: 999,
-    paddingVertical: 15,
+    minHeight: 50,
+    backgroundColor: colors.accentDark,
+    borderRadius: radii.pill,
+    justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
+  },
+  buttonPressed: {
+    backgroundColor: colors.accent,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
     color: colors.white,
+    fontFamily: fontFamilies.bodySemiBold,
     fontSize: 15,
-    fontWeight: '600',
   },
   linkButton: {
     alignItems: 'center',
@@ -176,16 +252,19 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: colors.accent,
+    fontFamily: fontFamilies.bodyMedium,
     fontSize: 14,
   },
   error: {
     color: colors.danger,
+    fontFamily: fontFamilies.body,
     fontSize: 12,
     textAlign: 'center',
     marginBottom: 12,
   },
   info: {
     color: colors.textMuted,
+    fontFamily: fontFamilies.body,
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 20,
