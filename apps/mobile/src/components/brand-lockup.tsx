@@ -70,8 +70,8 @@ const styles = StyleSheet.create({
     fontSize: 8,
   },
   subtitle: {
-    color: colors.textDim,
-    fontFamily: fontFamilies.body,
+    color: colors.textMuted,
+    fontFamily: fontFamilies.bodyMedium,
     fontSize: 11,
     marginTop: 1,
   },

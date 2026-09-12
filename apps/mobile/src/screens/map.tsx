@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -9,6 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import * as Location from 'expo-location';
 import MapView, {
   Marker,
   type MapPressEvent,
@@ -21,7 +23,7 @@ import type {
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, ArrowRight, RefreshCw } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, LocateFixed, RefreshCw } from 'lucide-react-native';
 import { getMapHotspots, getPublicPrayersAtLocation } from '@oratio/shared/queries';
 import type { PrayerRequest } from '@oratio/shared/prayer-data';
 import { PrayerCard } from '../components/prayer-card';
@@ -33,6 +35,7 @@ import type { RootStackParamList } from '../navigation';
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
 const ArrowRightIcon = asNativeIcon(ArrowRight);
+const LocateFixedIcon = asNativeIcon(LocateFixed);
 const RefreshIcon = asNativeIcon(RefreshCw);
 
 const WORLD_REGION = {
@@ -68,9 +71,11 @@ function prayedLabel(count: number) {
 
 export function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const mapRef = useRef<MapView>(null);
   const [hotspots, setHotspots] = useState<PrayerRequest[]>([]);
   const [selected, setSelected] = useState<PrayerRequest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleMapPress = useCallback((event: MapPressEvent) => {
@@ -99,6 +104,53 @@ export function MapScreen() {
     }
   }, []);
 
+  const handleLocate = useCallback(async () => {
+    if (locating) return;
+
+    setLocating(true);
+    try {
+      let permission = await Location.getForegroundPermissionsAsync();
+      if (!permission.granted && permission.canAskAgain) {
+        permission = await Location.requestForegroundPermissionsAsync();
+      }
+
+      if (!permission.granted) {
+        Alert.alert(
+          'Location access is off',
+          'Allow location access in Settings to return the prayer map to your current area.'
+        );
+        return;
+      }
+
+      const position =
+        (await Location.getLastKnownPositionAsync({
+          maxAge: 120_000,
+          requiredAccuracy: 1_000,
+        })) ||
+        (await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        }));
+
+      setSelected(null);
+      mapRef.current?.animateToRegion(
+        {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          latitudeDelta: 0.5,
+          longitudeDelta: 0.5,
+        },
+        600
+      );
+    } catch {
+      Alert.alert(
+        'Location unavailable',
+        "We couldn't find your current location. Check Location Services and try again."
+      );
+    } finally {
+      setLocating(false);
+    }
+  }, [locating]);
+
   useFocusEffect(
     useCallback(() => {
       void load();
@@ -108,22 +160,24 @@ export function MapScreen() {
   return (
     <View style={styles.mapScreen}>
       <MapView
+        ref={mapRef}
         accessibilityLabel="Global prayer map"
         customMapStyle={DARK_MAP_STYLE}
         initialRegion={WORLD_REGION}
         mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
-        maxDelta={170}
         maxZoomLevel={9}
-        minDelta={0.25}
         minZoomLevel={2}
         moveOnMarkerPress={false}
         onPress={handleMapPress}
         pitchEnabled={false}
         rotateEnabled={false}
+        scrollEnabled
         showsBuildings={false}
         showsCompass={false}
+        showsMyLocationButton={false}
         showsPointsOfInterests={false}
         style={StyleSheet.absoluteFill}
+        zoomEnabled
       >
         {hotspots.map((hotspot) => {
           const activity = Math.max(hotspot.requestCount || 1, hotspot.prayerCount || 0);
@@ -171,6 +225,21 @@ export function MapScreen() {
           </Pressable>
         </View>
       </SafeAreaView>
+
+      <Pressable
+        accessibilityLabel="Go to my location"
+        accessibilityRole="button"
+        accessibilityState={{ busy: locating, disabled: locating }}
+        disabled={locating}
+        onPress={() => void handleLocate()}
+        style={styles.mapLocationButton}
+      >
+        {locating ? (
+          <ActivityIndicator color={colors.accent} size="small" />
+        ) : (
+          <LocateFixedIcon color={colors.textSecondary} size={19} strokeWidth={1.8} />
+        )}
+      </Pressable>
 
       {!loading && hotspots.length === 0 && !error && (
         <View style={styles.mapMessage}>
@@ -367,6 +436,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(124, 143, 255, 0.09)',
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+  },
+  mapLocationButton: {
+    position: 'absolute',
+    right: 12,
+    bottom: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(10, 26, 58, 0.9)',
     borderWidth: 1,
     borderColor: colors.surfaceBorder,
   },

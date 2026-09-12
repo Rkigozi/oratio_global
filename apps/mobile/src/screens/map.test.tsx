@@ -1,24 +1,31 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { Alert } from 'react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { LocationPrayersScreen, MapScreen } from './map';
 
 const mockNavigation = { navigate: jest.fn(), goBack: jest.fn() };
+const mockAnimateToRegion = jest.fn();
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
   ArrowRight: () => null,
+  LocateFixed: () => null,
   RefreshCw: () => null,
 }));
 
 jest.mock('react-native-maps', () => {
+  const React = require('react');
   const { Pressable } = require('react-native');
   return {
     __esModule: true,
-    default: ({ children, accessibilityLabel, onPress }: never) => (
-      <Pressable accessibilityLabel={accessibilityLabel} onPress={onPress}>
-        {children}
-      </Pressable>
-    ),
+    default: React.forwardRef(({ children, accessibilityLabel, onPress }: never, ref: never) => {
+      React.useImperativeHandle(ref, () => ({ animateToRegion: mockAnimateToRegion }));
+      return (
+        <Pressable accessibilityLabel={accessibilityLabel} onPress={onPress}>
+          {children}
+        </Pressable>
+      );
+    }),
     Marker: ({ children, accessibilityLabel, onPress }: never) => (
       <Pressable accessibilityLabel={accessibilityLabel} onPress={onPress}>
         {children}
@@ -26,6 +33,14 @@ jest.mock('react-native-maps', () => {
     ),
   };
 });
+
+jest.mock('expo-location', () => ({
+  Accuracy: { Balanced: 3 },
+  getCurrentPositionAsync: jest.fn(),
+  getForegroundPermissionsAsync: jest.fn(),
+  getLastKnownPositionAsync: jest.fn(),
+  requestForegroundPermissionsAsync: jest.fn(),
+}));
 
 jest.mock('@react-navigation/native', () => {
   const { useEffect } = require('react');
@@ -43,6 +58,7 @@ jest.mock('@oratio/shared/queries', () => ({
 }));
 
 import { getMapHotspots, getPublicPrayersAtLocation } from '@oratio/shared/queries';
+import * as Location from 'expo-location';
 
 const hotspot = {
   id: 'location:london|united kingdom',
@@ -69,6 +85,18 @@ describe('MapScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(getMapHotspots).mockResolvedValue([hotspot] as never);
+    jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue({
+      canAskAgain: true,
+      granted: true,
+      status: 'granted',
+    } as never);
+    jest.mocked(Location.getLastKnownPositionAsync).mockResolvedValue({
+      coords: { latitude: 51.5, longitude: -0.1 },
+    } as never);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('renders the global map and its public prayer hotspots', async () => {
@@ -120,6 +148,56 @@ describe('MapScreen', () => {
 
     await waitFor(() => expect(screen.getByText('Try again')).toBeTruthy());
     expect(screen.getByText(/couldn't load the prayer map/i)).toBeTruthy();
+  });
+
+  it('returns to the current location with one button press', async () => {
+    jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue({
+      canAskAgain: true,
+      granted: false,
+      status: 'undetermined',
+    } as never);
+    jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({
+      canAskAgain: true,
+      granted: true,
+      status: 'granted',
+    } as never);
+
+    render(<MapScreen />);
+
+    fireEvent.press(screen.getByLabelText('Go to my location'));
+
+    await waitFor(() =>
+      expect(mockAnimateToRegion).toHaveBeenCalledWith(
+        {
+          latitude: 51.5,
+          longitude: -0.1,
+          latitudeDelta: 0.5,
+          longitudeDelta: 0.5,
+        },
+        600
+      )
+    );
+    expect(Location.requestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
+
+    fireEvent.press(await screen.findByLabelText('View prayer activity in London'));
+    expect(screen.getByText('View London prayers')).toBeTruthy();
+  });
+
+  it('explains how to enable location when access is denied', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue({
+      canAskAgain: false,
+      granted: false,
+      status: 'denied',
+    } as never);
+
+    render(<MapScreen />);
+    fireEvent.press(screen.getByLabelText('Go to my location'));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith('Location access is off', expect.any(String))
+    );
+    expect(Location.getLastKnownPositionAsync).not.toHaveBeenCalled();
   });
 });
 

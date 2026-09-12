@@ -57,6 +57,8 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Selecting a hotspot shows the correct prayer-request and people-prayed totals
 - [ ] "View [location] prayers" opens only public prayers from that location
 - [ ] London-area names such as Greater London appear together as London
+- [ ] The bottom-right "Go to my location" control requests foreground access only when tapped, recentres in one tap, leaves pan/zoom and hotspots responsive, and never changes a prayer's stored location
+- [ ] Denied or unavailable location access shows clear guidance without blocking the map
 - [ ] Pull down on a location prayer list refreshes it; map refresh remains responsive
 - [ ] Slow or interrupted internet shows a retryable state instead of blocking navigation
 

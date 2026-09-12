@@ -31,6 +31,15 @@
         {
           "photosPermission": "Oratio lets you choose a profile photo."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Oratio uses your location only to return the prayer map to your current area.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "motionUsagePermission": false
+        }
       ]
     ]
   }
