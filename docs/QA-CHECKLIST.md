@@ -6,9 +6,11 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 
 - [ ] Test the latest `main` commit with no local changes affecting the build
 - [ ] Apply all Supabase migrations through `038_canonical_prayer_locations.sql`
-- [ ] Prepare two verified test accounts with distinct usernames, profiles, and avatars
-- [ ] Keep Account A signed in on the physical iPhone and Account B in a separate PWA browser session or second device
-- [ ] Confirm both sessions can reach the same Supabase project before testing Circle, privacy, comments, and Updates
+- [ ] Prepare three verified test accounts with distinct usernames, profiles, and avatars
+- [ ] Account A is new or intentionally empty; Account B owns representative public, Circle, and private prayers; Account C is an accepted Circle peer
+- [ ] Keep Account B signed in on the physical iPhone and Accounts A/C in separate browser or device sessions
+- [ ] Confirm all sessions reach the same Supabase project before testing Circle, privacy, comments, and Updates
+- [ ] Record the latest TestFlight version/build and Git commit used for the pass
 
 ## Authentication (email/password only)
 
@@ -31,6 +33,7 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] App restart restores a valid session without briefly showing the wrong identity or screen
 - [ ] Expired/removed sessions return to Login cleanly
 - [ ] Background and foreground transitions preserve or refresh the session
+- [ ] Switching between the three QA accounts never leaks the previous profile, prayer spaces, counts, avatar, or cached private content
 
 ## Prayer Spaces
 
@@ -98,8 +101,11 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Avatar upload requests photo access, crops square, stores in Supabase Storage, and refreshes Profile
 - [ ] Settings toggles in-app Updates for prayers offered, comments/replies, and default comments on public prayers
 - [ ] Translation language preference saves and survives reopening Settings
+- [ ] Light, dark, and system themes apply across every native tab and persist across relaunch
+- [ ] Switching the device appearance while System is selected updates the app without unreadable or incomplete screens
+- [ ] Account deletion is available in-app with clear confirmation and recovery guidance for failures
+- [ ] Privacy, terms, and support links open the production destinations from Settings
 - [ ] Sign out from Settings returns to Login and a restart does not restore the old session
-- [ ] Full native light/dark/system theme switching remains a separate release gate unless it lands before beta
 
 ## Updates & Moderation
 
@@ -112,7 +118,9 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Pull-to-refresh reloads activity; foregrounding the app catches activity received while away
 - [ ] Deleting an update requires confirmation and removes only that user's inbox event
 - [ ] Realtime failure does not block the inbox; foreground refresh and polling remain functional
-- [ ] Reporting and moderation are tested when `SCRUM-71` lands
+- [ ] Prayer and comment menus allow eligible users to choose a report reason and submit it
+- [ ] Success, duplicate-report, authentication, and network-error states are clear
+- [ ] Reports reach the moderation queue without changing private or Circle visibility
 
 ## Native Runtime
 
@@ -121,6 +129,8 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Safe-area insets are respected on the target iPhone
 - [ ] No private prayer text or credentials appear in logs, Sentry, or analytics
 - [ ] Repeat this checklist against a release-mode/TestFlight build before external beta
+- [ ] Verify Sentry receives a deliberate release-tagged test error for this build
+- [ ] Verify PostHog receives approved app-open/auth/prayer/map events without prayer text or personal data
 
 ## Visual Parity
 

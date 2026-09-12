@@ -42,20 +42,20 @@ Logged in: Public / Map / Prayer Circle / Private / Me tabs → Submit, Prayer D
 
 ## Core Flows → Files
 
-| Flow                   | Native owner                                                | Shared data owner                            |
-| ---------------------- | ----------------------------------------------------------- | -------------------------------------------- |
-| Auth/session           | `hooks/auth-context.tsx`, auth screens                      | `queries/profiles.ts`                        |
-| Public/circle feeds    | `screens/feed.tsx`, `hooks/use-feed.ts`                     | `queries/prayers.ts`, `queries/saved.ts`     |
-| Private prayer library | `screens/private-prayers.tsx`                               | `queries/prayers.ts#getMyPrayers`            |
-| Global map / locations | `screens/map.tsx`                                           | `queries/prayers.ts#getMapHotspots`          |
-| Submit                 | `screens/submit.tsx`                                        | `queries/prayers.ts`, `validation.ts`        |
-| Prayer detail / prayed | `screens/prayer-detail.tsx`                                 | `queries/prayers.ts`, `queries/interactions` |
-| Comments/private Notes | `components/prayer-comments.tsx`                            | `queries/comments.ts`                        |
-| Circle management      | `screens/prayer-circle-management.tsx`                      | `queries/circle.ts`, `queries/profiles.ts`   |
-| Profile/settings       | `screens/profile.tsx`, `screens/settings.tsx`               | `queries/profiles.ts`, Supabase Storage      |
-| Updates/live badge     | `screens/updates.tsx`, `hooks/activity-updates-context.tsx` | `queries/updates.ts`                         |
-| Remaining native work  | tracked in JIRA `SCRUM-71` through `SCRUM-73`               | existing shared query modules                |
-| Web migration source   | matching screens under `apps/web/src/app/`                  | thin web re-exports of shared logic          |
+| Flow                   | Native owner                                                 | Shared data owner                            |
+| ---------------------- | ------------------------------------------------------------ | -------------------------------------------- |
+| Auth/session           | `hooks/auth-context.tsx`, auth screens                       | `queries/profiles.ts`                        |
+| Public/circle feeds    | `screens/feed.tsx`, `hooks/use-feed.ts`                      | `queries/prayers.ts`, `queries/saved.ts`     |
+| Private prayer library | `screens/private-prayers.tsx`                                | `queries/prayers.ts#getMyPrayers`            |
+| Global map / locations | `screens/map.tsx`                                            | `queries/prayers.ts#getMapHotspots`          |
+| Submit                 | `screens/submit.tsx`                                         | `queries/prayers.ts`, `validation.ts`        |
+| Prayer detail / prayed | `screens/prayer-detail.tsx`                                  | `queries/prayers.ts`, `queries/interactions` |
+| Comments/private Notes | `components/prayer-comments.tsx`                             | `queries/comments.ts`                        |
+| Circle management      | `screens/prayer-circle-management.tsx`                       | `queries/circle.ts`, `queries/profiles.ts`   |
+| Profile/settings       | `screens/profile.tsx`, `screens/settings.tsx`                | `queries/profiles.ts`, Supabase Storage      |
+| Updates/live badge     | `screens/updates.tsx`, `hooks/activity-updates-context.tsx`  | `queries/updates.ts`                         |
+| Remaining native work  | tracked in JIRA `SCRUM-71`–`SCRUM-75`, `SCRUM-80`–`SCRUM-86` | existing shared query modules                |
+| Web migration source   | matching screens under `apps/web/src/app/`                   | thin web re-exports of shared logic          |
 
 ## Supabase Map
 
@@ -75,7 +75,10 @@ Web: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`, `VITE_POS
 
 ## Deploys
 
-Netlify deploys only `apps/web`. Native development currently uses Expo Go; EAS/TestFlight has not been configured as the release channel yet.
+Netlify deploys only `apps/web`. Native development currently uses Expo Go;
+EAS/TestFlight has not been configured as the release channel yet. The first
+public release targets the Apple App Store; Android release work is isolated in
+post-launch epic `SCRUM-79`.
 
 ## Quality Commands
 

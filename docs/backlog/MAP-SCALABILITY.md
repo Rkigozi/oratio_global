@@ -1,7 +1,7 @@
 # MAP: Map Scalability and Canonical Locations
 
-Status: Proposed
-Jira epic: Pending creation
+Status: Planned
+Jira epic: `SCRUM-78`
 Priority: High foundations; Medium scale work
 Labels: `native`, `product`, `platform`, `post-launch`
 
@@ -50,6 +50,7 @@ global aggregation or all-city rendering operationally expensive.
 
 ## Story 1: Replace free-text map identity with canonical places
 
+Jira: `SCRUM-84`
 Priority: High
 Fix Version: V1 Launch
 
@@ -89,6 +90,7 @@ so that my optional location is displayed consistently and privately.
 
 ## Story 2: Introduce a dedicated hotspot contract and resilient loading
 
+Jira: `SCRUM-85`
 Priority: High
 Fix Version: V1 Launch
 
@@ -123,6 +125,7 @@ degrade, so that the map never misrepresents individual prayers as aggregates.
 
 ## Story 3: Paginate prayers within a location
 
+Jira: `SCRUM-86`
 Priority: High
 Fix Version: V1 Launch
 
@@ -154,6 +157,7 @@ the location view does not silently stop after the first page.
 
 ## Story 4: Serve recency-aware precomputed location statistics
 
+Jira: `SCRUM-87`
 Priority: Medium
 Fix Version: Post-Launch
 
@@ -189,6 +193,7 @@ historically busy cities do not dominate the map forever.
 
 ## Story 5: Query and cluster hotspots by viewport and zoom
 
+Jira: `SCRUM-88`
 Priority: Medium
 Fix Version: Post-Launch
 
@@ -226,6 +231,7 @@ so that dense areas remain understandable and responsive.
 
 ## Story 6: Verify map scale, privacy, and observability
 
+Jira: `SCRUM-89`
 Priority: Medium
 Fix Version: Post-Launch
 

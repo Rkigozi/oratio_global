@@ -1,12 +1,13 @@
 # Oratio Backlog — Working Agreement
 
-Last updated: 2026-09-11
+Last updated: 2026-09-12
 
 Canonical source for the JIRA backlog (project `SCRUM` at
 https://oratio.atlassian.net). This file and JIRA must stay in sync: change
 work in one place, mirror it in the other (OPS: SCRUM-56).
 
-Native migration keys: epic `SCRUM-62`, stories `SCRUM-63`–`SCRUM-75`.
+Native migration keys: epic `SCRUM-62`, stories `SCRUM-63`–`SCRUM-77` and
+`SCRUM-80`–`SCRUM-83`.
 
 ## Story template
 
@@ -64,6 +65,13 @@ Out of scope:
 | Post-Launch | The next wave after launch week                           |
 | Backlog     | Uncommitted future work                                   |
 
+## Release order
+
+Oratio launches publicly on the Apple App Store first. The native V1 sprint,
+TestFlight QA, and App Store submission therefore cover iOS only. Android work
+is intentionally isolated under `SCRUM-79`, labelled `post-launch`, and parked
+in the future sprint so it cannot become an implicit V1 dependency.
+
 ## Estimation
 
 No story points while it is a solo team — priorities and versions carry the
@@ -71,42 +79,60 @@ load. Introduce points (or T-shirt sizes) only when a second developer joins.
 
 ## Epics
 
-| Epic                                       | Key      | Stories              |
-| ------------------------------------------ | -------- | -------------------- |
-| LAUNCH: Launch Readiness                   | SCRUM-31 | SCRUM-36…40          |
-| TEST: Testing & Observability Maturity     | SCRUM-32 | SCRUM-41…44          |
-| HARD: Post-Launch Hardening                | SCRUM-33 | SCRUM-45…48          |
-| COMM: Community & Retention                | SCRUM-34 | SCRUM-49…52          |
-| OPS: Platform & Operations                 | SCRUM-35 | SCRUM-53…56          |
-| NATIVE: iOS Product Migration              | SCRUM-62 | SCRUM-63…75          |
-| MAP: Map Scalability & Canonical Locations | Pending  | Six proposed stories |
+| Epic                                       | Key      | Stories                   |
+| ------------------------------------------ | -------- | ------------------------- |
+| LAUNCH: Launch Readiness                   | SCRUM-31 | SCRUM-36…40               |
+| TEST: Testing & Observability Maturity     | SCRUM-32 | SCRUM-41…44               |
+| HARD: Post-Launch Hardening                | SCRUM-33 | SCRUM-45…48               |
+| COMM: Community & Retention                | SCRUM-34 | SCRUM-49…52               |
+| OPS: Platform & Operations                 | SCRUM-35 | SCRUM-53…56               |
+| NATIVE: iOS Product Migration              | SCRUM-62 | SCRUM-63…77, SCRUM-80…83  |
+| MAP: Map Scalability & Canonical Locations | SCRUM-78 | SCRUM-84…89               |
+| ANDROID: Android Release                   | SCRUM-79 | SCRUM-90…93 (post-launch) |
 
 Each epic description contains an Outcome statement and Success metrics —
 track those, not task counts.
 
-The proposed MAP epic and its story-level acceptance criteria live in
-[`MAP-SCALABILITY.md`](./MAP-SCALABILITY.md). Jira keys must replace the pending
-references here and in that file when the issues are created.
+The MAP story-level acceptance criteria live in
+[`MAP-SCALABILITY.md`](./MAP-SCALABILITY.md). The future Android release plan
+lives in [`ANDROID-RELEASE.md`](./ANDROID-RELEASE.md).
 
 ## Native migration snapshot
 
-| Key      | Scope                                       | Jira status / repo state                                                                   |
-| -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| SCRUM-63 | Monorepo foundation                         | In Review; acceptance met                                                                  |
-| SCRUM-64 | Shared platform-neutral logic               | In Review; acceptance met                                                                  |
-| SCRUM-65 | Native email/password auth                  | In Review; acceptance met in Expo Go                                                       |
-| SCRUM-66 | Native feed, detail, and prayer interaction | In Review; acceptance met; public filters, search/trending, save, and count integrity done |
-| SCRUM-67 | Native prayer submission and visibility     | In Review; acceptance met across all three prayer spaces                                   |
-| SCRUM-68 | Native comments and replies                 | In Review; comments, replies, and private Notes complete                                   |
-| SCRUM-69 | Native Circle management and updates        | In Review; Circle management and live Updates complete                                     |
-| SCRUM-70 | Native profile, settings, and avatar        | In Review; profile edit, avatar upload, preferences, and sign-out complete                 |
-| SCRUM-71 | Native reporting and moderation             | To Do                                                                                      |
-| SCRUM-72 | EAS/TestFlight beta distribution            | To Do; deferred until feature-complete beta + membership                                   |
-| SCRUM-73 | App Store submission                        | To Do                                                                                      |
-| SCRUM-74 | Reduce web to landing/web presence          | To Do; full PWA remains live during migration                                              |
-| SCRUM-75 | Apple Developer membership                  | To Do; external prerequisite                                                               |
+| Key      | Scope                                       | Jira status / repo state                                                  |
+| -------- | ------------------------------------------- | ------------------------------------------------------------------------- |
+| SCRUM-63 | Monorepo foundation                         | Done                                                                      |
+| SCRUM-64 | Shared platform-neutral logic               | Done                                                                      |
+| SCRUM-65 | Native email/password auth                  | Done                                                                      |
+| SCRUM-66 | Native feed, detail, and prayer interaction | Done; public filters, search/trending, save, and count integrity included |
+| SCRUM-67 | Native prayer submission and visibility     | Done across all three prayer spaces                                       |
+| SCRUM-68 | Native comments and replies                 | Done; comments, replies, and private Notes included                       |
+| SCRUM-69 | Native Circle management and updates        | Done; Circle management and live Updates included                         |
+| SCRUM-70 | Native profile, settings, and avatar        | Done; profile edit, avatar upload, preferences, and sign-out included     |
+| SCRUM-71 | Native reporting and moderation             | To Do; Highest; V1 Launch                                                 |
+| SCRUM-72 | EAS/TestFlight beta distribution            | To Do; waits for feature-complete beta and Apple membership               |
+| SCRUM-73 | Apple App Store submission                  | To Do                                                                     |
+| SCRUM-74 | Reduce web to landing/web presence          | To Do; full PWA remains live during migration                             |
+| SCRUM-75 | Apple Developer membership                  | To Do; external prerequisite                                              |
+| SCRUM-76 | Native global prayer map                    | Done                                                                      |
+| SCRUM-77 | Native Updates inbox                        | Done                                                                      |
+| SCRUM-80 | Native light/dark/system themes             | To Do; Highest; V1 Launch                                                 |
+| SCRUM-81 | Native prayer owner actions and sharing     | To Do; Highest; V1 Launch                                                 |
+| SCRUM-82 | Native saved-language translation           | To Do; Highest; V1 Launch                                                 |
+| SCRUM-83 | Account deletion and legal support access   | To Do; Highest; V1 Launch                                                 |
 
-`SCRUM-63`–`SCRUM-67` are ready to close. The current Jira workflow has no correctly named Done transition; its only Done-category transition is named Blocked. They remain In Review until that workflow status is corrected rather than being inaccurately marked Blocked.
+The Jira workflow now has a correctly named `Done` status. Completed native
+stories `SCRUM-63`–`SCRUM-70`, `SCRUM-76`, and `SCRUM-77` were closed on
+2026-09-12; remaining launch work stays `To Do` until implementation and QA meet
+the Definition of Done.
+
+## Map and Android snapshot
+
+| Keys        | Scope                                      | Jira status / release track       |
+| ----------- | ------------------------------------------ | --------------------------------- |
+| SCRUM-84…86 | Canonical places, hotspot contract, paging | To Do; High; V1 Launch            |
+| SCRUM-87…89 | Map aggregates, clustering, scale QA       | To Do; Medium; future sprint      |
+| SCRUM-90…93 | Android compatibility and Play release     | To Do; Medium; future/post-launch |
 
 ## Import into JIRA (new instance / re-import)
 
