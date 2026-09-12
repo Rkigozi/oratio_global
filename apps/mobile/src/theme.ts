@@ -63,9 +63,9 @@ export const lightColors: ThemeColors = {
   mapControl: 'rgba(255, 255, 255, 0.94)',
   mapMessage: 'rgba(255, 255, 255, 0.96)',
   mapSheet: 'rgba(255, 255, 255, 0.98)',
-  markerHalo: 'rgba(183, 125, 33, 0.2)',
-  markerHaloBorder: 'rgba(142, 91, 10, 0.58)',
-  markerCore: '#A56500',
+  markerHalo: 'rgba(242, 185, 75, 0.26)',
+  markerHaloBorder: 'rgba(225, 164, 40, 0.74)',
+  markerCore: '#E8B33A',
 };
 
 export const darkColors: ThemeColors = {
