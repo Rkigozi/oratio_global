@@ -13,6 +13,7 @@ export interface PrayerRequest {
   category?: string;
   createdAt?: string; // ISO timestamp
   editedAt?: string; // ISO timestamp for prayer wording edits
+  isAnonymous?: boolean; // Preserve privacy intent even when an owner can see their identity
   commentsEnabled?: boolean;
   avatarUrl?: string;
   commentCount?: number;

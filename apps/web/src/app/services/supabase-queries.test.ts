@@ -429,6 +429,7 @@ describe('getPrayerById', () => {
 
     expect(result?.username).toBe('qa_miriam');
     expect(result?.displayName).toBe('Miriam');
+    expect(result?.isAnonymous).toBe(true);
   });
 
   it('returns null without logging when no prayer is visible', async () => {
@@ -535,9 +536,25 @@ describe('updatePrayerRequest', () => {
 });
 
 describe('deletePrayerRequest', () => {
-  it('returns true on success', async () => {
-    setAlways(null);
+  it("deletes only the current user's prayer and confirms the removed row", async () => {
+    setAlways({ id: 'p1' });
     expect(await m.deletePrayerRequest('p1')).toBe(true);
+    expect(qb.delete).toHaveBeenCalledOnce();
+    expect(qb.eq).toHaveBeenCalledWith('id', 'p1');
+    expect(qb.eq).toHaveBeenCalledWith('user_id', 'test-user');
+    expect(qb.select).toHaveBeenCalledWith('id');
+    expect(qb.maybeSingle).toHaveBeenCalledOnce();
+  });
+
+  it('returns false when no owned prayer was removed', async () => {
+    setAlways(null);
+    expect(await m.deletePrayerRequest('p1')).toBe(false);
+  });
+
+  it('returns false if no user is signed in', async () => {
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    expect(await m.deletePrayerRequest('p1')).toBe(false);
+    expect(qb.delete).not.toHaveBeenCalled();
   });
 
   it('returns false on error', async () => {
@@ -1382,6 +1399,7 @@ describe('getMyPrayers', () => {
 
     expect(result[0].username).toBe('qa_miriam');
     expect(result[0].displayName).toBe('Miriam');
+    expect(result[0].isAnonymous).toBe(true);
   });
 
   it('returns empty if no user', async () => {

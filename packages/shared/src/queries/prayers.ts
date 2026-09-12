@@ -265,17 +265,19 @@ export async function deletePrayerRequest(prayerId: string): Promise<boolean> {
   } = await supabase.auth.getUser();
   if (!user) return false;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('prayer_requests')
     .delete()
     .eq('id', prayerId)
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     logError('delete prayer', error);
     return false;
   }
-  return true;
+  return Boolean(data);
 }
 
 export async function toggleCommentsEnabled(prayerId: string, enabled: boolean): Promise<boolean> {

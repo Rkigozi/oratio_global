@@ -76,7 +76,13 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] A Public prayer author can turn comments off and on from prayer detail
 - [ ] A private prayer shows personal Notes, not social comment/reply language
 - [ ] Private notes can be added, edited, and deleted and are never visible to another user
-- [ ] Prayer edit/delete, sharing, translation, and reporting are retested when their native stories land
+- [ ] An owner can edit a valid 10-500 character prayer; invalid edits stay open with clear guidance and successful edits show as Edited
+- [ ] Deleting an owned prayer requires explicit confirmation, closes detail only after success, and removes it from its feed, Profile count, and map aggregates
+- [ ] A non-owner never sees Edit or Delete, including when opening a shared link directly
+- [ ] Public and Circle Share opens the native iOS share sheet with safe attribution and the authenticated web prayer link, without copying prayer text or location
+- [ ] The shared web prayer link returns to the same prayer after sign-in; inaccessible Circle prayers remain protected by Supabase policy
+- [ ] Private prayers do not offer Share
+- [ ] Translation and reporting are retested when their native stories land
 
 ## Prayer Circle
 

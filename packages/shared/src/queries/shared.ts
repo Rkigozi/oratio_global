@@ -59,6 +59,7 @@ export function mapPrayerRequest(
     category: (row.category as string) || undefined,
     createdAt: row.created_at as string,
     editedAt: (row.edited_at as string | null) || undefined,
+    isAnonymous,
     commentCount: (row.comment_count as number) || 0,
     commentsEnabled: row.comments_enabled !== false,
     avatarUrl: isAnonymous ? undefined : profile?.avatar_url || undefined,
@@ -67,7 +68,10 @@ export function mapPrayerRequest(
 }
 
 export function mapOwnedPrayerRequest(row: Record<string, unknown>): PrayerRequest {
-  return mapPrayerRequest({ ...row, is_anonymous: false });
+  return {
+    ...mapPrayerRequest({ ...row, is_anonymous: false }),
+    isAnonymous: row.is_anonymous === true,
+  };
 }
 
 export function mapHotspotTotal(row: Record<string, unknown>): PrayerRequest {

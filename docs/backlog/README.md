@@ -116,15 +116,15 @@ lives in [`ANDROID-RELEASE.md`](./ANDROID-RELEASE.md).
 | SCRUM-75 | Apple Developer membership                  | To Do; external prerequisite                                              |
 | SCRUM-76 | Native global prayer map                    | Done                                                                      |
 | SCRUM-77 | Native Updates inbox                        | Done                                                                      |
-| SCRUM-80 | Native light/dark/system themes             | In QA; implementation and automated gates complete                        |
-| SCRUM-81 | Native prayer owner actions and sharing     | To Do; Highest; V1 Launch                                                 |
+| SCRUM-80 | Native light/dark/system themes             | Done; automated and physical iPhone QA complete                           |
+| SCRUM-81 | Native prayer owner actions and sharing     | In QA; implementation and automated gates complete                        |
 | SCRUM-82 | Native saved-language translation           | To Do; Highest; V1 Launch                                                 |
 | SCRUM-83 | Account deletion and legal support access   | To Do; Highest; V1 Launch                                                 |
 
 The Jira workflow now has a correctly named `Done` status. Completed native
-stories `SCRUM-63`–`SCRUM-70`, `SCRUM-76`, and `SCRUM-77` were closed on
-2026-09-12; remaining launch work stays `To Do` until implementation and QA meet
-the Definition of Done.
+stories `SCRUM-63`–`SCRUM-70`, `SCRUM-76`, `SCRUM-77`, and `SCRUM-80` were
+closed on 2026-09-12; remaining launch work stays open until implementation and
+QA meet the Definition of Done.
 
 ## Map and Android snapshot
 
