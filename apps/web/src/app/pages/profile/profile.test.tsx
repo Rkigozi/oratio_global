@@ -126,6 +126,7 @@ function setupProfile() {
     language: 'auto',
     comments_enabled_default: true,
     profile_location_mode: 'manual',
+    theme: 'system',
   });
   vi.mocked(updateProfile).mockResolvedValue(true);
   vi.mocked(updateProfilePreferences).mockResolvedValue(true);

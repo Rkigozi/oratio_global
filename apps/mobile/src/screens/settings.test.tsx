@@ -5,6 +5,7 @@ import { SettingsScreen } from './settings';
 
 const navigation = { goBack: jest.fn() };
 const mockSignOut = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
+const mockSetThemeMode = jest.fn();
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
@@ -12,6 +13,10 @@ jest.mock('lucide-react-native', () => ({
   Globe2: () => null,
   LogOut: () => null,
   MessageCircle: () => null,
+  Monitor: () => null,
+  Moon: () => null,
+  Palette: () => null,
+  Sun: () => null,
 }));
 
 jest.mock('@react-navigation/native', () => {
@@ -30,6 +35,14 @@ jest.mock('../hooks/auth-context', () => ({
   }),
 }));
 
+jest.mock('../hooks/theme-context', () => ({
+  useTheme: () => ({
+    theme: 'dark',
+    themeMode: 'system',
+    setThemeMode: mockSetThemeMode,
+  }),
+}));
+
 jest.mock('@oratio/shared/queries', () => ({
   getProfilePreferences: jest.fn(),
   updateProfilePreferences: jest.fn(),
@@ -43,6 +56,7 @@ const preferences = {
   language: 'auto',
   comments_enabled_default: true,
   profile_location_mode: 'manual',
+  theme: 'system',
 };
 
 function renderSettings() {
@@ -62,6 +76,9 @@ describe('SettingsScreen', () => {
     expect(await screen.findByText('Prayers offered')).toBeTruthy();
     expect(screen.getByText('Comments and replies')).toBeTruthy();
     expect(screen.getByText('Allow comments on new public prayers')).toBeTruthy();
+    expect(screen.getByLabelText('System appearance')).toBeTruthy();
+    expect(screen.getByLabelText('Light appearance')).toBeTruthy();
+    expect(screen.getByLabelText('Dark appearance')).toBeTruthy();
     expect(screen.getByText('miriam@example.com')).toBeTruthy();
   });
 
@@ -81,6 +98,25 @@ describe('SettingsScreen', () => {
     fireEvent.press(await screen.findByText('Spanish'));
 
     await waitFor(() => expect(updateProfilePreferences).toHaveBeenCalledWith({ language: 'es' }));
+  });
+
+  it('applies and saves the selected appearance', async () => {
+    renderSettings();
+
+    fireEvent.press(await screen.findByLabelText('Dark appearance'));
+
+    await waitFor(() => expect(updateProfilePreferences).toHaveBeenCalledWith({ theme: 'dark' }));
+    await waitFor(() => expect(mockSetThemeMode).toHaveBeenCalledWith('dark'));
+  });
+
+  it('restores the previous appearance when saving fails', async () => {
+    jest.mocked(updateProfilePreferences).mockResolvedValueOnce(false as never);
+    renderSettings();
+
+    fireEvent.press(await screen.findByLabelText('Dark appearance'));
+
+    await waitFor(() => expect(screen.getByText("We couldn't save settings.")).toBeTruthy());
+    expect(mockSetThemeMode).toHaveBeenLastCalledWith('system');
   });
 
   it('confirms sign out before clearing the session', async () => {

@@ -521,12 +521,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(124, 143, 255, 0.09)',
-    backgroundColor: 'rgba(124, 143, 255, 0.04)',
+    borderColor: colors.divider,
+    backgroundColor: colors.accentTintSoft,
   },
   filterPillActive: {
-    borderColor: 'rgba(124, 143, 255, 0.24)',
-    backgroundColor: 'rgba(124, 143, 255, 0.12)',
+    borderColor: colors.accentBorder,
+    backgroundColor: colors.accentTint,
   },
   filterText: {
     color: colors.textMuted,
@@ -594,8 +594,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(124, 143, 255, 0.1)',
-    backgroundColor: 'rgba(124, 143, 255, 0.06)',
+    borderColor: colors.divider,
+    backgroundColor: colors.accentTintSoft,
   },
   trendingTag: {
     color: colors.accent,
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(2, 8, 22, 0.62)',
+    backgroundColor: colors.scrim,
   },
   modalBackdrop: {
     position: 'absolute',
@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   countryOptionActive: {
-    backgroundColor: 'rgba(124, 143, 255, 0.12)',
+    backgroundColor: colors.accentTint,
   },
   countryOptionText: {
     color: colors.textSecondary,

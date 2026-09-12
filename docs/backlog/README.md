@@ -116,7 +116,7 @@ lives in [`ANDROID-RELEASE.md`](./ANDROID-RELEASE.md).
 | SCRUM-75 | Apple Developer membership                  | To Do; external prerequisite                                              |
 | SCRUM-76 | Native global prayer map                    | Done                                                                      |
 | SCRUM-77 | Native Updates inbox                        | Done                                                                      |
-| SCRUM-80 | Native light/dark/system themes             | To Do; Highest; V1 Launch                                                 |
+| SCRUM-80 | Native light/dark/system themes             | In QA; implementation and automated gates complete                        |
 | SCRUM-81 | Native prayer owner actions and sharing     | To Do; Highest; V1 Launch                                                 |
 | SCRUM-82 | Native saved-language translation           | To Do; Highest; V1 Launch                                                 |
 | SCRUM-83 | Account deletion and legal support access   | To Do; Highest; V1 Launch                                                 |

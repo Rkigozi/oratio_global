@@ -115,6 +115,7 @@ export interface ProfilePreferences {
   language: string;
   comments_enabled_default: boolean;
   profile_location_mode: 'manual' | 'auto';
+  theme: 'system' | 'light' | 'dark';
 }
 
 const defaultPreferences: ProfilePreferences = {
@@ -123,6 +124,7 @@ const defaultPreferences: ProfilePreferences = {
   language: 'auto',
   comments_enabled_default: true,
   profile_location_mode: 'manual',
+  theme: 'system',
 };
 
 export async function getProfilePreferences(): Promise<ProfilePreferences> {
@@ -149,6 +151,10 @@ export async function getProfilePreferences(): Promise<ProfilePreferences> {
   return {
     ...merged,
     profile_location_mode: merged.profile_location_mode === 'auto' ? 'auto' : 'manual',
+    theme:
+      merged.theme === 'light' || merged.theme === 'dark' || merged.theme === 'system'
+        ? merged.theme
+        : 'system',
   };
 }
 

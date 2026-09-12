@@ -30,6 +30,7 @@ import { PrayerCard } from '../components/prayer-card';
 import { asNativeIcon } from '../components/icon';
 import { BrandLockup } from '../components/brand-lockup';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
+import { useTheme } from '../hooks/theme-context';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -61,6 +62,22 @@ const DARK_MAP_STYLE: MapStyleElement[] = [
   { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#07142E' }] },
 ];
 
+const LIGHT_MAP_STYLE: MapStyleElement[] = [
+  { elementType: 'geometry', stylers: [{ color: '#E6EAF1' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#5D6882' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#F5F7FB' }] },
+  {
+    featureType: 'administrative',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#B8C1D1' }],
+  },
+  { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#ECEFF4' }] },
+  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#CFDAE9' }] },
+];
+
 function requestLabel(count: number) {
   return `${count} ${count === 1 ? 'prayer request' : 'prayer requests'}`;
 }
@@ -71,6 +88,7 @@ function prayedLabel(count: number) {
 
 export function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { theme } = useTheme();
   const mapRef = useRef<MapView>(null);
   const [hotspots, setHotspots] = useState<PrayerRequest[]>([]);
   const [selected, setSelected] = useState<PrayerRequest | null>(null);
@@ -162,7 +180,7 @@ export function MapScreen() {
       <MapView
         ref={mapRef}
         accessibilityLabel="Global prayer map"
-        customMapStyle={DARK_MAP_STYLE}
+        customMapStyle={theme === 'dark' ? DARK_MAP_STYLE : LIGHT_MAP_STYLE}
         initialRegion={WORLD_REGION}
         mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
         maxZoomLevel={9}
@@ -177,6 +195,7 @@ export function MapScreen() {
         showsMyLocationButton={false}
         showsPointsOfInterests={false}
         style={StyleSheet.absoluteFill}
+        userInterfaceStyle={theme}
         zoomEnabled
       >
         {hotspots.map((hotspot) => {
@@ -417,7 +436,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(10, 26, 58, 0.86)',
+    backgroundColor: colors.mapHeader,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.surfaceBorder,
   },
@@ -435,7 +454,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(124, 143, 255, 0.09)',
+    backgroundColor: colors.accentTintSoft,
     borderWidth: 1,
     borderColor: colors.surfaceBorder,
   },
@@ -448,23 +467,23 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(10, 26, 58, 0.9)',
+    backgroundColor: colors.mapControl,
     borderWidth: 1,
     borderColor: colors.surfaceBorder,
   },
   markerHalo: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(232, 182, 107, 0.24)',
+    backgroundColor: colors.markerHalo,
     borderWidth: 1,
-    borderColor: 'rgba(255, 236, 194, 0.7)',
+    borderColor: colors.markerHaloBorder,
   },
   markerCore: {
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: '#F4C979',
-    shadowColor: '#F4C979',
+    backgroundColor: colors.markerCore,
+    shadowColor: colors.markerCore,
     shadowOpacity: 0.8,
     shadowRadius: 7,
   },
@@ -476,7 +495,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderRadius: 8,
-    backgroundColor: 'rgba(10, 26, 58, 0.94)',
+    backgroundColor: colors.mapMessage,
     borderWidth: 1,
     borderColor: colors.surfaceBorder,
     alignItems: 'center',
@@ -514,7 +533,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 18,
     borderRadius: 8,
-    backgroundColor: 'rgba(12, 20, 48, 0.97)',
+    backgroundColor: colors.mapSheet,
     borderWidth: 1,
     borderColor: colors.surfaceBorder,
   },

@@ -1531,6 +1531,7 @@ describe('getProfilePreferences', () => {
     language: 'auto',
     comments_enabled_default: true,
     profile_location_mode: 'manual',
+    theme: 'system',
   };
 
   it('returns merged preferences on success', async () => {
@@ -1540,12 +1541,19 @@ describe('getProfilePreferences', () => {
     expect(result.notify_on_prayed).toBe(false);
     expect(result.notify_on_comment).toBe(true);
     expect(result.profile_location_mode).toBe('manual');
+    expect(result.theme).toBe('system');
   });
 
   it('falls back to manual for an invalid location preference', async () => {
     setAlways({ preferences: { profile_location_mode: 'nearby' } });
     const result = await m.getProfilePreferences();
     expect(result.profile_location_mode).toBe('manual');
+  });
+
+  it('falls back to system for an invalid theme preference', async () => {
+    setAlways({ preferences: { theme: 'sepia' } });
+    const result = await m.getProfilePreferences();
+    expect(result.theme).toBe('system');
   });
 
   it('returns defaults if no user', async () => {
@@ -1568,6 +1576,7 @@ describe('updateProfilePreferences', () => {
         language: 'auto',
         comments_enabled_default: true,
         profile_location_mode: 'manual',
+        theme: 'system',
       },
     });
     setOnce(null);

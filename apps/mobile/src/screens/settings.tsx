@@ -12,7 +12,17 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Bell, Globe2, LogOut, MessageCircle } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Bell,
+  Globe2,
+  LogOut,
+  MessageCircle,
+  Monitor,
+  Moon,
+  Palette,
+  Sun,
+} from 'lucide-react-native';
 import {
   getProfilePreferences,
   updateProfilePreferences,
@@ -21,6 +31,7 @@ import {
 import { asNativeIcon } from '../components/icon';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
+import { useTheme, type ThemeMode } from '../hooks/theme-context';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -29,6 +40,20 @@ const BellIcon = asNativeIcon(Bell);
 const GlobeIcon = asNativeIcon(Globe2);
 const LogOutIcon = asNativeIcon(LogOut);
 const MessageIcon = asNativeIcon(MessageCircle);
+const MonitorIcon = asNativeIcon(Monitor);
+const MoonIcon = asNativeIcon(Moon);
+const PaletteIcon = asNativeIcon(Palette);
+const SunIcon = asNativeIcon(Sun);
+
+const appearanceOptions: Array<{
+  value: ThemeMode;
+  label: string;
+  icon: ReturnType<typeof asNativeIcon>;
+}> = [
+  { value: 'system', label: 'System', icon: MonitorIcon },
+  { value: 'light', label: 'Light', icon: SunIcon },
+  { value: 'dark', label: 'Dark', icon: MoonIcon },
+];
 
 const languages = [
   { value: 'auto', label: 'Auto' },
@@ -44,6 +69,7 @@ export function SettingsScreen({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, 'Settings'>) {
   const { user, signOut } = useAuth();
+  const { themeMode, setThemeMode } = useTheme();
   const [prefs, setPrefs] = useState<ProfilePreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,16 +95,23 @@ export function SettingsScreen({
   const update = async (next: Partial<ProfilePreferences>) => {
     if (!prefs || saving) return;
     const previous = prefs;
+    const previousThemeMode = themeMode;
     const updated = { ...prefs, ...next };
     setPrefs(updated);
+    if (next.theme) setThemeMode(next.theme);
     setSaving(true);
     setError('');
     try {
       const ok = await updateProfilePreferences(next);
       if (!ok) {
         setPrefs(previous);
+        if (next.theme) setThemeMode(previousThemeMode);
         setError("We couldn't save settings.");
       }
+    } catch {
+      setPrefs(previous);
+      if (next.theme) setThemeMode(previousThemeMode);
+      setError("We couldn't save settings.");
     } finally {
       setSaving(false);
     }
@@ -130,6 +163,42 @@ export function SettingsScreen({
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        <View style={styles.section}>
+          <SectionTitle
+            icon={<PaletteIcon color={colors.textDim} size={15} />}
+            label="Appearance"
+          />
+          <View accessibilityRole="radiogroup" style={styles.appearanceControl}>
+            {appearanceOptions.map(({ value, label, icon: Icon }) => {
+              const selected = themeMode === value;
+              return (
+                <Pressable
+                  accessibilityLabel={`${label} appearance`}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  key={value}
+                  onPress={() => void update({ theme: value })}
+                  style={[styles.appearanceOption, selected && styles.appearanceOptionSelected]}
+                >
+                  <Icon
+                    color={selected ? colors.accent : colors.textDim}
+                    size={16}
+                    strokeWidth={1.7}
+                  />
+                  <Text
+                    style={[
+                      styles.appearanceOptionText,
+                      selected && styles.appearanceOptionTextSelected,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
 
         <View style={styles.section}>
           <SectionTitle icon={<BellIcon color={colors.textDim} size={15} />} label="Updates" />
@@ -306,6 +375,37 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
+  },
+  appearanceControl: {
+    minHeight: 48,
+    flexDirection: 'row',
+    padding: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+    backgroundColor: colors.surface,
+  },
+  appearanceOption: {
+    flex: 1,
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 6,
+  },
+  appearanceOptionSelected: {
+    backgroundColor: colors.accentTint,
+    borderWidth: 1,
+    borderColor: colors.accentBorder,
+  },
+  appearanceOptionText: {
+    color: colors.textMuted,
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 12,
+  },
+  appearanceOptionTextSelected: {
+    color: colors.accent,
   },
   toggleRow: {
     minHeight: 58,

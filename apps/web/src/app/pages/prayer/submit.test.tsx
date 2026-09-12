@@ -87,6 +87,7 @@ describe('Submit', () => {
       language: 'auto',
       comments_enabled_default: true,
       profile_location_mode: 'manual',
+      theme: 'system',
     });
     vi.mocked(getPrayerCircleCount).mockResolvedValue(1);
     vi.mocked(createPrayerRequest).mockResolvedValue('prayer-1');

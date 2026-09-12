@@ -5,6 +5,7 @@ import { LocationPrayersScreen, MapScreen } from './map';
 
 const mockNavigation = { navigate: jest.fn(), goBack: jest.fn() };
 const mockAnimateToRegion = jest.fn();
+let mockMapViewProps: { customMapStyle?: unknown; userInterfaceStyle?: string } = {};
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
@@ -18,14 +19,20 @@ jest.mock('react-native-maps', () => {
   const { Pressable } = require('react-native');
   return {
     __esModule: true,
-    default: React.forwardRef(({ children, accessibilityLabel, onPress }: never, ref: never) => {
-      React.useImperativeHandle(ref, () => ({ animateToRegion: mockAnimateToRegion }));
-      return (
-        <Pressable accessibilityLabel={accessibilityLabel} onPress={onPress}>
-          {children}
-        </Pressable>
-      );
-    }),
+    default: React.forwardRef(
+      (
+        { children, accessibilityLabel, customMapStyle, onPress, userInterfaceStyle }: never,
+        ref: never
+      ) => {
+        mockMapViewProps = { customMapStyle, userInterfaceStyle };
+        React.useImperativeHandle(ref, () => ({ animateToRegion: mockAnimateToRegion }));
+        return (
+          <Pressable accessibilityLabel={accessibilityLabel} onPress={onPress}>
+            {children}
+          </Pressable>
+        );
+      }
+    ),
     Marker: ({ children, accessibilityLabel, onPress }: never) => (
       <Pressable accessibilityLabel={accessibilityLabel} onPress={onPress}>
         {children}
@@ -103,6 +110,8 @@ describe('MapScreen', () => {
     render(<MapScreen />);
 
     expect(screen.getByLabelText('Global prayer map')).toBeTruthy();
+    expect(mockMapViewProps.userInterfaceStyle).toBe('dark');
+    expect(mockMapViewProps.customMapStyle).toBeTruthy();
     expect(screen.getByText('ORATIO')).toBeTruthy();
     expect(screen.getByText('Beta')).toBeTruthy();
     await waitFor(() =>
