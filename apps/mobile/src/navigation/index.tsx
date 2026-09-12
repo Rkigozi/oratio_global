@@ -15,6 +15,7 @@ import { CircleScreen, FeedScreen } from '../screens/feed';
 import { PrivatePrayersScreen } from '../screens/private-prayers';
 import { PrayerCircleManagementScreen } from '../screens/prayer-circle-management';
 import { LocationPrayersScreen, MapScreen } from '../screens/map';
+import { MyPrayersScreen } from '../screens/my-prayers';
 import { PrayerDetailScreen } from '../screens/prayer-detail';
 import { ProfileScreen } from '../screens/profile';
 import { SettingsScreen } from '../screens/settings';
@@ -29,6 +30,7 @@ export type RootStackParamList = {
   SignUp: undefined;
   ResetPassword: undefined;
   Main: undefined;
+  MyPrayers: { initialAudience?: 'public' | 'circle' | 'private' } | undefined;
   PrayerDetail: { prayerId: string };
   LocationPrayers: { city: string; country: string };
   PrayerCircleManagement: undefined;
@@ -153,6 +155,7 @@ export function RootNavigator() {
       {user ? (
         <>
           <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="MyPrayers" component={MyPrayersScreen} />
           <Stack.Screen name="PrayerDetail" component={PrayerDetailScreen} />
           <Stack.Screen name="LocationPrayers" component={LocationPrayersScreen} />
           <Stack.Screen name="PrayerCircleManagement" component={PrayerCircleManagementScreen} />

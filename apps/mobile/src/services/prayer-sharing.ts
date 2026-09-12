@@ -13,14 +13,14 @@ export function buildPrayerShareContent(prayer: PrayerRequest): ShareContent | n
   if (prayer.audience === 'private') return null;
 
   const attribution = getShareAttribution(prayer);
-  const message = attribution
+  const introduction = attribution
     ? `Join ${attribution} in prayer on Oratio.`
     : 'Join someone in prayer on Oratio.';
+  const url = `${ORATIO_WEB_URL}/prayer/${encodeURIComponent(prayer.id)}`;
 
   return {
     title: 'Pray with me on Oratio',
-    message,
-    url: `${ORATIO_WEB_URL}/prayer/${encodeURIComponent(prayer.id)}`,
+    message: `${introduction}\n\n${url}`,
   };
 }
 

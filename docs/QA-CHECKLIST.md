@@ -102,6 +102,7 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 
 - [ ] Me bottom tab opens Profile; Settings opens from the Profile header
 - [ ] Profile shows display name, username, bio, location, avatar, joined date, and public/circle/private prayer counts
+- [ ] My Prayers opens from Profile; each count opens the matching Public, Circle, or Private owner list and returning from detail refreshes edits/deletions
 - [ ] Editing username/display name/bio/location saves through Supabase and refreshes the app identity immediately
 - [ ] Username continuity works after a username change; old web profile links still resolve through aliases
 - [ ] Avatar upload requests photo access, crops square, stores in Supabase Storage, and refreshes Profile

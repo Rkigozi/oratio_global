@@ -131,4 +131,22 @@ describe('ProfileScreen', () => {
 
     expect(mockNavigation.navigate).toHaveBeenCalledWith('Settings');
   });
+
+  it('opens the owned prayer library from the Profile actions', async () => {
+    renderProfile();
+
+    fireEvent.press(await screen.findByText('My Prayers'));
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith('MyPrayers');
+  });
+
+  it('opens a filtered owned prayer library from each prayer count', async () => {
+    renderProfile();
+
+    fireEvent.press(await screen.findByLabelText('View my circle prayers'));
+
+    expect(mockNavigation.navigate).toHaveBeenCalledWith('MyPrayers', {
+      initialAudience: 'circle',
+    });
+  });
 });

@@ -8,4 +8,10 @@ describe('production security headers', () => {
 
     expect(netlifyConfig).toContain('wss://tfwgoavbbudkxthjhnrx.supabase.co');
   });
+
+  it('ships the SPA fallback needed for direct prayer links', () => {
+    const redirects = fs.readFileSync(path.join(process.cwd(), 'public', '_redirects'), 'utf8');
+
+    expect(redirects.trim()).toBe('/* /index.html 200');
+  });
 });

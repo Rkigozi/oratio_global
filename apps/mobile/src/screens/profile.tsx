@@ -262,9 +262,21 @@ export function ProfileScreen() {
         </View>
 
         <View style={styles.statsRow}>
-          <Stat label="Public" value={stats.public} />
-          <Stat label="Circle" value={stats.circle} />
-          <Stat label="Private" value={stats.private} />
+          <Stat
+            label="Public"
+            onPress={() => navigation.navigate('MyPrayers', { initialAudience: 'public' })}
+            value={stats.public}
+          />
+          <Stat
+            label="Circle"
+            onPress={() => navigation.navigate('MyPrayers', { initialAudience: 'circle' })}
+            value={stats.circle}
+          />
+          <Stat
+            label="Private"
+            onPress={() => navigation.navigate('MyPrayers', { initialAudience: 'private' })}
+            value={stats.private}
+          />
         </View>
 
         <View style={styles.sectionHeader}>
@@ -347,6 +359,7 @@ export function ProfileScreen() {
         )}
 
         <View style={styles.rows}>
+          <ActionRow label="My Prayers" onPress={() => navigation.navigate('MyPrayers')} />
           <ActionRow
             label="Manage Prayer Circle"
             onPress={() => navigation.navigate('PrayerCircleManagement')}
@@ -359,12 +372,17 @@ export function ProfileScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({ label, onPress, value }: { label: string; onPress: () => void; value: number }) {
   return (
-    <View style={styles.stat}>
+    <Pressable
+      accessibilityLabel={`View my ${label.toLowerCase()} prayers`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [styles.stat, pressed && styles.statPressed]}
+    >
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -531,6 +549,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
+  },
+  statPressed: {
+    backgroundColor: colors.accentTintSoft,
   },
   statValue: {
     color: colors.textSecondary,

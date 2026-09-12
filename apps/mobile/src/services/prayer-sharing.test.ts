@@ -19,15 +19,15 @@ describe('buildPrayerShareContent', () => {
 
     expect(content).toEqual({
       title: 'Pray with me on Oratio',
-      message: 'Join @miriam in prayer on Oratio.',
-      url: 'https://oratiotest.netlify.app/prayer/prayer%20%2F%201',
+      message:
+        'Join @miriam in prayer on Oratio.\n\nhttps://oratiotest.netlify.app/prayer/prayer%20%2F%201',
     });
     expect(content?.message).not.toContain(prayer.text);
   });
 
   it('uses anonymous-safe wording when attribution is hidden', () => {
     expect(buildPrayerShareContent({ ...prayer, isAnonymous: true })?.message).toBe(
-      'Join someone in prayer on Oratio.'
+      'Join someone in prayer on Oratio.\n\nhttps://oratiotest.netlify.app/prayer/prayer%20%2F%201'
     );
   });
 
