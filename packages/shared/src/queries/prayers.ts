@@ -301,6 +301,7 @@ export async function getUserPrayers(username: string): Promise<PrayerRequest[]>
     .from('prayer_requests')
     .select(PRAYER_SELECT_COLUMNS)
     .eq('user_id', profile.id)
+    .eq('is_anonymous', false)
     .order('created_at', { ascending: false })
     .limit(50);
 

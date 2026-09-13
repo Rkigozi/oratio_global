@@ -48,6 +48,7 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 
 - [ ] Text required (10–500 chars); validation messages shown
 - [ ] Blank location is stored as unknown and never becomes a random map point
+- [ ] "Use my current location" requests foreground access only when tapped, fills city and country, stores only the coarse city map point, and leaves manual entry available when permission or reverse-geocoding fails
 - [ ] Anonymous is offered only for Public and hides attribution there
 - [ ] "Let people encourage me" controls comments for Public prayers only
 - [ ] Audience: public / Prayer Circle / private — private prayers only in the owner's private list
@@ -77,7 +78,7 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] A private prayer shows personal Notes, not social comment/reply language
 - [ ] Private notes can be added, edited, and deleted and are never visible to another user
 - [ ] An owner can edit a valid 10-500 character prayer; invalid edits stay open with clear guidance and successful edits show as Edited
-- [ ] Deleting an owned prayer requires explicit confirmation, closes detail only after success, and removes it from its feed, Profile count, and map aggregates
+- [ ] Deleting an owned prayer requires explicit confirmation, returns to the matching My Prayers tab rather than the stale submission success screen, and removes it from its feed, Profile count, and map aggregates
 - [ ] A non-owner never sees Edit or Delete, including when opening a shared link directly
 - [ ] Public and Circle Share opens the native iOS share sheet with safe attribution and the authenticated web prayer link, without copying prayer text or location
 - [ ] The shared web prayer link returns to the same prayer after sign-in; inaccessible Circle prayers remain protected by Supabase policy
@@ -102,6 +103,7 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 
 - [ ] Me bottom tab opens Profile; Settings opens from the Profile header
 - [ ] Profile shows display name, username, bio, location, avatar, joined date, and public/circle/private prayer counts
+- [ ] Tapping a named prayer author or Prayer Circle person opens their profile and visible prayer list; anonymous prayers never appear on an author's profile
 - [ ] My Prayers opens from Profile; each count opens the matching Public, Circle, or Private owner list and returning from detail refreshes edits/deletions
 - [ ] Editing username/display name/bio/location saves through Supabase and refreshes the app identity immediately
 - [ ] Username continuity works after a username change; old web profile links still resolve through aliases

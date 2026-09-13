@@ -21,6 +21,7 @@ import { ProfileScreen } from '../screens/profile';
 import { SettingsScreen } from '../screens/settings';
 import { SubmitScreen } from '../screens/submit';
 import { UpdatesScreen } from '../screens/updates';
+import { UserProfileScreen } from '../screens/user-profile';
 import { ActivityIndicator, View } from 'react-native';
 import { colors, fontFamilies } from '../theme';
 import { asNativeIcon } from '../components/icon';
@@ -32,6 +33,7 @@ export type RootStackParamList = {
   Main: undefined;
   MyPrayers: { initialAudience?: 'public' | 'circle' | 'private' } | undefined;
   PrayerDetail: { prayerId: string };
+  UserProfile: { username: string };
   LocationPrayers: { city: string; country: string };
   PrayerCircleManagement: undefined;
   Profile: undefined;
@@ -157,6 +159,7 @@ export function RootNavigator() {
           <Stack.Screen name="Main" component={MainTabs} />
           <Stack.Screen name="MyPrayers" component={MyPrayersScreen} />
           <Stack.Screen name="PrayerDetail" component={PrayerDetailScreen} />
+          <Stack.Screen name="UserProfile" component={UserProfileScreen} />
           <Stack.Screen name="LocationPrayers" component={LocationPrayersScreen} />
           <Stack.Screen name="PrayerCircleManagement" component={PrayerCircleManagementScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />

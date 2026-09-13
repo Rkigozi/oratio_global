@@ -1254,6 +1254,7 @@ describe('getUserPrayers', () => {
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('p1');
     expect(result[0].username).toBe('user1');
+    expect(qb.eq).toHaveBeenCalledWith('is_anonymous', false);
   });
 
   it('returns empty if profile not found', async () => {

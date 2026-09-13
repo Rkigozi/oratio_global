@@ -71,7 +71,9 @@ const prayer = {
 };
 
 const goBack = jest.fn();
-const navigation = { goBack } as never;
+const navigate = jest.fn();
+const reset = jest.fn();
+const navigation = { goBack, navigate, reset } as never;
 const route = { params: { prayerId: 'prayer-1' } } as never;
 
 describe('PrayerDetailScreen', () => {
@@ -103,6 +105,14 @@ describe('PrayerDetailScreen', () => {
     await waitFor(() => expect(screen.getByText('Please pray for my family')).toBeTruthy());
     expect(screen.getByText('London, United Kingdom')).toBeTruthy();
     expect(screen.getByText('miriam')).toBeTruthy();
+  });
+
+  it("opens the prayer author's profile", async () => {
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+
+    fireEvent.press(await screen.findByLabelText("View @miriam's profile"));
+
+    expect(navigate).toHaveBeenCalledWith('UserProfile', { username: 'miriam' });
   });
 
   it('shows the pray button and toggles to prayed state', async () => {
@@ -232,7 +242,11 @@ describe('PrayerDetailScreen', () => {
     });
 
     await waitFor(() => expect(deletePrayerRequest).toHaveBeenCalledWith('prayer-1'));
-    expect(goBack).toHaveBeenCalled();
+    expect(reset).toHaveBeenCalledWith({
+      index: 1,
+      routes: [{ name: 'Main' }, { name: 'MyPrayers', params: { initialAudience: 'public' } }],
+    });
+    expect(goBack).not.toHaveBeenCalled();
   });
 
   it('keeps private prayers out of the share flow', async () => {

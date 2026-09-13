@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, LocateFixed } from 'lucide-react-native';
+import * as Location from 'expo-location';
 import { createPrayerRequest } from '@oratio/shared/queries';
 import { getApproximateCoordinates } from '@oratio/shared/prayer-data';
 import { sanitizePrayerText, validatePrayerSubmission } from '@oratio/shared/validation';
@@ -15,6 +16,7 @@ import type { RootStackParamList } from '../navigation';
 type Audience = 'public' | 'circle' | 'private';
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
+const LocateFixedIcon = asNativeIcon(LocateFixed);
 
 const AUDIENCE_OPTIONS: Array<{ value: Audience; label: string; hint: string }> = [
   { value: 'public', label: 'Public', hint: 'Anyone can see and pray' },
@@ -31,9 +33,62 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
   const [anonymous, setAnonymous] = useState(false);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [error, setError] = useState('');
+  const [locating, setLocating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [submittedPrayerId, setSubmittedPrayerId] = useState<string | null>(null);
+
+  const handleDetectLocation = async () => {
+    if (locating) return;
+
+    setLocating(true);
+    setError('');
+    try {
+      let permission = await Location.getForegroundPermissionsAsync();
+      if (!permission.granted && permission.canAskAgain) {
+        permission = await Location.requestForegroundPermissionsAsync();
+      }
+
+      if (!permission.granted) {
+        Alert.alert(
+          'Location access is off',
+          'Allow location access in Settings to add your current city, or enter it manually.'
+        );
+        return;
+      }
+
+      const position =
+        (await Location.getLastKnownPositionAsync({
+          maxAge: 120_000,
+          requiredAccuracy: 1_000,
+        })) ||
+        (await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        }));
+      const addresses = await Location.reverseGeocodeAsync({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+      const address = addresses[0];
+      const detectedCity =
+        address?.city || address?.district || address?.subregion || address?.region;
+      const detectedCountry = address?.country;
+
+      if (!detectedCity || !detectedCountry) {
+        throw new Error('Location did not resolve to a city and country');
+      }
+
+      setCity(detectedCity);
+      setCountry(detectedCountry);
+    } catch {
+      Alert.alert(
+        'Location unavailable',
+        "We couldn't detect your city. You can still enter it manually."
+      );
+    } finally {
+      setLocating(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setError('');
@@ -158,6 +213,27 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
         {text.length}/500
       </Text>
 
+      <Pressable
+        accessibilityLabel="Use my current location"
+        accessibilityRole="button"
+        disabled={locating}
+        onPress={() => void handleDetectLocation()}
+        style={({ pressed }) => [
+          styles.locationButton,
+          pressed && !locating && styles.locationButtonPressed,
+          locating && styles.locationButtonDisabled,
+        ]}
+      >
+        {locating ? (
+          <ActivityIndicator color={colors.accent} size="small" />
+        ) : (
+          <LocateFixedIcon color={colors.accent} size={18} strokeWidth={1.8} />
+        )}
+        <Text style={styles.locationButtonText}>
+          {locating ? 'Finding your city...' : 'Use my current location'}
+        </Text>
+      </Pressable>
+
       <Field
         label="City"
         placeholder="e.g. London"
@@ -268,6 +344,29 @@ const styles = StyleSheet.create({
   },
   counterOver: {
     color: colors.danger,
+  },
+  locationButton: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    marginBottom: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.accentBorder,
+    backgroundColor: colors.accentTintSoft,
+  },
+  locationButtonPressed: {
+    backgroundColor: colors.accentTint,
+  },
+  locationButtonDisabled: {
+    opacity: 0.7,
+  },
+  locationButtonText: {
+    color: colors.accent,
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 13,
   },
   fieldLabel: {
     color: colors.textMuted,

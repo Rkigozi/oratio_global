@@ -118,6 +118,15 @@ export function PrayerDetailScreen({
     : false;
   const canShare = Boolean(prayer && prayer.audience !== 'private');
 
+  const openAuthorProfile = () => {
+    if (!prayer?.username) return;
+    if (prayer.username === authProfile?.username) {
+      navigation.navigate('Profile');
+      return;
+    }
+    navigation.navigate('UserProfile', { username: prayer.username });
+  };
+
   const openEdit = () => {
     if (!prayer || !isOwner) return;
     setActionsOpen(false);
@@ -187,7 +196,16 @@ export function PrayerDetailScreen({
       }
 
       setActionsOpen(false);
-      navigation.goBack();
+      navigation.reset({
+        index: 1,
+        routes: [
+          { name: 'Main' },
+          {
+            name: 'MyPrayers',
+            params: { initialAudience: prayer.audience || 'public' },
+          },
+        ],
+      });
     } catch {
       Alert.alert('Prayer not deleted', "We couldn't delete this prayer. Please try again.");
     } finally {
@@ -287,7 +305,21 @@ export function PrayerDetailScreen({
 
           <Text style={styles.text}>{prayer.text}</Text>
 
-          <Text style={styles.attribution}>{getAttributionText(prayer)}</Text>
+          {prayer.username ? (
+            <Pressable
+              accessibilityLabel={`View @${prayer.username}'s profile`}
+              accessibilityRole="link"
+              hitSlop={8}
+              onPress={openAuthorProfile}
+              style={styles.attributionButton}
+            >
+              <Text style={[styles.attribution, styles.attributionLink]}>
+                {getAttributionText(prayer)}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text style={styles.attribution}>{getAttributionText(prayer)}</Text>
+          )}
 
           <View style={styles.countRow}>
             <Text style={styles.count}>
@@ -413,6 +445,12 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.bodyMedium,
     fontSize: 13,
     marginTop: 16,
+  },
+  attributionButton: {
+    alignSelf: 'flex-start',
+  },
+  attributionLink: {
+    color: colors.accent,
   },
   countRow: {
     marginTop: 24,

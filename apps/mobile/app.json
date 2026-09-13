@@ -35,7 +35,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Oratio uses your location only to return the prayer map to your current area.",
+          "locationWhenInUsePermission": "Oratio uses your location to return the prayer map to your current area and help add your city to prayers.",
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false,
           "motionUsagePermission": false

@@ -416,6 +416,11 @@ function PrayerFeedScreen({
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <PrayerCard
+              onAuthorPress={
+                item.username
+                  ? () => navigation.navigate('UserProfile', { username: item.username! })
+                  : undefined
+              }
               prayer={item}
               onPress={() => navigation.navigate('PrayerDetail', { prayerId: item.id })}
             />

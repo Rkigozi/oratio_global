@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { SubmitScreen } from './submit';
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
+  LocateFixed: () => null,
   Eye: () => null,
   EyeOff: () => null,
 }));
@@ -16,8 +18,19 @@ jest.mock('@oratio/shared/queries', () => ({
   createPrayerRequest: jest.fn(),
 }));
 
+jest.mock('expo-location', () => ({
+  Accuracy: { Balanced: 3 },
+  getForegroundPermissionsAsync: jest.fn(),
+  requestForegroundPermissionsAsync: jest.fn(),
+  getLastKnownPositionAsync: jest.fn(),
+  getCurrentPositionAsync: jest.fn(),
+  reverseGeocodeAsync: jest.fn(),
+}));
+
 import { useAuth } from '../hooks/auth-context';
 import { createPrayerRequest } from '@oratio/shared/queries';
+import { getApproximateCoordinates } from '@oratio/shared/prayer-data';
+import * as Location from 'expo-location';
 
 function mockAuth() {
   jest.mocked(useAuth).mockReturnValue({
@@ -44,6 +57,23 @@ describe('SubmitScreen', () => {
     jest.clearAllMocks();
     mockAuth();
     jest.mocked(createPrayerRequest).mockResolvedValue('prayer-new' as never);
+    jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue({
+      granted: true,
+      canAskAgain: true,
+    } as never);
+    jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({
+      granted: true,
+      canAskAgain: true,
+    } as never);
+    jest.mocked(Location.getLastKnownPositionAsync).mockResolvedValue({
+      coords: { latitude: 51.51, longitude: -0.12 },
+    } as never);
+    jest.mocked(Location.getCurrentPositionAsync).mockResolvedValue({
+      coords: { latitude: 51.51, longitude: -0.12 },
+    } as never);
+    jest
+      .mocked(Location.reverseGeocodeAsync)
+      .mockResolvedValue([{ city: 'London', country: 'United Kingdom' }] as never);
   });
 
   it('renders the prayer, location, audience, and public preferences', () => {
@@ -70,6 +100,54 @@ describe('SubmitScreen', () => {
       expect(screen.getByText('Prayer must be at least 10 characters')).toBeTruthy()
     );
     expect(createPrayerRequest).not.toHaveBeenCalled();
+  });
+
+  it('detects the current city and keeps the submitted map point city-level', async () => {
+    render(<SubmitScreen navigation={navigation} route={route} />);
+
+    fireEvent.press(screen.getByLabelText('Use my current location'));
+
+    expect(await screen.findByDisplayValue('London')).toBeTruthy();
+    expect(screen.getByDisplayValue('United Kingdom')).toBeTruthy();
+    expect(Location.reverseGeocodeAsync).toHaveBeenCalledWith({
+      latitude: 51.51,
+      longitude: -0.12,
+    });
+
+    fillForm('Please pray for peace across my city today');
+    fireEvent.press(screen.getByText('Submit Prayer'));
+
+    await waitFor(() => expect(createPrayerRequest).toHaveBeenCalled());
+    const coarseCoordinates = getApproximateCoordinates('London', 'United Kingdom');
+    expect(jest.mocked(createPrayerRequest).mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        city: 'London',
+        country: 'United Kingdom',
+        lat: coarseCoordinates.lat,
+        lng: coarseCoordinates.lng,
+      })
+    );
+    expect(coarseCoordinates).not.toEqual({ lat: 51.51, lng: -0.12 });
+  });
+
+  it('explains when location access is unavailable without blocking manual entry', async () => {
+    jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue({
+      granted: false,
+      canAskAgain: false,
+    } as never);
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    render(<SubmitScreen navigation={navigation} route={route} />);
+
+    fireEvent.press(screen.getByLabelText('Use my current location'));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Location access is off',
+        expect.stringContaining('enter')
+      )
+    );
+    expect(screen.getByPlaceholderText('e.g. London')).toBeTruthy();
+    alertSpy.mockRestore();
   });
 
   it("submits a public prayer with the user's username", async () => {

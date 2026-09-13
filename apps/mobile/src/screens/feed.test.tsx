@@ -145,6 +145,19 @@ describe('FeedScreen', () => {
     );
   });
 
+  it("opens a prayer author's profile from the feed", async () => {
+    jest.mocked(getFeedPrayers).mockResolvedValue(prayers as never);
+
+    render(<FeedScreen />);
+
+    fireEvent.press(await screen.findByLabelText("View @miriam's profile"));
+
+    expect((mockNavigation as unknown as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith(
+      'UserProfile',
+      { username: 'miriam' }
+    );
+  });
+
   it('loads only circle prayers in the Prayer Circle space', async () => {
     jest.mocked(getFeedPrayers).mockResolvedValue([] as never);
 

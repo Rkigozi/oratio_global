@@ -285,6 +285,9 @@ export function PrayerCircleManagementScreen({
                 return (
                   <PersonRow
                     key={result.username}
+                    onPress={() =>
+                      navigation.navigate('UserProfile', { username: result.username })
+                    }
                     person={result}
                     subtitle={`@${result.username}`}
                     action={
@@ -326,6 +329,11 @@ export function PrayerCircleManagementScreen({
                 return (
                   <PersonRow
                     key={circleInvite.id}
+                    onPress={() =>
+                      navigation.navigate('UserProfile', {
+                        username: circleInvite.requester.username,
+                      })
+                    }
                     person={circleInvite.requester}
                     subtitle={`@${circleInvite.requester.username} invited you - ${timeAgo(circleInvite.created_at)}`}
                     action={
@@ -383,6 +391,11 @@ export function PrayerCircleManagementScreen({
                 return (
                   <PersonRow
                     key={circleInvite.id}
+                    onPress={() =>
+                      navigation.navigate('UserProfile', {
+                        username: circleInvite.recipient.username,
+                      })
+                    }
                     person={circleInvite.recipient}
                     subtitle={`Waiting for @${circleInvite.recipient.username}`}
                     action={
@@ -418,6 +431,7 @@ export function PrayerCircleManagementScreen({
               circle.map((person) => (
                 <PersonRow
                   key={person.id}
+                  onPress={() => navigation.navigate('UserProfile', { username: person.username })}
                   person={person}
                   subtitle={`@${person.username}${
                     person.connected_at ? ` - joined ${timeAgo(person.connected_at)}` : ''
@@ -463,23 +477,33 @@ function PersonRow({
   person,
   subtitle,
   action,
+  onPress,
 }: {
   person: Pick<PrayerCircleUser, 'username' | 'display_name'> &
     Partial<Pick<PrayerCircleUser, 'avatar_url'>>;
   subtitle: string;
   action: ReactNode;
+  onPress?: () => void;
 }) {
   return (
     <View style={styles.personRow}>
-      <Avatar name={person.display_name || person.username} size={40} uri={person.avatar_url} />
-      <View style={styles.personCopy}>
-        <Text numberOfLines={1} style={styles.personName}>
-          {person.display_name || person.username}
-        </Text>
-        <Text numberOfLines={1} style={styles.personSubtitle}>
-          {subtitle}
-        </Text>
-      </View>
+      <Pressable
+        accessibilityLabel={`View @${person.username}'s profile`}
+        accessibilityRole="link"
+        disabled={!onPress}
+        onPress={onPress}
+        style={({ pressed }) => [styles.personIdentity, pressed && styles.personIdentityPressed]}
+      >
+        <Avatar name={person.display_name || person.username} size={40} uri={person.avatar_url} />
+        <View style={styles.personCopy}>
+          <Text numberOfLines={1} style={styles.personName}>
+            {person.display_name || person.username}
+          </Text>
+          <Text numberOfLines={1} style={styles.personSubtitle}>
+            {subtitle}
+          </Text>
+        </View>
+      </Pressable>
       <View style={styles.rowAction}>{action}</View>
     </View>
   );
@@ -618,6 +642,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.divider,
+  },
+  personIdentity: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  personIdentityPressed: {
+    opacity: 0.7,
   },
   personCopy: {
     flex: 1,

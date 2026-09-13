@@ -2,8 +2,17 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { getAttributionText, timeAgo, type PrayerRequest } from '@oratio/shared/prayer-data';
 import { colors, fontFamilies } from '../theme';
 
-export function PrayerCard({ prayer, onPress }: { prayer: PrayerRequest; onPress: () => void }) {
+export function PrayerCard({
+  prayer,
+  onPress,
+  onAuthorPress,
+}: {
+  prayer: PrayerRequest;
+  onPress: () => void;
+  onAuthorPress?: () => void;
+}) {
   const count = prayer.prayerCount ?? 0;
+  const attribution = getAttributionText(prayer);
 
   return (
     <Pressable
@@ -15,9 +24,26 @@ export function PrayerCard({ prayer, onPress }: { prayer: PrayerRequest; onPress
         {prayer.text}
       </Text>
       <View style={styles.metaRow}>
-        <Text style={styles.attribution} numberOfLines={1}>
-          {getAttributionText(prayer)}
-        </Text>
+        {prayer.username && onAuthorPress ? (
+          <Pressable
+            accessibilityLabel={`View @${prayer.username}'s profile`}
+            accessibilityRole="link"
+            hitSlop={8}
+            onPress={(event) => {
+              event?.stopPropagation();
+              onAuthorPress();
+            }}
+            style={styles.authorButton}
+          >
+            <Text style={[styles.attribution, styles.attributionLink]} numberOfLines={1}>
+              {attribution}
+            </Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.attribution} numberOfLines={1}>
+            {attribution}
+          </Text>
+        )}
         <Text style={styles.location} numberOfLines={1}>
           {prayer.city !== 'Unknown' ? `${prayer.city}, ${prayer.country}` : prayer.country}
         </Text>
@@ -60,6 +86,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontFamily: fontFamilies.bodyMedium,
     fontSize: 12,
+    flexShrink: 1,
+  },
+  attributionLink: {
+    color: colors.accent,
+  },
+  authorButton: {
     flexShrink: 1,
   },
   location: {

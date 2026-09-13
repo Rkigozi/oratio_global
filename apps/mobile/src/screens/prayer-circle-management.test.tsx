@@ -91,7 +91,7 @@ const outgoingInvite = {
   },
 };
 
-const navigation = { goBack: jest.fn() } as never;
+const navigation = { goBack: jest.fn(), navigate: jest.fn() } as never;
 const route = {} as never;
 
 describe('PrayerCircleManagementScreen', () => {
@@ -122,6 +122,17 @@ describe('PrayerCircleManagementScreen', () => {
     expect(screen.getByLabelText('Accept invite from @jonah')).toBeTruthy();
     expect(screen.getByLabelText('Cancel invite to @esther')).toBeTruthy();
     expect(screen.getByLabelText('Remove @miriam from Prayer Circle')).toBeTruthy();
+  });
+
+  it("opens a Prayer Circle member's profile", async () => {
+    render(<PrayerCircleManagementScreen navigation={navigation} route={route} />);
+
+    fireEvent.press(await screen.findByLabelText("View @miriam's profile"));
+
+    expect((navigation as unknown as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith(
+      'UserProfile',
+      { username: 'miriam' }
+    );
   });
 
   it('accepts an incoming invite and refreshes the Circle', async () => {
