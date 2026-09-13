@@ -1,6 +1,6 @@
 # Oratio Backlog — Working Agreement
 
-Last updated: 2026-09-12
+Last updated: 2026-09-13
 
 Canonical source for the JIRA backlog (project `SCRUM` at
 https://oratio.atlassian.net). This file and JIRA must stay in sync: change
@@ -109,7 +109,7 @@ lives in [`ANDROID-RELEASE.md`](./ANDROID-RELEASE.md).
 | SCRUM-68 | Native comments and replies                 | Done; comments, replies, and private Notes included                       |
 | SCRUM-69 | Native Circle management and updates        | Done; Circle management and live Updates included                         |
 | SCRUM-70 | Native profile, settings, and avatar        | Done; profile edit, avatar upload, preferences, and sign-out included     |
-| SCRUM-71 | Native reporting and moderation             | To Do; Highest; V1 Launch                                                 |
+| SCRUM-71 | Native reporting and moderation             | In QA; implementation and automated gates complete                        |
 | SCRUM-72 | EAS/TestFlight beta distribution            | To Do; waits for feature-complete beta and Apple membership               |
 | SCRUM-73 | Apple App Store submission                  | To Do                                                                     |
 | SCRUM-74 | Reduce web to landing/web presence          | To Do; full PWA remains live during migration                             |

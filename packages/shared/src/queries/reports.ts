@@ -3,7 +3,7 @@ import { logError } from '../logger';
 
 const supabase = getSupabaseClient();
 
-export type CreateReportResult = 'created' | 'already_reported' | 'failed';
+export type CreateReportResult = 'created' | 'already_reported' | 'unauthenticated' | 'failed';
 
 export type ReportStatus = 'pending' | 'resolved' | 'dismissed';
 export type ReportStatusFilter = ReportStatus | 'all';
@@ -58,7 +58,7 @@ export async function createReport(input: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return 'failed';
+  if (!user) return 'unauthenticated';
 
   const { data: existingReport, error: existingReportError } = await supabase
     .from('reports')
@@ -100,7 +100,10 @@ export async function reportContent(report: {
 }) {
   const result = await createReport(report);
   return {
-    error: result === 'failed' ? new Error('Failed to create report') : null,
+    error:
+      result === 'failed' || result === 'unauthenticated'
+        ? new Error('Failed to create report')
+        : null,
     alreadyReported: result === 'already_reported',
   } as const;
 }

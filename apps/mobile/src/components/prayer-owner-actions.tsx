@@ -10,11 +10,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Pencil, Share2, Trash2, X } from 'lucide-react-native';
+import { Flag, Pencil, Share2, Trash2, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { asNativeIcon } from './icon';
 import { colors, fontFamilies, radii } from '../theme';
 
+const FlagIcon = asNativeIcon(Flag);
 const PencilIcon = asNativeIcon(Pencil);
 const ShareIcon = asNativeIcon(Share2);
 const TrashIcon = asNativeIcon(Trash2);
@@ -22,20 +23,24 @@ const XIcon = asNativeIcon(X);
 
 export function PrayerActionsSheet({
   canShare,
+  canReport,
   deleting,
   isOwner,
   onClose,
   onDelete,
   onEdit,
+  onReport,
   onShare,
   visible,
 }: {
   canShare: boolean;
+  canReport: boolean;
   deleting: boolean;
   isOwner: boolean;
   onClose: () => void;
   onDelete: () => void;
   onEdit: () => void;
+  onReport: () => void;
   onShare: () => void;
   visible: boolean;
 }) {
@@ -52,7 +57,7 @@ export function PrayerActionsSheet({
           <View style={styles.sheet}>
             <SheetHeader
               onClose={onClose}
-              subtitle={isOwner ? 'Manage or share your prayer' : 'Share this prayer'}
+              subtitle={isOwner ? 'Manage or share your prayer' : 'Share or report this prayer'}
               title="Prayer actions"
             />
 
@@ -61,6 +66,13 @@ export function PrayerActionsSheet({
                 icon={<ShareIcon color={colors.accent} size={19} strokeWidth={1.7} />}
                 label="Share prayer"
                 onPress={onShare}
+              />
+            ) : null}
+            {canReport ? (
+              <PrayerAction
+                icon={<FlagIcon color={colors.warning} size={19} strokeWidth={1.7} />}
+                label="Report prayer"
+                onPress={onReport}
               />
             ) : null}
             {isOwner ? (

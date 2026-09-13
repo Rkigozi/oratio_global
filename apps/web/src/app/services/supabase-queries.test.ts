@@ -1070,11 +1070,11 @@ describe('createReport', () => {
     expect(qb.insert).not.toHaveBeenCalled();
   });
 
-  it('returns false if no user', async () => {
+  it('returns unauthenticated if no user', async () => {
     auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
     expect(
       await m.createReport({ reportable_type: 'prayer', reportable_id: 'p1', reason: 'Spam' })
-    ).toBe('failed');
+    ).toBe('unauthenticated');
   });
 });
 

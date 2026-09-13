@@ -24,6 +24,7 @@ import { timeAgo, type PrayerRequest } from '@oratio/shared/prayer-data';
 import { useAuth } from '../hooks/auth-context';
 import { asNativeIcon } from './icon';
 import { Avatar } from './avatar';
+import { ContentReportSheet } from './content-report-sheet';
 import { colors, fontFamilies } from '../theme';
 
 const PAGE_SIZE = 20;
@@ -49,6 +50,7 @@ export function PrayerComments({ prayer }: { prayer: PrayerRequest }) {
   const [submitting, setSubmitting] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
+  const [reportTargetId, setReportTargetId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [commentsEnabled, setCommentsEnabled] = useState(prayer.commentsEnabled !== false);
   const [togglingComments, setTogglingComments] = useState(false);
@@ -336,6 +338,7 @@ export function PrayerComments({ prayer }: { prayer: PrayerRequest }) {
                   }}
                   onDelete={confirmDelete}
                   onReply={(parentId, username) => setReplyTo({ parentId, username })}
+                  onReport={setReportTargetId}
                   onSaveEdit={(target) => void saveEdit(target)}
                   onStartEdit={startEdit}
                   replies={repliesFor(comment.id)}
@@ -425,6 +428,12 @@ export function PrayerComments({ prayer }: { prayer: PrayerRequest }) {
           </View>
         </>
       )}
+      <ContentReportSheet
+        onClose={() => setReportTargetId(null)}
+        reportableId={reportTargetId || ''}
+        reportableType="comment"
+        visible={Boolean(reportTargetId)}
+      />
     </View>
   );
 }
@@ -440,6 +449,7 @@ function CommentThread({
   savingEdit,
   busyDeleteId,
   onReply,
+  onReport,
   onStartEdit,
   onChangeEdit,
   onCancelEdit,
@@ -456,6 +466,7 @@ function CommentThread({
   savingEdit: boolean;
   busyDeleteId: string | null;
   onReply: (parentId: string, username: string) => void;
+  onReport: (commentId: string) => void;
   onStartEdit: (comment: Comment) => void;
   onChangeEdit: (value: string) => void;
   onCancelEdit: () => void;
@@ -478,6 +489,7 @@ function CommentThread({
         onReply={() =>
           onReply(comment.id, comment.user?.username || comment.user?.display_name || 'user')
         }
+        onReport={() => onReport(comment.id)}
         onSaveEdit={onSaveEdit}
         onStartEdit={onStartEdit}
         savingEdit={savingEdit}
@@ -501,6 +513,7 @@ function CommentThread({
               onReply={() =>
                 onReply(comment.id, reply.user?.username || reply.user?.display_name || 'user')
               }
+              onReport={() => onReport(reply.id)}
               onSaveEdit={onSaveEdit}
               onStartEdit={onStartEdit}
               savingEdit={savingEdit}
@@ -523,6 +536,7 @@ function CommentEntry({
   savingEdit,
   busyDelete,
   onReply,
+  onReport,
   onStartEdit,
   onChangeEdit,
   onCancelEdit,
@@ -539,6 +553,7 @@ function CommentEntry({
   savingEdit: boolean;
   busyDelete: boolean;
   onReply: () => void;
+  onReport: () => void;
   onStartEdit: (comment: Comment) => void;
   onChangeEdit: (value: string) => void;
   onCancelEdit: () => void;
@@ -615,6 +630,7 @@ function CommentEntry({
                 onPress={() => onDelete(comment)}
               />
             ) : null}
+            {!own && !canModerate ? <TextAction label="Report" onPress={onReport} /> : null}
           </View>
         ) : null}
       </View>

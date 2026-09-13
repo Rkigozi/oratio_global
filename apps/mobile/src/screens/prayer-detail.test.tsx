@@ -6,6 +6,9 @@ import { PrayerDetailScreen } from './prayer-detail';
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
   Bookmark: () => null,
+  CheckCircle2: () => null,
+  Flag: () => null,
+  Info: () => null,
   MapPin: () => null,
   MoreHorizontal: () => null,
   Pencil: () => null,
@@ -35,6 +38,7 @@ jest.mock('@oratio/shared/queries', () => ({
   deleteComment: jest.fn(),
   subscribeToPrayerCommentChanges: jest.fn(),
   toggleCommentsEnabled: jest.fn(),
+  createReport: jest.fn(),
 }));
 
 jest.mock('../services/prayer-sharing', () => ({
@@ -53,6 +57,7 @@ import {
   getComments,
   getCommentCount,
   subscribeToPrayerCommentChanges,
+  createReport,
 } from '@oratio/shared/queries';
 import { sharePrayer } from '../services/prayer-sharing';
 
@@ -97,6 +102,7 @@ describe('PrayerDetailScreen', () => {
     jest.mocked(getComments).mockResolvedValue([] as never);
     jest.mocked(getCommentCount).mockResolvedValue(0 as never);
     jest.mocked(subscribeToPrayerCommentChanges).mockReturnValue(jest.fn());
+    jest.mocked(createReport).mockResolvedValue('created' as never);
   });
 
   it('renders the prayer text, location, and attribution', async () => {
@@ -182,6 +188,24 @@ describe('PrayerDetailScreen', () => {
     fireEvent.press(screen.getByText('Share prayer'));
 
     await waitFor(() => expect(sharePrayer).toHaveBeenCalledWith(prayer));
+  });
+
+  it('reports a non-owned prayer without leaving its detail', async () => {
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+
+    fireEvent.press(await screen.findByLabelText('More prayer options'));
+    fireEvent.press(screen.getByText('Report prayer'));
+    fireEvent.press(screen.getByText('Harmful or unsafe'));
+
+    await waitFor(() =>
+      expect(createReport).toHaveBeenCalledWith({
+        reportable_type: 'prayer',
+        reportable_id: 'prayer-1',
+        reason: 'Harmful or unsafe',
+      })
+    );
+    expect(await screen.findByText(/Report sent for review/)).toBeTruthy();
+    expect(goBack).not.toHaveBeenCalled();
   });
 
   it('lets the owner edit the prayer wording', async () => {

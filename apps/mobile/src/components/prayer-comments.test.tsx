@@ -6,6 +6,9 @@ import { PrayerComments } from './prayer-comments';
 
 jest.mock('lucide-react-native', () => ({
   MessageCircle: () => null,
+  CheckCircle2: () => null,
+  Flag: () => null,
+  Info: () => null,
   Send: () => null,
   X: () => null,
 }));
@@ -22,6 +25,7 @@ jest.mock('@oratio/shared/queries', () => ({
   deleteComment: jest.fn(),
   subscribeToPrayerCommentChanges: jest.fn(),
   toggleCommentsEnabled: jest.fn(),
+  createReport: jest.fn(),
 }));
 
 import { useAuth } from '../hooks/auth-context';
@@ -33,6 +37,7 @@ import {
   subscribeToPrayerCommentChanges,
   toggleCommentsEnabled,
   updateComment,
+  createReport,
 } from '@oratio/shared/queries';
 
 const now = new Date().toISOString();
@@ -95,6 +100,7 @@ describe('PrayerComments', () => {
     jest.mocked(subscribeToPrayerCommentChanges).mockReturnValue(jest.fn());
     jest.mocked(deleteComment).mockResolvedValue(true as never);
     jest.mocked(toggleCommentsEnabled).mockResolvedValue(true as never);
+    jest.mocked(createReport).mockResolvedValue('created' as never);
   });
 
   it('renders public comments and their replies', async () => {
@@ -106,6 +112,25 @@ describe('PrayerComments', () => {
     await waitFor(() => expect(screen.getByText('Praying with you.')).toBeTruthy());
     expect(screen.getByText('Amen.')).toBeTruthy();
     expect(screen.getByText('Comments (2)')).toBeTruthy();
+  });
+
+  it("reports another person's comment with a selected reason", async () => {
+    jest.mocked(getComments).mockResolvedValue([parentComment] as never);
+    jest.mocked(getCommentCount).mockResolvedValue(1 as never);
+
+    render(<PrayerComments prayer={publicPrayer} />);
+
+    fireEvent.press(await screen.findByText('Report'));
+    fireEvent.press(screen.getByText('Spam or fake'));
+
+    await waitFor(() =>
+      expect(createReport).toHaveBeenCalledWith({
+        reportable_type: 'comment',
+        reportable_id: 'comment-1',
+        reason: 'Spam or fake',
+      })
+    );
+    expect(await screen.findByText(/Report sent for review/)).toBeTruthy();
   });
 
   it('posts a new encouragement', async () => {

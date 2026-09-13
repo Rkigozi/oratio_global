@@ -26,6 +26,7 @@ import { getAttributionText, timeAgo, type PrayerRequest } from '@oratio/shared/
 import { sanitizePrayerText, validatePrayerSubmission } from '@oratio/shared/validation';
 import { asNativeIcon } from '../components/icon';
 import { PrayerComments } from '../components/prayer-comments';
+import { ContentReportSheet } from '../components/content-report-sheet';
 import { PrayerActionsSheet, PrayerEditSheet } from '../components/prayer-owner-actions';
 import { useAuth } from '../hooks/auth-context';
 import { sharePrayer } from '../services/prayer-sharing';
@@ -56,6 +57,7 @@ export function PrayerDetailScreen({
   const [editError, setEditError] = useState('');
   const [editBusy, setEditBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -117,6 +119,7 @@ export function PrayerDetailScreen({
       : Boolean(prayer.username && prayer.username === authProfile?.username)
     : false;
   const canShare = Boolean(prayer && prayer.audience !== 'private');
+  const canReport = Boolean(prayer && !isOwner && prayer.audience !== 'private');
 
   const openAuthorProfile = () => {
     if (!prayer?.username) return;
@@ -346,14 +349,25 @@ export function PrayerDetailScreen({
       </KeyboardAvoidingView>
 
       <PrayerActionsSheet
+        canReport={canReport}
         canShare={canShare}
         deleting={deleteBusy}
         isOwner={isOwner}
         onClose={() => setActionsOpen(false)}
         onDelete={confirmDelete}
         onEdit={openEdit}
+        onReport={() => {
+          setActionsOpen(false);
+          setReportOpen(true);
+        }}
         onShare={() => void handleShare()}
         visible={actionsOpen}
+      />
+      <ContentReportSheet
+        onClose={() => setReportOpen(false)}
+        reportableId={prayer.id}
+        reportableType="prayer"
+        visible={reportOpen}
       />
       <PrayerEditSheet
         error={editError}
