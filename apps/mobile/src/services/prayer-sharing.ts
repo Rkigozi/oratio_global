@@ -1,7 +1,6 @@
 import { Share, type ShareContent } from 'react-native';
 import type { PrayerRequest } from '@oratio/shared/prayer-data';
-
-const ORATIO_WEB_URL = 'https://oratiotest.netlify.app';
+import { ORATIO_WEB_URL } from './external-links';
 
 function getShareAttribution(prayer: PrayerRequest): string | null {
   if (prayer.isAnonymous) return null;

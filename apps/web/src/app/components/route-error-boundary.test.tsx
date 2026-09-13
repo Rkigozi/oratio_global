@@ -1,11 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 import { RouteErrorBoundary } from './route-error-boundary';
 
 const recoveryMock = vi.hoisted(() => ({
   recoverFromModuleScriptLoadError: vi.fn(),
 }));
+const routeErrorMock = vi.hoisted(() => ({ error: null as unknown }));
+
+vi.mock('react-router', async () => {
+  const actual = await vi.importActual<typeof import('react-router')>('react-router');
+  return {
+    ...actual,
+    useRouteError: () => routeErrorMock.error,
+  };
+});
 
 vi.mock('../../lib/pwa-recovery', async () => {
   const actual =
@@ -18,21 +26,8 @@ vi.mock('../../lib/pwa-recovery', async () => {
 });
 
 function renderRouteError(error: Error) {
-  const router = createMemoryRouter(
-    [
-      {
-        path: '/',
-        element: <div>Loaded</div>,
-        errorElement: <RouteErrorBoundary />,
-        loader: () => {
-          throw error;
-        },
-      },
-    ],
-    { initialEntries: ['/'] }
-  );
-
-  render(<RouterProvider router={router} />);
+  routeErrorMock.error = error;
+  render(<RouteErrorBoundary />);
 }
 
 describe('RouteErrorBoundary', () => {

@@ -119,7 +119,7 @@ lives in [`ANDROID-RELEASE.md`](./ANDROID-RELEASE.md).
 | SCRUM-80 | Native light/dark/system themes             | Done; automated and physical iPhone QA complete                           |
 | SCRUM-81 | Native prayer owner actions and sharing     | In QA; implementation and automated gates complete                        |
 | SCRUM-82 | Native saved-language translation           | To Do; Highest; V1 Launch                                                 |
-| SCRUM-83 | Account deletion and legal support access   | To Do; Highest; V1 Launch                                                 |
+| SCRUM-83 | Account deletion and legal support access   | In QA; implementation and automated gates complete                        |
 
 The Jira workflow now has a correctly named `Done` status. Completed native
 stories `SCRUM-63`–`SCRUM-70`, `SCRUM-76`, `SCRUM-77`, and `SCRUM-80` were

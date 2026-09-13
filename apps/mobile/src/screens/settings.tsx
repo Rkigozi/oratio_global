@@ -2,6 +2,7 @@ import { useCallback, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,15 +16,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Bell,
+  ExternalLink,
+  FileText,
   Globe2,
+  HeartHandshake,
   LogOut,
   MessageCircle,
   Monitor,
   Moon,
   Palette,
+  Shield,
   Sun,
+  Trash2,
 } from 'lucide-react-native';
 import {
+  deleteAccount,
   getProfilePreferences,
   updateProfilePreferences,
   type ProfilePreferences,
@@ -32,18 +39,24 @@ import { asNativeIcon } from '../components/icon';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
 import { useTheme, type ThemeMode } from '../hooks/theme-context';
+import { ORATIO_EXTERNAL_LINKS } from '../services/external-links';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
 const BellIcon = asNativeIcon(Bell);
+const ExternalLinkIcon = asNativeIcon(ExternalLink);
+const FileTextIcon = asNativeIcon(FileText);
 const GlobeIcon = asNativeIcon(Globe2);
+const HeartHandshakeIcon = asNativeIcon(HeartHandshake);
 const LogOutIcon = asNativeIcon(LogOut);
 const MessageIcon = asNativeIcon(MessageCircle);
 const MonitorIcon = asNativeIcon(Monitor);
 const MoonIcon = asNativeIcon(Moon);
 const PaletteIcon = asNativeIcon(Palette);
+const ShieldIcon = asNativeIcon(Shield);
 const SunIcon = asNativeIcon(Sun);
+const TrashIcon = asNativeIcon(Trash2);
 
 const appearanceOptions: Array<{
   value: ThemeMode;
@@ -73,6 +86,7 @@ export function SettingsScreen({
   const [prefs, setPrefs] = useState<ProfilePreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -130,6 +144,61 @@ export function SettingsScreen({
     ]);
   };
 
+  const deleteAccountPermanently = async () => {
+    if (deleting) return;
+    setDeleting(true);
+
+    const deleteError = await deleteAccount();
+    if (deleteError) {
+      setDeleting(false);
+      const message =
+        deleteError === 'Not authenticated'
+          ? 'Your session has expired. Sign in again before deleting your account.'
+          : deleteError;
+      Alert.alert(
+        'Account not deleted',
+        `${message}\n\nYour local session has not been cleared, so you can check your connection and try again.`
+      );
+      return;
+    }
+
+    await signOut().catch(() => {});
+  };
+
+  const confirmPermanentDeletion = () => {
+    Alert.alert(
+      'Delete account forever?',
+      'This cannot be undone. Your account and associated Oratio data will be permanently removed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete forever',
+          style: 'destructive',
+          onPress: () => void deleteAccountPermanently(),
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Delete account?',
+      'Your prayers, comments, Prayer Circle connections, saved prayers, profile, and account will be permanently deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Continue', style: 'destructive', onPress: confirmPermanentDeletion },
+      ]
+    );
+  };
+
+  const openExternalLink = async (label: string, url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert(`Unable to open ${label}`, `Please visit ${url} in your browser.`);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
@@ -154,7 +223,9 @@ export function SettingsScreen({
         </Pressable>
         <View style={styles.headerText}>
           <ScreenHeaderTitle
-            subtitle={saving ? 'Saving...' : 'Profile preferences'}
+            subtitle={
+              deleting ? 'Deleting account...' : saving ? 'Saving...' : 'Profile preferences'
+            }
             title="Settings"
           />
         </View>
@@ -254,6 +325,37 @@ export function SettingsScreen({
         </View>
 
         <View style={styles.section}>
+          <SectionTitle
+            icon={<ShieldIcon color={colors.textDim} size={15} />}
+            label="Support & legal"
+          />
+          <ExternalLinkRow
+            icon={<ShieldIcon color={colors.textDim} size={17} />}
+            label="Privacy policy"
+            onPress={() => void openExternalLink('Privacy policy', ORATIO_EXTERNAL_LINKS.privacy)}
+            subtitle="How Oratio handles your information"
+          />
+          <ExternalLinkRow
+            icon={<FileTextIcon color={colors.textDim} size={17} />}
+            label="Terms of service"
+            onPress={() => void openExternalLink('Terms of service', ORATIO_EXTERNAL_LINKS.terms)}
+            subtitle="The terms for using Oratio"
+          />
+          <ExternalLinkRow
+            icon={<HeartHandshakeIcon color={colors.accent} size={18} />}
+            label="Safety & crisis support"
+            onPress={() =>
+              void openExternalLink('Safety and crisis support', ORATIO_EXTERNAL_LINKS.support)
+            }
+            subtitle="Find confidential support in your country"
+          />
+          <Text style={styles.safetyNote}>
+            Oratio is not an emergency service. If someone is in immediate danger, contact local
+            emergency services.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
           <SectionTitle icon={<LogOutIcon color={colors.textDim} size={15} />} label="Account" />
           <View style={styles.accountRow}>
             <Text style={styles.accountLabel}>Email</Text>
@@ -264,14 +366,68 @@ export function SettingsScreen({
           <Pressable
             accessibilityLabel="Sign out"
             accessibilityRole="button"
+            disabled={deleting}
             onPress={confirmSignOut}
-            style={styles.signOutRow}
+            style={[styles.signOutRow, deleting && styles.disabled]}
           >
             <Text style={styles.signOutText}>Sign out</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Delete account"
+            accessibilityRole="button"
+            disabled={deleting}
+            onPress={confirmDeleteAccount}
+            style={({ pressed }) => [
+              styles.deleteRow,
+              pressed && styles.deleteRowPressed,
+              deleting && styles.disabled,
+            ]}
+          >
+            <View style={styles.deleteIcon}>
+              {deleting ? (
+                <ActivityIndicator color={colors.danger} size="small" />
+              ) : (
+                <TrashIcon color={colors.danger} size={17} strokeWidth={1.7} />
+              )}
+            </View>
+            <View style={styles.linkCopy}>
+              <Text style={styles.deleteLabel}>
+                {deleting ? 'Deleting account...' : 'Delete account'}
+              </Text>
+              <Text style={styles.deleteSubtitle}>Permanently remove your account and data</Text>
+            </View>
           </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function ExternalLinkRow({
+  icon,
+  label,
+  subtitle,
+  onPress,
+}: {
+  icon: ReactNode;
+  label: string;
+  subtitle: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="link"
+      onPress={onPress}
+      style={({ pressed }) => [styles.linkRow, pressed && styles.linkRowPressed]}
+    >
+      <View style={styles.linkIcon}>{icon}</View>
+      <View style={styles.linkCopy}>
+        <Text style={styles.linkLabel}>{label}</Text>
+        <Text style={styles.linkSubtitle}>{subtitle}</Text>
+      </View>
+      <ExternalLinkIcon color={colors.textDim} size={15} strokeWidth={1.7} />
+    </Pressable>
   );
 }
 
@@ -450,6 +606,46 @@ const styles = StyleSheet.create({
   languageButtonTextSelected: {
     color: colors.white,
   },
+  linkRow: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.divider,
+  },
+  linkRowPressed: {
+    backgroundColor: colors.accentTintSoft,
+  },
+  linkIcon: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  linkCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  linkLabel: {
+    color: colors.textSecondary,
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 14,
+  },
+  linkSubtitle: {
+    color: colors.textDim,
+    fontFamily: fontFamilies.body,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  safetyNote: {
+    color: colors.textDim,
+    fontFamily: fontFamilies.body,
+    fontSize: 11,
+    lineHeight: 17,
+    paddingTop: 12,
+  },
   signOutRow: {
     minHeight: 56,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -478,5 +674,40 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontFamily: fontFamilies.bodyMedium,
     fontSize: 14,
+  },
+  deleteRow: {
+    minHeight: 68,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: 8,
+  },
+  deleteRowPressed: {
+    backgroundColor: colors.dangerTint,
+  },
+  deleteIcon: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteLabel: {
+    color: colors.danger,
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 14,
+  },
+  deleteSubtitle: {
+    color: colors.textDim,
+    fontFamily: fontFamilies.body,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+  disabled: {
+    opacity: 0.55,
   },
 });

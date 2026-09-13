@@ -20,6 +20,7 @@ export type ThemeColors = {
   accentTintSoft: string;
   accentBorder: string;
   danger: string;
+  dangerTint: string;
   warning: string;
   success: string;
   white: string;
@@ -54,6 +55,7 @@ export const lightColors: ThemeColors = {
   accentTintSoft: 'rgba(82, 103, 216, 0.05)',
   accentBorder: 'rgba(82, 103, 216, 0.22)',
   danger: '#BF3F4D',
+  dangerTint: 'rgba(191, 63, 77, 0.07)',
   warning: '#995800',
   success: '#14705A',
   white: '#FFFFFF',
@@ -88,6 +90,7 @@ export const darkColors: ThemeColors = {
   accentTintSoft: 'rgba(124, 143, 255, 0.06)',
   accentBorder: 'rgba(124, 143, 255, 0.24)',
   danger: '#FF6B6B',
+  dangerTint: 'rgba(255, 107, 107, 0.08)',
   warning: '#FBBF24',
   success: '#6EE7B7',
   white: '#FFFFFF',

@@ -112,8 +112,8 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Translation language preference saves and survives reopening Settings
 - [ ] Light, dark, and system themes apply across every native tab and persist across relaunch
 - [ ] Switching the device appearance while System is selected updates the app without unreadable or incomplete screens
-- [ ] Account deletion is available in-app with clear confirmation and recovery guidance for failures
-- [ ] Privacy, terms, and support links open the production destinations from Settings
+- [ ] Account deletion requires two deliberate confirmations; success returns to Login and failure preserves the session
+- [ ] Privacy, terms, and country-specific crisis support links open the production destinations from Settings
 - [ ] Sign out from Settings returns to Login and a restart does not restore the old session
 
 ## Updates & Moderation
