@@ -23,6 +23,7 @@ import {
   loadProfileSubmitted,
   loadResetPassword,
   loadSubmit,
+  loadSupport,
   loadTerms,
   loadUpdatePassword,
   loadUpdates,
@@ -43,6 +44,7 @@ const ResetPassword = lazy(loadResetPassword);
 const UpdatePassword = lazy(loadUpdatePassword);
 const Privacy = lazy(loadPrivacy);
 const Terms = lazy(loadTerms);
+const Support = lazy(loadSupport);
 const Info = lazy(loadInfo);
 const PrayerDetail = lazy(loadPrayerDetail);
 const Moderate = lazy(loadModerate);
@@ -73,6 +75,7 @@ export const router = createBrowserRouter([
       { path: '/update-password', element: <SuspenseWrapper Component={UpdatePassword} /> },
       { path: '/privacy', element: <SuspenseWrapper Component={Privacy} /> },
       { path: '/terms', element: <SuspenseWrapper Component={Terms} /> },
+      { path: '/support', element: <SuspenseWrapper Component={Support} /> },
       { path: '/onboarding', element: <SuspenseWrapper Component={Onboarding} /> },
 
       {

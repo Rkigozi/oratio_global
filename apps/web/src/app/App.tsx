@@ -23,6 +23,7 @@ const AUTH_DEFERRED_PATHS = new Set([
   '/update-password',
   '/privacy',
   '/terms',
+  '/support',
   '/onboarding',
 ]);
 

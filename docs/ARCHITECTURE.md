@@ -37,7 +37,7 @@ The native Public feed has All/Saved/Country filters and server-side text/locati
 
 ## 3. Web Route Map
 
-**Public (no app layout)**: `/landing`, `/login`, `/onboarding`, `/reset-password`, `/update-password`, `/privacy`, `/terms`
+**Public (no app layout)**: `/landing`, `/login`, `/onboarding`, `/reset-password`, `/update-password`, `/privacy`, `/terms`, `/support`
 
 **App shell (header + bottom nav)**: `/` (map), `/feed`, `/submit`, `/profile`, `/profile/circle`, `/profile/submitted`, `/profile/prayed`, `/profile/saved`, `/profile/settings`, `/updates`, `/moderate`, `/user/:username`, `/info`, `/prayer/:id` (detail is shared-link capable: auth-gated with `?next=`)
 

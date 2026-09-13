@@ -49,6 +49,9 @@ export const loadPrivacy: RouteLoader = () =>
 export const loadTerms: RouteLoader = () =>
   import('./pages/info/terms').then((m) => ({ default: m.Terms }));
 
+export const loadSupport: RouteLoader = () =>
+  import('./pages/info/support').then((m) => ({ default: m.Support }));
+
 export const loadInfo: RouteLoader = () =>
   import('./pages/info/info').then((m) => ({ default: m.Info }));
 
@@ -86,6 +89,7 @@ const routeLoadersByPath = new Map<string, RouteLoader>([
   ['/update-password', loadUpdatePassword],
   ['/privacy', loadPrivacy],
   ['/terms', loadTerms],
+  ['/support', loadSupport],
   ['/onboarding', loadOnboarding],
 ]);
 
@@ -97,7 +101,7 @@ const authenticatedPreloadLoaders = [
   loadUpdates,
   loadPrayerDetail,
 ];
-const publicPreloadLoaders = [loadLogin, loadOnboarding, loadResetPassword];
+const publicPreloadLoaders = [loadLogin, loadOnboarding, loadResetPassword, loadSupport];
 
 function preloadRouteLoader(loader: RouteLoader) {
   const cached = preloadCache.get(loader);

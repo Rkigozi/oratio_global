@@ -10,6 +10,7 @@ const mockSetThemeMode = jest.fn();
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
   Bell: () => null,
+  CircleHelp: () => null,
   ExternalLink: () => null,
   FileText: () => null,
   Globe2: () => null,
@@ -146,11 +147,13 @@ describe('SettingsScreen', () => {
     const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined as never);
     renderSettings();
 
-    fireEvent.press(await screen.findByLabelText('Privacy policy'));
+    fireEvent.press(await screen.findByLabelText('Help with Oratio'));
+    fireEvent.press(screen.getByLabelText('Privacy policy'));
     fireEvent.press(screen.getByLabelText('Terms of service'));
     fireEvent.press(screen.getByLabelText('Safety & crisis support'));
 
     await waitFor(() => {
+      expect(openURL).toHaveBeenCalledWith('https://oratiotest.netlify.app/support');
       expect(openURL).toHaveBeenCalledWith('https://oratiotest.netlify.app/privacy');
       expect(openURL).toHaveBeenCalledWith('https://oratiotest.netlify.app/terms');
       expect(openURL).toHaveBeenCalledWith('https://findahelpline.com/');

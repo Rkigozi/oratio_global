@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Bell,
+  CircleHelp,
   ExternalLink,
   FileText,
   Globe2,
@@ -45,6 +46,7 @@ import type { RootStackParamList } from '../navigation';
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
 const BellIcon = asNativeIcon(Bell);
+const CircleHelpIcon = asNativeIcon(CircleHelp);
 const ExternalLinkIcon = asNativeIcon(ExternalLink);
 const FileTextIcon = asNativeIcon(FileText);
 const GlobeIcon = asNativeIcon(Globe2);
@@ -328,6 +330,12 @@ export function SettingsScreen({
           <SectionTitle
             icon={<ShieldIcon color={colors.textDim} size={15} />}
             label="Support & legal"
+          />
+          <ExternalLinkRow
+            icon={<CircleHelpIcon color={colors.textDim} size={17} />}
+            label="Help with Oratio"
+            onPress={() => void openExternalLink('Oratio support', ORATIO_EXTERNAL_LINKS.help)}
+            subtitle="Account, privacy, and app guidance"
           />
           <ExternalLinkRow
             icon={<ShieldIcon color={colors.textDim} size={17} />}
