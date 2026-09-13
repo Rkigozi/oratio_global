@@ -1,6 +1,6 @@
 [build]
   command = "npm run build"
-  publish = "dist"
+  publish = "apps/web/dist"
 
 [build.environment]
   NODE_VERSION = "22"
@@ -8,7 +8,7 @@
 # Deploy previews for PR branches
 [context.deploy-preview]
   command = "npm run build"
-  publish = "dist"
+  publish = "apps/web/dist"
 
 [[redirects]]
   from = "/assets/*"
