@@ -21,6 +21,7 @@
     "test:e2e": "playwright test --config=e2e/playwright.config.ts",
     "test:e2e:remote": "E2E_BASE_URL=https://oratiotest.netlify.app playwright test --config=e2e/playwright.config.ts",
     "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
+    "qa:account-deletion": "node --env-file=../mobile/.env scripts/live-account-deletion-qa.mjs",
     "supabase:email:password-reset": "node scripts/apply-supabase-password-reset-template.mjs"
   },
   "dependencies": {

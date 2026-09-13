@@ -21,6 +21,7 @@
     "test:coverage": "npm run test:coverage --workspace @oratio/web",
     "test:e2e": "npm run test:e2e --workspace @oratio/web",
     "test:e2e:remote": "npm run test:e2e:remote --workspace @oratio/web",
+    "qa:account-deletion": "npm run qa:account-deletion --workspace @oratio/web",
     "dev:mobile": "npm run start --workspace @oratio/mobile",
     "ios": "npm run ios --workspace @oratio/mobile",
     "type-check:mobile": "npm run typecheck --workspace @oratio/mobile",

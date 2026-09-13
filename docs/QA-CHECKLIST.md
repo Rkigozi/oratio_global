@@ -113,6 +113,7 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Light, dark, and system themes apply across every native tab and persist across relaunch
 - [ ] Switching the device appearance while System is selected updates the app without unreadable or incomplete screens
 - [ ] Account deletion requires two deliberate confirmations; success returns to Login and failure preserves the session
+- [x] Live disposable-account deletion removes the auth user, profile, and dependent prayer, clears the local session, and rejects the old credentials (`npm run qa:account-deletion`, 2026-09-13)
 - [ ] Privacy, terms, Oratio support, and country-specific crisis support links open the production destinations from Settings
 - [ ] Sign out from Settings returns to Login and a restart does not restore the old session
 
