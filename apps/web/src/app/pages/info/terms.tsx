@@ -33,7 +33,7 @@ export function Terms() {
 
           <div className="space-y-4 text-text-muted text-sm leading-relaxed">
             <p>
-              <strong className="text-text-secondary">Last updated:</strong> June 2026
+              <strong className="text-text-secondary">Last updated:</strong> September 2026
             </p>
 
             <section>
@@ -66,8 +66,9 @@ export function Terms() {
               <h3 className="text-text font-medium text-sm mb-2">4. User Content</h3>
               <p>
                 You retain ownership of your prayer requests and comments. By submitting content,
-                you grant Oratio a license to display it within the platform. You may delete your
-                content at any time.
+                you grant Oratio permission to store, process, and display it within the audience
+                you selected and to provide features you explicitly request, such as translation.
+                You may delete your content at any time.
               </p>
             </section>
 

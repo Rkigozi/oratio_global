@@ -33,7 +33,7 @@ export function Privacy() {
 
           <div className="space-y-4 text-text-muted text-sm leading-relaxed">
             <p>
-              <strong className="text-text-secondary">Last updated:</strong> June 2026
+              <strong className="text-text-secondary">Last updated:</strong> September 2026
             </p>
 
             <section>
@@ -41,40 +41,67 @@ export function Privacy() {
               <p>
                 When you create an account, we collect your email address, username, and display
                 name. You may optionally provide a profile photo, bio, and location. When you submit
-                a prayer request, we collect the prayer text and optional location data.
+                a prayer request, we collect its text, chosen audience, and optional coarse city and
+                country location. Oratio also stores the interactions needed for features you use,
+                such as comments, prayers offered, saved prayers, reports, and Prayer Circle
+                connections.
               </p>
             </section>
 
             <section>
-              <h3 className="text-text font-medium text-sm mb-2">2. How We Use Your Information</h3>
+              <h3 className="text-text font-medium text-sm mb-2">2. Prayer Visibility</h3>
               <p>
-                Your information is used to provide and improve the Oratio prayer platform. Prayer
-                requests you submit are visible to other users. Your email is used for
-                account-related communications only (password resets, verification).
+                Public prayers are visible to signed-in Oratio users, Prayer Circle prayers are
+                limited to accepted Circle connections, and private prayers are visible only to you.
+                Choosing anonymous hides your attribution from other users, but Oratio still retains
+                the account association needed to manage and delete the prayer.
               </p>
             </section>
 
             <section>
-              <h3 className="text-text font-medium text-sm mb-2">3. Data Storage and Security</h3>
+              <h3 className="text-text font-medium text-sm mb-2">3. How We Use Information</h3>
               <p>
-                Your data is stored securely using Supabase (PostgreSQL) with encryption in transit
-                and at rest. We do not share your personal data with third parties except as
-                required by law.
+                We use this information to operate, secure, and improve Oratio. Your email is used
+                for account verification, password recovery, and essential account communications.
+                We do not sell your personal data.
               </p>
             </section>
 
             <section>
-              <h3 className="text-text font-medium text-sm mb-2">4. Your Rights</h3>
+              <h3 className="text-text font-medium text-sm mb-2">4. Service Providers</h3>
               <p>
-                You can request account deletion at any time from your Settings page. This removes
-                all your prayers, comments, and profile data. Contact us if you need assistance.
+                Supabase provides authentication, database, file storage, and server functions. When
+                you explicitly tap Translate, Oratio sends the selected prayer text and target
+                language through its server to Google Cloud Translation. The translation request
+                does not include your account email or username. We may also disclose information
+                when required by law or necessary to protect users and the service.
               </p>
             </section>
 
             <section>
-              <h3 className="text-text font-medium text-sm mb-2">5. Contact</h3>
+              <h3 className="text-text font-medium text-sm mb-2">5. Storage and Security</h3>
               <p>
-                For privacy-related inquiries, please reach out through the Oratio project channels.
+                Oratio data is stored using Supabase with encryption in transit and at rest. We use
+                access controls to keep Circle and private content within its selected audience. No
+                internet service can guarantee absolute security.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="text-text font-medium text-sm mb-2">6. Your Choices and Rights</h3>
+              <p>
+                You can edit or delete your content and permanently delete your account from
+                Settings. Account deletion removes your profile and associated prayers, comments,
+                connections, saved items, and other account data. You can choose whether to add a
+                location, use translation, or share a prayer beyond your private space.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="text-text font-medium text-sm mb-2">7. Contact</h3>
+              <p>
+                For privacy questions or assistance, use the contact channel supplied with your beta
+                invitation or visit the Oratio Support page.
               </p>
             </section>
           </div>

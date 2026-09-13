@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Bookmark, MapPin, MoreHorizontal } from 'lucide-react-native';
+import { ArrowLeft, Bookmark, Languages, MapPin, MoreHorizontal } from 'lucide-react-native';
 import {
   deletePrayerRequest,
+  getProfilePreferences,
   getPrayerById,
   getMyPrayedIds,
   getMySavedIds,
@@ -23,6 +24,12 @@ import {
   updatePrayerRequest,
 } from '@oratio/shared/queries';
 import { getAttributionText, timeAgo, type PrayerRequest } from '@oratio/shared/prayer-data';
+import {
+  detectLanguage,
+  getLanguageName,
+  needsTranslation,
+  resolveTranslationLanguage,
+} from '@oratio/shared/translation';
 import { sanitizePrayerText, validatePrayerSubmission } from '@oratio/shared/validation';
 import { asNativeIcon } from '../components/icon';
 import { PrayerComments } from '../components/prayer-comments';
@@ -30,13 +37,23 @@ import { ContentReportSheet } from '../components/content-report-sheet';
 import { PrayerActionsSheet, PrayerEditSheet } from '../components/prayer-owner-actions';
 import { useAuth } from '../hooks/auth-context';
 import { sharePrayer } from '../services/prayer-sharing';
+import { translatePrayerText, type PrayerTranslation } from '../services/prayer-translation';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
 const BookmarkIcon = asNativeIcon(Bookmark);
+const LanguagesIcon = asNativeIcon(Languages);
 const MapPinIcon = asNativeIcon(MapPin);
 const MoreIcon = asNativeIcon(MoreHorizontal);
+
+function getDeviceLocale(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().locale || 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 export function PrayerDetailScreen({
   navigation,
@@ -58,19 +75,31 @@ export function PrayerDetailScreen({
   const [editBusy, setEditBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [languagePreference, setLanguagePreference] = useState('auto');
+  const [translation, setTranslation] = useState<PrayerTranslation | null>(null);
+  const [showingOriginal, setShowingOriginal] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [translationMessage, setTranslationMessage] = useState('');
+
+  const targetLanguage = resolveTranslationLanguage(languagePreference, getDeviceLocale());
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [fetched, prayedIds, savedIds] = await Promise.all([
+      const [fetched, prayedIds, savedIds, preferences] = await Promise.all([
         getPrayerById(prayerId),
         getMyPrayedIds(),
         getMySavedIds(),
+        getProfilePreferences(),
       ]);
       setPrayer(fetched);
       setPrayed(prayedIds.includes(prayerId));
       setSaved(savedIds.includes(prayerId));
+      setLanguagePreference(preferences.language);
+      setTranslation(null);
+      setShowingOriginal(false);
+      setTranslationMessage('');
     } catch {
       setError("We couldn't load this prayer. Check your connection and try again.");
     } finally {
@@ -110,6 +139,40 @@ export function PrayerDetailScreen({
       if (ok) setSaved(next);
     } finally {
       setSaveBusy(false);
+    }
+  };
+
+  const handleTranslate = async () => {
+    if (!prayer || translating) return;
+
+    if (translation?.status === 'translated') {
+      setShowingOriginal((current) => !current);
+      setTranslationMessage('');
+      return;
+    }
+
+    setTranslating(true);
+    setTranslationMessage('');
+    try {
+      const result = await translatePrayerText({
+        prayerId: prayer.id,
+        text: prayer.text,
+        targetLanguage,
+      });
+      if (!result) {
+        setTranslationMessage("We couldn't translate this prayer. Please try again.");
+        return;
+      }
+      if (result.status === 'not-needed') {
+        setTranslation(result);
+        setTranslationMessage(`This prayer is already in ${getLanguageName(targetLanguage)}.`);
+        return;
+      }
+
+      setTranslation(result);
+      setShowingOriginal(false);
+    } finally {
+      setTranslating(false);
     }
   };
 
@@ -170,6 +233,9 @@ export function PrayerDetailScreen({
       setPrayer((current) =>
         current ? { ...current, text: updated.text, editedAt: updated.editedAt } : current
       );
+      setTranslation(null);
+      setShowingOriginal(false);
+      setTranslationMessage('');
       setEditOpen(false);
     } catch {
       setEditError("We couldn't save your update. Please try again.");
@@ -249,6 +315,18 @@ export function PrayerDetailScreen({
   }
 
   const count = prayer.prayerCount ?? 0;
+  const translated = translation?.status === 'translated' ? translation : null;
+  const showingTranslation = Boolean(translated && !showingOriginal);
+  const sourceLanguage = translated?.sourceLanguage || detectLanguage(prayer.text);
+  const canTranslate = needsTranslation(prayer.text, targetLanguage);
+  const targetLanguageName = getLanguageName(targetLanguage);
+  const translationAction = translating
+    ? 'Translating...'
+    : translated
+      ? showingOriginal
+        ? `View ${targetLanguageName} translation`
+        : 'Original'
+      : `Translate to ${targetLanguageName}`;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -306,7 +384,40 @@ export function PrayerDetailScreen({
             {prayer.editedAt ? ' - Edited' : ''}
           </Text>
 
-          <Text style={styles.text}>{prayer.text}</Text>
+          <Text style={styles.text}>{showingTranslation ? translated?.text : prayer.text}</Text>
+
+          {canTranslate ? (
+            <View style={styles.translationArea}>
+              <Pressable
+                accessibilityLabel={translationAction}
+                accessibilityRole="button"
+                disabled={translating}
+                onPress={() => void handleTranslate()}
+                style={({ pressed }) => [
+                  styles.translationButton,
+                  pressed && styles.translationButtonPressed,
+                  translating && styles.translationButtonDisabled,
+                ]}
+              >
+                {translating ? (
+                  <ActivityIndicator color={colors.accent} size="small" />
+                ) : (
+                  <LanguagesIcon color={colors.accent} size={17} strokeWidth={1.7} />
+                )}
+                <Text style={styles.translationButtonText}>{translationAction}</Text>
+              </Pressable>
+              {showingTranslation ? (
+                <Text style={styles.translationContext}>
+                  Translated from {getLanguageName(sourceLanguage)} to {targetLanguageName}
+                </Text>
+              ) : null}
+              {translationMessage ? (
+                <Text accessibilityLiveRegion="polite" style={styles.translationMessage}>
+                  {translationMessage}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
 
           {prayer.username ? (
             <Pressable
@@ -453,6 +564,44 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 31,
     marginTop: 20,
+  },
+  translationArea: {
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 12,
+  },
+  translationButton: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+    backgroundColor: colors.surface,
+  },
+  translationButtonPressed: {
+    backgroundColor: colors.surfaceHover,
+  },
+  translationButtonDisabled: {
+    opacity: 0.65,
+  },
+  translationButtonText: {
+    color: colors.accent,
+    fontFamily: fontFamilies.bodySemiBold,
+    fontSize: 13,
+  },
+  translationContext: {
+    color: colors.textDim,
+    fontFamily: fontFamilies.body,
+    fontSize: 11,
+  },
+  translationMessage: {
+    color: colors.textMuted,
+    fontFamily: fontFamilies.body,
+    fontSize: 12,
+    lineHeight: 18,
   },
   attribution: {
     color: colors.textMuted,

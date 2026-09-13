@@ -83,7 +83,11 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Public and Circle Share opens the native iOS share sheet with safe attribution and the authenticated web prayer link, without copying prayer text or location
 - [ ] The shared web prayer link returns to the same prayer after sign-in; inaccessible Circle prayers remain protected by Supabase policy
 - [ ] Private prayers do not offer Share
-- [ ] Translation and reporting are retested when their native stories land
+- [ ] A prayer in another language offers translation into the saved Settings language on detail only; feed rows never translate automatically
+- [ ] Translation success shows source and target language context; Original and translated views toggle without another network request
+- [ ] Translation failure or an unnecessary translation leaves the original prayer readable with a recoverable message
+- [ ] Live Google translation succeeds after Cloud billing is reactivated; no prayer text or personal data appears in client logs or telemetry
+- [ ] Reporting is retested alongside translation on prayer detail
 
 ## Prayer Circle
 

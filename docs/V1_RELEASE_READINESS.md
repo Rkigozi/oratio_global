@@ -34,6 +34,7 @@ Authenticated E2E journeys run when `E2E_TEST_EMAIL`/`E2E_TEST_PASSWORD` are exp
 ## Native Beta Configuration
 
 - Expo environment supplies `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- Google Cloud billing is active for the project backing `GOOGLE_TRANSLATE_API_KEY`; `npm run qa:translation` passes with QA credentials supplied
 - Apple Developer membership and EAS project are required before TestFlight, but not for Expo Go development
 - Bundle identifier is `com.oratio.app`; version/build numbers must be set for every distributed build
 - Supabase migrations applied in order before schema-dependent deploys

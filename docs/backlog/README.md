@@ -99,27 +99,27 @@ lives in [`ANDROID-RELEASE.md`](./ANDROID-RELEASE.md).
 
 ## Native migration snapshot
 
-| Key      | Scope                                       | Jira status / repo state                                                  |
-| -------- | ------------------------------------------- | ------------------------------------------------------------------------- |
-| SCRUM-63 | Monorepo foundation                         | Done                                                                      |
-| SCRUM-64 | Shared platform-neutral logic               | Done                                                                      |
-| SCRUM-65 | Native email/password auth                  | Done                                                                      |
-| SCRUM-66 | Native feed, detail, and prayer interaction | Done; public filters, search/trending, save, and count integrity included |
-| SCRUM-67 | Native prayer submission and visibility     | Done across all three prayer spaces                                       |
-| SCRUM-68 | Native comments and replies                 | Done; comments, replies, and private Notes included                       |
-| SCRUM-69 | Native Circle management and updates        | Done; Circle management and live Updates included                         |
-| SCRUM-70 | Native profile, settings, and avatar        | Done; profile edit, avatar upload, preferences, and sign-out included     |
-| SCRUM-71 | Native reporting and moderation             | In QA; implementation and automated gates complete                        |
-| SCRUM-72 | EAS/TestFlight beta distribution            | To Do; waits for feature-complete beta and Apple membership               |
-| SCRUM-73 | Apple App Store submission                  | To Do                                                                     |
-| SCRUM-74 | Reduce web to landing/web presence          | To Do; full PWA remains live during migration                             |
-| SCRUM-75 | Apple Developer membership                  | To Do; external prerequisite                                              |
-| SCRUM-76 | Native global prayer map                    | Done                                                                      |
-| SCRUM-77 | Native Updates inbox                        | Done                                                                      |
-| SCRUM-80 | Native light/dark/system themes             | Done; automated and physical iPhone QA complete                           |
-| SCRUM-81 | Native prayer owner actions and sharing     | In QA; implementation and automated gates complete                        |
-| SCRUM-82 | Native saved-language translation           | To Do; Highest; V1 Launch                                                 |
-| SCRUM-83 | Account deletion and legal support access   | Done; live disposable-account deletion and production links verified      |
+| Key      | Scope                                       | Jira status / repo state                                                   |
+| -------- | ------------------------------------------- | -------------------------------------------------------------------------- |
+| SCRUM-63 | Monorepo foundation                         | Done                                                                       |
+| SCRUM-64 | Shared platform-neutral logic               | Done                                                                       |
+| SCRUM-65 | Native email/password auth                  | Done                                                                       |
+| SCRUM-66 | Native feed, detail, and prayer interaction | Done; public filters, search/trending, save, and count integrity included  |
+| SCRUM-67 | Native prayer submission and visibility     | Done across all three prayer spaces                                        |
+| SCRUM-68 | Native comments and replies                 | Done; comments, replies, and private Notes included                        |
+| SCRUM-69 | Native Circle management and updates        | Done; Circle management and live Updates included                          |
+| SCRUM-70 | Native profile, settings, and avatar        | Done; profile edit, avatar upload, preferences, and sign-out included      |
+| SCRUM-71 | Native reporting and moderation             | In QA; implementation and automated gates complete                         |
+| SCRUM-72 | EAS/TestFlight beta distribution            | To Do; waits for feature-complete beta and Apple membership                |
+| SCRUM-73 | Apple App Store submission                  | To Do                                                                      |
+| SCRUM-74 | Reduce web to landing/web presence          | To Do; full PWA remains live during migration                              |
+| SCRUM-75 | Apple Developer membership                  | To Do; external prerequisite                                               |
+| SCRUM-76 | Native global prayer map                    | Done                                                                       |
+| SCRUM-77 | Native Updates inbox                        | Done                                                                       |
+| SCRUM-80 | Native light/dark/system themes             | Done; automated and physical iPhone QA complete                            |
+| SCRUM-81 | Native prayer owner actions and sharing     | In QA; implementation and automated gates complete                         |
+| SCRUM-82 | Native saved-language translation           | Blocked; implementation complete, Google Cloud billing reactivation needed |
+| SCRUM-83 | Account deletion and legal support access   | Done; live disposable-account deletion and production links verified       |
 
 The Jira workflow now has a correctly named `Done` status. Completed native
 stories `SCRUM-63`–`SCRUM-70`, `SCRUM-76`, `SCRUM-77`, and `SCRUM-80` were

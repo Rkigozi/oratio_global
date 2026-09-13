@@ -9,6 +9,7 @@ jest.mock('lucide-react-native', () => ({
   CheckCircle2: () => null,
   Flag: () => null,
   Info: () => null,
+  Languages: () => null,
   MapPin: () => null,
   MoreHorizontal: () => null,
   Pencil: () => null,
@@ -25,6 +26,7 @@ jest.mock('../hooks/auth-context', () => ({
 
 jest.mock('@oratio/shared/queries', () => ({
   getPrayerById: jest.fn(),
+  getProfilePreferences: jest.fn(),
   getMyPrayedIds: jest.fn(),
   getMySavedIds: jest.fn(),
   togglePray: jest.fn(),
@@ -45,9 +47,14 @@ jest.mock('../services/prayer-sharing', () => ({
   sharePrayer: jest.fn(),
 }));
 
+jest.mock('../services/prayer-translation', () => ({
+  translatePrayerText: jest.fn(),
+}));
+
 import { useAuth } from '../hooks/auth-context';
 import {
   getPrayerById,
+  getProfilePreferences,
   getMyPrayedIds,
   getMySavedIds,
   togglePray,
@@ -60,6 +67,7 @@ import {
   createReport,
 } from '@oratio/shared/queries';
 import { sharePrayer } from '../services/prayer-sharing';
+import { translatePrayerText, type PrayerTranslation } from '../services/prayer-translation';
 
 const prayer = {
   id: 'prayer-1',
@@ -89,6 +97,7 @@ describe('PrayerDetailScreen', () => {
       profile: { username: 'testuser', display_name: 'Test User' },
     } as never);
     jest.mocked(getPrayerById).mockResolvedValue(prayer as never);
+    jest.mocked(getProfilePreferences).mockResolvedValue({ language: 'auto' } as never);
     jest.mocked(getMyPrayedIds).mockResolvedValue([] as never);
     jest.mocked(getMySavedIds).mockResolvedValue([] as never);
     jest.mocked(togglePray).mockResolvedValue(true as never);
@@ -111,6 +120,83 @@ describe('PrayerDetailScreen', () => {
     await waitFor(() => expect(screen.getByText('Please pray for my family')).toBeTruthy());
     expect(screen.getByText('London, United Kingdom')).toBeTruthy();
     expect(screen.getByText('miriam')).toBeTruthy();
+  });
+
+  it('translates into the saved language and toggles back to the original', async () => {
+    jest.mocked(getProfilePreferences).mockResolvedValue({ language: 'es' } as never);
+    let resolveTranslation!: (translation: PrayerTranslation) => void;
+    jest.mocked(translatePrayerText).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveTranslation = resolve;
+        })
+    );
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+
+    fireEvent.press(await screen.findByLabelText('Translate to Spanish'));
+
+    expect(screen.getByText('Please pray for my family')).toBeTruthy();
+    expect(screen.getByText('Translating...')).toBeTruthy();
+    await act(async () => {
+      resolveTranslation({
+        status: 'translated',
+        text: 'Por favor, ora por mi familia',
+        sourceLanguage: 'en',
+      });
+    });
+
+    expect(await screen.findByText('Por favor, ora por mi familia')).toBeTruthy();
+    expect(screen.getByText('Translated from English to Spanish')).toBeTruthy();
+    expect(screen.queryByText('Please pray for my family')).toBeNull();
+    expect(translatePrayerText).toHaveBeenCalledWith({
+      prayerId: 'prayer-1',
+      text: 'Please pray for my family',
+      targetLanguage: 'es',
+    });
+
+    fireEvent.press(screen.getByLabelText('Original'));
+
+    expect(screen.getByText('Please pray for my family')).toBeTruthy();
+    expect(screen.getByLabelText('View Spanish translation')).toBeTruthy();
+    expect(translatePrayerText).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the original readable when translation fails', async () => {
+    jest.mocked(getProfilePreferences).mockResolvedValue({ language: 'de' } as never);
+    jest.mocked(translatePrayerText).mockResolvedValue(null);
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+
+    fireEvent.press(await screen.findByLabelText('Translate to German'));
+
+    expect(
+      await screen.findByText("We couldn't translate this prayer. Please try again.")
+    ).toBeTruthy();
+    expect(screen.getByText('Please pray for my family')).toBeTruthy();
+    expect(screen.getByLabelText('Translate to German')).toBeTruthy();
+  });
+
+  it('explains when the translation service finds no translation is needed', async () => {
+    jest.mocked(getProfilePreferences).mockResolvedValue({ language: 'it' } as never);
+    jest.mocked(translatePrayerText).mockResolvedValue({
+      status: 'not-needed',
+      sourceLanguage: 'it',
+    });
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+
+    fireEvent.press(await screen.findByLabelText('Translate to Italian'));
+
+    expect(await screen.findByText('This prayer is already in Italian.')).toBeTruthy();
+    expect(screen.getByText('Please pray for my family')).toBeTruthy();
+  });
+
+  it('does not offer translation when the prayer matches the saved language', async () => {
+    jest.mocked(getProfilePreferences).mockResolvedValue({ language: 'en' } as never);
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+
+    await screen.findByText('Please pray for my family');
+
+    expect(screen.queryByText(/Translate to/)).toBeNull();
+    expect(translatePrayerText).not.toHaveBeenCalled();
   });
 
   it("opens the prayer author's profile", async () => {

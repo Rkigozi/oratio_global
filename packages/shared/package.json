@@ -11,6 +11,7 @@
     "./validation": "./src/validation.ts",
     "./username": "./src/username.ts",
     "./hashtags": "./src/hashtags.ts",
+    "./translation": "./src/translation.ts",
     "./client": "./src/client.ts",
     "./logger": "./src/logger.ts",
     "./queries": "./src/queries/index.ts"

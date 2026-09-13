@@ -36,6 +36,7 @@ import {
   updateProfilePreferences,
   type ProfilePreferences,
 } from '@oratio/shared/queries';
+import { TRANSLATION_LANGUAGE_OPTIONS } from '@oratio/shared/translation';
 import { asNativeIcon } from '../components/icon';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
@@ -70,15 +71,7 @@ const appearanceOptions: Array<{
   { value: 'dark', label: 'Dark', icon: MoonIcon },
 ];
 
-const languages = [
-  { value: 'auto', label: 'Auto' },
-  { value: 'en', label: 'English' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'fr', label: 'French' },
-  { value: 'pt', label: 'Portuguese' },
-  { value: 'de', label: 'German' },
-  { value: 'it', label: 'Italian' },
-];
+const languages = [{ value: 'auto', label: 'Auto' }, ...TRANSLATION_LANGUAGE_OPTIONS];
 
 export function SettingsScreen({
   navigation,
