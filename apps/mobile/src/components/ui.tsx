@@ -50,6 +50,7 @@ export function Brand({ subtitle }: { subtitle?: string }) {
 export function Field({
   label,
   error,
+  style,
   ...props
 }: TextInputProps & { label: string; error?: boolean }) {
   return (
@@ -57,7 +58,7 @@ export function Field({
       <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
         placeholderTextColor={colors.textDim}
-        style={[styles.field, error ? styles.fieldError : null]}
+        style={[styles.field, style, error ? styles.fieldError : null]}
         {...props}
       />
     </View>

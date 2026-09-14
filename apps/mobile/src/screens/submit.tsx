@@ -268,6 +268,8 @@ export function SubmitScreen({
         label="Prayer"
         accessibilityLabel="Prayer"
         placeholder={isPrivate ? "Write what's on your heart…" : "Share what's on your heart…"}
+        placeholderTextColor={colors.textMuted}
+        selectionColor={colors.accent}
         editable={!submitting}
         value={text}
         onChangeText={(value) => {
@@ -385,7 +387,15 @@ const styles = StyleSheet.create({
     width: 44,
   },
   prayerInput: {
-    minHeight: 120,
+    height: 180,
+    backgroundColor: colors.surfaceElevated,
+    color: colors.text,
+    borderColor: colors.textDim,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'left',
     textAlignVertical: 'top',
   },
   counter: {
