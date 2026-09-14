@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -36,7 +36,7 @@ import { PrayerComments } from '../components/prayer-comments';
 import { ContentReportSheet } from '../components/content-report-sheet';
 import { PrayerActionsSheet, PrayerEditSheet } from '../components/prayer-owner-actions';
 import { useAuth } from '../hooks/auth-context';
-import { sharePrayer } from '../services/prayer-sharing';
+import { copyPrayerLink, sharePrayer } from '../services/prayer-sharing';
 import { translatePrayerText, type PrayerTranslation } from '../services/prayer-translation';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
@@ -69,6 +69,9 @@ export function PrayerDetailScreen({
   const [saved, setSaved] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const sharePending = useRef(false);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState('');
   const [editOpen, setEditOpen] = useState(false);
   const [editText, setEditText] = useState('');
   const [editError, setEditError] = useState('');
@@ -245,12 +248,43 @@ export function PrayerDetailScreen({
   };
 
   const handleShare = async () => {
-    if (!prayer || !canShare) return;
-    setActionsOpen(false);
+    if (!prayer || !canShare || sharePending.current) return;
+    sharePending.current = true;
+    setShareBusy(true);
+    setShareFeedback('Opening share options...');
     try {
-      await sharePrayer(prayer);
+      const result = await sharePrayer(prayer);
+      const messages = {
+        copied: 'Link copied to clipboard.',
+        shared: 'Prayer shared.',
+        dismissed: 'Sharing cancelled.',
+        opened: 'Share options opened.',
+        unavailable: 'This prayer cannot be shared.',
+      };
+      setShareFeedback(messages[result]);
     } catch {
-      Alert.alert('Unable to share', "We couldn't open the share sheet. Please try again.");
+      setShareFeedback("We couldn't open sharing. Try again or choose Copy link.");
+    } finally {
+      sharePending.current = false;
+      setShareBusy(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!prayer || !canShare || sharePending.current) return;
+    sharePending.current = true;
+    setShareBusy(true);
+    setShareFeedback('Copying link...');
+    try {
+      const copied = await copyPrayerLink(prayer);
+      setShareFeedback(
+        copied ? 'Link copied to clipboard.' : "We couldn't copy the link. Please try again."
+      );
+    } catch {
+      setShareFeedback("We couldn't copy the link. Please try again.");
+    } finally {
+      sharePending.current = false;
+      setShareBusy(false);
     }
   };
 
@@ -361,13 +395,29 @@ export function PrayerDetailScreen({
             <Pressable
               accessibilityLabel="More prayer options"
               accessibilityRole="button"
-              onPress={() => setActionsOpen(true)}
-              style={styles.headerButton}
+              disabled={shareBusy}
+              onPress={() => {
+                setShareFeedback('');
+                setActionsOpen(true);
+              }}
+              style={[styles.headerButton, shareBusy && styles.headerButtonDisabled]}
             >
               <MoreIcon color={colors.textMuted} size={21} strokeWidth={1.7} />
             </Pressable>
           </View>
         </View>
+        {shareFeedback ? (
+          <View style={styles.shareFeedback}>
+            {shareBusy ? <ActivityIndicator color={colors.accent} size="small" /> : null}
+            <Text
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+              style={styles.shareFeedbackText}
+            >
+              {shareFeedback}
+            </Text>
+          </View>
+        ) : null}
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardDismissMode="interactive"
@@ -460,11 +510,13 @@ export function PrayerDetailScreen({
       </KeyboardAvoidingView>
 
       <PrayerActionsSheet
+        busy={shareBusy}
         canReport={canReport}
         canShare={canShare}
         deleting={deleteBusy}
         isOwner={isOwner}
         onClose={() => setActionsOpen(false)}
+        onCopyLink={() => void handleCopyLink()}
         onDelete={confirmDelete}
         onEdit={openEdit}
         onReport={() => {
@@ -534,6 +586,21 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
+  },
+  shareFeedback: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: colors.accentTintSoft,
+  },
+  shareFeedbackText: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 14,
+    lineHeight: 20,
   },
   content: {
     padding: 24,

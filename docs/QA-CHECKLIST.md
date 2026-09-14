@@ -80,9 +80,14 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] An owner can edit a valid 10-500 character prayer; invalid edits stay open with clear guidance and successful edits show as Edited
 - [ ] Deleting an owned prayer requires explicit confirmation, returns to the matching My Prayers tab rather than the stale submission success screen, and removes it from its feed, Profile count, and map aggregates
 - [ ] A non-owner never sees Edit or Delete, including when opening a shared link directly
+- [x] Copy link and Share prayer both work in the physical iPhone retest after the share-sheet sequencing and clipboard feedback fix (user confirmed, 2026-09-14)
 - [ ] Public and Circle Share opens the native iOS share sheet with safe attribution and the authenticated web prayer link, without copying prayer text or location
+- [ ] Share, Edit, Report, and Delete open only after the prayer-actions sheet finishes closing; repeat taps do not open duplicate sheets
+- [ ] Copy link copies only the prayer URL and shows "Link copied to clipboard." after success; paste into Messages or Notes to verify
+- [ ] Native Share distinguishes completed sharing, Copy, and cancellation; cancelling never claims the link was copied or the prayer shared
+- [ ] Copy/share failures show clear feedback and allow retry or the alternative action, without leaving prayer detail
 - [ ] The shared web prayer link returns to the same prayer after sign-in; inaccessible Circle prayers remain protected by Supabase policy
-- [ ] Private prayers do not offer Share
+- [ ] Private prayers do not offer Share or Copy link
 - [ ] A prayer in another language offers translation into the saved Settings language on detail only; feed rows never translate automatically
 - [ ] Translation success shows source and target language context; Original and translated views toggle without another network request
 - [ ] Translation failure or an unnecessary translation leaves the original prayer readable with a recoverable message

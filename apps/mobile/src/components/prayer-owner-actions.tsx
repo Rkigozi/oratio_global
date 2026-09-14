@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -10,12 +10,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Flag, Pencil, Share2, Trash2, X } from 'lucide-react-native';
+import { Copy, Flag, Pencil, Share2, Trash2, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { asNativeIcon } from './icon';
 import { colors, fontFamilies, radii } from '../theme';
 
 const FlagIcon = asNativeIcon(Flag);
+const CopyIcon = asNativeIcon(Copy);
 const PencilIcon = asNativeIcon(Pencil);
 const ShareIcon = asNativeIcon(Share2);
 const TrashIcon = asNativeIcon(Trash2);
@@ -24,9 +25,11 @@ const XIcon = asNativeIcon(X);
 export function PrayerActionsSheet({
   canShare,
   canReport,
+  busy,
   deleting,
   isOwner,
   onClose,
+  onCopyLink,
   onDelete,
   onEdit,
   onReport,
@@ -35,17 +38,54 @@ export function PrayerActionsSheet({
 }: {
   canShare: boolean;
   canReport: boolean;
+  busy: boolean;
   deleting: boolean;
   isOwner: boolean;
   onClose: () => void;
+  onCopyLink: () => void;
   onDelete: () => void;
   onEdit: () => void;
   onReport: () => void;
   onShare: () => void;
   visible: boolean;
 }) {
+  const pendingAction = useRef<(() => void) | null>(null);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (visible) setClosing(false);
+  }, [visible]);
+
+  useEffect(
+    () => () => {
+      pendingAction.current = null;
+    },
+    []
+  );
+
+  const finishClosing = () => {
+    const action = pendingAction.current;
+    pendingAction.current = null;
+    action?.();
+  };
+
+  const runAfterClose = (action: () => void) => {
+    if (closing || busy || pendingAction.current) return;
+    pendingAction.current = action;
+    setClosing(true);
+    onClose();
+    // iOS must finish dismissing its modal before presenting another native controller.
+    if (Platform.OS !== 'ios') finishClosing();
+  };
+
   return (
-    <Modal animationType="fade" onRequestClose={onClose} transparent visible={visible}>
+    <Modal
+      animationType="fade"
+      onDismiss={finishClosing}
+      onRequestClose={onClose}
+      transparent
+      visible={visible}
+    >
       <View style={styles.modalRoot}>
         <Pressable
           accessibilityLabel="Close prayer options"
@@ -62,32 +102,43 @@ export function PrayerActionsSheet({
             />
 
             {canShare ? (
-              <PrayerAction
-                icon={<ShareIcon color={colors.accent} size={19} strokeWidth={1.7} />}
-                label="Share prayer"
-                onPress={onShare}
-              />
+              <>
+                <PrayerAction
+                  disabled={busy || closing}
+                  icon={<ShareIcon color={colors.accent} size={19} strokeWidth={1.7} />}
+                  label="Share prayer"
+                  onPress={() => runAfterClose(onShare)}
+                />
+                <PrayerAction
+                  disabled={busy || closing}
+                  icon={<CopyIcon color={colors.accent} size={19} strokeWidth={1.7} />}
+                  label="Copy link"
+                  onPress={() => runAfterClose(onCopyLink)}
+                />
+              </>
             ) : null}
             {canReport ? (
               <PrayerAction
+                disabled={busy || closing}
                 icon={<FlagIcon color={colors.warning} size={19} strokeWidth={1.7} />}
                 label="Report prayer"
-                onPress={onReport}
+                onPress={() => runAfterClose(onReport)}
               />
             ) : null}
             {isOwner ? (
               <>
                 <PrayerAction
+                  disabled={busy || closing}
                   icon={<PencilIcon color={colors.textSecondary} size={19} strokeWidth={1.7} />}
                   label="Edit prayer"
-                  onPress={onEdit}
+                  onPress={() => runAfterClose(onEdit)}
                 />
                 <PrayerAction
                   destructive
-                  disabled={deleting}
+                  disabled={deleting || busy || closing}
                   icon={<TrashIcon color={colors.danger} size={19} strokeWidth={1.7} />}
                   label={deleting ? 'Deleting prayer...' : 'Delete prayer'}
-                  onPress={onDelete}
+                  onPress={() => runAfterClose(onDelete)}
                 />
               </>
             ) : null}
@@ -312,6 +363,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   actionLabel: {
+    flex: 1,
     color: colors.textSecondary,
     fontFamily: fontFamilies.bodyMedium,
     fontSize: 15,

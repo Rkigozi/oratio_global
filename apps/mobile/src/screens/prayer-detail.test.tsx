@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Alert, Modal } from 'react-native';
+import { PrayerActionsSheet } from '../components/prayer-owner-actions';
 import { PrayerDetailScreen } from './prayer-detail';
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
   Bookmark: () => null,
   CheckCircle2: () => null,
+  Copy: () => null,
   Flag: () => null,
   Info: () => null,
   Languages: () => null,
@@ -44,6 +46,7 @@ jest.mock('@oratio/shared/queries', () => ({
 }));
 
 jest.mock('../services/prayer-sharing', () => ({
+  copyPrayerLink: jest.fn(),
   sharePrayer: jest.fn(),
 }));
 
@@ -66,7 +69,7 @@ import {
   subscribeToPrayerCommentChanges,
   createReport,
 } from '@oratio/shared/queries';
-import { sharePrayer } from '../services/prayer-sharing';
+import { copyPrayerLink, sharePrayer } from '../services/prayer-sharing';
 import { translatePrayerText, type PrayerTranslation } from '../services/prayer-translation';
 
 const prayer = {
@@ -89,6 +92,11 @@ const reset = jest.fn();
 const navigation = { goBack, navigate, reset } as never;
 const route = { params: { prayerId: 'prayer-1' } } as never;
 
+function dismissActionsSheet() {
+  const modal = screen.UNSAFE_getByType(PrayerActionsSheet).findByType(Modal);
+  fireEvent(modal, 'dismiss');
+}
+
 describe('PrayerDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -107,7 +115,8 @@ describe('PrayerDetailScreen', () => {
       editedAt: '2026-09-12T12:00:00.000Z',
     } as never);
     jest.mocked(deletePrayerRequest).mockResolvedValue(true as never);
-    jest.mocked(sharePrayer).mockResolvedValue(true as never);
+    jest.mocked(sharePrayer).mockResolvedValue('shared');
+    jest.mocked(copyPrayerLink).mockResolvedValue(true);
     jest.mocked(getComments).mockResolvedValue([] as never);
     jest.mocked(getCommentCount).mockResolvedValue(0 as never);
     jest.mocked(subscribeToPrayerCommentChanges).mockReturnValue(jest.fn());
@@ -263,17 +272,106 @@ describe('PrayerDetailScreen', () => {
     fireEvent.press(await screen.findByLabelText('More prayer options'));
 
     expect(screen.getByText('Share prayer')).toBeTruthy();
+    expect(screen.getByText('Copy link')).toBeTruthy();
     expect(screen.queryByText('Edit prayer')).toBeNull();
     expect(screen.queryByText('Delete prayer')).toBeNull();
   });
 
-  it('opens the native share flow with the visible prayer', async () => {
+  it('waits for the iOS actions sheet to dismiss before sharing, and shares only once', async () => {
     render(<PrayerDetailScreen navigation={navigation} route={route} />);
 
     fireEvent.press(await screen.findByLabelText('More prayer options'));
     fireEvent.press(screen.getByText('Share prayer'));
 
+    expect(sharePrayer).not.toHaveBeenCalled();
+    dismissActionsSheet();
+    dismissActionsSheet();
     await waitFor(() => expect(sharePrayer).toHaveBeenCalledWith(prayer));
+    expect(sharePrayer).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Prayer shared.')).toBeTruthy();
+  });
+
+  it.each([
+    { result: 'copied', message: 'Link copied to clipboard.' },
+    { result: 'dismissed', message: 'Sharing cancelled.' },
+    { result: 'opened', message: 'Share options opened.' },
+  ] as const)('shows accurate feedback for $result', async ({ result, message }) => {
+    jest.mocked(sharePrayer).mockResolvedValue(result);
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('More prayer options'));
+    fireEvent.press(screen.getByText('Share prayer'));
+    dismissActionsSheet();
+
+    expect(await screen.findByText(message)).toBeTruthy();
+    expect(screen.queryByText('Prayer shared.')).toBeNull();
+    expect(copyPrayerLink).not.toHaveBeenCalled();
+  });
+
+  it('shows a share error and lets the user recover with Copy link', async () => {
+    jest.mocked(sharePrayer).mockRejectedValueOnce(new Error('Share unavailable'));
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('More prayer options'));
+    fireEvent.press(screen.getByText('Share prayer'));
+    dismissActionsSheet();
+
+    expect(
+      await screen.findByText("We couldn't open sharing. Try again or choose Copy link.")
+    ).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('More prayer options'));
+    fireEvent.press(screen.getByText('Copy link'));
+    dismissActionsSheet();
+
+    expect(await screen.findByText('Link copied to clipboard.')).toBeTruthy();
+    expect(copyPrayerLink).toHaveBeenCalledWith(prayer);
+  });
+
+  it('confirms a copy only after the clipboard write succeeds and prevents repeat actions', async () => {
+    let resolveCopy!: (copied: boolean) => void;
+    jest.mocked(copyPrayerLink).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveCopy = resolve;
+        })
+    );
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('More prayer options'));
+    fireEvent.press(screen.getByText('Copy link'));
+    dismissActionsSheet();
+
+    expect(screen.getByText('Copying link...')).toBeTruthy();
+    expect(screen.queryByText('Link copied to clipboard.')).toBeNull();
+    expect(screen.getByLabelText('More prayer options')).toBeDisabled();
+    await act(async () => resolveCopy(true));
+
+    expect(await screen.findByText('Link copied to clipboard.')).toBeTruthy();
+    expect(screen.getByLabelText('More prayer options')).toBeEnabled();
+    expect(copyPrayerLink).toHaveBeenCalledTimes(1);
+    expect(sharePrayer).not.toHaveBeenCalled();
+  });
+
+  it.each(['declined', 'rejected'])('shows a %s copy failure and allows retry', async (failure) => {
+    if (failure === 'declined') jest.mocked(copyPrayerLink).mockResolvedValueOnce(false);
+    else jest.mocked(copyPrayerLink).mockRejectedValueOnce(new Error('Clipboard failed'));
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('More prayer options'));
+    fireEvent.press(screen.getByText('Copy link'));
+    dismissActionsSheet();
+
+    expect(await screen.findByText("We couldn't copy the link. Please try again.")).toBeTruthy();
+    expect(screen.queryByText('Link copied to clipboard.')).toBeNull();
+    fireEvent.press(screen.getByLabelText('More prayer options'));
+    fireEvent.press(screen.getByText('Copy link'));
+    dismissActionsSheet();
+    expect(await screen.findByText('Link copied to clipboard.')).toBeTruthy();
+  });
+
+  it('does not share or copy when the options are closed without selecting an action', async () => {
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('More prayer options'));
+    fireEvent.press(screen.getByLabelText('Close prayer options'));
+    dismissActionsSheet();
+    expect(sharePrayer).not.toHaveBeenCalled();
+    expect(copyPrayerLink).not.toHaveBeenCalled();
   });
 
   it('reports a non-owned prayer without leaving its detail', async () => {
@@ -281,6 +379,7 @@ describe('PrayerDetailScreen', () => {
 
     fireEvent.press(await screen.findByLabelText('More prayer options'));
     fireEvent.press(screen.getByText('Report prayer'));
+    dismissActionsSheet();
     fireEvent.press(screen.getByText('Harmful or unsafe'));
 
     await waitFor(() =>
@@ -300,6 +399,7 @@ describe('PrayerDetailScreen', () => {
 
     fireEvent.press(await screen.findByLabelText('More prayer options'));
     fireEvent.press(screen.getByText('Edit prayer'));
+    dismissActionsSheet();
     fireEvent.changeText(
       screen.getByLabelText('Prayer text'),
       'Please pray for renewed hope today'
@@ -322,6 +422,7 @@ describe('PrayerDetailScreen', () => {
 
     fireEvent.press(await screen.findByLabelText('More prayer options'));
     fireEvent.press(screen.getByText('Edit prayer'));
+    dismissActionsSheet();
     fireEvent.changeText(screen.getByLabelText('Prayer text'), 'Too short');
     fireEvent.press(screen.getByText('Save changes'));
 
@@ -337,6 +438,7 @@ describe('PrayerDetailScreen', () => {
 
     fireEvent.press(await screen.findByLabelText('More prayer options'));
     fireEvent.press(screen.getByText('Delete prayer'));
+    dismissActionsSheet();
 
     expect(deletePrayerRequest).not.toHaveBeenCalled();
     expect(alertSpy).toHaveBeenCalledWith(
@@ -370,6 +472,7 @@ describe('PrayerDetailScreen', () => {
     fireEvent.press(await screen.findByLabelText('More prayer options'));
 
     expect(screen.queryByText('Share prayer')).toBeNull();
+    expect(screen.queryByText('Copy link')).toBeNull();
     expect(screen.getByText('Edit prayer')).toBeTruthy();
     expect(screen.getByText('Delete prayer')).toBeTruthy();
   });
