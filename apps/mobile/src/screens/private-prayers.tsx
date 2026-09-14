@@ -54,7 +54,7 @@ export function PrivatePrayersScreen() {
         <Pressable
           accessibilityLabel="Write a private prayer"
           accessibilityRole="button"
-          onPress={() => navigation.navigate('Submit')}
+          onPress={() => navigation.navigate('Submit', { initialAudience: 'private' })}
           style={styles.addButton}
         >
           <PlusIcon color={colors.accent} size={20} strokeWidth={1.8} />

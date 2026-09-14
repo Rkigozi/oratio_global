@@ -474,15 +474,31 @@ describe('createPrayerRequest', () => {
     const result = await m.createPrayerRequest({ ...prayer, audience: 'circle' });
 
     expect(result).toBe('new-id');
-    expect(qb.insert).toHaveBeenCalledWith(expect.objectContaining({ audience: 'circle' }));
+    expect(qb.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        audience: 'circle',
+        location_city: 'London',
+        location_country: 'United Kingdom',
+        location_lat: 51.5,
+        location_lng: -0.1,
+      })
+    );
   });
 
-  it('stores private audience when requested', async () => {
+  it('strips location when saving a private prayer, even when the caller supplies it', async () => {
     setAlways({ id: 'new-id' });
     const result = await m.createPrayerRequest({ ...prayer, audience: 'private' });
 
     expect(result).toBe('new-id');
-    expect(qb.insert).toHaveBeenCalledWith(expect.objectContaining({ audience: 'private' }));
+    expect(qb.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        audience: 'private',
+        location_city: '',
+        location_country: '',
+        location_lat: null,
+        location_lng: null,
+      })
+    );
   });
 
   it('stores canonical London location names', async () => {

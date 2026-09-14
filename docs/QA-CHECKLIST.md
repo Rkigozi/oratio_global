@@ -52,6 +52,10 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Anonymous is offered only for Public and hides attribution there
 - [ ] "Let people encourage me" controls comments for Public prayers only
 - [ ] Audience: public / Prayer Circle / private — private prayers only in the owner's private list
+- [ ] Audience is selected before location; Private shows prayer text and Save Prayer with no location or public preferences
+- [ ] Switching to Private clears entered location; a late location detection result or error is ignored, including after switching back
+- [ ] Starting from My Prayers uses its selected audience; Write a private prayer and Write another prayer in Private keep Private selected
+- [ ] A new private prayer saves without city, country, or coordinates; failed saves preserve the private draft for retry
 - [ ] Success screen opens the submitted prayer; it then appears in the correct space
 
 ## Global Map
@@ -76,6 +80,7 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] A user can delete their own comment; the prayer author can remove another user's comment
 - [ ] A Public prayer author can turn comments off and on from prayer detail
 - [ ] A private prayer shows personal Notes, not social comment/reply language
+- [ ] Private prayer lists and detail hide location (including on older prayers), author links, social prayer counts, and the Pray for this action
 - [ ] Private notes can be added, edited, and deleted and are never visible to another user
 - [ ] An owner can edit a valid 10-500 character prayer; invalid edits stay open with clear guidance and successful edits show as Edited
 - [ ] Deleting an owned prayer requires explicit confirmation, returns to the matching My Prayers tab rather than the stale submission success screen, and removes it from its feed, Profile count, and map aggregates

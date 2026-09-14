@@ -127,6 +127,14 @@ closed on 2026-09-12; `SCRUM-83` was closed after live deletion QA on
 2026-09-13. Remaining launch work stays open until implementation and QA meet
 the Definition of Done.
 
+`SCRUM-81` private-prayer follow-up (2026-09-14): the native composer now
+chooses audience before location, hides and clears location for Private, ignores
+stale location detection, and keeps private entry points and repeat submissions
+private by default. New private prayers omit location in the shared save layer;
+native private lists and detail show personal notes without location or social
+prayer counts. Physical iPhone QA of this follow-up is pending; the previously
+confirmed share/copy retest remains passed.
+
 ## Map and Android snapshot
 
 | Keys        | Scope                                      | Jira status / release track       |

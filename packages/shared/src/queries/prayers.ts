@@ -205,7 +205,10 @@ export async function createPrayerRequest(
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const location = normalizePrayerLocation(prayer.city, prayer.country);
+  const isPrivate = prayer.audience === 'private';
+  const location = isPrivate
+    ? { city: '', country: '' }
+    : normalizePrayerLocation(prayer.city, prayer.country);
 
   const { data, error } = await supabase
     .from('prayer_requests')
@@ -216,8 +219,8 @@ export async function createPrayerRequest(
       audience: prayer.audience || 'public',
       location_city: location.city,
       location_country: location.country,
-      location_lat: prayer.lat,
-      location_lng: prayer.lng,
+      location_lat: isPrivate ? null : prayer.lat,
+      location_lng: isPrivate ? null : prayer.lng,
       is_anonymous: !prayer.username,
       comments_enabled: prayer.commentsEnabled ?? true,
     })

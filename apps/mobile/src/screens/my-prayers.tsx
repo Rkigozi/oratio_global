@@ -115,7 +115,7 @@ export function MyPrayersScreen({
         <Pressable
           accessibilityLabel="Write a prayer"
           accessibilityRole="button"
-          onPress={() => navigation.navigate('Submit')}
+          onPress={() => navigation.navigate('Submit', { initialAudience: audience })}
           style={styles.headerButton}
         >
           <PlusIcon color={colors.accent} size={20} strokeWidth={1.8} />

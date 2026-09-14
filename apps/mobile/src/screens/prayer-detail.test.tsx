@@ -469,6 +469,12 @@ describe('PrayerDetailScreen', () => {
     } as never);
     render(<PrayerDetailScreen navigation={navigation} route={route} />);
 
+    await screen.findByText('Private prayer');
+    expect(screen.queryByText('London, United Kingdom')).toBeNull();
+    expect(screen.queryByText(/people prayed/)).toBeNull();
+    expect(screen.queryByText(/Pray for this/)).toBeNull();
+    expect(screen.getByText('Notes (0)')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Add a note...')).toBeTruthy();
     fireEvent.press(await screen.findByLabelText('More prayer options'));
 
     expect(screen.queryByText('Share prayer')).toBeNull();

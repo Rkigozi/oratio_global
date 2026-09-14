@@ -96,7 +96,19 @@ describe('MyPrayersScreen', () => {
 
     expect(screen.getByText('My private prayer request')).toBeTruthy();
     expect(screen.queryByText('My public prayer request')).toBeNull();
+    expect(screen.queryByText('London, United Kingdom')).toBeNull();
+    expect(screen.queryByText(/people prayed/)).toBeNull();
   });
+
+  it.each(['public', 'circle', 'private'] as const)(
+    'starts a new prayer in the selected %s space',
+    async (audience) => {
+      renderScreen(audience);
+      await waitFor(() => expect(getMyPrayers).toHaveBeenCalledTimes(3));
+      fireEvent.press(screen.getByLabelText('Write a prayer'));
+      expect(navigate).toHaveBeenCalledWith('Submit', { initialAudience: audience });
+    }
+  );
 
   it('opens an owned prayer for management', async () => {
     renderScreen();

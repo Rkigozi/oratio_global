@@ -39,7 +39,7 @@ export type RootStackParamList = {
   Profile: undefined;
   Settings: undefined;
   Updates: undefined;
-  Submit: undefined;
+  Submit: { initialAudience?: 'public' | 'circle' | 'private' } | undefined;
 };
 
 export type MainTabParamList = {

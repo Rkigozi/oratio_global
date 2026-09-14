@@ -49,7 +49,7 @@ const navigation = { navigate: jest.fn(), goBack: jest.fn() } as never;
 const route = {} as never;
 
 function fillForm(text: string) {
-  fireEvent.changeText(screen.getByPlaceholderText("Share what's on your heart…"), text);
+  fireEvent.changeText(screen.getByLabelText('Prayer'), text);
 }
 
 describe('SubmitScreen', () => {
@@ -196,20 +196,156 @@ describe('SubmitScreen', () => {
     expect(jest.mocked(createPrayerRequest).mock.calls[0][0].commentsEnabled).toBe(false);
   });
 
-  it('submits with the selected audience', async () => {
+  it('saves private prayers without location or public preferences', async () => {
     render(<SubmitScreen navigation={navigation} route={route} />);
 
     fillForm('A private prayer only for me to keep');
     fireEvent.press(screen.getByText('Private'));
 
     expect(screen.queryByText('Share anonymously')).toBeNull();
+    expect(screen.queryByText('Let people encourage me')).toBeNull();
+    expect(screen.queryByLabelText('Use my current location')).toBeNull();
+    expect(screen.queryByPlaceholderText('e.g. London')).toBeNull();
+    expect(screen.queryByPlaceholderText('e.g. United Kingdom')).toBeNull();
 
-    fireEvent.press(screen.getByText('Submit Prayer'));
+    fireEvent.press(screen.getByText('Save Prayer'));
 
     await waitFor(() => expect(createPrayerRequest).toHaveBeenCalled());
     const payload = jest.mocked(createPrayerRequest).mock.calls[0][0];
     expect(payload.audience).toBe('private');
     expect(payload.commentsEnabled).toBe(true);
+    expect(payload).toEqual(expect.objectContaining({ city: '', country: '', lat: 0, lng: 0 }));
+    expect(Location.getForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(await screen.findByText('Your private prayer is saved.')).toBeTruthy();
+  });
+
+  it('clears a previously entered location when switching to Private', async () => {
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fillForm('A private prayer only for me to keep');
+    fireEvent.changeText(screen.getByPlaceholderText('e.g. London'), 'London');
+    fireEvent.changeText(screen.getByPlaceholderText('e.g. United Kingdom'), 'United Kingdom');
+    fireEvent.press(screen.getByText('Private'));
+    fireEvent.press(screen.getByText('Prayer Circle'));
+
+    expect(screen.getByPlaceholderText('e.g. London').props.value).toBe('');
+    expect(screen.getByPlaceholderText('e.g. United Kingdom').props.value).toBe('');
+    expect(screen.getByLabelText('Prayer').props.value).toBe(
+      'A private prayer only for me to keep'
+    );
+    fireEvent.press(screen.getByText('Private'));
+    fireEvent.press(screen.getByText('Save Prayer'));
+
+    await waitFor(() =>
+      expect(createPrayerRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          audience: 'private',
+          city: '',
+          country: '',
+          lat: 0,
+          lng: 0,
+        })
+      )
+    );
+  });
+
+  it('starts in Private when opened from the private space and keeps it for the next prayer', async () => {
+    render(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'private' } } as never}
+      />
+    );
+    expect(screen.getByRole('radio', { name: 'Private' })).toBeChecked();
+    expect(screen.queryByLabelText('Use my current location')).toBeNull();
+    fillForm('A quiet prayer for my own reflection');
+    fireEvent.press(screen.getByText('Save Prayer'));
+    fireEvent.press(await screen.findByText('Write another prayer'));
+
+    expect(screen.getByRole('radio', { name: 'Private' })).toBeChecked();
+    expect(screen.getByLabelText('Prayer').props.value).toBe('');
+    expect(screen.getByText('Save Prayer')).toBeTruthy();
+    expect(screen.queryByLabelText('Use my current location')).toBeNull();
+  });
+
+  it('stops before asking for location permission if the audience becomes Private', async () => {
+    let resolvePermission!: (
+      value: Awaited<ReturnType<typeof Location.getForegroundPermissionsAsync>>
+    ) => void;
+    jest.mocked(Location.getForegroundPermissionsAsync).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePermission = resolve;
+        })
+    );
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fireEvent.press(screen.getByLabelText('Use my current location'));
+    fireEvent.press(screen.getByText('Private'));
+
+    await act(async () => resolvePermission({ granted: false, canAskAgain: true } as never));
+    expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(Location.getLastKnownPositionAsync).not.toHaveBeenCalled();
+    expect(Location.reverseGeocodeAsync).not.toHaveBeenCalled();
+  });
+
+  it('ignores a stale detected city after switching to Private and back to Public', async () => {
+    let resolveGeocode!: (value: Awaited<ReturnType<typeof Location.reverseGeocodeAsync>>) => void;
+    jest.mocked(Location.reverseGeocodeAsync).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveGeocode = resolve;
+        })
+    );
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fireEvent.press(screen.getByLabelText('Use my current location'));
+    await waitFor(() => expect(Location.reverseGeocodeAsync).toHaveBeenCalled());
+    fireEvent.press(screen.getByText('Private'));
+    fireEvent.press(screen.getByText('Public'));
+    await act(async () => resolveGeocode([{ city: 'London', country: 'United Kingdom' }] as never));
+
+    expect(screen.getByPlaceholderText('e.g. London').props.value).toBe('');
+    expect(screen.getByPlaceholderText('e.g. United Kingdom').props.value).toBe('');
+    fireEvent.press(screen.getByLabelText('Use my current location'));
+    expect(await screen.findByDisplayValue('London')).toBeTruthy();
+  });
+
+  it('does not show stale geolocation errors on a private prayer', async () => {
+    let rejectGeocode!: (reason: Error) => void;
+    jest.mocked(Location.reverseGeocodeAsync).mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          rejectGeocode = reject;
+        })
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fireEvent.press(screen.getByLabelText('Use my current location'));
+    await waitFor(() => expect(Location.reverseGeocodeAsync).toHaveBeenCalled());
+    fireEvent.press(screen.getByText('Private'));
+    await act(async () => rejectGeocode(new Error('Geocoding failed')));
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(screen.getByText('Save Prayer')).toBeTruthy();
+    alertSpy.mockRestore();
+  });
+
+  it('preserves a private draft and uses save wording after a failed save', async () => {
+    jest.mocked(createPrayerRequest).mockResolvedValueOnce(null);
+    render(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'private' } } as never}
+      />
+    );
+    fillForm('A quiet prayer for my own reflection');
+    fireEvent.press(screen.getByText('Save Prayer'));
+
+    expect(await screen.findByText("We couldn't save your prayer. Please try again.")).toBeTruthy();
+    expect(screen.getByLabelText('Prayer').props.value).toBe(
+      'A quiet prayer for my own reflection'
+    );
+    expect(screen.getByRole('radio', { name: 'Private' })).toBeChecked();
+    fireEvent.press(screen.getByText('Save Prayer'));
+    expect(await screen.findByText('Your private prayer is saved.')).toBeTruthy();
   });
 
   it('shows the success state and links to the submitted prayer', async () => {

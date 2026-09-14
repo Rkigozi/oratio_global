@@ -13,6 +13,7 @@ export function PrayerCard({
 }) {
   const count = prayer.prayerCount ?? 0;
   const attribution = getAttributionText(prayer);
+  const isPrivate = prayer.audience === 'private';
 
   return (
     <Pressable
@@ -23,36 +24,42 @@ export function PrayerCard({
       <Text style={styles.text} numberOfLines={4}>
         {prayer.text}
       </Text>
-      <View style={styles.metaRow}>
-        {prayer.username && onAuthorPress ? (
-          <Pressable
-            accessibilityLabel={`View @${prayer.username}'s profile`}
-            accessibilityRole="link"
-            hitSlop={8}
-            onPress={(event) => {
-              event?.stopPropagation();
-              onAuthorPress();
-            }}
-            style={styles.authorButton}
-          >
-            <Text style={[styles.attribution, styles.attributionLink]} numberOfLines={1}>
+      {isPrivate ? (
+        <Text style={styles.attribution}>Private prayer</Text>
+      ) : (
+        <View style={styles.metaRow}>
+          {prayer.username && onAuthorPress ? (
+            <Pressable
+              accessibilityLabel={`View @${prayer.username}'s profile`}
+              accessibilityRole="link"
+              hitSlop={8}
+              onPress={(event) => {
+                event?.stopPropagation();
+                onAuthorPress();
+              }}
+              style={styles.authorButton}
+            >
+              <Text style={[styles.attribution, styles.attributionLink]} numberOfLines={1}>
+                {attribution}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text style={styles.attribution} numberOfLines={1}>
               {attribution}
             </Text>
-          </Pressable>
-        ) : (
-          <Text style={styles.attribution} numberOfLines={1}>
-            {attribution}
+          )}
+          <Text style={styles.location} numberOfLines={1}>
+            {prayer.city !== 'Unknown' ? `${prayer.city}, ${prayer.country}` : prayer.country}
           </Text>
-        )}
-        <Text style={styles.location} numberOfLines={1}>
-          {prayer.city !== 'Unknown' ? `${prayer.city}, ${prayer.country}` : prayer.country}
-        </Text>
-      </View>
+        </View>
+      )}
       <View style={styles.footerRow}>
         <Text style={styles.time}>{prayer.createdAt ? timeAgo(prayer.createdAt) : ''}</Text>
-        <Text style={styles.count}>
-          🙏 {count} {count === 1 ? 'person prayed' : 'people prayed'}
-        </Text>
+        {!isPrivate && (
+          <Text style={styles.count}>
+            🙏 {count} {count === 1 ? 'person prayed' : 'people prayed'}
+          </Text>
+        )}
       </View>
     </Pressable>
   );

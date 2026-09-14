@@ -50,6 +50,17 @@ describe('PrivatePrayersScreen', () => {
 
     await waitFor(() => expect(getMyPrayers).toHaveBeenCalledWith('private'));
     expect(screen.getByText('A prayer just for me')).toBeTruthy();
+    expect(screen.queryByText('London, United Kingdom')).toBeNull();
+    expect(screen.queryByText(/people prayed/)).toBeNull();
+    expect(screen.getByText('Private prayer')).toBeTruthy();
+  });
+
+  it('opens the composer with Private selected', async () => {
+    jest.mocked(getMyPrayers).mockResolvedValue([]);
+    render(<PrivatePrayersScreen />);
+    await screen.findByText('A quiet place for your prayers');
+    fireEvent.press(screen.getByLabelText('Write a private prayer'));
+    expect(mockNavigation.navigate).toHaveBeenCalledWith('Submit', { initialAudience: 'private' });
   });
 
   it('shows a private-space empty state', async () => {

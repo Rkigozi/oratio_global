@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ArrowLeft, LocateFixed } from 'lucide-react-native';
@@ -24,12 +24,15 @@ const AUDIENCE_OPTIONS: Array<{ value: Audience; label: string; hint: string }> 
   { value: 'private', label: 'Private', hint: 'Just for you' },
 ];
 
-export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackParamList, 'Submit'>) {
+export function SubmitScreen({
+  navigation,
+  route,
+}: NativeStackScreenProps<RootStackParamList, 'Submit'>) {
   const { profile } = useAuth();
   const [text, setText] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
-  const [audience, setAudience] = useState<Audience>('public');
+  const [audience, setAudience] = useState<Audience>(route.params?.initialAudience ?? 'public');
   const [anonymous, setAnonymous] = useState(false);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [error, setError] = useState('');
@@ -37,16 +40,42 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [submittedPrayerId, setSubmittedPrayerId] = useState<string | null>(null);
+  const locationRequest = useRef(0);
+  const isPrivate = audience === 'private';
+
+  useEffect(
+    () => () => {
+      locationRequest.current += 1;
+    },
+    []
+  );
+
+  const selectAudience = (next: Audience) => {
+    if (submitting) return;
+    setAudience(next);
+    setError('');
+    if (next !== 'public') setAnonymous(false);
+    if (next === 'private') {
+      locationRequest.current += 1;
+      setLocating(false);
+      setCity('');
+      setCountry('');
+    }
+  };
 
   const handleDetectLocation = async () => {
-    if (locating) return;
+    if (locating || isPrivate || submitting) return;
 
+    const request = ++locationRequest.current;
+    const isCurrent = () => request === locationRequest.current;
     setLocating(true);
     setError('');
     try {
       let permission = await Location.getForegroundPermissionsAsync();
+      if (!isCurrent()) return;
       if (!permission.granted && permission.canAskAgain) {
         permission = await Location.requestForegroundPermissionsAsync();
+        if (!isCurrent()) return;
       }
 
       if (!permission.granted) {
@@ -57,18 +86,22 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
         return;
       }
 
-      const position =
-        (await Location.getLastKnownPositionAsync({
-          maxAge: 120_000,
-          requiredAccuracy: 1_000,
-        })) ||
-        (await Location.getCurrentPositionAsync({
+      let position = await Location.getLastKnownPositionAsync({
+        maxAge: 120_000,
+        requiredAccuracy: 1_000,
+      });
+      if (!isCurrent()) return;
+      if (!position) {
+        position = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
-        }));
+        });
+        if (!isCurrent()) return;
+      }
       const addresses = await Location.reverseGeocodeAsync({
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
       });
+      if (!isCurrent()) return;
       const address = addresses[0];
       const detectedCity =
         address?.city || address?.district || address?.subregion || address?.region;
@@ -81,20 +114,22 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
       setCity(detectedCity);
       setCountry(detectedCountry);
     } catch {
+      if (!isCurrent()) return;
       Alert.alert(
         'Location unavailable',
         "We couldn't detect your city. You can still enter it manually."
       );
     } finally {
-      setLocating(false);
+      if (isCurrent()) setLocating(false);
     }
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
     setError('');
     const validation = validatePrayerSubmission({
       text,
-      location: `${city}, ${country}`,
+      location: isPrivate ? '' : `${city}, ${country}`,
       anonymous,
     });
     if (!validation.success) {
@@ -111,10 +146,14 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
       return;
     }
 
-    const trimmedCity = city.trim() || 'Unknown';
-    const trimmedCountry = country.trim() || 'Unknown';
-    const coords = getApproximateCoordinates(trimmedCity, trimmedCountry);
+    const trimmedCity = isPrivate ? '' : city.trim() || 'Unknown';
+    const trimmedCountry = isPrivate ? '' : country.trim() || 'Unknown';
+    const coords = isPrivate
+      ? { lat: 0, lng: 0 }
+      : getApproximateCoordinates(trimmedCity, trimmedCountry);
 
+    locationRequest.current += 1;
+    setLocating(false);
     setSubmitting(true);
     let prayerId: string | null = null;
     try {
@@ -136,7 +175,11 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
     }
 
     if (!prayerId) {
-      setError("We couldn't share your prayer. Please try again.");
+      setError(
+        isPrivate
+          ? "We couldn't save your prayer. Please try again."
+          : "We couldn't share your prayer. Please try again."
+      );
       return;
     }
     setSubmittedPrayerId(prayerId);
@@ -168,14 +211,15 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
             setText('');
             setCity('');
             setCountry('');
-            setAudience('public');
             setAnonymous(false);
             setCommentsEnabled(true);
             setSubmittedPrayerId(null);
           }}
           style={styles.againButton}
         >
-          <Text style={styles.againText}>Share another prayer</Text>
+          <Text style={styles.againText}>
+            {isPrivate ? 'Write another prayer' : 'Share another prayer'}
+          </Text>
         </Pressable>
       </Screen>
     );
@@ -192,13 +236,39 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
         >
           <ArrowLeftIcon color={colors.textMuted} size={20} strokeWidth={1.7} />
         </Pressable>
-        <ScreenHeaderTitle title="Share a Prayer" />
+        <ScreenHeaderTitle title={isPrivate ? 'Private Prayer' : 'Share a Prayer'} />
         <View style={styles.headerSpacer} />
       </View>
 
+      <Text style={styles.fieldLabel}>Who can see this?</Text>
+      <View style={styles.audienceRow}>
+        {AUDIENCE_OPTIONS.map((option) => {
+          const selected = audience === option.value;
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: selected, disabled: submitting }}
+              disabled={submitting}
+              onPress={() => selectAudience(option.value)}
+              style={[styles.audiencePill, selected && styles.audiencePillSelected]}
+            >
+              <Text style={[styles.audienceText, selected && styles.audienceTextSelected]}>
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Text style={styles.audienceHint}>
+        {AUDIENCE_OPTIONS.find((o) => o.value === audience)?.hint}
+      </Text>
+
       <Field
         label="Prayer"
-        placeholder="Share what's on your heart…"
+        accessibilityLabel="Prayer"
+        placeholder={isPrivate ? "Write what's on your heart…" : "Share what's on your heart…"}
+        editable={!submitting}
         value={text}
         onChangeText={(value) => {
           setText(value);
@@ -213,71 +283,53 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
         {text.length}/500
       </Text>
 
-      <Pressable
-        accessibilityLabel="Use my current location"
-        accessibilityRole="button"
-        disabled={locating}
-        onPress={() => void handleDetectLocation()}
-        style={({ pressed }) => [
-          styles.locationButton,
-          pressed && !locating && styles.locationButtonPressed,
-          locating && styles.locationButtonDisabled,
-        ]}
-      >
-        {locating ? (
-          <ActivityIndicator color={colors.accent} size="small" />
-        ) : (
-          <LocateFixedIcon color={colors.accent} size={18} strokeWidth={1.8} />
-        )}
-        <Text style={styles.locationButtonText}>
-          {locating ? 'Finding your city...' : 'Use my current location'}
-        </Text>
-      </Pressable>
+      {!isPrivate && (
+        <>
+          <Pressable
+            accessibilityLabel="Use my current location"
+            accessibilityRole="button"
+            disabled={locating || submitting}
+            onPress={() => void handleDetectLocation()}
+            style={({ pressed }) => [
+              styles.locationButton,
+              pressed && !locating && styles.locationButtonPressed,
+              locating && styles.locationButtonDisabled,
+            ]}
+          >
+            {locating ? (
+              <ActivityIndicator color={colors.accent} size="small" />
+            ) : (
+              <LocateFixedIcon color={colors.accent} size={18} strokeWidth={1.8} />
+            )}
+            <Text style={styles.locationButtonText}>
+              {locating ? 'Finding your city...' : 'Use my current location'}
+            </Text>
+          </Pressable>
 
-      <Field
-        label="City"
-        placeholder="e.g. London"
-        value={city}
-        onChangeText={(value) => {
-          setCity(value);
-          setError('');
-        }}
-        autoCorrect={false}
-      />
-      <Field
-        label="Country"
-        placeholder="e.g. United Kingdom"
-        value={country}
-        onChangeText={(value) => {
-          setCountry(value);
-          setError('');
-        }}
-        autoCorrect={false}
-      />
-
-      <Text style={styles.fieldLabel}>Who can see this?</Text>
-      <View style={styles.audienceRow}>
-        {AUDIENCE_OPTIONS.map((option) => {
-          const selected = audience === option.value;
-          return (
-            <Pressable
-              key={option.value}
-              onPress={() => {
-                setAudience(option.value);
-                if (option.value !== 'public') setAnonymous(false);
-              }}
-              style={[styles.audiencePill, selected && styles.audiencePillSelected]}
-            >
-              <Text style={[styles.audienceText, selected && styles.audienceTextSelected]}>
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      <Text style={styles.audienceHint}>
-        {AUDIENCE_OPTIONS.find((o) => o.value === audience)?.hint}
-      </Text>
+          <Field
+            label="City (optional)"
+            editable={!submitting}
+            placeholder="e.g. London"
+            value={city}
+            onChangeText={(value) => {
+              setCity(value);
+              setError('');
+            }}
+            autoCorrect={false}
+          />
+          <Field
+            label="Country (optional)"
+            editable={!submitting}
+            placeholder="e.g. United Kingdom"
+            value={country}
+            onChangeText={(value) => {
+              setCountry(value);
+              setError('');
+            }}
+            autoCorrect={false}
+          />
+        </>
+      )}
 
       {audience === 'public' && (
         <View style={styles.publicPreferences}>
@@ -285,6 +337,7 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
             <Text style={styles.preferenceText}>Share anonymously</Text>
             <Switch
               accessibilityLabel="Share anonymously"
+              disabled={submitting}
               value={anonymous}
               onValueChange={setAnonymous}
               trackColor={{ false: colors.surfaceBorder, true: colors.accentDark }}
@@ -295,6 +348,7 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
             <Text style={styles.preferenceText}>Let people encourage me</Text>
             <Switch
               accessibilityLabel="Let people encourage me"
+              disabled={submitting}
               value={commentsEnabled}
               onValueChange={setCommentsEnabled}
               trackColor={{ false: colors.surfaceBorder, true: colors.accentDark }}
@@ -306,7 +360,7 @@ export function SubmitScreen({ navigation }: NativeStackScreenProps<RootStackPar
 
       <ErrorText>{error}</ErrorText>
       <PrimaryButton
-        title="Submit Prayer"
+        title={isPrivate ? 'Save Prayer' : 'Submit Prayer'}
         onPress={() => void handleSubmit()}
         loading={submitting}
       />

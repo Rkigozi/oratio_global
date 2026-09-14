@@ -115,7 +115,7 @@ export function PrayerDetailScreen({
   }, [load]);
 
   const handlePray = async () => {
-    if (!prayer || prayBusy) return;
+    if (!prayer || prayer.audience === 'private' || prayBusy) return;
     setPrayBusy(true);
     const next = !prayed;
     try {
@@ -186,6 +186,7 @@ export function PrayerDetailScreen({
     : false;
   const canShare = Boolean(prayer && prayer.audience !== 'private');
   const canReport = Boolean(prayer && !isOwner && prayer.audience !== 'private');
+  const isPrivate = prayer?.audience === 'private';
 
   const openAuthorProfile = () => {
     if (!prayer?.username) return;
@@ -423,12 +424,16 @@ export function PrayerDetailScreen({
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.locationRow}>
-            <MapPinIcon color={colors.textMuted} size={14} strokeWidth={1.7} />
-            <Text style={styles.location}>
-              {prayer.city !== 'Unknown' ? `${prayer.city}, ${prayer.country}` : prayer.country}
-            </Text>
-          </View>
+          {isPrivate ? (
+            <Text style={styles.privateLabel}>Private prayer</Text>
+          ) : (
+            <View style={styles.locationRow}>
+              <MapPinIcon color={colors.textMuted} size={14} strokeWidth={1.7} />
+              <Text style={styles.location}>
+                {prayer.city !== 'Unknown' ? `${prayer.city}, ${prayer.country}` : prayer.country}
+              </Text>
+            </View>
+          )}
           <Text style={styles.time}>
             {prayer.createdAt ? timeAgo(prayer.createdAt) : ''}
             {prayer.editedAt ? ' - Edited' : ''}
@@ -469,41 +474,45 @@ export function PrayerDetailScreen({
             </View>
           ) : null}
 
-          {prayer.username ? (
-            <Pressable
-              accessibilityLabel={`View @${prayer.username}'s profile`}
-              accessibilityRole="link"
-              hitSlop={8}
-              onPress={openAuthorProfile}
-              style={styles.attributionButton}
-            >
-              <Text style={[styles.attribution, styles.attributionLink]}>
-                {getAttributionText(prayer)}
-              </Text>
-            </Pressable>
-          ) : (
-            <Text style={styles.attribution}>{getAttributionText(prayer)}</Text>
+          {!isPrivate && (
+            <>
+              {prayer.username ? (
+                <Pressable
+                  accessibilityLabel={`View @${prayer.username}'s profile`}
+                  accessibilityRole="link"
+                  hitSlop={8}
+                  onPress={openAuthorProfile}
+                  style={styles.attributionButton}
+                >
+                  <Text style={[styles.attribution, styles.attributionLink]}>
+                    {getAttributionText(prayer)}
+                  </Text>
+                </Pressable>
+              ) : (
+                <Text style={styles.attribution}>{getAttributionText(prayer)}</Text>
+              )}
+
+              <View style={styles.countRow}>
+                <Text style={styles.count}>
+                  {count} {count === 1 ? 'person prayed' : 'people prayed'}
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={() => void handlePray()}
+                disabled={prayBusy}
+                style={[styles.prayButton, prayed && styles.prayedButton]}
+              >
+                {prayBusy ? (
+                  <ActivityIndicator color={prayed ? colors.accent : colors.white} />
+                ) : (
+                  <Text style={[styles.prayText, prayed && styles.prayedText]}>
+                    🙏 {prayed ? 'Prayed for this' : 'Pray for this'}
+                  </Text>
+                )}
+              </Pressable>
+            </>
           )}
-
-          <View style={styles.countRow}>
-            <Text style={styles.count}>
-              {count} {count === 1 ? 'person prayed' : 'people prayed'}
-            </Text>
-          </View>
-
-          <Pressable
-            onPress={() => void handlePray()}
-            disabled={prayBusy}
-            style={[styles.prayButton, prayed && styles.prayedButton]}
-          >
-            {prayBusy ? (
-              <ActivityIndicator color={prayed ? colors.accent : colors.white} />
-            ) : (
-              <Text style={[styles.prayText, prayed && styles.prayedText]}>
-                🙏 {prayed ? 'Prayed for this' : 'Pray for this'}
-              </Text>
-            )}
-          </Pressable>
 
           <PrayerComments prayer={prayer} />
         </ScrollView>
@@ -611,6 +620,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
+  },
+  privateLabel: {
+    color: colors.textMuted,
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 12,
   },
   location: {
     color: colors.textMuted,
