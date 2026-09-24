@@ -2,12 +2,18 @@
 
 Use this on a physical iPhone in Expo Go after native changes. Repeat the critical set in TestFlight once EAS distribution is introduced. Web/PWA regression checks remain separate during the migration.
 
+QA workbook: [oratio_v1_qa_smoke_test_workbook](https://docs.google.com/spreadsheets/d/1SUlp0WxPbaROUWlg37LXuNgC99F--lPEzSoTICU5zB4/edit).
+Partial sync on 2026-09-24 added confirmed moderation follow-up evidence to
+`MOD-002` and recorded migrations through 040. Historical PWA results remain
+unchanged; this native checklist is still the source for open iPhone/release checks.
+
 ## Before You Start
 
 - [ ] Test the latest `main` commit with no local changes affecting the build
-- [ ] Apply all Supabase migrations through `038_canonical_prayer_locations.sql`
+- [x] Apply all Supabase migrations through `040_reporter_details.sql` (Oratio_DB local/remote migration history aligned, 2026-09-23)
 - [ ] Prepare three verified test accounts with distinct usernames, profiles, and avatars
 - [ ] Account A is new or intentionally empty; Account B owns representative public, Circle, and private prayers; Account C is an accepted Circle peer
+- [ ] Connect B and C before creating B's Circle prayers; an empty Circle cannot publish, and A initially stays outside B's Circle for non-member visibility checks
 - [ ] Keep Account B signed in on the physical iPhone and Accounts A/C in separate browser or device sessions
 - [ ] Confirm all sessions reach the same Supabase project before testing Circle, privacy, comments, and Updates
 - [ ] Record the latest TestFlight version/build and Git commit used for the pass
@@ -40,6 +46,7 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Public tab loads only recent public prayers and paginates on scroll
 - [ ] Prayer Circle tab loads only prayers visible through accepted circle connections
 - [ ] Private tab loads only the signed-in user's private prayers
+- [x] Accounts A and B cannot see each other's Private prayers after connecting through Prayer Circle (user-confirmed two-account UI check, 2026-09-19)
 - [ ] Empty states clearly describe each space
 - [ ] Pull-to-refresh works in all three spaces
 - [ ] Bottom-tab icons have stable 44pt+ targets and respect the iPhone safe area across Public / Map / Circle / Private / Me
@@ -52,11 +59,15 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Anonymous is offered only for Public and hides attribution there
 - [ ] "Let people encourage me" controls comments for Public prayers only
 - [ ] Audience: public / Prayer Circle / private — private prayers only in the owner's private list
+- [ ] An empty Circle blocks submission with an accepted-connection message and Circle management action, without an insert/RLS error; Public and Private remain available
+- [ ] Circle checks distinguish network failure from no accepted connections; retry or return from Circle management rechecks eligibility and preserves the draft, and save rechecks a connection removed on another device
 - [ ] Audience is selected before location; Private shows prayer text and Save Prayer with no location or public preferences
 - [ ] Switching to Private clears entered location; a late location detection result or error is ignored, including after switching back
 - [ ] Starting from My Prayers uses its selected audience; Write a private prayer and Write another prayer in Private keep Private selected
 - [ ] A new private prayer saves without city, country, or coordinates; failed saves preserve the private draft for retry
-- [ ] Success screen opens the submitted prayer; it then appears in the correct space
+- [x] Post-submit return to the main journey works in the user's retest (confirmed 2026-09-19); the full audience and Back-history checks below remain open
+- [ ] Success offers a one-tap return to the submitted audience's Public/Circle/Private main tab, restores bottom navigation, and removes the completed composer from Back history
+- [ ] Success still offers View Prayer and another submission; View Prayer's Back returns to the matching main tab instead of the old success screen, and failed saves never navigate away
 
 ## Global Map
 
@@ -101,7 +112,7 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 
 ## Prayer Circle
 
-- [ ] Connected members see explicitly shared circle-only prayers
+- [x] Connected members see explicitly shared circle-only prayers (user confirmed between Accounts A and B, 2026-09-19)
 - [ ] A non-member cannot fetch a circle prayer directly
 - [ ] Circle header management icon opens the management screen and Back returns to Circle prayers
 - [ ] Searching by exact or partial `@username` finds another user but never the signed-in user
@@ -118,6 +129,10 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Me bottom tab opens Profile; Settings opens from the Profile header
 - [ ] Profile shows display name, username, bio, location, avatar, joined date, and public/circle/private prayer counts
 - [ ] Tapping a named prayer author or Prayer Circle person opens their profile and visible prayer list; anonymous prayers never appear on an author's profile
+- [ ] Another person's profile offers Invite to Prayer Circle, confirms a successful send, and allows cancelling a pending invite; the signed-in user's own profile never offers it
+- [ ] Profile Circle actions support accepting/declining incoming invites, refresh visible prayers after acceptance, and open Circle management for existing connections
+- [ ] Profile Circle actions prevent repeat taps and inviting/accepting beyond 12 connections; failed status checks and actions show recoverable feedback without falsely claiming success
+- [ ] Returning to or pulling down on a profile refreshes its Circle state; profile Circle actions remain legible in light/dark mode and with long usernames
 - [ ] My Prayers opens from Profile; each count opens the matching Public, Circle, or Private owner list and returning from detail refreshes edits/deletions
 - [ ] Editing username/display name/bio/location saves through Supabase and refreshes the app identity immediately
 - [ ] Username continuity works after a username change; old web profile links still resolve through aliases
@@ -142,9 +157,25 @@ Use this on a physical iPhone in Expo Go after native changes. Repeat the critic
 - [ ] Pull-to-refresh reloads activity; foregrounding the app catches activity received while away
 - [ ] Deleting an update requires confirmation and removes only that user's inbox event
 - [ ] Realtime failure does not block the inbox; foreground refresh and polling remain functional
-- [ ] Prayer and comment menus allow eligible users to choose a report reason and submit it
-- [ ] Success, duplicate-report, authentication, and network-error states are clear
+- [x] Another account's public prayer can be reported by choosing a reason; the success confirmation appears (user-confirmed Miriam/Jonah QA flow, 2026-09-21)
+- [x] Reporting the same prayer again shows the already-reported message (user-confirmed, 2026-09-21)
+- [ ] Comment menus allow eligible users to choose a report reason and submit it; success and duplicate-report states are clear
+- [ ] Retest prayer/comment reporting on iPhone: reason selection alone does not send, optional details allow 1000 characters, Submit confirms success, and the form remains reachable above the keyboard
+- [ ] Report details reach moderator review but are unavailable to the reported author or unrelated accounts; failure keeps the reason and details draft
+- [ ] Report authentication and network-error states are clear
 - [ ] Reports reach the moderation queue without changing private or Circle visibility
+- [x] Local moderation tests apply all migrations through 040 and verify moderator-only review/actions, Private isolation, hide/restore across direct reads, map totals, comment threads, activity previews, audit privacy, stale-decision rejection, and reporter-details limits/RLS (`node scripts/test-moderation-db.mjs`, 2026-09-23; 45 assertions in a disposable database)
+- [x] Migrations 039 and 040 applied to Oratio_DB with owner approval; existing signed-in moderator can load a real Circle report in the local web dashboard (2026-09-23; read-only verification, no roles or content changed)
+- [ ] Deploy the updated web moderation UI and native report form; confirm the dedicated approved launch moderator account and ownership
+- [ ] Moderator reviews a real QA prayer/comment, supplies a decision reason, confirms Hide, and sees the related reports resolve; another account cannot fetch the hidden content
+- [x] Restore the recent public QA prayer: after refreshing Expo it reappears for Miriam and Jonah; the report stays Resolved and decision history records Hide and Restore (user-confirmed, 2026-09-24)
+- [ ] Restore a Circle prayer and confirm it remains limited to its original audience
+- [x] Dismiss moves a disposable report to Dismissed while the public prayer remains visible in Expo (user-confirmed Miriam/Jonah QA flow, 2026-09-24)
+- [ ] Reporter receives a review update without the moderator's internal note or another reporter's identity
+- [ ] A failed queue/review load shows retry, not an empty/all-clear state; a failed or conflicting decision requires a fresh review and preserves the draft reason
+- [x] Queue offers oldest/newest ordering before pagination; newest pending entries appear above historical reports; desktop and phone-width web layouts verified (2026-09-24, read-only live queue)
+- [x] Automated queue tests cover focus/reconnection/30-second refresh, hidden-tab suppression, stale-refresh warnings, request races, and preservation of open review drafts (2026-09-24)
+- [x] A new disposable report from Expo appears in the visible Pending / Newest reports queue within 30 seconds without manual refresh (user-confirmed, 2026-09-24)
 
 ## Native Runtime
 
