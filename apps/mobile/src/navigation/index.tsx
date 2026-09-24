@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import {
   Globe2,
   LockKeyhole,
@@ -30,7 +31,7 @@ export type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
   ResetPassword: undefined;
-  Main: undefined;
+  Main: NavigatorScreenParams<MainTabParamList> | undefined;
   MyPrayers: { initialAudience?: 'public' | 'circle' | 'private' } | undefined;
   PrayerDetail: { prayerId: string };
   UserProfile: { username: string };

@@ -5,10 +5,25 @@ import { SubmitScreen } from './submit';
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
+  ArrowRight: () => null,
   LocateFixed: () => null,
   Eye: () => null,
   EyeOff: () => null,
+  RefreshCw: () => null,
+  UsersRound: () => null,
 }));
+
+let mockFocused = true;
+jest.mock('@react-navigation/native', () => {
+  const { useEffect } = require('react');
+  return {
+    useFocusEffect: (callback: () => void | (() => void)) => {
+      useEffect(() => {
+        if (mockFocused) return callback();
+      }, [callback, mockFocused]);
+    },
+  };
+});
 
 jest.mock('../hooks/auth-context', () => ({
   useAuth: jest.fn(),
@@ -16,6 +31,7 @@ jest.mock('../hooks/auth-context', () => ({
 
 jest.mock('@oratio/shared/queries', () => ({
   createPrayerRequest: jest.fn(),
+  getPrayerCircleCount: jest.fn(),
 }));
 
 jest.mock('expo-location', () => ({
@@ -28,7 +44,7 @@ jest.mock('expo-location', () => ({
 }));
 
 import { useAuth } from '../hooks/auth-context';
-import { createPrayerRequest } from '@oratio/shared/queries';
+import { createPrayerRequest, getPrayerCircleCount } from '@oratio/shared/queries';
 import { getApproximateCoordinates } from '@oratio/shared/prayer-data';
 import * as Location from 'expo-location';
 
@@ -45,7 +61,7 @@ function mockAuth() {
   } as never);
 }
 
-const navigation = { navigate: jest.fn(), goBack: jest.fn() } as never;
+const navigation = { navigate: jest.fn(), goBack: jest.fn(), reset: jest.fn() } as never;
 const route = {} as never;
 
 function fillForm(text: string) {
@@ -54,9 +70,11 @@ function fillForm(text: string) {
 
 describe('SubmitScreen', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
+    mockFocused = true;
     mockAuth();
     jest.mocked(createPrayerRequest).mockResolvedValue('prayer-new' as never);
+    jest.mocked(getPrayerCircleCount).mockResolvedValue(1);
     jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue({
       granted: true,
       canAskAgain: true,
@@ -167,6 +185,7 @@ describe('SubmitScreen', () => {
     expect(payload.username).toBe('testuser');
     expect(payload.city).toBe('London');
     expect(payload.country).toBe('United Kingdom');
+    expect(getPrayerCircleCount).not.toHaveBeenCalled();
   });
 
   it('submits anonymously when the toggle is on', async () => {
@@ -216,6 +235,7 @@ describe('SubmitScreen', () => {
     expect(payload.commentsEnabled).toBe(true);
     expect(payload).toEqual(expect.objectContaining({ city: '', country: '', lat: 0, lng: 0 }));
     expect(Location.getForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(getPrayerCircleCount).not.toHaveBeenCalled();
     expect(await screen.findByText('Your private prayer is saved.')).toBeTruthy();
   });
 
@@ -357,10 +377,85 @@ describe('SubmitScreen', () => {
     await waitFor(() => expect(screen.getByText('Your prayer is live.')).toBeTruthy());
 
     fireEvent.press(screen.getByText('View Prayer'));
-    expect((navigation as unknown as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith(
-      'PrayerDetail',
-      { prayerId: 'prayer-new' }
+    expect((navigation as unknown as { reset: jest.Mock }).reset).toHaveBeenCalledWith({
+      index: 1,
+      routes: [
+        { name: 'Main', params: { screen: 'Public' } },
+        { name: 'PrayerDetail', params: { prayerId: 'prayer-new' } },
+      ],
+    });
+  });
+
+  it.each([
+    { audience: 'public', tab: 'Public', label: 'Back to Public prayers' },
+    { audience: 'circle', tab: 'Circle', label: 'Back to Prayer Circle' },
+    { audience: 'private', tab: 'Private', label: 'Back to Private prayers' },
+  ] as const)(
+    'returns a $audience prayer to the matching main tab with no completed composer in history',
+    async ({ audience, tab, label }) => {
+      render(
+        <SubmitScreen
+          navigation={navigation}
+          route={{ params: { initialAudience: audience } } as never}
+        />
+      );
+      fillForm('A prayer to return to the main journey');
+      const submitLabel = audience === 'private' ? 'Save Prayer' : 'Submit Prayer';
+      await waitFor(() => expect(screen.getByRole('button', { name: submitLabel })).toBeEnabled());
+      fireEvent.press(screen.getByText(submitLabel));
+      const back = await screen.findByRole('button', { name: label });
+      expect((navigation as unknown as { reset: jest.Mock }).reset).not.toHaveBeenCalled();
+      fireEvent.press(back);
+      expect((navigation as unknown as { reset: jest.Mock }).reset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [{ name: 'Main', params: { screen: tab } }],
+      });
+      expect(createPrayerRequest).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it.each([
+    { audience: 'circle', tab: 'Circle' },
+    { audience: 'private', tab: 'Private' },
+  ] as const)(
+    'opens a newly saved $audience prayer above its matching main tab',
+    async ({ audience, tab }) => {
+      render(
+        <SubmitScreen
+          navigation={navigation}
+          route={{ params: { initialAudience: audience } } as never}
+        />
+      );
+      fillForm('A prayer I want to view after saving');
+      const submitLabel = audience === 'private' ? 'Save Prayer' : 'Submit Prayer';
+      await waitFor(() => expect(screen.getByRole('button', { name: submitLabel })).toBeEnabled());
+      fireEvent.press(screen.getByText(submitLabel));
+      fireEvent.press(await screen.findByText('View Prayer'));
+      expect((navigation as unknown as { reset: jest.Mock }).reset).toHaveBeenCalledWith({
+        index: 1,
+        routes: [
+          { name: 'Main', params: { screen: tab } },
+          { name: 'PrayerDetail', params: { prayerId: 'prayer-new' } },
+        ],
+      });
+    }
+  );
+
+  it('returns to the audience actually submitted after switching away from the entry-point audience', async () => {
+    render(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'public' } } as never}
+      />
     );
+    fillForm('A prayer I decided to keep just for myself');
+    fireEvent.press(screen.getByText('Private'));
+    fireEvent.press(screen.getByText('Save Prayer'));
+    fireEvent.press(await screen.findByText('Back to Private prayers'));
+    expect((navigation as unknown as { reset: jest.Mock }).reset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: 'Main', params: { screen: 'Private' } }],
+    });
   });
 
   it('shows an error when the backend rejects the prayer', async () => {
@@ -374,5 +469,243 @@ describe('SubmitScreen', () => {
     await waitFor(() =>
       expect(screen.getByText("We couldn't share your prayer. Please try again.")).toBeTruthy()
     );
+    expect(screen.queryByText('Back to Public prayers')).toBeNull();
+    expect((navigation as unknown as { reset: jest.Mock }).reset).not.toHaveBeenCalled();
+  });
+
+  it('blocks an empty Circle before insertion, explains accepted connections, and preserves the draft', async () => {
+    jest.mocked(getPrayerCircleCount).mockResolvedValue(0);
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fillForm('A prayer for my new Prayer Circle');
+    fireEvent.press(screen.getByText('Prayer Circle'));
+    expect(screen.getByRole('button', { name: 'Submit Prayer' })).toBeDisabled();
+    expect(
+      await screen.findByText(
+        'You need at least one accepted Prayer Circle connection before sharing here.'
+      )
+    ).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Submit Prayer' }));
+    expect(createPrayerRequest).not.toHaveBeenCalled();
+    expect(getPrayerCircleCount).toHaveBeenCalledWith('user-1', { throwOnError: true });
+    fireEvent.press(screen.getByText('Manage Prayer Circle'));
+    expect((navigation as unknown as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith(
+      'PrayerCircleManagement'
+    );
+    expect(screen.getByLabelText('Prayer').props.value).toBe('A prayer for my new Prayer Circle');
+    fireEvent.press(screen.getByText('Private'));
+    expect(screen.getByRole('button', { name: 'Save Prayer' })).toBeEnabled();
+    fireEvent.press(screen.getByText('Save Prayer'));
+    expect(await screen.findByText('Your private prayer is saved.')).toBeTruthy();
+    expect(createPrayerRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ audience: 'private' })
+    );
+  });
+
+  it('allows Circle submission after a fresh connection check and never makes it anonymous', async () => {
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fillForm('A prayer to share with my trusted Circle');
+    fireEvent(screen.getByLabelText('Share anonymously'), 'valueChange', true);
+    fireEvent.press(screen.getByText('Prayer Circle'));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Submit Prayer' })).toBeEnabled()
+    );
+    expect(screen.queryByText('Share anonymously')).toBeNull();
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    expect(await screen.findByText('Shared with your Prayer Circle.')).toBeTruthy();
+    expect(createPrayerRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ audience: 'circle', username: 'testuser' })
+    );
+    expect(getPrayerCircleCount).toHaveBeenCalledTimes(2);
+  });
+
+  it('rechecks an empty Circle when returning from management without losing the draft', async () => {
+    jest.mocked(getPrayerCircleCount).mockResolvedValue(0);
+    const { rerender } = render(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'circle' } } as never}
+      />
+    );
+    fillForm('Keep this Circle draft while I invite someone');
+    await screen.findByText('Manage Prayer Circle');
+    mockFocused = false;
+    rerender(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'circle' } } as never}
+      />
+    );
+    jest.mocked(getPrayerCircleCount).mockResolvedValue(1);
+    mockFocused = true;
+    rerender(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'circle' } } as never}
+      />
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Submit Prayer' })).toBeEnabled()
+    );
+    expect(screen.getByLabelText('Prayer').props.value).toBe(
+      'Keep this Circle draft while I invite someone'
+    );
+    expect(screen.getByRole('radio', { name: 'Prayer Circle' })).toBeChecked();
+  });
+
+  it('keeps a failed Circle check distinct from an empty Circle and allows retry', async () => {
+    jest.mocked(getPrayerCircleCount).mockRejectedValueOnce(new Error('offline'));
+    render(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'circle' } } as never}
+      />
+    );
+    fillForm('A Circle prayer ready for when the connection returns');
+    expect(
+      await screen.findByText(
+        "We couldn't check your Prayer Circle. Your draft is still here. Please try again."
+      )
+    ).toBeTruthy();
+    expect(screen.queryByText('Manage Prayer Circle')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Submit Prayer' })).toBeDisabled();
+    fireEvent.press(screen.getByText('Check again'));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Submit Prayer' })).toBeEnabled()
+    );
+    expect(screen.getByLabelText('Prayer').props.value).toBe(
+      'A Circle prayer ready for when the connection returns'
+    );
+    expect(createPrayerRequest).not.toHaveBeenCalled();
+  });
+
+  it('blocks submission if the final connection has been removed since selecting Circle', async () => {
+    render(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'circle' } } as never}
+      />
+    );
+    fillForm('A Circle prayer with a recently removed connection');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Submit Prayer' })).toBeEnabled()
+    );
+    jest.mocked(getPrayerCircleCount).mockResolvedValue(0);
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    expect(await screen.findByText('Manage Prayer Circle')).toBeTruthy();
+    expect(createPrayerRequest).not.toHaveBeenCalled();
+    expect(screen.queryByText("We couldn't share your prayer. Please try again.")).toBeNull();
+    expect(screen.getByLabelText('Prayer').props.value).toBe(
+      'A Circle prayer with a recently removed connection'
+    );
+  });
+
+  it('does not insert when the save-time Circle check fails, and supports recovery', async () => {
+    render(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'circle' } } as never}
+      />
+    );
+    fillForm('A Circle prayer to retry after losing the network');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Submit Prayer' })).toBeEnabled()
+    );
+    jest.mocked(getPrayerCircleCount).mockRejectedValueOnce(new Error('offline'));
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    expect(await screen.findByText('Check again')).toBeTruthy();
+    expect(createPrayerRequest).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByText('Check again'));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Submit Prayer' })).toBeEnabled()
+    );
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    expect(await screen.findByText('Shared with your Prayer Circle.')).toBeTruthy();
+  });
+
+  it('prevents repeat submissions while verifying a Circle connection', async () => {
+    let resolve!: (count: number) => void;
+    render(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'circle' } } as never}
+      />
+    );
+    fillForm('A Circle prayer submitted only once');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Submit Prayer' })).toBeEnabled()
+    );
+    jest.mocked(getPrayerCircleCount).mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        })
+    );
+    const submit = screen.getByRole('button', { name: 'Submit Prayer' });
+    act(() => {
+      fireEvent.press(submit);
+      fireEvent.press(submit);
+    });
+    expect(createPrayerRequest).not.toHaveBeenCalled();
+    expect(screen.getByRole('radio', { name: 'Private' })).toBeDisabled();
+    await act(async () => resolve(1));
+    expect(await screen.findByText('Shared with your Prayer Circle.')).toBeTruthy();
+    expect(createPrayerRequest).toHaveBeenCalledTimes(1);
+    expect(getPrayerCircleCount).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores a stale Circle result after changing audience', async () => {
+    let resolve!: (count: number) => void;
+    jest.mocked(getPrayerCircleCount).mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        })
+    );
+    render(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'circle' } } as never}
+      />
+    );
+    fillForm('A prayer that I chose to keep private');
+    fireEvent.press(screen.getByText('Private'));
+    await act(async () => resolve(0));
+    expect(screen.queryByText('Manage Prayer Circle')).toBeNull();
+    fireEvent.press(screen.getByText('Save Prayer'));
+    expect(await screen.findByText('Your private prayer is saved.')).toBeTruthy();
+    expect(createPrayerRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ audience: 'private' })
+    );
+  });
+
+  it('abandons a save-time check after navigating away rather than posting later', async () => {
+    let resolve!: (count: number) => void;
+    jest.mocked(getPrayerCircleCount).mockResolvedValue(1);
+    const { rerender } = render(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'circle' } } as never}
+      />
+    );
+    fillForm('A prayer that should not post after leaving');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Submit Prayer' })).toBeEnabled()
+    );
+    jest.mocked(getPrayerCircleCount).mockImplementationOnce(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        })
+    );
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    mockFocused = false;
+    rerender(
+      <SubmitScreen
+        navigation={navigation}
+        route={{ params: { initialAudience: 'circle' } } as never}
+      />
+    );
+    await act(async () => resolve(1));
+    expect(createPrayerRequest).not.toHaveBeenCalled();
   });
 });

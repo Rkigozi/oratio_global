@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ArrowLeft, LocateFixed } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, LocateFixed, RefreshCw, UsersRound } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import { createPrayerRequest } from '@oratio/shared/queries';
+import { createPrayerRequest, getPrayerCircleCount } from '@oratio/shared/queries';
 import { getApproximateCoordinates } from '@oratio/shared/prayer-data';
 import { sanitizePrayerText, validatePrayerSubmission } from '@oratio/shared/validation';
 import { useAuth } from '../hooks/auth-context';
@@ -16,7 +17,10 @@ import type { RootStackParamList } from '../navigation';
 type Audience = 'public' | 'circle' | 'private';
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
+const ArrowRightIcon = asNativeIcon(ArrowRight);
 const LocateFixedIcon = asNativeIcon(LocateFixed);
+const RefreshIcon = asNativeIcon(RefreshCw);
+const UsersIcon = asNativeIcon(UsersRound);
 
 const AUDIENCE_OPTIONS: Array<{ value: Audience; label: string; hint: string }> = [
   { value: 'public', label: 'Public', hint: 'Anyone can see and pray' },
@@ -28,7 +32,7 @@ export function SubmitScreen({
   navigation,
   route,
 }: NativeStackScreenProps<RootStackParamList, 'Submit'>) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [text, setText] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
@@ -41,7 +45,36 @@ export function SubmitScreen({
   const [done, setDone] = useState(false);
   const [submittedPrayerId, setSubmittedPrayerId] = useState<string | null>(null);
   const locationRequest = useRef(0);
+  const circleRequest = useRef(0);
+  const submitPending = useRef(false);
+  const [circleAvailability, setCircleAvailability] = useState<
+    'checking' | 'ready' | 'empty' | 'unavailable'
+  >('checking');
   const isPrivate = audience === 'private';
+
+  const checkCircle = useCallback(async () => {
+    const request = ++circleRequest.current;
+    setCircleAvailability('checking');
+    try {
+      if (!user?.id) throw new Error('No signed-in user');
+      const count = await getPrayerCircleCount(user.id, { throwOnError: true });
+      if (request !== circleRequest.current) return null;
+      setCircleAvailability(count > 0 ? 'ready' : 'empty');
+      return count;
+    } catch {
+      if (request === circleRequest.current) setCircleAvailability('unavailable');
+      return null;
+    }
+  }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (audience === 'circle' && !done) void checkCircle();
+      return () => {
+        circleRequest.current += 1;
+      };
+    }, [audience, checkCircle, done])
+  );
 
   useEffect(
     () => () => {
@@ -51,7 +84,9 @@ export function SubmitScreen({
   );
 
   const selectAudience = (next: Audience) => {
-    if (submitting) return;
+    if (submitting || submitPending.current || next === audience) return;
+    circleRequest.current += 1;
+    if (next === 'circle') setCircleAvailability('checking');
     setAudience(next);
     setError('');
     if (next !== 'public') setAnonymous(false);
@@ -125,7 +160,7 @@ export function SubmitScreen({
   };
 
   const handleSubmit = async () => {
-    if (submitting) return;
+    if (submitting || submitPending.current) return;
     setError('');
     const validation = validatePrayerSubmission({
       text,
@@ -140,6 +175,10 @@ export function SubmitScreen({
     }
 
     const effectiveAnonymous = audience === 'public' && anonymous;
+    if (!user) {
+      setError('Please sign in again before submitting a prayer.');
+      return;
+    }
     const profileUsername = profile?.username;
     if (!effectiveAnonymous && !profileUsername) {
       setError("We couldn't load your profile. Please go back and try again.");
@@ -154,9 +193,15 @@ export function SubmitScreen({
 
     locationRequest.current += 1;
     setLocating(false);
+    submitPending.current = true;
     setSubmitting(true);
     let prayerId: string | null = null;
     try {
+      if (audience === 'circle') {
+        // Recheck at save time in case the last connection was removed elsewhere.
+        const count = await checkCircle();
+        if (count === null || count < 1) return;
+      }
       prayerId = await createPrayerRequest({
         text: sanitizePrayerText(validation.data?.text ?? text),
         city: trimmedCity,
@@ -171,6 +216,7 @@ export function SubmitScreen({
     } catch {
       prayerId = null;
     } finally {
+      submitPending.current = false;
       setSubmitting(false);
     }
 
@@ -187,6 +233,26 @@ export function SubmitScreen({
   };
 
   if (done) {
+    const destination =
+      audience === 'private' ? 'Private' : audience === 'circle' ? 'Circle' : 'Public';
+    const returnTitle =
+      audience === 'private'
+        ? 'Back to Private prayers'
+        : audience === 'circle'
+          ? 'Back to Prayer Circle'
+          : 'Back to Public prayers';
+    const finishSubmission = (openPrayer = false) => {
+      const prayerId = openPrayer ? submittedPrayerId : null;
+      // Remove the completed composer so Back never reopens its success screen.
+      navigation.reset({
+        index: prayerId ? 1 : 0,
+        routes: [
+          { name: 'Main', params: { screen: destination } },
+          ...(prayerId ? [{ name: 'PrayerDetail' as const, params: { prayerId } }] : []),
+        ],
+      });
+    };
+
     return (
       <Screen>
         <Brand subtitle="Amen 🙏" />
@@ -197,15 +263,17 @@ export function SubmitScreen({
               ? 'Shared with your Prayer Circle.'
               : 'Your private prayer is saved.'}
         </Text>
-        <PrimaryButton
-          title="View Prayer"
-          onPress={() =>
-            submittedPrayerId
-              ? navigation.navigate('PrayerDetail', { prayerId: submittedPrayerId })
-              : navigation.navigate('Main')
-          }
-        />
+        <PrimaryButton title={returnTitle} onPress={() => finishSubmission()} />
         <Pressable
+          accessibilityRole="button"
+          onPress={() => finishSubmission(true)}
+          style={styles.viewPrayerButton}
+        >
+          <Text style={styles.againText}>View Prayer</Text>
+          <ArrowRightIcon color={colors.accent} size={18} strokeWidth={1.8} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
           onPress={() => {
             setDone(false);
             setText('');
@@ -263,6 +331,43 @@ export function SubmitScreen({
       <Text style={styles.audienceHint}>
         {AUDIENCE_OPTIONS.find((o) => o.value === audience)?.hint}
       </Text>
+
+      {audience === 'circle' && circleAvailability !== 'ready' ? (
+        <View style={styles.circleGate}>
+          {circleAvailability === 'checking' ? (
+            <ActivityIndicator color={colors.accent} size="small" />
+          ) : null}
+          <Text accessibilityLiveRegion="polite" style={styles.circleMessage}>
+            {circleAvailability === 'checking'
+              ? 'Checking your Prayer Circle...'
+              : circleAvailability === 'empty'
+                ? 'You need at least one accepted Prayer Circle connection before sharing here.'
+                : "We couldn't check your Prayer Circle. Your draft is still here. Please try again."}
+          </Text>
+          {circleAvailability === 'empty' ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={submitting}
+              onPress={() => navigation.navigate('PrayerCircleManagement')}
+              style={styles.circleAction}
+            >
+              <UsersIcon color={colors.accent} size={18} strokeWidth={1.8} />
+              <Text style={styles.circleActionText}>Manage Prayer Circle</Text>
+            </Pressable>
+          ) : null}
+          {circleAvailability === 'empty' || circleAvailability === 'unavailable' ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={submitting}
+              onPress={() => void checkCircle()}
+              style={styles.circleAction}
+            >
+              <RefreshIcon color={colors.accent} size={18} strokeWidth={1.8} />
+              <Text style={styles.circleActionText}>Check again</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
 
       <Field
         label="Prayer"
@@ -365,12 +470,52 @@ export function SubmitScreen({
         title={isPrivate ? 'Save Prayer' : 'Submit Prayer'}
         onPress={() => void handleSubmit()}
         loading={submitting}
+        disabled={audience === 'circle' && circleAvailability !== 'ready'}
       />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  viewPrayerButton: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  circleGate: {
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
+  },
+  circleMessage: {
+    color: colors.textMuted,
+    fontFamily: fontFamilies.body,
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  circleAction: {
+    minHeight: 44,
+    maxWidth: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  circleActionText: {
+    flexShrink: 1,
+    color: colors.accent,
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
