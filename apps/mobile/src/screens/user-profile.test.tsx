@@ -4,6 +4,11 @@ import { UserProfileScreen } from './user-profile';
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
+  Check: () => null,
+  Clock: () => null,
+  UserPlus: () => null,
+  UsersRound: () => null,
+  X: () => null,
 }));
 
 jest.mock('@react-navigation/native', () => {
@@ -18,9 +23,23 @@ jest.mock('@react-navigation/native', () => {
 jest.mock('@oratio/shared/queries', () => ({
   getProfileByUsername: jest.fn(),
   getUserPrayers: jest.fn(),
+  cancelPrayerCircleInvite: jest.fn(),
+  getPrayerCircleCount: jest.fn(),
+  getPrayerCircleStatus: jest.fn(),
+  respondToPrayerCircleInvite: jest.fn(),
+  sendPrayerCircleInvite: jest.fn(),
 }));
 
-import { getProfileByUsername, getUserPrayers } from '@oratio/shared/queries';
+jest.mock('../hooks/auth-context', () => ({ useAuth: jest.fn() }));
+
+import { useAuth } from '../hooks/auth-context';
+import {
+  getProfileByUsername,
+  getUserPrayers,
+  getPrayerCircleCount,
+  getPrayerCircleStatus,
+  sendPrayerCircleInvite,
+} from '@oratio/shared/queries';
 
 const profile = {
   id: 'miriam-id',
@@ -49,8 +68,12 @@ const route = { params: { username: 'miriam' } } as never;
 describe('UserProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(useAuth).mockReturnValue({ user: { id: 'viewer-id' } } as never);
     jest.mocked(getProfileByUsername).mockResolvedValue(profile as never);
     jest.mocked(getUserPrayers).mockResolvedValue([prayer] as never);
+    jest.mocked(getPrayerCircleCount).mockResolvedValue(0);
+    jest.mocked(getPrayerCircleStatus).mockResolvedValue({ state: 'none' });
+    jest.mocked(sendPrayerCircleInvite).mockResolvedValue(true);
   });
 
   it('shows the profile and opens a visible prayer', async () => {
@@ -75,5 +98,34 @@ describe('UserProfileScreen', () => {
     render(<UserProfileScreen navigation={navigation} route={route} />);
 
     await waitFor(() => expect(screen.getByText('This profile is unavailable.')).toBeTruthy());
+  });
+
+  it('invites the resolved profile ID, including when opened through a username alias', async () => {
+    render(
+      <UserProfileScreen
+        navigation={navigation}
+        route={{ params: { username: 'old-name' } } as never}
+      />
+    );
+    fireEvent.press(await screen.findByText('Invite to Prayer Circle'));
+    await waitFor(() => expect(sendPrayerCircleInvite).toHaveBeenCalledWith('miriam-id'));
+    expect(await screen.findByText('Invite sent to @miriam.')).toBeTruthy();
+  });
+
+  it("does not offer Circle invitations on the signed-in user's own profile", async () => {
+    jest.mocked(useAuth).mockReturnValue({ user: { id: profile.id } } as never);
+    render(<UserProfileScreen navigation={navigation} route={route} />);
+    await screen.findByText('Miriam');
+    expect(screen.queryByText('Invite to Prayer Circle')).toBeNull();
+    expect(getPrayerCircleStatus).not.toHaveBeenCalled();
+  });
+
+  it('opens existing Circle management for a connected profile', async () => {
+    jest.mocked(getPrayerCircleStatus).mockResolvedValue({ state: 'connected' });
+    render(<UserProfileScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByText('Manage Prayer Circle'));
+    expect((navigation as unknown as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith(
+      'PrayerCircleManagement'
+    );
   });
 });

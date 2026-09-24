@@ -17,7 +17,9 @@ import type { PrayerRequest } from '@oratio/shared/prayer-data';
 import { Avatar } from '../components/avatar';
 import { asNativeIcon } from '../components/icon';
 import { PrayerCard } from '../components/prayer-card';
+import { ProfileCircleActions } from '../components/profile-circle-actions';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
+import { useAuth } from '../hooks/auth-context';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -29,6 +31,7 @@ export function UserProfileScreen({
   navigation,
   route,
 }: NativeStackScreenProps<RootStackParamList, 'UserProfile'>) {
+  const { user } = useAuth();
   const username = route.params.username.trim().replace(/^@/, '').toLowerCase();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
@@ -117,6 +120,17 @@ export function UserProfileScreen({
                 <Text style={styles.displayName}>{name}</Text>
                 <Text style={styles.username}>@{resolvedUsername}</Text>
                 {joined ? <Text style={styles.joined}>Joined {joined}</Text> : null}
+                {profile && user && profile.id !== user.id ? (
+                  <ProfileCircleActions
+                    key={`${user.id}:${profile.id}`}
+                    recipientId={profile.id}
+                    username={resolvedUsername}
+                    viewerId={user.id}
+                    refreshing={refreshing}
+                    onAccepted={load}
+                    onManage={() => navigation.navigate('PrayerCircleManagement')}
+                  />
+                ) : null}
               </View>
 
               <View style={styles.presenceRow}>

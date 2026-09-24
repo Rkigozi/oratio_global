@@ -809,6 +809,38 @@ describe('removeFromPrayerCircle', () => {
 });
 
 describe('getPrayerCircleStatus', () => {
+  it('rejects a failed connection lookup in strict mode rather than claiming no relationship', async () => {
+    const error = { message: 'Connection lookup failed' };
+    setOnce(null, error);
+    await expect(m.getPrayerCircleStatus('target', { throwOnError: true })).rejects.toEqual(error);
+  });
+
+  it('rejects a failed invite lookup in strict mode', async () => {
+    const error = { message: 'Invite lookup failed' };
+    setOnce(null);
+    setOnce(null, error);
+    await expect(m.getPrayerCircleStatus('target', { throwOnError: true })).rejects.toEqual(error);
+  });
+
+  it('requires a session in strict mode', async () => {
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    await expect(m.getPrayerCircleStatus('target', { throwOnError: true })).rejects.toThrow(
+      'Sign in'
+    );
+    expect(await m.getPrayerCircleStatus('target')).toEqual({ state: 'none' });
+  });
+
+  it('propagates an auth failure in strict mode', async () => {
+    const error = { message: 'Session check failed' };
+    auth.getUser.mockResolvedValue({ data: { user: null }, error });
+    await expect(m.getPrayerCircleStatus('target', { throwOnError: true })).rejects.toEqual(error);
+  });
+
+  it('preserves the existing best-effort lookup for callers without strict mode', async () => {
+    setAlways(null, { message: 'Offline' });
+    expect(await m.getPrayerCircleStatus('target')).toEqual({ state: 'none' });
+  });
+
   it('returns connected when a connection exists', async () => {
     setOnce({ id: 'connection-1' });
     expect(await m.getPrayerCircleStatus('target')).toEqual({ state: 'connected' });
@@ -934,6 +966,22 @@ describe('getPrayerCircleInvites', () => {
 });
 
 describe('getPrayerCircleCount', () => {
+  it('does not turn a failed count into free Circle spaces in strict mode', async () => {
+    const error = { message: 'Count failed' };
+    setAlways(null, error);
+    await expect(m.getPrayerCircleCount('uid1', { throwOnError: true })).rejects.toEqual(error);
+    expect(await m.getPrayerCircleCount('uid1')).toBe(0);
+  });
+
+  it('rejects a missing count but accepts a genuine empty Circle in strict mode', async () => {
+    setOnce(null);
+    await expect(m.getPrayerCircleCount('uid1', { throwOnError: true })).rejects.toThrow(
+      'unavailable'
+    );
+    setOnce(null, null, 0);
+    expect(await m.getPrayerCircleCount('uid1', { throwOnError: true })).toBe(0);
+  });
+
   it('returns the mutual circle count', async () => {
     setAlways(null, null, 5);
     expect(await m.getPrayerCircleCount('uid1')).toBe(5);

@@ -118,14 +118,21 @@ export async function removeFromPrayerCircle(otherUserId: string): Promise<boole
   return true;
 }
 
-export async function getPrayerCircleStatus(otherUserId: string): Promise<PrayerCircleStatus> {
+export async function getPrayerCircleStatus(
+  otherUserId: string,
+  { throwOnError = false }: { throwOnError?: boolean } = {}
+): Promise<PrayerCircleStatus> {
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+  if (throwOnError && (authError || !user)) {
+    throw authError || new Error('Sign in to manage your Prayer Circle.');
+  }
   if (!user) return { state: 'none' };
   if (user.id === otherUserId) return { state: 'self' };
 
-  const { data: connection } = await supabase
+  const { data: connection, error: connectionError } = await supabase
     .from('prayer_circle_connections')
     .select('id')
     .or(
@@ -133,9 +140,10 @@ export async function getPrayerCircleStatus(otherUserId: string): Promise<Prayer
     )
     .maybeSingle();
 
+  if (throwOnError && connectionError) throw connectionError;
   if (connection) return { state: 'connected' };
 
-  const { data: invite } = await supabase
+  const { data: invite, error: inviteError } = await supabase
     .from('prayer_circle_invites')
     .select('id, requester_id, recipient_id')
     .eq('status', 'pending')
@@ -144,6 +152,7 @@ export async function getPrayerCircleStatus(otherUserId: string): Promise<Prayer
     )
     .maybeSingle();
 
+  if (throwOnError && inviteError) throw inviteError;
   if (!invite) return { state: 'none' };
 
   const row = invite as { id: string; requester_id: string; recipient_id: string };
@@ -287,11 +296,17 @@ export async function getPrayerCircleInvites(): Promise<{
   };
 }
 
-export async function getPrayerCircleCount(userId: string): Promise<number> {
-  const { count } = await supabase
+export async function getPrayerCircleCount(
+  userId: string,
+  { throwOnError = false }: { throwOnError?: boolean } = {}
+): Promise<number> {
+  const { count, error } = await supabase
     .from('prayer_circle_connections')
     .select('id', { count: 'exact', head: true })
     .or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`);
 
+  if (throwOnError && (error || count == null)) {
+    throw error || new Error('Prayer Circle count unavailable.');
+  }
   return count ?? 0;
 }
