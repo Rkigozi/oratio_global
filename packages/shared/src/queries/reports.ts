@@ -3,10 +3,35 @@ import { logError } from '../logger';
 
 const supabase = getSupabaseClient();
 
-export type CreateReportResult = 'created' | 'already_reported' | 'unauthenticated' | 'failed';
+export type CreateReportResult =
+  | 'created'
+  | 'already_reported'
+  | 'unauthenticated'
+  | 'setup_required'
+  | 'failed';
 
 export type ReportStatus = 'pending' | 'resolved' | 'dismissed';
 export type ReportStatusFilter = ReportStatus | 'all';
+export type ReportSortOrder = 'oldest' | 'newest';
+
+export type ModerationAction = 'hide' | 'dismiss' | 'restore';
+
+export interface ReportReview {
+  status: ReportStatus;
+  available: boolean;
+  hidden: boolean;
+  version: string | null;
+  target: { body: string; author: string; created_at: string } | null;
+  prayer: { body: string; audience: 'public' | 'circle' } | null;
+  parent_comment: string | null;
+  actions: Array<{
+    id: string;
+    action: ModerationAction;
+    note: string;
+    moderator: string;
+    created_at: string;
+  }>;
+}
 
 export interface ReportProfile {
   id: string;
@@ -19,6 +44,7 @@ export interface ReportRecord {
   reportable_type: 'prayer' | 'comment';
   reportable_id: string;
   reason: string;
+  reporter_details: string | null;
   status: ReportStatus;
   created_at: string;
   resolved_at: string | null;
@@ -34,6 +60,7 @@ type ReportRow = {
   reportable_type: 'prayer' | 'comment';
   reportable_id: string;
   reason: string;
+  reporter_details?: string | null;
   status: ReportStatus;
   created_at: string;
   resolved_at?: string | null;
@@ -54,7 +81,10 @@ export async function createReport(input: {
   reportable_type: 'prayer' | 'comment';
   reportable_id: string;
   reason: string;
+  details?: string;
 }): Promise<CreateReportResult> {
+  const details = input.details?.trim() || null;
+  if (details && details.length > 1000) return 'failed';
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -81,13 +111,21 @@ export async function createReport(input: {
     reportable_id: input.reportable_id,
     reported_by: user.id,
     reason: input.reason,
+    ...(details ? { reporter_details: details } : {}),
   });
 
   if (error) {
     if ('code' in error && error.code === '23505') {
       return 'already_reported';
     }
-    logError('create report', error);
+    // Database error details can contain the rejected row, including reporter text.
+    logError('create report', new Error(`Report insert failed (${error.code || 'unknown'})`));
+    if (
+      (error.code === 'PGRST204' || error.code === '42703') &&
+      error.message.includes('reporter_details')
+    ) {
+      return 'setup_required';
+    }
     return 'failed';
   }
   return 'created';
@@ -97,28 +135,52 @@ export async function reportContent(report: {
   reportable_type: 'prayer' | 'comment';
   reportable_id: string;
   reason: string;
+  details?: string;
 }) {
-  const result = await createReport(report);
+  let result: CreateReportResult;
+  try {
+    result = await createReport(report);
+  } catch {
+    result = 'failed';
+  }
   return {
     error:
-      result === 'failed' || result === 'unauthenticated'
-        ? new Error('Failed to create report')
-        : null,
+      result === 'setup_required'
+        ? new Error('Reporting with extra details is not available yet. Your draft has been kept.')
+        : result === 'unauthenticated'
+          ? new Error('Your session has ended. Sign in again before sending this report.')
+          : result === 'failed'
+            ? new Error("We couldn't send that report. Please try again.")
+            : null,
     alreadyReported: result === 'already_reported',
   } as const;
 }
 
-export async function getReports(status: ReportStatusFilter = 'pending'): Promise<ReportRecord[]> {
-  let query = supabase.from('reports').select('*').order('created_at', { ascending: false });
+export async function getReports(
+  status: ReportStatusFilter = 'pending',
+  options: { throwOnError?: boolean; limit?: number; offset?: number; sort?: ReportSortOrder } = {}
+): Promise<ReportRecord[]> {
+  const ascending = options.sort ? options.sort === 'oldest' : status === 'pending';
+  let query = supabase
+    .from('reports')
+    .select('*')
+    .order('created_at', { ascending })
+    .order('id', { ascending });
 
   if (status !== 'all') {
     query = query.eq('status', status);
+  }
+
+  if (options.limit !== undefined) {
+    const offset = options.offset ?? 0;
+    query = query.range(offset, offset + options.limit - 1);
   }
 
   const { data, error } = await query;
 
   if (error) {
     logError('fetch reports', error);
+    if (options.throwOnError) throw error;
     return [];
   }
 
@@ -151,6 +213,7 @@ export async function getReports(status: ReportStatusFilter = 'pending'): Promis
 
   return reports.map((report) => ({
     ...report,
+    reporter_details: report.reporter_details ?? null,
     resolved_at: report.resolved_at ?? null,
     resolved_by: report.resolved_by ?? null,
     moderator_note: report.moderator_note ?? null,
@@ -163,37 +226,62 @@ export async function getPendingReports(): Promise<ReportRecord[]> {
   return getReports('pending');
 }
 
-export async function resolveReport(
+export async function getReportReview(reportId: string): Promise<ReportReview> {
+  const { data, error } = await supabase.rpc('get_report_review', { p_report_id: reportId });
+  if (error || !data) {
+    logError('fetch report review', error);
+    if (error?.code === 'PGRST202' || error?.code === '42883') {
+      throw new Error(
+        'Moderation setup is incomplete. The required database update has not been applied.'
+      );
+    }
+    if (error?.code === '42501') {
+      throw new Error(
+        'Moderator access is required. Check your account permissions and sign in again.'
+      );
+    }
+    if (error?.code === 'P0002') {
+      throw new Error('This report no longer exists. Return to the queue and refresh.');
+    }
+    throw new Error('The report could not be loaded. Please try again.');
+  }
+  return data as ReportReview;
+}
+
+export async function moderateReport(
   reportId: string,
-  status: Exclude<ReportStatus, 'pending'>,
-  moderatorNote?: string
+  action: ModerationAction,
+  note: string,
+  expectedVersion: string | null
+): Promise<void> {
+  const trimmedNote = note.trim();
+  if (trimmedNote.length < 3 || trimmedNote.length > 1000) {
+    throw new Error('Enter a decision reason between 3 and 1000 characters.');
+  }
+  const { error } = await supabase.rpc('moderate_report', {
+    p_report_id: reportId,
+    p_action: action,
+    p_note: trimmedNote,
+    p_expected_version: expectedVersion,
+  });
+  if (error) {
+    logError('moderate report', error);
+    throw new Error(
+      error.code === '40001'
+        ? 'This review has changed. Reload it before deciding.'
+        : 'The decision could not be saved. Reload the review before trying again.'
+    );
+  }
+}
+
+export async function isCurrentUserModerator(
+  options: { throwOnError?: boolean } = {}
 ): Promise<boolean> {
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { error } = await supabase
-    .from('reports')
-    .update({
-      status,
-      resolved_at: new Date().toISOString(),
-      resolved_by: user.id,
-      moderator_note: moderatorNote ?? null,
-    })
-    .eq('id', reportId);
-
-  if (error) {
-    logError('resolve report', error);
-    return false;
-  }
-  return true;
-}
-
-export async function isCurrentUserModerator(): Promise<boolean> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (authError && options.throwOnError) throw authError;
   if (!user) return false;
 
   const { data, error } = await supabase
@@ -204,6 +292,7 @@ export async function isCurrentUserModerator(): Promise<boolean> {
 
   if (error || !data) {
     logError('check moderator access', error);
+    if (error && options.throwOnError) throw error;
     return false;
   }
 

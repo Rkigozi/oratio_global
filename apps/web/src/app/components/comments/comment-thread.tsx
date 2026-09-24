@@ -5,6 +5,8 @@ import { timeAgo } from '../../services/prayer-data';
 import { reportContent, type Comment } from '../../services/supabase-queries';
 import { useAuth } from '../../hooks/auth-context';
 import { AvatarImage } from '../avatar-image';
+import { createPortal } from 'react-dom';
+import { ContentReportDialog } from '../content-report-dialog';
 
 type CommentThreadProps = {
   comment: Comment;
@@ -35,6 +37,8 @@ export function CommentThread({
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [reportMessageId, setReportMessageId] = useState<string | null>(null);
   const [reportErrorId, setReportErrorId] = useState<string | null>(null);
+  const [reportTargetId, setReportTargetId] = useState<string | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   const startEdit = (target: Comment) => {
     setEditingId(target.id);
@@ -72,22 +76,27 @@ export function CommentThread({
     cancelEdit();
   };
 
-  const handleReport = async (targetId: string) => {
+  const handleReport = async (targetId: string, reason: string, details?: string) => {
     if (reportedIds.has(targetId) || reportingId === targetId) return;
 
     setReportingId(targetId);
     setReportErrorId(null);
+    setReportError(null);
     const result = await reportContent({
       reportable_type: 'comment',
       reportable_id: targetId,
-      reason: 'Upsetting or harmful',
+      reason,
+      ...(details ? { details } : {}),
     });
     setReportingId(null);
 
     if (result.error) {
       setReportErrorId(targetId);
+      setReportError(result.error.message);
       return;
     }
+
+    setReportTargetId(null);
 
     setReportedIds((current) => new Set(current).add(targetId));
     if (result.alreadyReported) {
@@ -226,7 +235,10 @@ export function CommentThread({
         )}
         {!reportedIds.has(target.id) && !canDelete && (
           <button
-            onClick={() => void handleReport(target.id)}
+            onClick={() => {
+              setReportTargetId(target.id);
+              setReportError(null);
+            }}
             disabled={reportingId === target.id}
             className="text-text-faint hover:text-warning text-[10px] transition-colors cursor-pointer"
           >
@@ -244,6 +256,17 @@ export function CommentThread({
 
   return (
     <div>
+      {reportTargetId &&
+        createPortal(
+          <ContentReportDialog
+            reportableType="comment"
+            submitting={reportingId !== null}
+            error={reportError}
+            onClose={() => setReportTargetId(null)}
+            onReport={(reason, details) => handleReport(reportTargetId, reason, details)}
+          />,
+          document.body
+        )}
       <div className="flex gap-2.5">
         <AvatarImage
           src={comment.user?.avatar_url}

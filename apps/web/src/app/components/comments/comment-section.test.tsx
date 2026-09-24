@@ -162,10 +162,16 @@ describe('CommentSection', () => {
       fireEvent.click(screen.getByText('Report'));
     });
 
+    expect(reportContent).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByLabelText('Harmful or unsafe'));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+    });
+
     expect(reportContent).toHaveBeenCalledWith({
       reportable_type: 'comment',
       reportable_id: 'c1',
-      reason: 'Upsetting or harmful',
+      reason: 'Harmful or unsafe',
     });
     expect(await screen.findByText(/already reported this comment/i)).toBeTruthy();
     expect(screen.getByText('Reported')).toBeTruthy();

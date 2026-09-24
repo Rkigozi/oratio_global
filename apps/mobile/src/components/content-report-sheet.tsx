@@ -1,5 +1,16 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { CheckCircle2, Flag, Info, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createReport, type CreateReportResult } from '@oratio/shared/queries';
@@ -34,33 +45,55 @@ export function ContentReportSheet({
   const [submitting, setSubmitting] = useState(false);
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<ReportOutcome>(null);
+  const [details, setDetails] = useState('');
+  const requestId = useRef(0);
+  const submitLock = useRef(false);
 
   useEffect(() => {
-    if (!visible) return;
-    setSubmitting(false);
-    setSelectedReason(null);
-    setOutcome(null);
+    requestId.current += 1;
+    submitLock.current = false;
+    if (visible) {
+      setSubmitting(false);
+      setSelectedReason(null);
+      setOutcome(null);
+      setDetails('');
+    }
+    return () => {
+      requestId.current += 1;
+    };
   }, [reportableId, reportableType, visible]);
 
-  const submit = async (reason: string) => {
-    if (!reportableId || submitting || outcome === 'created' || outcome === 'already_reported') {
+  const submit = async () => {
+    if (
+      !reportableId ||
+      !selectedReason ||
+      submitLock.current ||
+      details.trim().length > 1000 ||
+      outcome === 'created' ||
+      outcome === 'already_reported'
+    ) {
       return;
     }
 
+    const request = requestId.current;
+    submitLock.current = true;
     setSubmitting(true);
-    setSelectedReason(reason);
     setOutcome(null);
     try {
       const result = await createReport({
         reportable_type: reportableType,
         reportable_id: reportableId,
-        reason,
+        reason: selectedReason,
+        ...(details.trim() ? { details: details.trim() } : {}),
       });
-      setOutcome(result);
+      if (request === requestId.current) setOutcome(result);
     } catch {
-      setOutcome('failed');
+      if (request === requestId.current) setOutcome('failed');
     } finally {
-      setSubmitting(false);
+      if (request === requestId.current) {
+        submitLock.current = false;
+        setSubmitting(false);
+      }
     }
   };
 
@@ -73,7 +106,10 @@ export function ContentReportSheet({
       transparent
       visible={visible}
     >
-      <View style={styles.modalRoot}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalRoot}
+      >
         <Pressable
           accessibilityLabel={`Close report ${reportableType}`}
           accessibilityRole="button"
@@ -102,37 +138,75 @@ export function ContentReportSheet({
               </Pressable>
             </View>
 
-            {outcome ? <ReportNotice outcome={outcome} reportableType={reportableType} /> : null}
+            <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
+              {outcome ? <ReportNotice outcome={outcome} reportableType={reportableType} /> : null}
 
-            {!complete ? (
-              <View style={styles.reasons}>
-                {REPORT_REASONS.map((reason) => (
+              {!complete ? (
+                <View style={styles.reasons}>
+                  {REPORT_REASONS.map((reason) => (
+                    <Pressable
+                      accessibilityRole="radio"
+                      accessibilityState={{
+                        checked: selectedReason === reason,
+                        disabled: submitting,
+                      }}
+                      disabled={submitting}
+                      key={reason}
+                      onPress={() => {
+                        setSelectedReason(reason);
+                        setOutcome(null);
+                      }}
+                      style={({ pressed }) => [
+                        styles.reason,
+                        selectedReason === reason && styles.reasonPressed,
+                        pressed && styles.reasonPressed,
+                        submitting && styles.disabled,
+                      ]}
+                    >
+                      <Text style={styles.reasonText}>{reason}</Text>
+                      <View
+                        style={[styles.radio, selectedReason === reason && styles.radioSelected]}
+                      >
+                        {selectedReason === reason ? <View style={styles.radioDot} /> : null}
+                      </View>
+                    </Pressable>
+                  ))}
+                  <Text style={styles.detailsLabel}>Additional details (optional)</Text>
+                  <TextInput
+                    accessibilityLabel="Additional details (optional)"
+                    multiline
+                    maxLength={1000}
+                    value={details}
+                    editable={!submitting}
+                    onChangeText={setDetails}
+                    style={styles.detailsInput}
+                    textAlignVertical="top"
+                  />
+                  <Text style={styles.characterCount}>{details.length}/1000</Text>
                   <Pressable
                     accessibilityRole="button"
-                    disabled={submitting}
-                    key={reason}
-                    onPress={() => void submit(reason)}
-                    style={({ pressed }) => [
-                      styles.reason,
-                      pressed && styles.reasonPressed,
-                      submitting && styles.disabled,
-                    ]}
+                    accessibilityLabel="Submit report"
+                    accessibilityState={{ disabled: submitting || !selectedReason }}
+                    disabled={submitting || !selectedReason}
+                    onPress={() => void submit()}
+                    style={[styles.doneButton, (submitting || !selectedReason) && styles.disabled]}
                   >
-                    <Text style={styles.reasonText}>{reason}</Text>
-                    {submitting && selectedReason === reason ? (
-                      <ActivityIndicator color={colors.accent} size="small" />
-                    ) : null}
+                    {submitting ? (
+                      <ActivityIndicator color={colors.white} size="small" />
+                    ) : (
+                      <Text style={styles.doneButtonText}>Submit report</Text>
+                    )}
                   </Pressable>
-                ))}
-              </View>
-            ) : (
-              <Pressable accessibilityRole="button" onPress={onClose} style={styles.doneButton}>
-                <Text style={styles.doneButtonText}>Done</Text>
-              </Pressable>
-            )}
+                </View>
+              ) : (
+                <Pressable accessibilityRole="button" onPress={onClose} style={styles.doneButton}>
+                  <Text style={styles.doneButtonText}>Done</Text>
+                </Pressable>
+              )}
+            </ScrollView>
           </View>
         </SafeAreaView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -160,6 +234,10 @@ function ReportNotice({
     },
     failed: {
       message: "We couldn't send this report. Check your connection and try again.",
+      tone: 'error' as const,
+    },
+    setup_required: {
+      message: 'Reporting with extra details is not available yet. Your draft has been kept.',
       tone: 'error' as const,
     },
   }[outcome];
@@ -200,9 +278,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.scrim,
   },
   sheetSafeArea: {
+    maxHeight: '90%',
     backgroundColor: colors.mapSheet,
   },
   sheet: {
+    flexShrink: 1,
     backgroundColor: colors.mapSheet,
     borderTopWidth: 1,
     borderTopColor: colors.surfaceBorder,
@@ -263,9 +343,50 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentTintSoft,
   },
   reasonText: {
+    flex: 1,
     color: colors.textSecondary,
     fontFamily: fontFamilies.bodyMedium,
     fontSize: 14,
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  radioSelected: { borderColor: colors.accent },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
+  detailsLabel: {
+    color: colors.textSecondary,
+    fontFamily: fontFamilies.bodyMedium,
+    fontSize: 13,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  detailsInput: {
+    minHeight: 100,
+    maxHeight: 160,
+    backgroundColor: colors.surface,
+    color: colors.text,
+    borderColor: colors.surfaceBorder,
+    borderWidth: 1,
+    borderRadius: radii.control,
+    padding: 12,
+    fontFamily: fontFamilies.body,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  characterCount: {
+    textAlign: 'right',
+    color: colors.textMuted,
+    fontFamily: fontFamilies.body,
+    fontSize: 12,
+    marginTop: 6,
+    marginBottom: 12,
   },
   notice: {
     minHeight: 58,

@@ -381,6 +381,7 @@ describe('PrayerDetailScreen', () => {
     fireEvent.press(screen.getByText('Report prayer'));
     dismissActionsSheet();
     fireEvent.press(screen.getByText('Harmful or unsafe'));
+    fireEvent.press(screen.getByText('Submit report'));
 
     await waitFor(() =>
       expect(createReport).toHaveBeenCalledWith({

@@ -290,9 +290,8 @@ export function PrayerDetail() {
     captureEvent(newSaved ? 'prayer_saved' : 'prayer_unsaved', { prayerId: prayer!.id });
   };
 
-  const handleReport = async (reason: string) => {
+  const handleReport = async (reason: string, details?: string) => {
     if (!prayer || reporting) return;
-    setShowReport(false);
     setReporting(true);
     setReportNotice(null);
     setReportError(null);
@@ -301,14 +300,17 @@ export function PrayerDetail() {
       reportable_type: 'prayer',
       reportable_id: prayer.id,
       reason,
+      ...(details ? { details } : {}),
     });
     setReporting(false);
 
     if (result.error) {
       logError('report prayer', 'report failed');
-      setReportError("We couldn't send that report. Please try again.");
+      setReportError(result.error.message);
       return;
     }
+
+    setShowReport(false);
 
     if (!result.alreadyReported) {
       captureEvent('prayer_reported', { prayerId: prayer.id, reason });
@@ -740,8 +742,9 @@ export function PrayerDetail() {
           {showReport && (
             <ReportPrayerDialog
               submitting={reporting}
+              error={reportError}
               onClose={() => setShowReport(false)}
-              onReport={(reason) => void handleReport(reason)}
+              onReport={handleReport}
             />
           )}
         </AnimatePresence>,

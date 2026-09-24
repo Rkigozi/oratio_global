@@ -122,6 +122,7 @@ describe('PrayerComments', () => {
 
     fireEvent.press(await screen.findByText('Report'));
     fireEvent.press(screen.getByText('Spam or fake'));
+    fireEvent.press(screen.getByText('Submit report'));
 
     await waitFor(() =>
       expect(createReport).toHaveBeenCalledWith({

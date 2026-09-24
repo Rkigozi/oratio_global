@@ -1094,6 +1094,71 @@ describe('activity updates', () => {
 });
 
 describe('createReport', () => {
+  it('does not log reporter text returned in a database error', async () => {
+    setOnce(null);
+    setOnce(null, {
+      code: '23514',
+      message: 'Rejected: sensitive reporter context',
+      details: 'Failing row: sensitive reporter context',
+    });
+    expect(
+      await m.createReport({
+        reportable_type: 'prayer',
+        reportable_id: 'p1',
+        reason: 'Spam',
+        details: 'sensitive reporter context',
+      })
+    ).toBe('failed');
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[create report]',
+      'Report insert failed (23514)',
+      ''
+    );
+    expect(JSON.stringify(consoleErrorSpy.mock.calls)).not.toContain('sensitive reporter context');
+  });
+
+  it('stores trimmed reporter details separately from the reason', async () => {
+    setOnce(null);
+    setOnce(null);
+    expect(
+      await m.createReport({
+        reportable_type: 'comment',
+        reportable_id: 'c1',
+        reason: 'Spam',
+        details: '  Repeated links  ',
+      })
+    ).toBe('created');
+    expect(qb.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'Spam', reporter_details: 'Repeated links' })
+    );
+  });
+
+  it('rejects oversized details before any write', async () => {
+    expect(
+      await m.createReport({
+        reportable_type: 'prayer',
+        reportable_id: 'p1',
+        reason: 'Spam',
+        details: 'x'.repeat(1001),
+      })
+    ).toBe('failed');
+    expect(qb.insert).not.toHaveBeenCalled();
+  });
+
+  it('does not discard details when the backend column is missing', async () => {
+    setOnce(null);
+    setOnce(null, { code: 'PGRST204', message: 'Could not find reporter_details in schema cache' });
+    expect(
+      await m.createReport({
+        reportable_type: 'prayer',
+        reportable_id: 'p1',
+        reason: 'Spam',
+        details: 'Useful context',
+      })
+    ).toBe('setup_required');
+    expect(qb.insert).toHaveBeenCalledTimes(1);
+  });
+
   it('creates report on success', async () => {
     setOnce(null);
     setOnce(null);
@@ -1158,6 +1223,32 @@ describe('getPendingReports', () => {
 });
 
 describe('getReports', () => {
+  it('supports explicit newest-first pending reports with stable database pagination', async () => {
+    setAlways([]);
+    await m.getReports('pending', { sort: 'newest', limit: 26, offset: 25 });
+    expect(qb.eq).toHaveBeenCalledWith('status', 'pending');
+    expect(qb.order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(qb.order).toHaveBeenCalledWith('id', { ascending: false });
+    expect(qb.range).toHaveBeenCalledWith(25, 50);
+  });
+
+  it('supports explicit oldest-first resolved reports', async () => {
+    setAlways([]);
+    await m.getReports('resolved', { sort: 'oldest' });
+    expect(qb.order).toHaveBeenCalledWith('created_at', { ascending: true });
+    expect(qb.order).toHaveBeenCalledWith('id', { ascending: true });
+  });
+
+  it('returns reporter details while supporting legacy reports without them', async () => {
+    setAlways([
+      { id: 'r1', reason: 'Spam', reporter_details: 'Repeated links' },
+      { id: 'r2', reason: 'Spam' },
+    ]);
+    const reports = await m.getReports();
+    expect(reports[0].reporter_details).toBe('Repeated links');
+    expect(reports[1].reporter_details).toBeNull();
+  });
+
   it('returns all reports without applying a status filter', async () => {
     setAlways([{ id: 'r1', reason: 'Spam' }]);
     const result = await m.getReports('all');
@@ -1166,27 +1257,68 @@ describe('getReports', () => {
   });
 });
 
-describe('resolveReport', () => {
-  it('returns true on success', async () => {
-    setAlways(null);
-    expect(await m.resolveReport('r1', 'resolved', 'Reviewed')).toBe(true);
-    expect(qb.update).toHaveBeenCalledWith({
-      status: 'resolved',
-      resolved_at: expect.any(String),
-      resolved_by: 'test-user',
-      moderator_note: 'Reviewed',
+describe('moderateReport', () => {
+  it('uses the atomic RPC with a trimmed reason and reviewed version', async () => {
+    await m.moderateReport('r1', 'hide', '  Reviewed  ', 'version-1');
+    expect(rpc).toHaveBeenCalledWith('moderate_report', {
+      p_report_id: 'r1',
+      p_action: 'hide',
+      p_note: 'Reviewed',
+      p_expected_version: 'version-1',
     });
-  });
-
-  it('returns false on error', async () => {
-    setAlways(null, new Error('fail'));
-    expect(await m.resolveReport('r1', 'dismissed')).toBe(false);
-  });
-
-  it('returns false if no user is signed in', async () => {
-    auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-    expect(await m.resolveReport('r1', 'dismissed')).toBe(false);
     expect(qb.update).not.toHaveBeenCalled();
+  });
+
+  it('requires a decision reason', async () => {
+    await expect(m.moderateReport('r1', 'hide', ' ', null)).rejects.toThrow('decision reason');
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('requires reloading after a concurrent decision or content edit', async () => {
+    rpc.mockResolvedValue({ error: { code: '40001', message: 'Changed' } });
+    await expect(m.moderateReport('r1', 'hide', 'Reviewed', 'old')).rejects.toThrow('Reload');
+  });
+
+  it('does not treat a rejected or unauthorized decision as success', async () => {
+    rpc.mockResolvedValue({ error: { code: '42501', message: 'Denied' } });
+    await expect(m.moderateReport('r1', 'restore', 'Reviewed', 'v1')).rejects.toThrow(
+      'could not be saved'
+    );
+  });
+});
+
+describe('moderator review reads', () => {
+  it('explains missing moderation migrations', async () => {
+    rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'Missing function' } });
+    await expect(m.getReportReview('r1')).rejects.toThrow('required database update');
+  });
+
+  it('loads context through the report-scoped RPC', async () => {
+    rpc.mockResolvedValue({ data: { available: false, actions: [] }, error: null });
+    expect(await m.getReportReview('r1')).toEqual({ available: false, actions: [] });
+    expect(rpc).toHaveBeenCalledWith('get_report_review', { p_report_id: 'r1' });
+  });
+
+  it('does not return a blank review on a failed lookup', async () => {
+    rpc.mockResolvedValue({ data: null, error: new Error('Denied') });
+    await expect(m.getReportReview('r1')).rejects.toThrow('could not be loaded');
+  });
+
+  it('supports bounded, oldest-first pending reports', async () => {
+    setAlways([]);
+    await m.getReports('pending', { throwOnError: true, limit: 26, offset: 25 });
+    expect(qb.range).toHaveBeenCalledWith(25, 50);
+    expect(qb.order).toHaveBeenCalledWith('created_at', { ascending: true });
+  });
+
+  it('distinguishes queue failure from an empty queue', async () => {
+    setAlways(null, new Error('offline'));
+    await expect(m.getReports('pending', { throwOnError: true })).rejects.toThrow('offline');
+  });
+
+  it('distinguishes access lookup failure from non-moderator access', async () => {
+    setAlways(null, new Error('offline'));
+    await expect(m.isCurrentUserModerator({ throwOnError: true })).rejects.toThrow('offline');
   });
 });
 

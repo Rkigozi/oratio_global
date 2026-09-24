@@ -203,11 +203,20 @@ describe('PrayerDetail', () => {
       fireEvent.click(screen.getByText('Spam or fake'));
     });
 
+    expect(reportContent).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Additional details (optional)'), {
+      target: { value: '  Repeated promotional links  ' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+    });
+
     await waitFor(() => {
       expect(reportContent).toHaveBeenCalledWith({
         reportable_type: 'prayer',
         reportable_id: 'prayer-1',
         reason: 'Spam or fake',
+        details: 'Repeated promotional links',
       });
     });
   });
