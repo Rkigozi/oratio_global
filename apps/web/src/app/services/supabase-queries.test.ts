@@ -1145,6 +1145,38 @@ describe('createReport', () => {
     expect(qb.insert).not.toHaveBeenCalled();
   });
 
+  it.each(['x', '\u{1F64F}'])(
+    'accepts exactly 1000 database characters when the character is %s',
+    async (character) => {
+      setOnce(null);
+      setOnce(null);
+      const details = character.repeat(1000);
+      expect(
+        await m.createReport({
+          reportable_type: 'comment',
+          reportable_id: 'c1',
+          reason: 'Spam',
+          details,
+        })
+      ).toBe('created');
+      expect(qb.insert).toHaveBeenCalledWith(
+        expect.objectContaining({ reporter_details: details })
+      );
+    }
+  );
+
+  it('rejects more than 1000 Unicode characters before any write', async () => {
+    expect(
+      await m.createReport({
+        reportable_type: 'comment',
+        reportable_id: 'c1',
+        reason: 'Spam',
+        details: '\u{1F64F}'.repeat(1001),
+      })
+    ).toBe('failed');
+    expect(qb.insert).not.toHaveBeenCalled();
+  });
+
   it('does not discard details when the backend column is missing', async () => {
     setOnce(null);
     setOnce(null, { code: 'PGRST204', message: 'Could not find reporter_details in schema cache' });

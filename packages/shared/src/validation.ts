@@ -13,6 +13,13 @@ const PRAYER_TEXT_PATTERN = /^[\p{L}\p{N}\p{M}\p{P}\p{S}\p{Z}\n\r\t\u200D]+$/u;
 const DISALLOWED_PRAYER_TEXT_PATTERN = /[^\p{L}\p{N}\p{M}\p{P}\p{S}\p{Z}\n\r\t\u200D]/gu;
 const ANGLE_BRACKET_PATTERN = /[<>]/;
 
+export const REPORT_DETAILS_MAX_LENGTH = 1000;
+
+export function countReportDetailsCharacters(details: string): number {
+  // Match PostgreSQL char_length instead of counting UTF-16 surrogate pairs twice.
+  return Array.from(details).length;
+}
+
 // Prayer submission schema
 export const prayerSchema = z.object({
   text: z

@@ -14,6 +14,7 @@ import {
 import { CheckCircle2, Flag, Info, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createReport, type CreateReportResult } from '@oratio/shared/queries';
+import { countReportDetailsCharacters, REPORT_DETAILS_MAX_LENGTH } from '@oratio/shared/validation';
 import { asNativeIcon } from './icon';
 import { colors, fontFamilies, radii } from '../theme';
 
@@ -48,6 +49,15 @@ export function ContentReportSheet({
   const [details, setDetails] = useState('');
   const requestId = useRef(0);
   const submitLock = useRef(false);
+  const detailsCount = countReportDetailsCharacters(details);
+  const excessCharacters = detailsCount - REPORT_DETAILS_MAX_LENGTH;
+  const detailsTooLong = excessCharacters > 0;
+  const detailsFeedback = detailsTooLong
+    ? `${excessCharacters} character${excessCharacters === 1 ? '' : 's'} over the ${REPORT_DETAILS_MAX_LENGTH}-character limit. Shorten your details to submit.`
+    : excessCharacters === 0
+      ? `Character limit reached (${REPORT_DETAILS_MAX_LENGTH} characters).`
+      : `Maximum ${REPORT_DETAILS_MAX_LENGTH} characters.`;
+  const submitDisabled = submitting || !selectedReason || detailsTooLong;
 
   useEffect(() => {
     requestId.current += 1;
@@ -68,7 +78,7 @@ export function ContentReportSheet({
       !reportableId ||
       !selectedReason ||
       submitLock.current ||
-      details.trim().length > 1000 ||
+      detailsTooLong ||
       outcome === 'created' ||
       outcome === 'already_reported'
     ) {
@@ -174,22 +184,31 @@ export function ContentReportSheet({
                   <Text style={styles.detailsLabel}>Additional details (optional)</Text>
                   <TextInput
                     accessibilityLabel="Additional details (optional)"
+                    accessibilityHint={detailsFeedback}
                     multiline
-                    maxLength={1000}
                     value={details}
                     editable={!submitting}
                     onChangeText={setDetails}
-                    style={styles.detailsInput}
+                    style={[styles.detailsInput, detailsTooLong && styles.detailsInputError]}
                     textAlignVertical="top"
                   />
-                  <Text style={styles.characterCount}>{details.length}/1000</Text>
+                  <Text style={[styles.characterCount, detailsTooLong && styles.detailsError]}>
+                    {detailsCount}/{REPORT_DETAILS_MAX_LENGTH}
+                  </Text>
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    accessibilityRole={detailsTooLong ? 'alert' : undefined}
+                    style={[styles.detailsFeedback, detailsTooLong && styles.detailsError]}
+                  >
+                    {detailsFeedback}
+                  </Text>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Submit report"
-                    accessibilityState={{ disabled: submitting || !selectedReason }}
-                    disabled={submitting || !selectedReason}
+                    accessibilityState={{ disabled: submitDisabled }}
+                    disabled={submitDisabled}
                     onPress={() => void submit()}
-                    style={[styles.doneButton, (submitting || !selectedReason) && styles.disabled]}
+                    style={[styles.doneButton, submitDisabled && styles.disabled]}
                   >
                     {submitting ? (
                       <ActivityIndicator color={colors.white} size="small" />
@@ -386,7 +405,20 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.body,
     fontSize: 12,
     marginTop: 6,
+    marginBottom: 4,
+  },
+  detailsInputError: {
+    borderColor: colors.danger,
+  },
+  detailsFeedback: {
+    color: colors.textMuted,
+    fontFamily: fontFamilies.body,
+    fontSize: 12,
+    lineHeight: 18,
     marginBottom: 12,
+  },
+  detailsError: {
+    color: colors.danger,
   },
   notice: {
     minHeight: 58,

@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../client';
 import { logError } from '../logger';
+import { countReportDetailsCharacters, REPORT_DETAILS_MAX_LENGTH } from '../validation';
 
 const supabase = getSupabaseClient();
 
@@ -84,7 +85,7 @@ export async function createReport(input: {
   details?: string;
 }): Promise<CreateReportResult> {
   const details = input.details?.trim() || null;
-  if (details && details.length > 1000) return 'failed';
+  if (details && countReportDetailsCharacters(details) > REPORT_DETAILS_MAX_LENGTH) return 'failed';
   const {
     data: { user },
   } = await supabase.auth.getUser();

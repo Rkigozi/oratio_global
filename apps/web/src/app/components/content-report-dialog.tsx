@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Loader, X } from 'lucide-react';
+import { countReportDetailsCharacters, REPORT_DETAILS_MAX_LENGTH } from '@oratio/shared/validation';
 
 type Props = {
   submitting: boolean;
@@ -28,6 +29,15 @@ export function ContentReportDialog({
   const [details, setDetails] = useState('');
   const form = useRef<HTMLFormElement>(null);
   const submitLock = useRef(false);
+  const detailsFeedbackId = useId();
+  const detailsCount = countReportDetailsCharacters(details);
+  const excessCharacters = detailsCount - REPORT_DETAILS_MAX_LENGTH;
+  const detailsTooLong = excessCharacters > 0;
+  const detailsFeedback = detailsTooLong
+    ? `${excessCharacters} character${excessCharacters === 1 ? '' : 's'} over the ${REPORT_DETAILS_MAX_LENGTH}-character limit. Shorten your details to submit.`
+    : excessCharacters === 0
+      ? `Character limit reached (${REPORT_DETAILS_MAX_LENGTH} characters).`
+      : `Maximum ${REPORT_DETAILS_MAX_LENGTH} characters.`;
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -36,7 +46,7 @@ export function ContentReportDialog({
   }, []);
 
   const submit = async () => {
-    if (!reason || submitting || submitLock.current || details.trim().length > 1000) return;
+    if (!reason || submitting || submitLock.current || detailsTooLong) return;
     submitLock.current = true;
     try {
       await onReport(reason, details.trim() || undefined);
@@ -130,16 +140,29 @@ export function ContentReportDialog({
             <textarea
               value={details}
               onChange={(event) => setDetails(event.target.value)}
-              maxLength={1000}
+              aria-describedby={detailsFeedbackId}
+              aria-invalid={detailsTooLong || undefined}
               rows={4}
-              className="block mt-2 w-full min-h-24 resize-y rounded-lg bg-bg border border-border p-3 text-sm text-text-primary"
+              className={`block mt-2 w-full min-h-24 resize-y rounded-lg bg-bg border p-3 text-sm text-text-primary ${detailsTooLong ? 'border-danger' : 'border-border'}`}
             />
           </label>
-          <p className="text-xs text-text-muted text-right mt-1">{details.length}/1000</p>
+          <p
+            className={`text-xs text-right mt-1 ${detailsTooLong ? 'text-danger' : 'text-text-muted'}`}
+          >
+            {detailsCount}/{REPORT_DETAILS_MAX_LENGTH}
+          </p>
+          <p
+            id={detailsFeedbackId}
+            role={detailsTooLong ? 'alert' : undefined}
+            aria-live="polite"
+            className={`text-xs mt-1 ${detailsTooLong ? 'text-danger' : 'text-text-muted'}`}
+          >
+            {detailsFeedback}
+          </p>
         </fieldset>
         <button
           type="submit"
-          disabled={submitting || !reason}
+          disabled={submitting || !reason || detailsTooLong}
           className="w-full min-h-11 flex items-center justify-center gap-2 rounded-lg bg-accent text-white text-sm mt-4 disabled:opacity-50"
         >
           {submitting && <Loader size={16} className="animate-spin" />}

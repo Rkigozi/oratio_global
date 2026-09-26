@@ -68,6 +68,83 @@ describe('ContentReportSheet', () => {
     expect(await screen.findByText(/already reported this comment/)).toBeTruthy();
   });
 
+  it.each(['prayer', 'comment'] as const)(
+    'keeps oversized %s report details and enables submission after shortening to the limit',
+    async (reportableType) => {
+      render(
+        <ContentReportSheet
+          onClose={jest.fn()}
+          reportableId="target-1"
+          reportableType={reportableType}
+          visible
+        />
+      );
+      const details = screen.getByLabelText('Additional details (optional)');
+      const submit = () => screen.getByLabelText('Submit report');
+      fireEvent.press(screen.getByText('Something else'));
+      expect(details.props.maxLength).toBeUndefined();
+
+      fireEvent.changeText(details, 'x'.repeat(999));
+      expect(screen.getByText('999/1000')).toBeTruthy();
+      expect(submit().props.accessibilityState.disabled).toBe(false);
+      fireEvent.changeText(details, 'x'.repeat(1000));
+      expect(screen.getByText('Character limit reached (1000 characters).')).toBeTruthy();
+      expect(submit().props.accessibilityState.disabled).toBe(false);
+
+      fireEvent.changeText(details, 'x'.repeat(1001));
+      expect(screen.getByText('1001/1000')).toBeTruthy();
+      expect(screen.getByRole('alert').props.children).toBe(
+        '1 character over the 1000-character limit. Shorten your details to submit.'
+      );
+      expect(details.props.value).toBe('x'.repeat(1001));
+      expect(submit().props.accessibilityState.disabled).toBe(true);
+      fireEvent.press(submit());
+      expect(createReport).not.toHaveBeenCalled();
+
+      fireEvent.changeText(details, 'x'.repeat(1005));
+      expect(screen.getByText(/5 characters over the 1000-character limit/)).toBeTruthy();
+      fireEvent.changeText(details, 'x'.repeat(999));
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(screen.getByText('Maximum 1000 characters.')).toBeTruthy();
+      expect(submit().props.accessibilityState.disabled).toBe(false);
+
+      fireEvent.changeText(details, 'x'.repeat(1000));
+      fireEvent.press(submit());
+      await waitFor(() =>
+        expect(createReport).toHaveBeenCalledWith({
+          reportable_type: reportableType,
+          reportable_id: 'target-1',
+          reason: 'Something else',
+          details: 'x'.repeat(1000),
+        })
+      );
+      expect(createReport).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it('counts Unicode characters consistently with the database', async () => {
+    render(
+      <ContentReportSheet
+        onClose={jest.fn()}
+        reportableId="prayer-1"
+        reportableType="prayer"
+        visible
+      />
+    );
+    const details = screen.getByLabelText('Additional details (optional)');
+    const text = '\u{1F64F}'.repeat(1000);
+    fireEvent.press(screen.getByText('Something else'));
+    fireEvent.changeText(details, `${text}x`);
+    expect(screen.getByText('1001/1000')).toBeTruthy();
+    expect(screen.getByLabelText('Submit report').props.accessibilityState.disabled).toBe(true);
+    fireEvent.changeText(details, text);
+    expect(screen.getByText('1000/1000')).toBeTruthy();
+    fireEvent.press(screen.getByText('Submit report'));
+    await waitFor(() =>
+      expect(createReport).toHaveBeenCalledWith(expect.objectContaining({ details: text }))
+    );
+  });
+
   it('asks for a fresh sign-in when the session has ended', async () => {
     jest.mocked(createReport).mockResolvedValue('unauthenticated' as never);
     render(
@@ -118,13 +195,12 @@ describe('ContentReportSheet', () => {
     const { rerender } = render(<ContentReportSheet {...props} />);
     fireEvent.press(screen.getByText('Submit report'));
     expect(createReport).not.toHaveBeenCalled();
-    fireEvent.changeText(
-      screen.getByLabelText('Additional details (optional)'),
-      'First target only'
-    );
+    fireEvent.changeText(screen.getByLabelText('Additional details (optional)'), 'x'.repeat(1001));
+    expect(screen.getByRole('alert')).toBeTruthy();
     fireEvent.press(screen.getByText('Spam or fake'));
     rerender(<ContentReportSheet {...props} reportableId="prayer-2" />);
     expect(screen.getByLabelText('Additional details (optional)').props.value).toBe('');
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByLabelText('Submit report').props.accessibilityState.disabled).toBe(true);
   });
 
