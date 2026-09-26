@@ -1,6 +1,6 @@
 # Oratio Backlog — Working Agreement
 
-Last updated: 2026-09-24
+Last updated: 2026-09-26
 
 Canonical source for the JIRA backlog (project `SCRUM` at
 https://oratio.atlassian.net). This file and JIRA must stay in sync: change
@@ -148,9 +148,28 @@ stay open. See [MODERATION-LAUNCH.md](./MODERATION-LAUNCH.md).
 Moderation QA follow-up (2026-09-24): the user confirmed public-prayer Restore,
 Dismiss without hiding the prayer, and fresh-report arrival within 30 seconds in
 the local web queue after reporting in Expo. Circle restoration, comment reports,
-privacy, and broader enforcement/release-device checks remain open. The QA Google
+privacy, and broader enforcement/release-device checks remained open at that point. The QA Google
 workbook's `MOD-002` evidence and migration record were updated without changing
 historical PWA pass statuses; this is not launch sign-off or a Jira status change.
+
+Moderation QA follow-up (2026-09-26): the user confirmed Hide/Restore after Expo
+refresh preserves the original audience, excludes an unconnected account, and
+retains Resolved status with both audit actions. The user also confirmed comment
+reporting with optional details, explicit Submit, moderator review, and duplicate
+feedback was already tested. Jonah's review update after Miriam dismisses a report
+shows the outcome without her internal decision note (user-confirmed). Offline
+submission retains the report draft with a clear error, and retry after reconnecting
+succeeds without duplicates (user-confirmed). Recorded in the local checklist and
+synced to the Google workbook's `REPORT-001` / `MOD-002` evidence notes. Reporter-details and other-reporter identity
+privacy, form limits, no-details submission, keyboard/authentication-error handling,
+and broader enforcement/release checks remain open.
+
+Report-length feedback fix (2026-09-26): native and web report forms retain text
+over 1000 characters, show the excess count, and block Submit until shortened.
+Exactly 1000 characters remain valid; shared Unicode counting matches the
+existing database length constraint. Automated suites/type-checks/lint/build and
+desktop/phone-width web checks passed. The user confirmed the new warning on the
+physical iPhone; full light/dark and keyboard coverage remains open.
 
 ## Map and Android snapshot
 

@@ -26,6 +26,11 @@ from the user-confirmed native report success and duplicate checks.
   1000-character details field, then explicit Submit. Failed requests retain the
   draft. Reporter details appear in the moderator review, follow existing report
   RLS (reporter/moderator only), and are excluded from analytics and error logging.
+- Report-length feedback follow-up (2026-09-26): oversized drafts are retained
+  instead of silently truncated. The form shows an excess-character message and
+  disables Submit until shortened; exactly 1000 characters are valid with a
+  limit-reached notice. UI counters and the shared save guard now count Unicode
+  code points consistently with the existing database constraint. No migration.
 - Backend-enforced hiding covers direct reads, Public/Circle/owner feeds, map
   aggregates, comments/replies, interactions, saves, and activity previews.
   Already-rendered content disappears on the next fetch; this is not remote
@@ -77,14 +82,44 @@ visible again to Miriam and Jonah after refreshing Expo. The report remains
 Resolved and its history shows Hide and Restore. A fresh report appears in the
 visible Pending / Newest reports queue within 30 seconds without manual refresh.
 Dismissing that report moves it to Dismissed while the prayer remains visible in
-Expo. Circle audience restoration and comment-report QA remain open; these passes
+Expo. Circle audience restoration and comment-report QA remained open at that point; these passes
 do not close the broader enforcement or release-device checklist.
+
+User-confirmed QA on 2026-09-26: a disposable Circle prayer disappears after Hide
+and refreshing Expo. After Restore and another refresh, the author and accepted
+Circle member can see it again while an unconnected account still cannot. The
+report remains Resolved and its history records Hide and Restore. The user also
+confirmed the comment-report flow was already tested: reason and optional details,
+explicit Submit, success confirmation, correct content/details in moderator review,
+and duplicate-report feedback. Jonah, acting as a non-moderator reporter, also
+received the review outcome in Updates after Miriam dismissed a disposable report,
+without seeing her distinctive internal decision note. Offline report submission
+shows a clear error and retains the reason/details draft; reconnecting and retrying
+succeeds without duplicates (user-confirmed). Reporter-details and other-reporter
+identity privacy, form limits, no-details submission, keyboard/authentication-error
+handling, and broader enforcement/release checks remain open.
+These follow-ups are recorded locally and in the 2026-09-26 workbook sync below.
+
+Report-length fix verification on 2026-09-26: 485 web tests, 190 mobile tests,
+both type-checks, web lint and production build passed. Web screenshots at
+1280x720 and 390x844 show readable feedback; the exact-limit state remains
+submittable. Browser checks did not send reports. The build retains the existing
+large-chunk warning. The user confirmed the new warning works on the physical
+iPhone. Full light/dark and keyboard coverage remains open.
 
 QA workbook sync on 2026-09-24: `Smoke Test Matrix!S32` (`MOD-002`) now includes
 these dated results and a note listing the remaining native/privacy/release checks.
 The release checklist records migrations through 040; the dashboard refresh date
 explicitly notes this partial sync. Historical PWA results and dashboard formulas
 were preserved. Separate native follow-up rows have not been added.
+
+QA workbook sync on 2026-09-26: `Smoke Test Matrix!S30` (`REPORT-001`) and `S32`
+(`MOD-002`) include the confirmed Circle, comment-reporting, internal-note privacy,
+offline-recovery and iPhone limit-warning results. Their notes distinguish open
+coverage from these passes. Account guidance now uses Jonah/Sofia for access-denial
+checks and identifies Miriam as the existing QA moderator, not a launch account.
+The partial-refresh date is updated; historical PWA statuses and formulas remain
+unchanged. This does not close SCRUM-71 or constitute release sign-off.
 
 Local checks: `node scripts/test-moderation-db.mjs` requires PostgreSQL 14+
 `initdb`, `pg_ctl`, and `psql` on PATH. It creates an isolated temporary cluster,

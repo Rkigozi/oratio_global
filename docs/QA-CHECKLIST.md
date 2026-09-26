@@ -3,8 +3,9 @@
 Use this on a physical iPhone in Expo Go after native changes. Repeat the critical set in TestFlight once EAS distribution is introduced. Web/PWA regression checks remain separate during the migration.
 
 QA workbook: [oratio_v1_qa_smoke_test_workbook](https://docs.google.com/spreadsheets/d/1SUlp0WxPbaROUWlg37LXuNgC99F--lPEzSoTICU5zB4/edit).
-Partial sync on 2026-09-24 added confirmed moderation follow-up evidence to
-`MOD-002` and recorded migrations through 040. Historical PWA results remain
+Partial sync on 2026-09-26 added confirmed reporting/moderation follow-up evidence to
+`REPORT-001` and `MOD-002`, including the iPhone report-limit warning retest.
+The release checklist records migrations through 040. Historical PWA results remain
 unchanged; this native checklist is still the source for open iPhone/release checks.
 
 ## Before You Start
@@ -159,19 +160,25 @@ unchanged; this native checklist is still the source for open iPhone/release che
 - [ ] Realtime failure does not block the inbox; foreground refresh and polling remain functional
 - [x] Another account's public prayer can be reported by choosing a reason; the success confirmation appears (user-confirmed Miriam/Jonah QA flow, 2026-09-21)
 - [x] Reporting the same prayer again shows the already-reported message (user-confirmed, 2026-09-21)
-- [ ] Comment menus allow eligible users to choose a report reason and submit it; success and duplicate-report states are clear
-- [ ] Retest prayer/comment reporting on iPhone: reason selection alone does not send, optional details allow 1000 characters, Submit confirms success, and the form remains reachable above the keyboard
-- [ ] Report details reach moderator review but are unavailable to the reported author or unrelated accounts; failure keeps the reason and details draft
-- [ ] Report authentication and network-error states are clear
+- [x] Comment menus allow eligible users to choose a report reason and submit it; success and duplicate-report states are clear (user confirmed this flow was already tested, 2026-09-26)
+- [x] Comment reporting waits for explicit Submit after reason/details entry, then the correct comment and reporter details appear in moderator review (user confirmed this flow was already tested, 2026-09-26)
+- [x] New report-details character-limit warning works on the physical iPhone after the feedback fix (user-confirmed, 2026-09-26)
+- [ ] Retest prayer/comment reporting on iPhone: reason selection alone does not send, exactly 1000 details characters remain valid, longer drafts are preserved with a clear excess-count warning and disabled Submit, shortening clears the error, and the form remains reachable above the keyboard in light/dark mode
+- [x] Automated report-length regressions cover both forms, the 999/1000/1001 boundaries, untruncated drafts, shortening/re-enabling Submit, and Unicode counting in the UI and shared save guard; web feedback visually checked at desktop and phone widths without submitting a report (2026-09-26)
+- [ ] Prayer/comment reports submit successfully with a reason and no optional details
+- [ ] Report details reach moderator review but are unavailable to the reported author or unrelated accounts
+- [x] Submitting a report while offline shows a clear error and preserves the reason/details draft; reconnecting and retrying succeeds without duplicate reports (user-confirmed, 2026-09-26)
+- [ ] Report authentication-error states are clear
 - [ ] Reports reach the moderation queue without changing private or Circle visibility
 - [x] Local moderation tests apply all migrations through 040 and verify moderator-only review/actions, Private isolation, hide/restore across direct reads, map totals, comment threads, activity previews, audit privacy, stale-decision rejection, and reporter-details limits/RLS (`node scripts/test-moderation-db.mjs`, 2026-09-23; 45 assertions in a disposable database)
 - [x] Migrations 039 and 040 applied to Oratio_DB with owner approval; existing signed-in moderator can load a real Circle report in the local web dashboard (2026-09-23; read-only verification, no roles or content changed)
 - [ ] Deploy the updated web moderation UI and native report form; confirm the dedicated approved launch moderator account and ownership
 - [ ] Moderator reviews a real QA prayer/comment, supplies a decision reason, confirms Hide, and sees the related reports resolve; another account cannot fetch the hidden content
 - [x] Restore the recent public QA prayer: after refreshing Expo it reappears for Miriam and Jonah; the report stays Resolved and decision history records Hide and Restore (user-confirmed, 2026-09-24)
-- [ ] Restore a Circle prayer and confirm it remains limited to its original audience
+- [x] Hide a disposable Circle prayer, refresh Expo to confirm it disappears, then Restore: the author and accepted Circle member see it again, an unconnected account still cannot, and the report remains Resolved with Hide/Restore history (user-confirmed, 2026-09-26)
 - [x] Dismiss moves a disposable report to Dismissed while the public prayer remains visible in Expo (user-confirmed Miriam/Jonah QA flow, 2026-09-24)
-- [ ] Reporter receives a review update without the moderator's internal note or another reporter's identity
+- [x] Non-moderator reporter Jonah receives the review outcome in Updates after Miriam dismisses a disposable report, without seeing her distinctive internal decision note (user-confirmed, 2026-09-26)
+- [ ] Review updates never reveal another reporter's identity
 - [ ] A failed queue/review load shows retry, not an empty/all-clear state; a failed or conflicting decision requires a fresh review and preserves the draft reason
 - [x] Queue offers oldest/newest ordering before pagination; newest pending entries appear above historical reports; desktop and phone-width web layouts verified (2026-09-24, read-only live queue)
 - [x] Automated queue tests cover focus/reconnection/30-second refresh, hidden-tab suppression, stale-refresh warnings, request races, and preservation of open review drafts (2026-09-24)
