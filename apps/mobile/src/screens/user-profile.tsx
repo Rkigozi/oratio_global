@@ -11,7 +11,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Ban } from 'lucide-react-native';
 import { getProfileByUsername, getUserPrayers } from '@oratio/shared/queries';
 import type { PrayerRequest } from '@oratio/shared/prayer-data';
 import { Avatar } from '../components/avatar';
@@ -20,18 +20,23 @@ import { PrayerCard } from '../components/prayer-card';
 import { ProfileCircleActions } from '../components/profile-circle-actions';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
+import { useBlockUser } from '../hooks/use-block-user';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
 type UserProfile = NonNullable<Awaited<ReturnType<typeof getProfileByUsername>>>;
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
+const BanIcon = asNativeIcon(Ban);
 
 export function UserProfileScreen({
   navigation,
   route,
 }: NativeStackScreenProps<RootStackParamList, 'UserProfile'>) {
   const { user } = useAuth();
+  const { blocking, confirmBlock } = useBlockUser(() =>
+    navigation.reset({ index: 0, routes: [{ name: 'Main', params: { screen: 'Public' } }] })
+  );
   const username = route.params.username.trim().replace(/^@/, '').toLowerCase();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
@@ -93,7 +98,23 @@ export function UserProfileScreen({
         <View style={styles.headerCopy}>
           <ScreenHeaderTitle subtitle={`@${resolvedUsername}`} title="Profile" />
         </View>
-        <View style={styles.headerButton} />
+        {profile && user && profile.id !== user.id && !error ? (
+          <Pressable
+            accessibilityLabel="Block user"
+            accessibilityRole="button"
+            disabled={blocking}
+            onPress={() => confirmBlock(profile.id, profile.username)}
+            style={styles.headerButton}
+          >
+            {blocking ? (
+              <ActivityIndicator color={colors.danger} />
+            ) : (
+              <BanIcon color={colors.danger} size={20} strokeWidth={1.7} />
+            )}
+          </Pressable>
+        ) : (
+          <View style={styles.headerButton} />
+        )}
       </View>
 
       {loading ? (

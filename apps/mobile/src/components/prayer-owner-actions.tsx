@@ -10,12 +10,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Copy, Flag, Pencil, Share2, Trash2, X } from 'lucide-react-native';
+import { Ban, Copy, Flag, Pencil, Share2, Trash2, X } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { asNativeIcon } from './icon';
 import { colors, fontFamilies, radii } from '../theme';
 
 const FlagIcon = asNativeIcon(Flag);
+const BanIcon = asNativeIcon(Ban);
 const CopyIcon = asNativeIcon(Copy);
 const PencilIcon = asNativeIcon(Pencil);
 const ShareIcon = asNativeIcon(Share2);
@@ -25,6 +26,7 @@ const XIcon = asNativeIcon(X);
 export function PrayerActionsSheet({
   canShare,
   canReport,
+  onBlock,
   busy,
   deleting,
   isOwner,
@@ -38,6 +40,7 @@ export function PrayerActionsSheet({
 }: {
   canShare: boolean;
   canReport: boolean;
+  onBlock?: () => void;
   busy: boolean;
   deleting: boolean;
   isOwner: boolean;
@@ -141,6 +144,15 @@ export function PrayerActionsSheet({
                   onPress={() => runAfterClose(onDelete)}
                 />
               </>
+            ) : null}
+            {onBlock && !isOwner ? (
+              <PrayerAction
+                destructive
+                disabled={busy || closing}
+                icon={<BanIcon color={colors.danger} size={19} strokeWidth={1.7} />}
+                label="Block user"
+                onPress={() => runAfterClose(onBlock)}
+              />
             ) : null}
           </View>
         </SafeAreaView>

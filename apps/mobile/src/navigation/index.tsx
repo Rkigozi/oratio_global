@@ -20,6 +20,7 @@ import { MyPrayersScreen } from '../screens/my-prayers';
 import { PrayerDetailScreen } from '../screens/prayer-detail';
 import { ProfileScreen } from '../screens/profile';
 import { SettingsScreen } from '../screens/settings';
+import { BlockedAccountsScreen } from '../screens/blocked-accounts';
 import { SubmitScreen } from '../screens/submit';
 import { UpdatesScreen } from '../screens/updates';
 import { UserProfileScreen } from '../screens/user-profile';
@@ -39,6 +40,7 @@ export type RootStackParamList = {
   PrayerCircleManagement: undefined;
   Profile: undefined;
   Settings: undefined;
+  BlockedAccounts: undefined;
   Updates: undefined;
   Submit: { initialAudience?: 'public' | 'circle' | 'private' } | undefined;
 };
@@ -165,6 +167,7 @@ export function RootNavigator() {
           <Stack.Screen name="PrayerCircleManagement" component={PrayerCircleManagementScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="BlockedAccounts" component={BlockedAccountsScreen} />
           <Stack.Screen name="Updates" component={UpdatesScreen} />
           <Stack.Screen name="Submit" component={SubmitScreen} />
         </>

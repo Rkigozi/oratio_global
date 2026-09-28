@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { UserProfileScreen } from './user-profile';
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
+  Ban: () => null,
   Check: () => null,
   Clock: () => null,
   UserPlus: () => null,
@@ -22,6 +24,7 @@ jest.mock('@react-navigation/native', () => {
 
 jest.mock('@oratio/shared/queries', () => ({
   getProfileByUsername: jest.fn(),
+  blockUser: jest.fn(),
   getUserPrayers: jest.fn(),
   cancelPrayerCircleInvite: jest.fn(),
   getPrayerCircleCount: jest.fn(),
@@ -35,6 +38,7 @@ jest.mock('../hooks/auth-context', () => ({ useAuth: jest.fn() }));
 import { useAuth } from '../hooks/auth-context';
 import {
   getProfileByUsername,
+  blockUser,
   getUserPrayers,
   getPrayerCircleCount,
   getPrayerCircleStatus,
@@ -62,7 +66,8 @@ const prayer = {
   audience: 'public',
 };
 
-const navigation = { goBack: jest.fn(), navigate: jest.fn() } as never;
+const reset = jest.fn();
+const navigation = { goBack: jest.fn(), navigate: jest.fn(), reset } as never;
 const route = { params: { username: 'miriam' } } as never;
 
 describe('UserProfileScreen', () => {
@@ -74,6 +79,7 @@ describe('UserProfileScreen', () => {
     jest.mocked(getPrayerCircleCount).mockResolvedValue(0);
     jest.mocked(getPrayerCircleStatus).mockResolvedValue({ state: 'none' });
     jest.mocked(sendPrayerCircleInvite).mockResolvedValue(true);
+    jest.mocked(blockUser).mockResolvedValue(undefined);
   });
 
   it('shows the profile and opens a visible prayer', async () => {
@@ -117,6 +123,7 @@ describe('UserProfileScreen', () => {
     render(<UserProfileScreen navigation={navigation} route={route} />);
     await screen.findByText('Miriam');
     expect(screen.queryByText('Invite to Prayer Circle')).toBeNull();
+    expect(screen.queryByLabelText('Block user')).toBeNull();
     expect(getPrayerCircleStatus).not.toHaveBeenCalled();
   });
 
@@ -127,5 +134,53 @@ describe('UserProfileScreen', () => {
     expect((navigation as unknown as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith(
       'PrayerCircleManagement'
     );
+  });
+
+  it('confirms blocking before sending and clears the native stack on success', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    render(<UserProfileScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('Block user'));
+    expect(blockUser).not.toHaveBeenCalled();
+    expect(alert.mock.calls[0][0]).toBe('Block @miriam?');
+    const confirm = alert.mock.calls[0][2]?.find((button) => button.text === 'Block');
+    await act(async () => {
+      confirm?.onPress?.();
+      confirm?.onPress?.();
+    });
+    expect(blockUser).toHaveBeenCalledTimes(1);
+    expect(blockUser).toHaveBeenCalledWith(profile.id);
+    expect(reset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: 'Main', params: { screen: 'Public' } }],
+    });
+    expect(alert).toHaveBeenLastCalledWith('Account blocked');
+    alert.mockRestore();
+  });
+
+  it('keeps the profile when blocking fails and permits a retry', async () => {
+    jest.mocked(blockUser).mockRejectedValueOnce(new Error('Please try again.'));
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    render(<UserProfileScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('Block user'));
+    await act(async () => {
+      alert.mock.calls[0][2]?.[1]?.onPress?.();
+    });
+    expect(reset).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenLastCalledWith('Account not blocked', 'Please try again.');
+    fireEvent.press(screen.getByLabelText('Block user'));
+    expect(alert.mock.calls.at(-1)?.[0]).toBe('Block @miriam?');
+    alert.mockRestore();
+  });
+
+  it('cancels blocking without changing data or navigation', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    render(<UserProfileScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('Block user'));
+    act(() => {
+      alert.mock.calls[0][2]?.[0]?.onPress?.();
+    });
+    expect(blockUser).not.toHaveBeenCalled();
+    expect(reset).not.toHaveBeenCalled();
+    alert.mockRestore();
   });
 });

@@ -3,12 +3,14 @@ import { Alert, Linking } from 'react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { SettingsScreen } from './settings';
 
-const navigation = { goBack: jest.fn() };
+const navigation = { goBack: jest.fn(), navigate: jest.fn() };
 const mockSignOut = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
 const mockSetThemeMode = jest.fn();
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
+  Ban: () => null,
+  ChevronRight: () => null,
   Bell: () => null,
   CircleHelp: () => null,
   ExternalLink: () => null,
@@ -92,6 +94,12 @@ describe('SettingsScreen', () => {
     expect(screen.getByLabelText('Light appearance')).toBeTruthy();
     expect(screen.getByLabelText('Dark appearance')).toBeTruthy();
     expect(screen.getByText('miriam@example.com')).toBeTruthy();
+  });
+
+  it('opens blocked accounts from Settings', async () => {
+    renderSettings();
+    fireEvent.press(await screen.findByLabelText('Blocked accounts'));
+    expect(navigation.navigate).toHaveBeenCalledWith('BlockedAccounts');
   });
 
   it('updates toggle preferences optimistically', async () => {

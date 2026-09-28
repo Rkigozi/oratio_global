@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Bookmark, Languages, MapPin, MoreHorizontal } from 'lucide-react-native';
 import {
@@ -36,6 +37,7 @@ import { PrayerComments } from '../components/prayer-comments';
 import { ContentReportSheet } from '../components/content-report-sheet';
 import { PrayerActionsSheet, PrayerEditSheet } from '../components/prayer-owner-actions';
 import { useAuth } from '../hooks/auth-context';
+import { useBlockUser } from '../hooks/use-block-user';
 import { copyPrayerLink, sharePrayer } from '../services/prayer-sharing';
 import { translatePrayerText, type PrayerTranslation } from '../services/prayer-translation';
 import { colors, fontFamilies } from '../theme';
@@ -61,6 +63,12 @@ export function PrayerDetailScreen({
 }: NativeStackScreenProps<RootStackParamList, 'PrayerDetail'>) {
   const { prayerId } = route.params;
   const { profile: authProfile, user } = useAuth();
+  const returnAfterBlock = () =>
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main', params: { screen: 'Public' } }],
+    });
+  const { blocking, confirmBlock } = useBlockUser(returnAfterBlock);
   const [prayer, setPrayer] = useState<PrayerRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,9 +118,11 @@ export function PrayerDetailScreen({
     }
   }, [prayerId]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load])
+  );
 
   const handlePray = async () => {
     if (!prayer || prayer.audience === 'private' || prayBusy) return;
@@ -514,12 +524,17 @@ export function PrayerDetailScreen({
             </>
           )}
 
-          <PrayerComments prayer={prayer} />
+          <PrayerComments prayer={prayer} onBlocked={returnAfterBlock} />
         </ScrollView>
       </KeyboardAvoidingView>
 
       <PrayerActionsSheet
-        busy={shareBusy}
+        busy={shareBusy || blocking}
+        onBlock={
+          canReport && prayer?.username && prayer.authorId
+            ? () => confirmBlock(prayer.authorId!, prayer.username)
+            : undefined
+        }
         canReport={canReport}
         canShare={canShare}
         deleting={deleteBusy}

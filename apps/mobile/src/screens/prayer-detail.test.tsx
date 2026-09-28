@@ -6,6 +6,7 @@ import { PrayerDetailScreen } from './prayer-detail';
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
+  Ban: () => null,
   Bookmark: () => null,
   CheckCircle2: () => null,
   Copy: () => null,
@@ -26,8 +27,16 @@ jest.mock('../hooks/auth-context', () => ({
   useAuth: jest.fn(),
 }));
 
+jest.mock('@react-navigation/native', () => {
+  const { useEffect } = require('react');
+  return {
+    useFocusEffect: (callback: () => void | (() => void)) => useEffect(callback, [callback]),
+  };
+});
+
 jest.mock('@oratio/shared/queries', () => ({
   getPrayerById: jest.fn(),
+  blockUser: jest.fn(),
   getProfilePreferences: jest.fn(),
   getMyPrayedIds: jest.fn(),
   getMySavedIds: jest.fn(),
@@ -57,6 +66,7 @@ jest.mock('../services/prayer-translation', () => ({
 import { useAuth } from '../hooks/auth-context';
 import {
   getPrayerById,
+  blockUser,
   getProfilePreferences,
   getMyPrayedIds,
   getMySavedIds,
@@ -121,6 +131,39 @@ describe('PrayerDetailScreen', () => {
     jest.mocked(getCommentCount).mockResolvedValue(0 as never);
     jest.mocked(subscribeToPrayerCommentChanges).mockReturnValue(jest.fn());
     jest.mocked(createReport).mockResolvedValue('created' as never);
+    jest.mocked(blockUser).mockResolvedValue(undefined);
+  });
+
+  it('waits for the prayer actions sheet to dismiss before confirming a block', async () => {
+    jest.mocked(getPrayerById).mockResolvedValue({ ...prayer, authorId: 'author-2' } as never);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    await screen.findByText(prayer.text);
+    fireEvent.press(screen.getByLabelText('More prayer options'));
+    fireEvent.press(screen.getByText('Block user'));
+    expect(alert).not.toHaveBeenCalled();
+    dismissActionsSheet();
+    expect(alert.mock.calls[0][0]).toBe('Block @miriam?');
+    await act(async () => {
+      alert.mock.calls[0][2]?.[1]?.onPress?.();
+    });
+    expect(blockUser).toHaveBeenCalledWith('author-2');
+    expect(reset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: 'Main', params: { screen: 'Public' } }],
+    });
+    alert.mockRestore();
+  });
+
+  it('does not reveal anonymous attribution through a block action', async () => {
+    jest
+      .mocked(getPrayerById)
+      .mockResolvedValue({ ...prayer, authorId: 'author-2', username: undefined } as never);
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    await screen.findByText(prayer.text);
+    fireEvent.press(screen.getByLabelText('More prayer options'));
+    expect(screen.queryByText('Block user')).toBeNull();
+    expect(screen.getByText('Report prayer')).toBeTruthy();
   });
 
   it('renders the prayer text, location, and attribution', async () => {

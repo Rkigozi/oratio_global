@@ -22,6 +22,7 @@ import {
 } from '@oratio/shared/queries';
 import { timeAgo, type PrayerRequest } from '@oratio/shared/prayer-data';
 import { useAuth } from '../hooks/auth-context';
+import { useBlockUser } from '../hooks/use-block-user';
 import { asNativeIcon } from './icon';
 import { Avatar } from './avatar';
 import { ContentReportSheet } from './content-report-sheet';
@@ -37,7 +38,13 @@ type ReplyTarget = {
   username: string;
 };
 
-export function PrayerComments({ prayer }: { prayer: PrayerRequest }) {
+export function PrayerComments({
+  prayer,
+  onBlocked,
+}: {
+  prayer: PrayerRequest;
+  onBlocked?: () => void;
+}) {
   const { profile, user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [total, setTotal] = useState(prayer.commentCount ?? 0);
@@ -64,6 +71,13 @@ export function PrayerComments({ prayer }: { prayer: PrayerRequest }) {
       ? prayer.authorId === user.id
       : !!prayer.username && prayer.username === profile?.username);
   const canToggleComments = prayer.audience === 'public' && canModerate;
+  const { blocking, confirmBlock } = useBlockUser(() => {
+    setComments([]);
+    setReplyTo(null);
+    setEditingId(null);
+    if (onBlocked) onBlocked();
+    else void load();
+  });
 
   useEffect(() => {
     setCommentsEnabled(prayer.commentsEnabled !== false);
@@ -339,6 +353,9 @@ export function PrayerComments({ prayer }: { prayer: PrayerRequest }) {
                   onDelete={confirmDelete}
                   onReply={(parentId, username) => setReplyTo({ parentId, username })}
                   onReport={setReportTargetId}
+                  onBlock={(comment) => {
+                    if (!blocking) confirmBlock(comment.user_id, comment.user?.username);
+                  }}
                   onSaveEdit={(target) => void saveEdit(target)}
                   onStartEdit={startEdit}
                   replies={repliesFor(comment.id)}
@@ -450,6 +467,7 @@ function CommentThread({
   busyDeleteId,
   onReply,
   onReport,
+  onBlock,
   onStartEdit,
   onChangeEdit,
   onCancelEdit,
@@ -467,6 +485,7 @@ function CommentThread({
   busyDeleteId: string | null;
   onReply: (parentId: string, username: string) => void;
   onReport: (commentId: string) => void;
+  onBlock: (comment: Comment) => void;
   onStartEdit: (comment: Comment) => void;
   onChangeEdit: (value: string) => void;
   onCancelEdit: () => void;
@@ -490,6 +509,7 @@ function CommentThread({
           onReply(comment.id, comment.user?.username || comment.user?.display_name || 'user')
         }
         onReport={() => onReport(comment.id)}
+        onBlock={() => onBlock(comment)}
         onSaveEdit={onSaveEdit}
         onStartEdit={onStartEdit}
         savingEdit={savingEdit}
@@ -514,6 +534,7 @@ function CommentThread({
                 onReply(comment.id, reply.user?.username || reply.user?.display_name || 'user')
               }
               onReport={() => onReport(reply.id)}
+              onBlock={() => onBlock(reply)}
               onSaveEdit={onSaveEdit}
               onStartEdit={onStartEdit}
               savingEdit={savingEdit}
@@ -537,6 +558,7 @@ function CommentEntry({
   busyDelete,
   onReply,
   onReport,
+  onBlock,
   onStartEdit,
   onChangeEdit,
   onCancelEdit,
@@ -554,6 +576,7 @@ function CommentEntry({
   busyDelete: boolean;
   onReply: () => void;
   onReport: () => void;
+  onBlock: () => void;
   onStartEdit: (comment: Comment) => void;
   onChangeEdit: (value: string) => void;
   onCancelEdit: () => void;
@@ -631,6 +654,9 @@ function CommentEntry({
               />
             ) : null}
             {!own && !canModerate ? <TextAction label="Report" onPress={onReport} /> : null}
+            {!own && currentUserId ? (
+              <TextAction danger label="Block user" onPress={onBlock} />
+            ) : null}
           </View>
         ) : null}
       </View>
@@ -798,6 +824,7 @@ const styles = StyleSheet.create({
   },
   entryActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 18,
     minHeight: 32,

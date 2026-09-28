@@ -19,6 +19,7 @@ jest.mock('../hooks/auth-context', () => ({
 
 jest.mock('@oratio/shared/queries', () => ({
   getComments: jest.fn(),
+  blockUser: jest.fn(),
   getCommentCount: jest.fn(),
   createComment: jest.fn(),
   updateComment: jest.fn(),
@@ -31,6 +32,7 @@ jest.mock('@oratio/shared/queries', () => ({
 import { useAuth } from '../hooks/auth-context';
 import {
   createComment,
+  blockUser,
   deleteComment,
   getCommentCount,
   getComments,
@@ -101,6 +103,23 @@ describe('PrayerComments', () => {
     jest.mocked(deleteComment).mockResolvedValue(true as never);
     jest.mocked(toggleCommentsEnabled).mockResolvedValue(true as never);
     jest.mocked(createReport).mockResolvedValue('created' as never);
+    jest.mocked(blockUser).mockResolvedValue(undefined);
+  });
+
+  it('lets the prayer owner block a commenter without deleting their content', async () => {
+    jest.mocked(useAuth).mockReturnValue({ user: { id: 'author-1' } } as never);
+    jest.mocked(getComments).mockResolvedValue([parentComment] as never);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const onBlocked = jest.fn();
+    render(<PrayerComments prayer={publicPrayer} onBlocked={onBlocked} />);
+    fireEvent.press(await screen.findByText('Block user'));
+    await act(async () => {
+      alert.mock.calls[0][2]?.[1]?.onPress?.();
+    });
+    expect(blockUser).toHaveBeenCalledWith(parentComment.user_id);
+    expect(onBlocked).toHaveBeenCalledTimes(1);
+    expect(deleteComment).not.toHaveBeenCalled();
+    alert.mockRestore();
   });
 
   it('renders public comments and their replies', async () => {

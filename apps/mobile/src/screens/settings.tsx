@@ -15,6 +15,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
+  Ban,
+  ChevronRight,
   Bell,
   CircleHelp,
   ExternalLink,
@@ -46,6 +48,8 @@ import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
+const BanIcon = asNativeIcon(Ban);
+const ChevronRightIcon = asNativeIcon(ChevronRight);
 const BellIcon = asNativeIcon(Bell);
 const CircleHelpIcon = asNativeIcon(CircleHelp);
 const ExternalLinkIcon = asNativeIcon(ExternalLink);
@@ -358,6 +362,20 @@ export function SettingsScreen({
 
         <View style={styles.section}>
           <SectionTitle icon={<LogOutIcon color={colors.textDim} size={15} />} label="Account" />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Blocked accounts"
+            onPress={() => navigation.navigate('BlockedAccounts')}
+            style={styles.linkRow}
+          >
+            <View style={styles.linkIcon}>
+              <BanIcon color={colors.textDim} size={17} />
+            </View>
+            <View style={styles.linkCopy}>
+              <Text style={styles.linkLabel}>Blocked accounts</Text>
+            </View>
+            <ChevronRightIcon color={colors.textDim} size={17} />
+          </Pressable>
           <View style={styles.accountRow}>
             <Text style={styles.accountLabel}>Email</Text>
             <Text numberOfLines={1} style={styles.accountValue}>

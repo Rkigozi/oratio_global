@@ -52,8 +52,10 @@ from the user-confirmed native report success and duplicate checks.
    caused the live review-load error. The existing signed-in moderator now loads
    a real Circle report's content and decision controls successfully. No role was
    granted and no content was hidden, restored, or dismissed during this rollout.
-2. Deploy the new web dashboard. The local dev dashboard is verified; production
-   web/mobile builds have not been shipped by this task. Old moderation UIs
+2. Web baseline deployed on 2026-09-26: Netlify published main commit `4f6647d`
+   after the report-limit update; web/mobile CI passed. Native is still tested in
+   Expo Go, not a shipped TestFlight build. Authenticated production moderation
+   verification remains open. Old moderation UIs
    lose direct report-update permission after the migration and fail safely;
    do not restore those grants to make an old client work.
 3. Confirm the launch moderator account and review ownership with the owner.
@@ -130,10 +132,22 @@ hosted Supabase/PostgREST/Realtime and physical-device QA.
 
 ## Still Open Before Launch Sign-Off
 
+Latest confirmation and Jira sync (2026-09-28): Robert confirmed reason-only
+prayer/comment reports, keyboard scrolling/readability in light and dark mode,
+and reporter-details isolation from authors/unrelated accounts on 2026-09-26.
+Those checks are passed in `docs/QA-CHECKLIST.md` and SCRUM-71's QA comment;
+the earlier open-item snapshots above are historical. Exact-boundary native
+cases, authentication failures, other-reporter identity, broader enforcement
+and release checks remain open. The newest confirmations are not yet resynced
+to the Google workbook. SCRUM-71 stays In Review, and SCRUM-94 tracks the new
+blocking implementation separately as In Progress.
+
 - Alerting, urgency/escalation, and an owned review schedule with backup coverage.
   Do not put prayer text or reporter identity in external alert messages.
-- User blocking and administrator enforcement for abusive accounts; objectionable
-  content filtering before publication. Validate against Apple Guideline 1.2.
+- User blocking (SCRUM-94, local implementation in progress; see
+  [USER-BLOCKING.md](./USER-BLOCKING.md)), administrator enforcement for abusive
+  accounts, and objectionable content filtering before publication. Validate
+  against Apple Guideline 1.2.
 - Clear community rules, a non-punitive support path for distress, public contact
   details, author-facing removal explanations, and an appeal/contact process.
 - Decide audit retention and moderator access-review/revocation policy.

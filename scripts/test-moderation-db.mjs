@@ -3,6 +3,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { testBlockingConcurrency } from './test-blocking-concurrency.mjs';
 
 // Uses a disposable PostgreSQL cluster and never reads a Supabase connection string.
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -11,8 +12,19 @@ const data = join(temp, 'data');
 let started = false;
 const run = (cmd, args, input) =>
   execFileSync(cmd, args, { input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-const sql = (input) =>
-  run('psql', ['-X', '-v', 'ON_ERROR_STOP=1', '-h', temp, '-p', '55439', '-d', 'postgres'], input);
+const psqlArgs = [
+  '-X',
+  '-v',
+  'ON_ERROR_STOP=1',
+  '-At',
+  '-h',
+  temp,
+  '-p',
+  '55439',
+  '-d',
+  'postgres',
+];
+const sql = (input) => run('psql', psqlArgs, input);
 try {
   run('initdb', ['-D', data, '--auth=trust', '--no-locale', '--encoding=UTF8']);
   run('pg_ctl', [
@@ -32,10 +44,14 @@ try {
     .sort()) {
     sql(readFileSync(join(root, 'supabase/migrations', file), 'utf8'));
   }
-  const assertions = readFileSync(join(root, 'supabase/tests/moderation.sql'), 'utf8');
-  sql(assertions);
-  const count = assertions.match(/^select pg_temp\.(?:assert_true|expect_error)\(/gm)?.length ?? 0;
-  console.log(`All migrations applied; ${count} moderation database assertions passed.`);
+  for (const suite of ['moderation', 'blocking']) {
+    const assertions = readFileSync(join(root, `supabase/tests/${suite}.sql`), 'utf8');
+    sql(assertions);
+    const count =
+      assertions.match(/^select pg_temp\.(?:assert_true|expect_error)\(/gm)?.length ?? 0;
+    console.log(`All migrations applied; ${count} ${suite} database assertions passed.`);
+  }
+  await testBlockingConcurrency({ sql, psqlArgs });
 } catch (error) {
   console.error(error.stderr?.toString() || error.message);
   process.exitCode = 1;

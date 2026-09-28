@@ -163,10 +163,11 @@ unchanged; this native checklist is still the source for open iPhone/release che
 - [x] Comment menus allow eligible users to choose a report reason and submit it; success and duplicate-report states are clear (user confirmed this flow was already tested, 2026-09-26)
 - [x] Comment reporting waits for explicit Submit after reason/details entry, then the correct comment and reporter details appear in moderator review (user confirmed this flow was already tested, 2026-09-26)
 - [x] New report-details character-limit warning works on the physical iPhone after the feedback fix (user-confirmed, 2026-09-26)
-- [ ] Retest prayer/comment reporting on iPhone: reason selection alone does not send, exactly 1000 details characters remain valid, longer drafts are preserved with a clear excess-count warning and disabled Submit, shortening clears the error, and the form remains reachable above the keyboard in light/dark mode
+- [ ] Retest prayer/comment reporting on iPhone: reason selection alone does not send, exactly 1000 details characters remain valid, longer drafts are preserved with a clear excess-count warning and disabled Submit, and shortening clears the error
+- [x] Report form scrolls with the iPhone keyboard open in light/dark mode; details, character warning and Submit remain readable and reachable (user-confirmed, 2026-09-26)
 - [x] Automated report-length regressions cover both forms, the 999/1000/1001 boundaries, untruncated drafts, shortening/re-enabling Submit, and Unicode counting in the UI and shared save guard; web feedback visually checked at desktop and phone widths without submitting a report (2026-09-26)
-- [ ] Prayer/comment reports submit successfully with a reason and no optional details
-- [ ] Report details reach moderator review but are unavailable to the reported author or unrelated accounts
+- [x] Prayer/comment reports submit successfully with a reason and no optional details (user confirmed this flow was already tested, 2026-09-26)
+- [x] Report details reach moderator review but are unavailable to the reported author or unrelated accounts (user-confirmed, 2026-09-26)
 - [x] Submitting a report while offline shows a clear error and preserves the reason/details draft; reconnecting and retrying succeeds without duplicate reports (user-confirmed, 2026-09-26)
 - [ ] Report authentication-error states are clear
 - [ ] Reports reach the moderation queue without changing private or Circle visibility
@@ -183,6 +184,30 @@ unchanged; this native checklist is still the source for open iPhone/release che
 - [x] Queue offers oldest/newest ordering before pagination; newest pending entries appear above historical reports; desktop and phone-width web layouts verified (2026-09-24, read-only live queue)
 - [x] Automated queue tests cover focus/reconnection/30-second refresh, hidden-tab suppression, stale-refresh warnings, request races, and preservation of open review drafts (2026-09-24)
 - [x] A new disposable report from Expo appears in the visible Pending / Newest reports queue within 30 seconds without manual refresh (user-confirmed, 2026-09-24)
+
+## User Blocking (SCRUM-94)
+
+- [x] Disposable local database tests cover bilateral visibility, alias/direct-read
+      denial, map/saved/comment/Updates isolation, rejected interactions/invites,
+      retained report review and unblock behavior (58 assertions, 2026-09-28).
+- [x] Seven two-session database tests cover Block racing with Circle acceptance,
+      new invitations, legacy follows and reciprocal blocks; all 45 existing
+      moderation assertions still pass (2026-09-28).
+- [x] Direct API tests reject anonymous/expired/wrong-account Circle actions and
+      direct block-table mutation; own pending-invite cancellation still works.
+- [x] Automated native/query tests cover confirmed/cancelled/failed actions,
+      duplicate taps, stack reset, own/anonymous exclusions, list errors/pagination,
+      Settings entry and Unblock (2026-09-28).
+- [ ] Apply migration 041 after review and owner approval; not yet live.
+- [ ] On a physical iPhone, block another QA account from profile, named prayer
+      actions and a comment; confirm feedback and return to refreshed Public prayers.
+- [ ] Both QA accounts lose access to each other's content after refresh, including
+      direct links; unrelated accounts retain their original access.
+- [ ] Existing Circle membership and pending invites disappear; new invites and
+      interactions fail without changing the other account's data.
+- [ ] Settings shows only the viewer's blocked accounts; failed Unblock retains the
+      row; successful Unblock never reconnects Circle and respects a reciprocal block.
+- [ ] New controls remain readable and reachable in light/dark mode on iPhone.
 
 ## Native Runtime
 
