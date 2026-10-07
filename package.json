@@ -29,7 +29,9 @@
     "prepare": "husky",
     "format:check": "prettier --check .",
     "test:mobile": "npm run test --workspace @oratio/mobile",
-    "audit:web": "npm audit -w @oratio/web --omit=dev --audit-level=high"
+    "audit:web": "npm audit -w @oratio/web --omit=dev --audit-level=high",
+    "audit:mobile": "npm audit -w @oratio/mobile --omit=dev --audit-level=high",
+    "test:db": "node scripts/test-moderation-db.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.7",
@@ -38,7 +40,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
-    "expo": "~57.0.21"
+    "expo": "~57.0.27"
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx}": [
