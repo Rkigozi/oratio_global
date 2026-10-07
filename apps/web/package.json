@@ -26,6 +26,7 @@
     "supabase:email:password-reset": "node scripts/apply-supabase-password-reset-template.mjs"
   },
   "dependencies": {
+    "@netlify/blobs": "11.1.2",
     "@sentry/react": "^10.57.0",
     "@supabase/supabase-js": "^2.108.1",
     "clsx": "^2.1.1",

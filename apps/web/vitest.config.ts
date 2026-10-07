@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}', 'server/**/*.test.ts'],
     // Tests never talk to real Supabase, but some modules create the client
     // at import time. Give them dummy values so the suite does not depend on
     // a local .env file (CI has none).
