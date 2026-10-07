@@ -139,8 +139,11 @@ Current checkpoint (2026-10-07): Expo `57.0.27`, Doctor 21/21, 255 mobile tests,
 passed. Local browser regressions passed 38 tests with six authenticated tests
 skipped. No signed build, Xcode preview or new device test was started.
 The mobile production audit still reports seven moderate and 14 high
-affected-package entries (zero critical); the broader audit including development
-tools also has critical findings. See [the security review](./SECURITY-REVIEW.md)
+affected-package entries (zero critical). The subsequent tooling follow-up removed
+all critical entries; the full tree including development tools retains 12 moderate
+and 45 high entries. The clean exported JavaScript source map contains none of the
+remaining advisory packages; build-time risk and signed-artifact review remain open.
+See [the security review](./SECURITY-REVIEW.md)
 for the current blocker and [release readiness](../V1_RELEASE_READINESS.md)
 for verification scope. The older snapshots below do not clear these findings.
 

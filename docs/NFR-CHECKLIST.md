@@ -47,8 +47,10 @@ needs an explicit, time-limited risk decision and follow-up; it is not a pass.
 Security checkpoint (2026-10-07): [the security review](./backlog/SECURITY-REVIEW.md)
 records 140 passing SQL assertions and nine races, including the new security and
 quota checks. After compatible patches, production audit counts are zero for web
-and seven moderate/14 high/zero critical for mobile. The separate development-tool
-audit has critical findings. These supersede the September snapshot in the register;
+and seven moderate/14 high/zero critical for mobile. The later tooling follow-up
+removed all critical findings: web including tooling is clean; the full tree
+retains 12 moderate/45 high entries from four underlying advisories. These
+supersede the September snapshot in the register;
 the mobile CI audit and NFR-01 gate remain open. Migration 042 is tested locally but
 not live. No complete NFR gate is signed off by this automated checkpoint.
 

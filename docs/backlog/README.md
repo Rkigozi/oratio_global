@@ -143,7 +143,10 @@ Security review checkpoint (2026-10-07): [SECURITY-REVIEW.md](./SECURITY-REVIEW.
 records the dependency patches, migration 042 for waitlist/quota access, 140 SQL
 assertions and nine concurrent-session cases. After compatible patches, production
 audit counts are zero for web and seven moderate/14 high/zero critical for mobile.
-Including development tools, critical findings also remain. The mobile CI audit
+After the tooling follow-up, web including development tools is clean and the full
+tree retains 12 moderate/45 high/zero critical entries from four underlying
+advisories. Shipped-JavaScript source-map checks and residual tooling exposure
+are recorded in the review. The mobile CI audit
 is blocked and SCRUM-47 remains In Progress, not Done;
 the migration is not live and the full deployed-policy review remains open.
 

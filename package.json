@@ -30,6 +30,7 @@
     "format:check": "prettier --check .",
     "test:mobile": "npm run test --workspace @oratio/mobile",
     "audit:web": "npm audit -w @oratio/web --omit=dev --audit-level=high",
+    "audit:web:tooling": "npm audit -w @oratio/web --include=dev --audit-level=high",
     "audit:mobile": "npm audit -w @oratio/mobile --omit=dev --audit-level=high",
     "test:db": "node scripts/test-moderation-db.mjs"
   },

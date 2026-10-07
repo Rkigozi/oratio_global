@@ -26,6 +26,9 @@ jobs:
       - name: Audit web dependencies
         run: npm run audit:web
 
+      - name: Audit web development tooling
+        run: npm run audit:web:tooling
+
       - name: Type check
         working-directory: apps/web
         run: npm run type-check
@@ -34,9 +37,9 @@ jobs:
         working-directory: apps/web
         run: npm run lint
 
-      - name: Tests
+      - name: Tests and coverage
         working-directory: apps/web
-        run: npm test
+        run: npm run test:coverage
 
       - name: Build
         working-directory: apps/web

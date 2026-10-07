@@ -27,8 +27,9 @@ service-notice and profile-menu changes:
   real-account credentials or production writes were used.
 - Production audit after compatible patches: web zero; mobile/all workspaces
   seven moderate and 14 high affected-package entries, zero critical. The mobile
-  CI audit gate remains blocked. Including development dependencies, 14 moderate,
-  46 high and two critical entries remain; that tooling review is also open.
+  CI audit gate remains blocked. The later tooling follow-up removed all critical
+  findings: including development dependencies, web is zero and all workspaces
+  have 12 moderate/45 high/zero critical entries from four underlying advisories.
 
 These are local automated results, not hosted CI, a new physical-device QA pass,
 or release sign-off. Existing web test render and build chunk-size warnings remain.
@@ -38,6 +39,15 @@ Implementation commits: `07b7e61` (iOS build preparation/dependencies), `69f0c07
 (database hardening), `848dc76` (maintenance notices) and `b219a5c` (profile options).
 All remain local at this checkpoint; hosted CI has not evaluated these commits.
 
+Tooling follow-up (same date): Vitest/coverage 4.1.11, sharp 0.35.5 and fast-uri
+3.1.8 are installed, with explicit Node 22 types for the existing server code.
+All 534 web and 255 mobile tests passed again, along with both type checks, clean
+web lint, web build and 38 browser checks (six authenticated checks skipped).
+Web CI is configured to audit development tools and generate coverage; the hosted
+workflow has not run these changes. The clean iOS export's source map contains none of the
+four remaining advisory packages, narrowing shipped-JavaScript exposure but not
+clearing build-time risk. See [the current dependency review](./backlog/SECURITY-REVIEW.md).
+
 ```bash
 npm run type-check
 npm run type-check:mobile
@@ -46,6 +56,7 @@ npm test
 npm run test:mobile
 npm run test:coverage
 npm run build
+npm run audit:web:tooling
 npm audit --omit=dev --audit-level=moderate
 npm run export:ios --workspace @oratio/mobile
 ```

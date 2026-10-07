@@ -28,7 +28,102 @@ describes malformed-input denial of service; the brace-expansion advisories cove
 [quadratic rewriting](https://github.com/advisories/GHSA-q2hr-2g5m-vwhr).
 This establishes vulnerable dependencies, not evidence that Oratio was exploited.
 
-## Current Dependency Checkpoint (2026-10-07)
+## Current Tooling Follow-Up (2026-10-07)
+
+This follow-up supersedes the initial October audit below. It is based on local
+checkpoint `7a1fe42` plus the dependency and CI changes, with Node 24.19.0.
+
+| Audit scope                                        | Current result                   |
+| -------------------------------------------------- | -------------------------------- |
+| Web, including development dependencies            | Zero reported vulnerabilities    |
+| Mobile production dependencies                     | 7 moderate, 14 high, 0 critical  |
+| All workspaces, including development dependencies | 12 moderate, 45 high, 0 critical |
+
+The full-tree count fell from 62 to 57 affected-package entries. **All critical
+entries are removed**, not waived. The remaining entries derive from four
+underlying advisories; parent-package propagation inflates the npm totals.
+The mobile high/critical CI gate still fails. No gate was relaxed or bypassed.
+
+### Applied Updates
+
+- `vitest` and `@vitest/coverage-v8`: 3.2.7 -> 4.1.11. This also installs
+  `@vitest/mocker@4.1.11` and removes `tinypool` entirely. Vite remains 6.4.3;
+  Expo remains 57.0.27. No forced dependency override was needed.
+- `sharp`: 0.35.4 -> 0.35.5, including its patched binary dependencies.
+- `fast-uri`: 3.1.7 -> 3.1.8 through its existing compatible transitive range.
+- Declare `@types/node@22.20.5` directly for the web workspace and include
+  Node types explicitly. Vitest 4 no longer supplies these implicitly; the
+  existing Netlify function/server code needs them. CI and Netlify use Node 22.
+- Add `audit:web:tooling` with development dependencies included at the existing
+  high/critical threshold. Web CI also runs coverage, not only the test suite,
+  so the migrated coverage provider and uploaded report are exercised.
+
+Sources: [Vitest 4 migration](https://v4.vitest.dev/guide/migration),
+[Vitest mocker fix](https://github.com/advisories/GHSA-82fw-gwwq-j7x9),
+[Tinypool advisory](https://github.com/advisories/GHSA-85c8-ppgw-ccpr),
+[sharp fix](https://github.com/advisories/GHSA-wq5f-xc86-pv6w) and
+[fast-uri fix](https://github.com/advisories/GHSA-hrr3-gc8f-f4qj).
+
+### Remaining Exposure
+
+This is a scoped source/dependency review, not a penetration test or a signed
+binary attestation. No exploit was run against a live service.
+
+| Advisory                     | Observed local path and input boundary                                                                                                                                                                                                                                                                                                                                            | Disposition                                                                                                                                                                                                                                          |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `braces@3.0.3`, high         | `micromatch@4.0.8` in Metro file watching and Jest discovery/configuration. Inspected `metro-file-map/src/watchers/common.js` and `jest-haste-map/build/watchers/common.js` match paths against configured glob patterns. No application import or prayer-text-to-pattern path was found.                                                                                         | Upstream lists no patched release. Keep repository/configuration inputs trusted and dev servers off untrusted networks. Tooling DoS risk remains; this is not an exception to the audit gate.                                                        |
+| `node-forge@1.4.0`, high     | Expo CLI certificate utilities call the affected verification API: `@expo/code-signing-certificates/build/main.js` validates self-signed certificates and verifies locally generated manifest signatures. `@expo/cli/build/src/utils/codesigning.js` loads configured certificate/key files and signs development manifests. The app has no custom updates signing configuration. | Upstream lists no patched release. Treat certificate/key material and local signing configuration as trusted inputs; do not import unknown certificates or disable verification. Build/development exposure remains and needs security-owner review. |
+| `uuid@7.0.3`, moderate       | `@expo/config-plugins -> xcode@3.0.1`; `xcode/lib/pbxProject.js:generateUuid` calls `uuid.v4()` without a caller-supplied buffer. The advisory concerns supplied buffers in v3/v5/v6.                                                                                                                                                                                             | The inspected call does not meet the advisory's precondition. Latest `xcode@3.0.1` still requires UUID 7; do not force a major override without compatibility evidence. Keep tracked pending upstream remediation or an explicit bounded decision.   |
+| `sprintf-js@1.0.3`, moderate | Mobile Jest/Babel coverage tooling: `@istanbuljs/load-nyc-config -> js-yaml@3.15.2 -> argparse@1.0.10`. Argparse's formatter interpolates help/usage templates; the inspected NYC loader uses YAML parsing, not the YAML CLI. No application import or user-prayer format-string path was found.                                                                                  | Latest upstream 1.1.3 is also affected, with no patched release. Do not process untrusted tooling/configuration templates. Retain until compatible upstream remediation or an explicit bounded decision.                                             |
+
+Remaining sources: [braces](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm),
+[node-forge](https://github.com/advisories/GHSA-86w9-cpqp-85rv),
+[UUID](https://github.com/advisories/GHSA-w5hq-g745-h8pq) and
+[sprintf-js](https://github.com/advisories/GHSA-hp3w-g68c-fv3c). Registry checks
+confirmed the latest braces, node-forge, sprintf-js and xcode releases above.
+
+A clean production-mode iOS export with source maps contains 3,040 source entries.
+None belongs to `braces`, `micromatch`, `node-forge`, `sprintf-js`, `uuid` or
+`tinypool`. The export contains only the nonfunctional CI Supabase configuration,
+not the temporary notice-QA endpoint. Bundle:
+`index-114dda20d7806b0a89d06470ae4d8c9e.hbc`, SHA-256
+`89337c8c5166812a08662fc95545c55477c01facde103b08c70227b87e72a551`.
+This supports an inference of no bundled JavaScript exposure for these packages
+in this export. It does not inspect native code, prove build-host safety, or
+substitute for checking the eventual signed release artifact.
+
+Reproduce from the repo root with supported Node and nonfunctional public values:
+
+```bash
+EXPO_NO_DOTENV=1 \
+EXPO_PUBLIC_SUPABASE_URL=https://ci-preflight.supabase.co \
+EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_ci_build_check_only \
+EXPO_PUBLIC_SERVICE_NOTICE_URL= CI=1 \
+npm run export:ios --workspace @oratio/mobile -- --source-maps
+```
+
+Inspect the JSON `sources` array in `apps/mobile/dist/ios/_expo/static/js/ios/*.hbc.map`
+for exact `node_modules/<package>/` path segments. Keep source maps local; they
+were not uploaded or added to Git.
+
+All 534 web tests passed on Vitest 4 without changing or dropping assertions;
+all 255 mobile tests passed. V8 coverage now uses the upstream AST-based remapper:
+57.71% statements, 53.94% branches, 48.43% functions and 60.05% lines. The existing
+include/exclude scope was retained; the older percentages are not directly
+comparable and no coverage target was lowered. Both type checks, web lint and build
+passed after declaring Node types; the type errors and 25 derived lint warnings
+seen on the first migration run are resolved. Browser regressions passed 38 tests
+with six authenticated tests deliberately skipped. A local sharp SVG-to-PNG smoke
+check passed and reported librsvg 2.63.2. No new device, database or hosted CI run
+was performed in this tooling follow-up. See [release readiness](../V1_RELEASE_READINESS.md).
+
+**Decision: SCRUM-47 stays open.** No release-owner risk acceptance is implied.
+Before external beta, seek compatible upstream fixes or an explicitly approved,
+time-limited mitigation with owner, expiry, recheck evidence and signed-artifact
+scope. Do not silence or remove the mobile audit gate to make CI green. Migration
+042 still needs separately approved live deployment; this follow-up did not touch it.
+
+## Initial Dependency Checkpoint (2026-10-07)
 
 The refreshed audit supersedes the September snapshot below. These are npm
 affected-package entries, including propagated parent findings, not independent
@@ -58,7 +153,7 @@ tooling; this is dependency-path evidence, not a complete reachability assessmen
 **The mobile high/critical CI audit gate still fails.** Do not disable the gate
 or infer release approval from green functional tests.
 
-The separate audit **including development dependencies** reports 14 moderate,
+The initial audit **including development dependencies** reported 14 moderate,
 46 high and 2 critical affected-package entries. The critical entries are
 `tinypool` and its `vitest` parent, with
 [worker-option prototype-pollution advisories](https://github.com/advisories/GHSA-85c8-ppgw-ccpr).
