@@ -144,7 +144,8 @@ blocking implementation separately as In Progress.
 
 - Alerting, urgency/escalation, and an owned review schedule with backup coverage.
   Do not put prayer text or reporter identity in external alert messages.
-- User blocking (SCRUM-94, local implementation in progress; see
+- User blocking (SCRUM-94, implementation pushed and migration 041 applied with
+  owner approval on 2026-09-28; physical iPhone QA remains open; see
   [USER-BLOCKING.md](./USER-BLOCKING.md)), administrator enforcement for abusive
   accounts, and objectionable content filtering before publication. Validate
   against Apple Guideline 1.2.

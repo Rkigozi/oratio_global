@@ -30,7 +30,7 @@ npm run type-check && npm run type-check:mobile
 npm run lint && npm run build
 ```
 
-Current automated baseline: 423 web tests and 34 native tests, plus the existing Playwright web journeys. Pushing `main` deploys `apps/web` to Netlify; it does not distribute a native build.
+Web and native suites run separately, alongside the existing Playwright web journeys. Pushing `main` deploys `apps/web` to Netlify; it does not distribute a native build.
 
 ## Product
 
@@ -44,7 +44,9 @@ Native today:
 - Profile editing, avatar upload, Settings preferences, and sign-out
 - Global prayer hotspots with location-specific public prayer lists
 
-Still to port before the native V1 beta: prayer edit/delete, native sharing, reporting/moderation, observability, and complete light/dark/system theming.
+Prayer edit/delete, sharing, reporting/moderation, user blocking and light/dark/system
+themes are implemented; remaining device/release checks are tracked in the QA checklist.
+Native observability and signed beta distribution remain open.
 
 ## Stack
 
@@ -84,7 +86,7 @@ apps/
 packages/
 └── shared/                        # Queries, validation, types used by both apps
 supabase/
-├── migrations/                    # 37 sequential SQL migrations (never edit applied ones)
+├── migrations/                    # Sequential SQL migrations (never edit applied ones)
 └── functions/                     # Edge functions: translate, delete-account
 docs/                              # HLD, backlog, QA, guides
 ```
@@ -95,7 +97,7 @@ New platform-neutral queries and validation belong in `packages/shared`; app fol
 
 - **Web**: `git push` → CI → Netlify auto-deploy. Roll back from the Netlify deploy list.
 - **Native development**: `npm run dev:mobile` → Expo Go. This is development distribution, not a release.
-- **Native beta (later)**: EAS build → TestFlight → invited testers.
+- **Native beta (later)**: EAS build → TestFlight → invited testers. Local build profiles are prepared; see [the build runbook](./docs/backlog/IOS-BUILD-PIPELINE.md) for pending account setup and release gates.
 - **Schema changes**: add a new numbered migration in `supabase/migrations/`, never edit an applied one.
 
 ## Environment Variables
@@ -115,18 +117,22 @@ Native development uses `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANO
 
 - `docs/CODEBASE_NAVIGATION_GUIDE.md` — the mental model of the whole codebase
 - `docs/V1_RELEASE_READINESS.md` — release-control checklist
+- `docs/backlog/IOS-BUILD-PIPELINE.md` — iOS build configuration, verification and TestFlight prerequisites
 - `docs/ARCHITECTURE.md` — architecture detail
 - `docs/QUICK-START.md` — dev-server troubleshooting on this machine
 - `docs/specs/` + `docs/guidelines/` — product specs and testing guidelines (historical reference)
 - `docs/backlog/` — agile working agreement + JIRA sync source
 
-## Known Deferred Work (post-launch)
+## Remaining Release Work
 
-- Complete native feature parity needed for the beta journey
-- Add native Sentry/PostHog and EAS/TestFlight configuration
-- Reduce `apps/web` to landing, policy, and support pages after native cutover
-- Drop unused tables (`push_subscriptions`, `follows`) only through a future migration; `waitlist` backs the landing beta-updates form
+- Complete remaining native safety, privacy and release-device QA
+- Add native Sentry/PostHog and finish Apple/EAS setup and signed TestFlight distribution
+- Resolve or explicitly assess outstanding native dependency advisories before external beta
+- Reduce `apps/web` to landing, policy, support, protected moderation and shared-link fallbacks at native cutover
 - Custom domain and production app-link configuration
+
+Post-launch schema cleanup may remove unused tables only through a future migration;
+`waitlist` backs the landing beta-updates form.
 
 ## License
 

@@ -1,13 +1,42 @@
 # Oratio V1 Release Readiness
 
-Last updated: 2026-09-12
+Last updated: 2026-10-07
 
 Release-control checklist for the first small-group iOS beta and first public
 Apple App Store release. Expo Go is the current development channel; TestFlight
 is the release-candidate channel. Android follows later under `SCRUM-79` and is
 not a dependency of V1.
 
+The [iOS NFR checklist](./NFR-CHECKLIST.md) defines measurable security,
+reliability, performance, accessibility, monitoring, recovery and operational
+acceptance. Beta gates apply before external TestFlight; launch gates apply
+before the public App Store release. They remain unsigned, even where individual
+functional tests passed. `SCRUM-40` owns the combined release decision.
+
 ## Release Gates
+
+Local checkpoint (2026-10-07), based on `6b5a710` plus the build, security,
+service-notice and profile-menu changes:
+
+- Web: 534 tests passed; mobile: 255 tests passed.
+- Disposable database: 140 assertions and nine concurrent-session cases passed.
+- Web/mobile type checks, web lint/build and Expo Doctor (21/21) passed.
+- Clean iOS JS/Hermes export passed with nonfunctional CI client values and no
+  temporary notice-QA endpoint. This is not a signed native build.
+- Local browser regressions: 38 passed, six authenticated tests skipped. No
+  real-account credentials or production writes were used.
+- Production audit after compatible patches: web zero; mobile/all workspaces
+  seven moderate and 14 high affected-package entries, zero critical. The mobile
+  CI audit gate remains blocked. Including development dependencies, 14 moderate,
+  46 high and two critical entries remain; that tooling review is also open.
+
+These are local automated results, not hosted CI, a new physical-device QA pass,
+or release sign-off. Existing web test render and build chunk-size warnings remain.
+The checkpoint is local-only: no push, live migration or production deploy.
+
+Implementation commits: `07b7e61` (iOS build preparation/dependencies), `69f0c07`
+(database hardening), `848dc76` (maintenance notices) and `b219a5c` (profile options).
+All remain local at this checkpoint; hosted CI has not evaluated these commits.
 
 ```bash
 npm run type-check
@@ -18,9 +47,17 @@ npm run test:mobile
 npm run test:coverage
 npm run build
 npm audit --omit=dev --audit-level=moderate
-npx expo-doctor
-npx expo export --platform ios
+npm run export:ios --workspace @oratio/mobile
 ```
+
+Run `npx expo-doctor` from `apps/mobile`. An iOS export is a bundling check,
+not a signed native build or TestFlight install. The current dependency audit
+is a release blocker; the September audit is historical, not current clearance.
+Migration 042's waitlist/quota hardening
+passes local security tests but still needs approved live deployment and verification.
+See [the security review](./backlog/SECURITY-REVIEW.md) for evidence and remaining scope.
+See [the iOS build runbook](./backlog/IOS-BUILD-PIPELINE.md) for verified local
+preparation, exact build commands and remaining account/security gates.
 
 Web regression tests while the PWA remains live:
 
@@ -36,6 +73,10 @@ Authenticated E2E journeys run when `E2E_TEST_EMAIL`/`E2E_TEST_PASSWORD` are exp
 - Expo environment supplies `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 - Google Cloud billing is active for the project backing `GOOGLE_TRANSLATE_API_KEY`; `npm run qa:translation` passes with QA credentials supplied
 - Apple Developer membership and EAS project are required before TestFlight, but not for Expo Go development
+- Local EAS production/simulator profiles are prepared and the existing
+  `@oratioglobals-team/oratio-global` project link is verified. EAS client environment
+  setup, Apple enrollment and signing remain pending. Individual versus organisation
+  publishing has not been decided; do not assume a registered company.
 - Bundle identifier is `com.oratio.app`; version/build numbers must be set for every distributed build
 - Supabase migrations applied in order before schema-dependent deploys
 - Email/password is the only supported native authentication path; social sign-in providers remain disabled
