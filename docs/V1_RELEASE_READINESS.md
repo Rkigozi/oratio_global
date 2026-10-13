@@ -1,6 +1,6 @@
 # Oratio V1 Release Readiness
 
-Last updated: 2026-10-07
+Last updated: 2026-10-13
 
 Release-control checklist for the first small-group iOS beta and first public
 Apple App Store release. Expo Go is the current development channel; TestFlight
@@ -109,6 +109,18 @@ Authenticated E2E journeys run when `E2E_TEST_EMAIL`/`E2E_TEST_PASSWORD` are exp
 - Map foundations `SCRUM-84`–`SCRUM-86` preserve privacy, aggregate semantics, and complete location paging
 
 ## Observability Checks
+
+Local monitoring foundation (2026-10-08): opt-in, privacy-filtered JavaScript
+error reporting is implemented for mobile, with a non-production Settings test
+control. No real Sentry configuration or delivery test was performed. Native
+crashes, source-map symbolication, PostHog and signed-build verification remain
+open; reporting is off by default. See [native monitoring](./backlog/NATIVE-MONITORING.md).
+
+Sentry setup (2026-10-13): `oratio-mobile` is created in the existing Oratio
+organisation, assigned to `#oratio`, with an enabled high-priority email alert
+routed to that team. Its public DSN is prepared in ignored local configuration;
+reporting remains disabled. The web project is retained for website/admin
+coverage. Actual event/alert delivery and signed-build acceptance are still open.
 
 - Native Sentry receives a deliberate test error tagged with app version/build
 - Native PostHog receives app-open and core prayer events without prayer text or personal data

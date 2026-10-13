@@ -67,6 +67,51 @@ describe('iOS build configuration', () => {
 });
 
 describe('mobile build environment guard', () => {
+  const monitoringEnv = {
+    EXPO_PUBLIC_SENTRY_ENABLED: 'true',
+    EXPO_PUBLIC_SENTRY_DSN: `https://${'a'.repeat(32)}@o1.ingest.us.sentry.io/1`,
+    EXPO_PUBLIC_SENTRY_ENVIRONMENT: 'staging',
+    EAS_BUILD_GIT_COMMIT_HASH: 'b'.repeat(40),
+  };
+
+  it('accepts opt-in monitoring with complete build metadata without printing the DSN', () => {
+    const result = check({ ...validEnv, ...monitoringEnv });
+    expect(result.status).toBe(0);
+    expect(result.stdout + result.stderr).not.toContain(monitoringEnv.EXPO_PUBLIC_SENTRY_DSN);
+  });
+
+  it.each([
+    { EXPO_PUBLIC_SENTRY_ENABLED: 'yes' },
+    { EXPO_PUBLIC_SENTRY_DSN: '' },
+    { EXPO_PUBLIC_SENTRY_DSN: 'https://secret@unapproved.example/1' },
+    { EXPO_PUBLIC_SENTRY_DSN: `${monitoringEnv.EXPO_PUBLIC_SENTRY_DSN}?token=secret` },
+    { EXPO_PUBLIC_SENTRY_ENVIRONMENT: 'development' },
+    { EAS_BUILD_GIT_COMMIT_HASH: 'invalid-sha' },
+  ])('rejects incomplete monitoring in a native build: %j', (change) => {
+    const result = check({ ...validEnv, ...monitoringEnv, ...change });
+    expect(result.status).toBe(1);
+    expect(result.stderr).not.toContain('secret@');
+  });
+
+  it('copies only a valid commit into Expo public config, preserving existing app metadata', () => {
+    const saved = process.env;
+    try {
+      process.env = {
+        NODE_ENV: 'test',
+        EAS_BUILD_GIT_COMMIT_HASH: 'b'.repeat(40),
+        SENTRY_AUTH_TOKEN: 'never-public',
+      };
+      const dynamicConfig = require('../../app.config.js');
+      const result = dynamicConfig({ config: app });
+      expect(result.extra).toEqual({ ...app.extra, monitoring: { gitSha: 'b'.repeat(40) } });
+      expect(JSON.stringify(result)).not.toContain('never-public');
+      process.env.EAS_BUILD_GIT_COMMIT_HASH = 'invalid';
+      expect(dynamicConfig({ config: app }).extra.monitoring.gitSha).toBeUndefined();
+    } finally {
+      process.env = saved;
+    }
+  });
+
   it('allows an isolated HTTPS notice endpoint for preview QA', () => {
     expect(
       check({

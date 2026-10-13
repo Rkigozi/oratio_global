@@ -290,6 +290,11 @@ Reuse the dated functional results above without treating them as a full NFR pas
 - [ ] No private prayer text or credentials appear in logs, Sentry, or analytics
 - [ ] Repeat this checklist against a release-mode/TestFlight build before external beta
 - [ ] Verify Sentry receives a deliberate release-tagged test error for this build
+  - Local opt-in JavaScript reporting and a non-production Settings diagnostic
+    are implemented; follow [the monitoring runbook](./backlog/NATIVE-MONITORING.md).
+    No remote delivery or alert evidence yet. Native crash capture remains disabled.
+    The `oratio-mobile` Sentry project/team/email rule was prepared on 2026-10-13;
+    reporting is still disabled pending controlled verification.
 - [ ] Verify PostHog receives approved app-open/auth/prayer/map events without prayer text or personal data
 
 ## Visual Parity

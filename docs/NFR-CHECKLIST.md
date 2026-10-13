@@ -1,6 +1,6 @@
 # Oratio iOS Launch NFR Checklist
 
-Last updated: 2026-10-07
+Last updated: 2026-10-13
 
 Non-functional requirements define how safely, reliably and accessibly Oratio
 must work, alongside the features in [functional QA](./QA-CHECKLIST.md).
@@ -39,7 +39,7 @@ needs an explicit, time-limited risk decision and follow-up; it is not a pass.
 | NFR-02 Reliability and data integrity            | Action feedback within 500 ms; stalled requests reach a recoverable state within 20 s. Recoverable failures retain current-session drafts; no false success or duplicated writes/counts after repeated taps or uncertain-result retries. Logout, expired sessions, account changes and revoked access never expose stale unauthorized content.                                                             | Beta                    | **Partial**: report offline/retry and several privacy flows passed in Expo Go. Signed-build failure coverage across core journeys remains open.                                                                                | [SCRUM-95](https://oratio.atlassian.net/browse/SCRUM-95)                                                                                                                     |
 | NFR-03 Performance and launch capacity           | Signed-build p95 usable cold-start shell <=3 s; first feed/map data <=3 s from its request under recorded normal-network conditions. Bounded staging baseline: read API p95 <=1 s and unexpected errors <1% at 25 concurrent sessions for 10 minutes. No unbounded client fetch of prayers.                                                                                                                | Launch                  | **Open / unmeasured**: no native timing or load baseline recorded. Map foundations remain part of the existing plan. Use the protocol below, not web Lighthouse or Expo Go timings.                                            | [SCRUM-95](https://oratio.atlassian.net/browse/SCRUM-95), SCRUM-84/85/86                                                                                                     |
 | NFR-04 Accessibility                             | Core journeys complete with VoiceOver and maximum accessibility text size in both themes; correct names, focus and error announcements. Targets >=44 x 44 pt. Text contrast >=4.5:1 (qualifying large text >=3:1), essential non-text cues >=3:1. No colour-only status or motion-dependent essential action.                                                                                              | Launch                  | **Partial**: theme and reporting keyboard checks passed. Full VoiceOver, Dynamic Type, target-size and measured contrast pass remains open.                                                                                    | [SCRUM-96](https://oratio.atlassian.net/browse/SCRUM-96)                                                                                                                     |
-| NFR-05 Native monitoring and privacy             | A controlled non-production Sentry error is visible within 5 minutes and alerts the named owner within 10 minutes. Build/version/environment/SHA identify the release. Analytics and errors exclude prayer/report text, emails, precise coordinates, credentials and tokens; disabled/unavailable telemetry never blocks use.                                                                              | Beta                    | **Open**: native Sentry/PostHog implementation and payload/alert verification remain outstanding. Existing web instrumentation is not native evidence.                                                                         | [SCRUM-43](https://oratio.atlassian.net/browse/SCRUM-43)                                                                                                                     |
+| NFR-05 Native monitoring and privacy             | A controlled non-production Sentry error is visible within 5 minutes and alerts the named owner within 10 minutes. Build/version/environment/SHA identify the release. Analytics and errors exclude prayer/report text, emails, precise coordinates, credentials and tokens; disabled/unavailable telemetry never blocks use.                                                                              | Beta                    | **Partial**: local opt-in JS error reporting and SDK payload/failure tests pass. Remote delivery/alerts, native crash privacy, symbolication, PostHog and signed-build verification remain open.                               | [SCRUM-43](https://oratio.atlassian.net/browse/SCRUM-43)                                                                                                                     |
 | NFR-06 Backup and recovery                       | Verified backup/export coverage with working RPO <=24 h and RTO <=24 h. Restore in isolation; login, audience boundaries, blocking and moderator permissions pass before any traffic switch. Reconcile deletions/revocations since the backup.                                                                                                                                                             | Beta                    | **Open**: actual plan, schedule, retention, object coverage, failure alerts and measured restore drill are not verified. No production restore or paid upgrade is authorized by this checklist.                                | [SCRUM-54](https://oratio.atlassian.net/browse/SCRUM-54)                                                                                                                     |
 | NFR-07 Operational readiness                     | Recent launch-domain smoke pass plus controlled failed-check notification received within 10 minutes. Named incident/moderation owner, review coverage and escalation route recorded. Launch usage/cost budget and provider quotas checked; alert or manual review arrangements recorded before sign-off.                                                                                                  | Launch                  | **Partial**: daily public-web smoke workflow exists. Successful current-domain run, alert delivery, operational ownership and initial cost/limit review remain to be evidenced. No continuous uptime or 24/7 response promise. | [SCRUM-53](https://oratio.atlassian.net/browse/SCRUM-53), SCRUM-40/71                                                                                                        |
 | NFR-08 Release reproducibility and compatibility | Latest candidate passes applicable CI/security gates, has traceable SHA/version/build and approved migrations, and completes signed-build install, upgrade, relaunch and core-journey checks on the agreed iPhone/iOS matrix. No unresolved release-blocking defect.                                                                                                                                       | Beta; repeat for Launch | **Partial**: local EAS setup, tests, type-check, Doctor and JS export passed. Apple/signing setup, actual binary installation and release-device acceptance remain open.                                                       | [SCRUM-72](https://oratio.atlassian.net/browse/SCRUM-72), SCRUM-40                                                                                                           |
@@ -55,6 +55,17 @@ the mobile CI audit and NFR-01 gate remain open. Migration 042 is tested locally
 not live. No complete NFR gate is signed off by this automated checkpoint.
 
 ## Test Boundaries
+
+Monitoring checkpoint (2026-10-08): the [native monitoring foundation](./backlog/NATIVE-MONITORING.md)
+adds opt-in JavaScript error reporting, strict payload/envelope allowlisting and
+a non-production test action. The real SDK is tested with an in-memory transport;
+no remote event or alert was sent. Native crash collection, symbolication,
+PostHog and signed-build acceptance remain outstanding. NFR-05 is still unsigned.
+
+Provider setup (2026-10-13): `oratio-mobile` is created in Sentry with the
+`#oratio` team and an enabled high-priority email alert. Local DSN configuration
+is prepared with reporting disabled. No live event or test email was sent;
+the delivery/alert targets and NFR-05 remain unverified.
 
 ### Reliability And Performance
 
@@ -131,8 +142,9 @@ or authorize provider upgrades.
 Jira aligned on 2026-09-30: SCRUM-43/47/53/54 now target **V1 Launch**, not
 Post-Launch; SCRUM-40 owns aggregate sign-off. New SCRUM-95 and SCRUM-96 are under
 the native epic SCRUM-62. All seven have **Highest** priority and label `nfr`.
-SCRUM-47 is now **In Progress** following the first tested security batch; the
-other six remain **To Do**. Existing functional story statuses are unchanged.
+SCRUM-47 is **In Progress** following the first tested security batch, and
+SCRUM-43 is **In Progress** for the local monitoring foundation (2026-10-08).
+The other five remain **To Do**. Existing functional story statuses are unchanged.
 SCRUM-47 retains its existing
 hardening epic for continuity; its story-level release target now governs timing.
 

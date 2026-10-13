@@ -44,6 +44,7 @@ import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
 import { useTheme, type ThemeMode } from '../hooks/theme-context';
 import { ORATIO_EXTERNAL_LINKS } from '../services/external-links';
+import { canSendMonitoringTest, sendMonitoringTest } from '../services/monitoring';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -87,6 +88,7 @@ export function SettingsScreen({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [monitoringTestSent, setMonitoringTestSent] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -359,6 +361,38 @@ export function SettingsScreen({
             emergency services.
           </Text>
         </View>
+
+        {canSendMonitoringTest() && (
+          <View style={styles.section}>
+            <SectionTitle
+              icon={<MonitorIcon color={colors.textDim} size={15} />}
+              label="Diagnostics"
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Send test error"
+              disabled={monitoringTestSent}
+              style={[styles.linkRow, monitoringTestSent && styles.disabled]}
+              onPress={() => {
+                const eventId = sendMonitoringTest();
+                setMonitoringTestSent(Boolean(eventId));
+                Alert.alert(
+                  eventId ? 'Test error queued' : 'Test error not queued',
+                  eventId
+                    ? `Reference: ${eventId}\nDelivery and alerts still need to be confirmed in Sentry.`
+                    : 'Error reporting is unavailable. Try again later.'
+                );
+              }}
+            >
+              <View style={styles.linkIcon}>
+                <MonitorIcon color={colors.textDim} size={17} />
+              </View>
+              <View style={styles.linkCopy}>
+                <Text style={styles.linkLabel}>Send test error</Text>
+              </View>
+            </Pressable>
+          </View>
+        )}
 
         <View style={styles.section}>
           <SectionTitle icon={<LogOutIcon color={colors.textDim} size={15} />} label="Account" />

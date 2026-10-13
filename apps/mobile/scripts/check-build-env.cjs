@@ -62,6 +62,42 @@ if (noticeUrl) {
   }
 }
 
+const monitoringEnabled = process.env.EXPO_PUBLIC_SENTRY_ENABLED;
+if (monitoringEnabled && !['true', 'false'].includes(monitoringEnabled)) {
+  errors.push('EXPO_PUBLIC_SENTRY_ENABLED must be true or false.');
+}
+if (monitoringEnabled === 'true') {
+  const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+  try {
+    const parsed = new URL(dsn);
+    if (
+      dsn !== dsn.trim() ||
+      parsed.protocol !== 'https:' ||
+      !/^[a-f0-9]{32}$/.test(parsed.username) ||
+      !/^o[0-9]+\.ingest(?:\.[a-z]+)?\.sentry\.io$/.test(parsed.hostname) ||
+      !/^\/[0-9]+$/.test(parsed.pathname) ||
+      parsed.password ||
+      parsed.port ||
+      parsed.search ||
+      parsed.hash
+    )
+      throw new Error('Invalid DSN');
+  } catch {
+    errors.push(
+      'EXPO_PUBLIC_SENTRY_DSN must be a public HTTPS DSN for the approved Sentry project.'
+    );
+  }
+  if (!['staging', 'production'].includes(process.env.EXPO_PUBLIC_SENTRY_ENVIRONMENT)) {
+    errors.push('EXPO_PUBLIC_SENTRY_ENVIRONMENT must be staging or production for native builds.');
+  }
+  const sha = process.env.EAS_BUILD_GIT_COMMIT_HASH || process.env.EXPO_PUBLIC_GIT_SHA;
+  if (!/^[a-f0-9]{40}$/.test(sha || '')) {
+    errors.push(
+      'Monitoring requires EAS_BUILD_GIT_COMMIT_HASH or EXPO_PUBLIC_GIT_SHA (full Git SHA).'
+    );
+  }
+}
+
 if (errors.length) {
   for (const error of errors) console.error(`[mobile build] ${error}`);
   process.exitCode = 1;
