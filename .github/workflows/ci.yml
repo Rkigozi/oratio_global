@@ -69,9 +69,6 @@ jobs:
 
       - run: npm ci
 
-      - name: Audit mobile dependencies
-        run: npm run audit:mobile
-
       - name: Type check
         working-directory: apps/mobile
         run: npm run typecheck
@@ -89,6 +86,12 @@ jobs:
           EXPO_NO_DOTENV: '1'
           EXPO_PUBLIC_SUPABASE_URL: https://ci-preflight.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ci_build_check_only
+
+      # Keep functional results visible while upstream advisories remain open.
+      # This still fails the mobile job, including after an earlier step fails.
+      - name: Audit mobile dependencies
+        if: ${{ !cancelled() }}
+        run: npm run audit:mobile
 
   database-security:
     runs-on: ubuntu-latest

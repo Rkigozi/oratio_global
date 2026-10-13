@@ -1,8 +1,42 @@
 # iOS Launch Security Review
 
-Last updated: 2026-10-07. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
+Last updated: 2026-10-13. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
 Status: **In Progress**, not security sign-off. Supports NFR-01 in
 [the NFR checklist](../NFR-CHECKLIST.md).
+
+## Hosted CI And Upstream Recheck (2026-10-13)
+
+[PR #5](https://github.com/Rkigozi/oratio_global/pull/5), revision `d2343aa`,
+passed hosted web and database-security checks and its Netlify deploy preview.
+The [mobile job](https://github.com/Rkigozi/oratio_global/actions/runs/38429427132/job/115407388971)
+failed at `audit:mobile`: seven moderate and 14 high affected-package entries.
+Its later type checks, tests and bundle export were skipped. This is a dependency
+gate failure, not a hosted mobile test result.
+
+Fresh registry and advisory checks confirm that `braces@3.0.3` and
+`node-forge@1.4.0` are still the latest published releases, and both high-severity
+advisories list **no patched version**. `micromatch@4.0.8` still requires braces.
+The newer compatible `expo@57.0.28` / `@expo/cli@57.0.29` patch still requires
+node-forge and Metro tooling. Updating that patch alone cannot clear the gate.
+The suggested forced Expo downgrade is not a compatible fix for this app.
+
+The 14 high entries propagate from the two underlying high-severity advisories,
+not 14 independently identified application defects. The input-boundary and
+export evidence below narrows exposure to development/build tooling; it does
+not eliminate that risk or sign off a native binary.
+
+CI now runs the mobile type checks, tests and iOS export before the existing
+audit command. The audit uses `!cancelled()` so it also runs after an earlier
+functional failure. A high-severity finding still fails the same `mobile` job;
+there is no `continue-on-error`, threshold change, ignore list or waiver.
+This preserves the security gate while making functional CI evidence visible.
+The workflow follow-up needs a fresh hosted run before claiming those results.
+
+To clear the dependency gate, obtain a compatible upstream release or a reviewed
+remediation/replacement for the affected tooling and rerun the audit plus mobile
+compatibility checks. Any proposed temporary residual-risk decision must be
+bounded, recorded and explicitly approved by the release owner; none is applied
+by this workflow change. External beta and merge readiness remain unsigned.
 
 ## Findings And Fixes
 
