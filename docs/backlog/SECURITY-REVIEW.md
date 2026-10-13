@@ -1,8 +1,64 @@
 # iOS Launch Security Review
 
-Last updated: 2026-10-13. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
+Last updated: 2026-10-14. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
 Status: **In Progress**, not security sign-off. Supports NFR-01 in
 [the NFR checklist](../NFR-CHECKLIST.md).
+
+## Backport Assessment (2026-10-14)
+
+**Reject the original Forge count-only candidate.** The isolated comparison
+reproduces acceptance of a NULL parameters field with 100 content bytes and
+non-minimal outer/inner length octets even after applying
+[PR #1152](https://github.com/digitalbazaar/forge/pull/1152), immutable revision
+`ceba34402e329f0365134f23fe19898756527d65`. It rejects extra SEQUENCE elements
+but does not close the additional encoding slack. This supersedes the previous
+recommendation to start by assessing that candidate; it must not be adopted as
+the complete fix.
+
+[PR #1159](https://github.com/digitalbazaar/forge/pull/1159), immutable revision
+`db05494352dd3c9a5a07c5270333dcc78866cad2`, re-encodes and compares the expected
+DigestInfo. In disposable copies it rejects all seven malformed fixture classes:
+extra inner/outer elements, a non-NULL second element, NULL carrying content,
+non-minimal outer/inner lengths, and trailing bytes under default strict parsing.
+Both candidates apply cleanly to the hash-pinned installed `node-forge@1.4.0`.
+
+The comparison passes **103 local checks** with Node 24.19.0: valid
+SHA-256/384/512 signatures with/without NULL parameters, rejection of incorrect
+digests, Node/OpenSSL signature interop, seven malformed classes, and the actual
+`@expo/code-signing-certificates@0.0.6` certificate/manifest round trips. Both
+synthetic 2048-bit RSA exponents (3 and 65537) are covered. Native OpenSSL verifies
+the helper-generated signatures and rejects altered messages.
+
+The malformed fixtures are signed **using the known synthetic private keys**.
+They isolate parser acceptance/rejection; this is not a private-key-free forgery
+demonstration, evidence of live exploitation, or a whole-cryptography audit.
+Full upstream tests, other Forge consumers, native binaries and signed artifacts
+have not been verified by this harness. Neither proposal is installed in the
+app or its build dependencies; no install hook, override or audit exception is
+added. Installed RSA/helper source and lockfile hashes remain unchanged.
+
+Reproduce with `npm run test:security-backports`. CI runs this isolated comparison
+before bundling and the unchanged audit. A passing comparison includes explicitly
+labelled acceptance cases for the baseline/unsafe candidate; it is not a passing
+security gate. Source commits, file hashes, BSD attribution, isolation and fixture
+scope are recorded in [the harness readme](../../scripts/security-backports/README.md).
+
+Current GitHub advisory pages still list no patched Forge/braces version, and
+both Forge proposals remain open/unreleased. Today's public npm registry recheck
+succeeded on retry after an initial sandbox DNS/permission-review timeout:
+`node-forge@1.4.0` and `braces@3.0.3` remain the latest published versions.
+The fresh mobile production audit exits 1 with seven moderate, 14 high and zero
+critical affected-package entries. The two underlying high advisories are
+unchanged; an isolated candidate test has not remediated the installed tree.
+
+**Disposition:** canonical encoding is the stronger candidate for a subsequent
+backport review, not approved release remediation. Do not apply count-only
+verification or assume a Forge patch also resolves `braces`. Before adopting a
+backport, verify full upstream/Expo compatibility and a reproducible pinned patch
+mechanism across local/CI/EAS installs. npm's version-based audit may still report
+a source-patched package; any change in gate treatment needs a separate explicit,
+bounded owner decision. No waiver, merge, deployment or native build is authorized
+by this assessment. SCRUM-47 and NFR-01 stay open.
 
 ## Hosted CI And Upstream Recheck (2026-10-13)
 
@@ -30,7 +86,10 @@ audit command. The audit uses `!cancelled()` so it also runs after an earlier
 functional failure. A high-severity finding still fails the same `mobile` job;
 there is no `continue-on-error`, threshold change, ignore list or waiver.
 This preserves the security gate while making functional CI evidence visible.
-The workflow follow-up needs a fresh hosted run before claiming those results.
+The [follow-up run](https://github.com/Rkigozi/oratio_global/actions/runs/38466108407)
+at `bd7d9e4` passed mobile type checks, all 304 tests and the 3,453-module iOS
+export, plus web/database-security and the Netlify preview. Only the mobile
+dependency audit failed. This does not clear the security gate.
 
 To clear the dependency gate, obtain a compatible upstream release or a reviewed
 remediation/replacement for the affected tooling and rerun the audit plus mobile

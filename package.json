@@ -32,7 +32,8 @@
     "audit:web": "npm audit -w @oratio/web --omit=dev --audit-level=high",
     "audit:web:tooling": "npm audit -w @oratio/web --include=dev --audit-level=high",
     "audit:mobile": "npm audit -w @oratio/mobile --omit=dev --audit-level=high",
-    "test:db": "node scripts/test-moderation-db.mjs"
+    "test:db": "node scripts/test-moderation-db.mjs",
+    "test:security-backports": "node --test scripts/security-backports/forge-backports.test.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.7",
