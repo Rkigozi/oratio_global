@@ -10,6 +10,19 @@ unchanged; this native checklist is still the source for open iPhone/release che
 
 ## Before You Start
 
+Automated checkpoint (2026-10-07): 534 web and 255 mobile tests, 140 disposable
+SQL assertions, nine database races, both type checks, web lint/build, Expo Doctor
+(21/21) and the CI-style iOS JS export passed. Local browser regressions passed
+38 tests; six authenticated tests were skipped. No new device checks were claimed.
+The mobile dependency audit remains blocked; see [release readiness](./V1_RELEASE_READINESS.md)
+and the current [security findings](./backlog/SECURITY-REVIEW.md). Commits are a
+local checkpoint only, not a deployed backend, TestFlight build or launch approval.
+
+Security checkpoint (2026-09-30): [migration 042 and its regression evidence](./backlog/SECURITY-REVIEW.md)
+are local only. Before external beta, approve/apply it to the verified backend
+and retest waitlist signup plus prayer/comment submission and quota errors.
+The disposable database suite passing does not confirm deployed permissions.
+
 - [ ] Test the latest `main` commit with no local changes affecting the build
 - [x] Apply all Supabase migrations through `040_reporter_details.sql` (Oratio_DB local/remote migration history aligned, 2026-09-23)
 - [ ] Prepare three verified test accounts with distinct usernames, profiles, and avatars
@@ -18,6 +31,12 @@ unchanged; this native checklist is still the source for open iPhone/release che
 - [ ] Keep Account B signed in on the physical iPhone and Accounts A/C in separate browser or device sessions
 - [ ] Confirm all sessions reach the same Supabase project before testing Circle, privacy, comments, and Updates
 - [ ] Record the latest TestFlight version/build and Git commit used for the pass
+
+Build-preparation checkpoint (2026-09-29): local EAS profiles, Expo Doctor (21/21),
+mobile tests (224), type-check and iOS JS/Hermes export passed. No signed binary,
+TestFlight installation or new physical-device pass is implied. Expo/Apple setup,
+dependency-advisory review and release-device checks remain open; see
+[the iOS build runbook](./backlog/IOS-BUILD-PIPELINE.md).
 
 ## Authentication (email/password only)
 
@@ -198,18 +217,72 @@ unchanged; this native checklist is still the source for open iPhone/release che
 - [x] Automated native/query tests cover confirmed/cancelled/failed actions,
       duplicate taps, stack reset, own/anonymous exclusions, list errors/pagination,
       Settings entry and Unblock (2026-09-28).
-- [ ] Apply migration 041 after review and owner approval; not yet live.
-- [ ] On a physical iPhone, block another QA account from profile, named prayer
-      actions and a comment; confirm feedback and return to refreshed Public prayers.
-- [ ] Both QA accounts lose access to each other's content after refresh, including
-      direct links; unrelated accounts retain their original access.
+- [x] Migration 041 applied to Oratio_DB with owner approval; local/remote history
+      matches 001-041. Read-only live checks confirm policies, relationship guards,
+      restricted RPC/table permissions and anonymous/missing-identity rejection.
+      Existing data counts and moderator-role fingerprint are unchanged; no accounts
+      were blocked (2026-09-28). Implementation `6b5a710` passed GitHub CI.
+- [x] On a physical iPhone, block another QA account from their profile; confirmation,
+      success feedback, return to Public prayers and the entry in Settings > Blocked
+      accounts work (user-confirmed, 2026-09-28).
+- [x] Profile Block moved behind a neutral three-dot options button; automated
+      opening/closing, confirmation handoff, cancellation, retry and identity
+      visibility checks pass (2026-10-07; 64 focused native tests and type-check).
+- [x] Updated profile options entry point works in Expo (user-confirmed, 2026-10-07).
+- [ ] In the remaining light/dark device pass, verify options-sheet dismissal and
+      Block user > Cancel leaves the profile intact; the basic menu success above
+      does not independently confirm each case in both themes.
+- [x] Named public prayer's three-dot menu > Block user: Cancel keeps the prayer
+      accessible; confirming Block shows success and returns to Public prayers with
+      that author's prayers hidden (user-confirmed, 2026-09-29).
+- [x] Cancel and Block from another QA user's comment work on iPhone
+      (user-confirmed, 2026-09-29).
+- [ ] A failed Block shows clear feedback without claiming success; reconnecting
+      allows a deliberate retry on device.
+- [x] After switching to the blocked QA account and refreshing Public prayers, the
+      blocking account's prayers disappear (user-confirmed, 2026-09-28).
+- [ ] Verify blocking on other surfaces/direct links and that unrelated accounts
+      retain their original access.
 - [ ] Existing Circle membership and pending invites disappear; new invites and
       interactions fail without changing the other account's data.
-- [ ] Settings shows only the viewer's blocked accounts; failed Unblock retains the
-      row; successful Unblock never reconnects Circle and respects a reciprocal block.
+- [x] Settings > Blocked accounts > Unblock confirmation removes the entry; after
+      refreshing both accounts, public prayers are visible again without automatically
+      restoring a Circle connection (user-confirmed, 2026-09-28).
+- [ ] Settings lists only the viewer's blocks; failed Unblock retains the row;
+      one-sided Unblock still respects a reciprocal block.
 - [ ] New controls remain readable and reachable in light/dark mode on iPhone.
 
+## Service Notices (SCRUM-97)
+
+Use an isolated Netlify preview and Expo's preview notice URL override; do not
+broadcast a test message to production users. See
+[SERVICE-NOTICES.md](./backlog/SERVICE-NOTICES.md).
+
+- [x] Local API/admin/native regression suites and four mocked desktop/mobile browser journeys pass; no real notices published (2026-09-30).
+- [x] Verify Miriam's approved test-only identity, deploy the named test environment, and verify production deployment/non-test environment unchanged; per-deploy storage separation covered by API regression tests (2026-10-06).
+- [x] Hosted API rejects missing/invalid tokens and Jonah's management requests; Miriam can manage. Moderator role alone does not bypass the allowlist (2026-10-06).
+- [x] Real hosted browser preview/publish/withdraw journeys pass on desktop Chromium/light and phone-width WebKit/dark; no horizontal overflow (2026-10-06).
+- [x] Hosted API rejects stale writes, omits admin audit fields publicly, expires a notice and returns empty state after cleanup (2026-10-06).
+- [x] User confirmed the basic hosted-admin/Expo notice journey worked; this does not establish every signed-in/out, dismissal or offline check below (2026-10-06).
+- [x] Optional UTC maintenance window passes editor/API validation and renders locally in preview/native tests; cross-midnight/year, DST offset changes, non-whole-hour zones and offline cache covered. Six mocked browser checks pass with inspected light/dark screenshots (2026-10-07).
+- [ ] Publish a notice with maintenance times and verify title, details and local dates/timezone in Expo; change the device timezone and foreground the app to verify conversion, including overnight windows and larger text.
+- [ ] Publish on the isolated preview and verify the matching banner in Expo Go signed in and signed out.
+- [ ] On iPhone in light/dark and larger text, the banner respects the notch, dismiss target and scrolling; navigation, keyboard and prayer draft remain usable.
+- [ ] Dismiss a notice, reopen the app, and confirm it stays dismissed; publish a new revision and confirm it becomes visible.
+- [ ] A scheduled notice starts and expires correctly, including with cached data offline; withdrawal is reflected after reconnection/foreground refresh.
+- [ ] Network failure does not block the app, clear a valid cache or falsely claim a withdrawal; an uncached device can continue normally.
+- [ ] Publishing/withdrawing while composing a prayer preserves the draft and navigation position.
+- [ ] A stale admin tab cannot overwrite a newer notice; reload retains the draft. A failed publish reports failure and retains the draft.
+- [ ] Withdraw the preview test notice, remove the mobile preview override, and record device/build/deployment evidence before closure.
+
 ## Native Runtime
+
+Non-functional acceptance is tracked in [NFR-CHECKLIST.md](./NFR-CHECKLIST.md).
+Reuse the dated functional results above without treating them as a full NFR pass.
+
+- [ ] Attach evidence for Beta NFR-01/02/05/06/08 before external TestFlight distribution
+- [ ] Attach evidence for Launch NFR-03/04/07 and revalidate Beta gates on the public release candidate
+- [ ] Record device/iOS, build/SHA, conditions, actual results and remaining defects in the owning Jira tickets; `SCRUM-40` records release sign-off
 
 - [ ] Cold launch, warm launch, background/foreground, and force-quit/reopen all work
 - [ ] Slow or interrupted internet produces a recoverable state rather than a blank screen
@@ -217,6 +290,11 @@ unchanged; this native checklist is still the source for open iPhone/release che
 - [ ] No private prayer text or credentials appear in logs, Sentry, or analytics
 - [ ] Repeat this checklist against a release-mode/TestFlight build before external beta
 - [ ] Verify Sentry receives a deliberate release-tagged test error for this build
+  - Local opt-in JavaScript reporting and a non-production Settings diagnostic
+    are implemented; follow [the monitoring runbook](./backlog/NATIVE-MONITORING.md).
+    No remote delivery or alert evidence yet. Native crash capture remains disabled.
+    The `oratio-mobile` Sentry project/team/email rule was prepared on 2026-10-13;
+    reporting is still disabled pending controlled verification.
 - [ ] Verify PostHog receives approved app-open/auth/prayer/map events without prayer text or personal data
 
 ## Visual Parity

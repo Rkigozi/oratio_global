@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Oratio",
-    "slug": "oratio",
+    "slug": "oratio-global",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,13 +23,20 @@
       "favicon": "./assets/favicon.png"
     },
     "scheme": "oratio",
-    "owner": "oratio_global",
+    "owner": "oratioglobals-team",
+    "extra": {
+      "eas": {
+        "projectId": "7a80432c-c964-448f-a42c-b42268268bf3"
+      }
+    },
     "plugins": [
       "expo-font",
       [
         "expo-image-picker",
         {
-          "photosPermission": "Oratio lets you choose a profile photo."
+          "photosPermission": "Oratio lets you choose a profile photo.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       [

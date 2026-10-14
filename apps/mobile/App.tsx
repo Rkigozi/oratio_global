@@ -18,6 +18,7 @@ import { useTheme } from './src/hooks/theme-context';
 import { ThemeProvider } from './src/hooks/theme-provider';
 import { RootNavigator } from './src/navigation';
 import { colors } from './src/theme';
+import { ServiceNoticeShell } from './src/components/service-notice';
 
 function AppContent() {
   const { theme } = useTheme();
@@ -54,9 +55,11 @@ function AppContent() {
 
   return (
     <ActivityUpdatesProvider>
-      <NavigationContainer theme={navigationTheme}>
-        <RootNavigator />
-      </NavigationContainer>
+      <ServiceNoticeShell>
+        <NavigationContainer theme={navigationTheme}>
+          <RootNavigator />
+        </NavigationContainer>
+      </ServiceNoticeShell>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
     </ActivityUpdatesProvider>
   );

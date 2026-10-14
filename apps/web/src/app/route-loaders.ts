@@ -61,6 +61,9 @@ export const loadPrayerDetail: RouteLoader = () =>
 export const loadModerate: RouteLoader = () =>
   import('./pages/moderate').then((m) => ({ default: m.Moderate }));
 
+export const loadServiceNotices: RouteLoader = () =>
+  import('./pages/service-notices').then((m) => ({ default: m.ServiceNotices }));
+
 export const loadUserProfile: RouteLoader = () =>
   import('./pages/profile/user-profile').then((m) => ({ default: m.UserProfile }));
 

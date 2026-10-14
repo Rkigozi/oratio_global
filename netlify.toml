@@ -5,6 +5,10 @@
 [build.environment]
   NODE_VERSION = "22"
 
+[functions]
+  directory = "apps/web/netlify/functions"
+  node_bundler = "esbuild"
+
 # Deploy previews for PR branches
 [context.deploy-preview]
   command = "npm run build"

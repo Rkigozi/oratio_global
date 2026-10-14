@@ -27,9 +27,18 @@
     "ios": "npm run ios --workspace @oratio/mobile",
     "type-check:mobile": "npm run typecheck --workspace @oratio/mobile",
     "prepare": "husky",
+    "postinstall": "node scripts/security-backports/forge-backport.mjs",
+    "install:security-backport": "node scripts/security-backports/forge-backport.mjs",
+    "verify:security-backport": "node scripts/security-backports/forge-backport.mjs --verify-only",
     "format:check": "prettier --check .",
     "test:mobile": "npm run test --workspace @oratio/mobile",
-    "audit:web": "npm audit -w @oratio/web --omit=dev --audit-level=high"
+    "audit:web": "npm audit -w @oratio/web --omit=dev --audit-level=high",
+    "audit:web:tooling": "npm audit -w @oratio/web --include=dev --audit-level=high",
+    "audit:mobile": "node scripts/security-backports/audit-mobile.mjs",
+    "audit:mobile:raw": "npm audit -w @oratio/mobile --omit=dev --audit-level=high",
+    "audit:mobile:release": "node scripts/security-backports/audit-mobile.mjs --release",
+    "test:db": "node scripts/test-moderation-db.mjs",
+    "test:security-backports": "node --test scripts/security-backports/*.test.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.7",
@@ -38,7 +47,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
-    "expo": "~57.0.21"
+    "expo": "~57.0.27"
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx}": [

@@ -1,0 +1,149 @@
+# Native Monitoring
+
+Owner story: [SCRUM-43](https://oratio.atlassian.net/browse/SCRUM-43).
+Gate: NFR-05, before external TestFlight. Last updated: 2026-10-13.
+
+## Local Implementation
+
+The first slice reports **JavaScript errors in the iOS app**, using Expo 57's
+recommended `@sentry/react-native` 7.11.0. It does not yet enable native crash
+collection, PostHog, performance tracing or session replay. Reporting defaults
+to off. The initial 2026-10-08 implementation had no provider configuration;
+the approved project setup on 2026-10-13 is recorded below. No events or source
+maps have been sent to a live provider.
+
+- Initialization precedes application imports. Incomplete/invalid configuration
+  leaves reporting off; SDK failures do not prevent normal startup. The shared
+  logger tolerates synchronous throws and asynchronous rejection from its sink.
+- Explicit enablement, an approved Sentry SaaS public DSN, environment, app
+  version, build and full Git SHA are required. Development bundles can only use
+  `development`; signed bundles use `staging` or `production` and native build
+  metadata. EAS supplies its commit through `app.config.js`, without exporting
+  server secrets. The native build guard rejects invalid opted-in configuration.
+- Error payloads are rebuilt from an allowlist before send and again at the SDK
+  envelope boundary. Only generic error classes, fixed operation labels, bundle
+  line/column coordinates, event IDs and validated release metadata remain.
+  Raw messages, custom error names, users, URLs, source snippets, local paths,
+  contexts, arbitrary tags/extras, attachments and breadcrumbs are removed.
+  IP inference is disabled in SDK options and outgoing SDK metadata.
+- Default integrations are off except JavaScript error/rejection handling and
+  the privacy boundary. No console/network capture, device identifiers, sessions,
+  screenshots, view hierarchy, logs, analytics or replay are enabled. No user ID
+  is assigned. Error text is intentionally generic; this trades some diagnostic
+  detail for privacy. No source-map symbolication claim is made.
+- A configured non-production build exposes **Settings > Diagnostics > Send
+  test error**. It emits only a fixed synthetic error and reports a queued event
+  reference, not confirmed delivery. The control is absent when disabled or in
+  production. Network loss can drop events; offline native caching is not enabled.
+- Existing local console logging is unchanged. This is not a full audit of
+  console/device logs or of the existing web telemetry implementation.
+
+The SDK's JavaScript `beforeSend` does not cover native crashes. Native SDK
+initialization and crash capture remain explicitly disabled until native-side
+privacy controls and a signed-build payload test are implemented. The SDK's
+Expo setup and source-map guidance is at
+[Expo: Using Sentry](https://docs.expo.dev/guides/using-sentry/).
+
+## Setup And Verification
+
+### Project Setup (2026-10-13)
+
+- Created [oratio-mobile](https://oratio-3j.sentry.io/settings/projects/oratio-mobile/)
+  in the existing `oratio-3j` organisation, using the React Native platform.
+  Project ID: `4512249578061904`; assigned team: `#oratio`.
+- Retained `javascript-react-router` (`4511569786765392`) for the website,
+  protected moderation/admin pages and existing PWA. Separate projects keep
+  mobile and web incidents distinguishable; no new account was created.
+- Saved the mobile public DSN only in ignored `apps/mobile/.env.local`, with
+  `EXPO_PUBLIC_SENTRY_ENABLED=false` and environment `development`. Existing
+  Supabase and notice-QA configuration is preserved. No upload/auth token was
+  created, and no credentials belong in this document or Git.
+- Verified the [mobile error monitor](https://oratio-3j.sentry.io/monitors/2422508/)
+  and its [enabled email alert](https://oratio-3j.sentry.io/monitors/alerts/1368358/).
+  The alert applies only to `oratio-mobile`, across all environments, when a
+  new/existing issue becomes high priority. Routing explicitly notifies
+  `#oratio`, rather than relying on recently active members. It has no trigger
+  history yet. Actual email delivery and the ten-minute target remain untested.
+- Disabled automatic JavaScript source fetching; SCM source context remains
+  off. Enabled TLS verification for Sentry outbound requests. Spike protection
+  is enabled. Retention/consent choices and source-map symbolication still need
+  release review; creating a project does not enable SDK collection.
+- Before a smoke test, use the committed monitoring revision for
+  `EXPO_PUBLIC_GIT_SHA`, explicitly enable development reporting, restart Metro
+  and use the fixed Settings test action. Check issue priority and personal
+  notification/digest settings when verifying the high-priority email rule;
+  an ingested handled error alone is not proof the alert should fire.
+
+### Controlled Verification
+
+The 2026-10-13 setup checks accepted the prepared mobile DSN/metadata, confirmed
+that reporting is disabled and that the local configuration is ignored by Git,
+and passed 85 focused monitoring/settings/build-config tests. The first focused
+run hit an existing Settings `findByText` timeout; the same suite passed unchanged
+on rerun. This checkpoint adds provider/configuration evidence, not a new full
+regression run or remote-delivery evidence.
+
+1. Confirm the approved mobile Sentry project, data region/retention, access and
+   named alert recipient. Review privacy disclosures and consent requirements
+   before enabling collection; this change does not choose that policy.
+2. For an approved synthetic-only Expo Go test, set local ignored environment
+   values shown below. Use a clean committed revision, restart Metro with its
+   cache cleared, and open the app in Expo Go. Do not reuse a web DSN by default.
+3. Press **Send test error** once, record its reference and UTC trigger time,
+   and confirm the event in Sentry within five minutes. Inspect the raw payload,
+   environment, app version, build and SHA; check that no personal data appears.
+4. Configure a new-issue alert to the named recipient and verify actual arrival
+   within ten minutes. A queued reference is not evidence of either delivery or
+   alerting. Record timestamps and evidence in SCRUM-43 without credentials.
+5. Repeat with reporting disabled, an unavailable provider and offline networking.
+   Normal app journeys must remain usable. Remove local test values afterwards.
+6. Before external beta, implement/test native crash redaction, source-map
+   symbolication and approved PostHog events. Repeat the error/alert/privacy
+   exercise on a signed Release build with the real version/build/SHA. Expo Go
+   verification cannot sign off native crash collection or the whole NFR.
+
+```dotenv
+EXPO_PUBLIC_SENTRY_ENABLED=true
+EXPO_PUBLIC_SENTRY_DSN=<approved mobile project's public DSN>
+EXPO_PUBLIC_SENTRY_ENVIRONMENT=development
+EXPO_PUBLIC_GIT_SHA=<full 40-character SHA of the tested commit>
+```
+
+For signed QA builds use `staging`; EAS provides `EAS_BUILD_GIT_COMMIT_HASH`
+automatically. Do not turn reporting on merely by choosing the production EAS
+profile. No Sentry config plugin, Metro upload hook or automatic source upload
+has been added. Future upload credentials belong only in build-time secrets,
+never `EXPO_PUBLIC_*`, app config, a commit or a chat message.
+
+## Evidence And Remaining Gates
+
+Local checks cover configuration/disabled states, production diagnostic gating,
+payload allowlisting, attachment removal, real SDK envelopes using an in-memory
+transport (including internal errors that bypass `beforeSend`), provider failure,
+shared logger compatibility and the Settings test control. Jest preserves Expo
+environment variables at runtime so enabled/disabled tests do not accidentally
+reuse Babel-inlined values from a previous test.
+
+On 2026-10-08, base `047a39b` plus these working-tree changes passed 304 mobile
+tests, 537 web tests, both type checks, web lint/build, formatting, Expo Doctor
+21/21 and a clean iOS export (3,453 modules, 22 assets). One earlier full mobile
+run hit a prayer-detail `findByText` timeout; the unchanged full suite passed on
+rerun. The real-SDK test also passes open-handle detection after cleaning up its
+module-level cache interval in the test sandbox.
+
+The disabled-reporting CI export is `index-c71315496b00f88eef08e6cbd6f78680.hbc`,
+SHA-256 `32957aadd8c3972349a985dc202dd9845b647cd8a0cd28efc1b5f6c07cbe4262`.
+Its 3,441 source-map entries contain none of the four advisory packages. The
+artifact used nonfunctional backend values, no local dotenv file or notice-QA
+endpoint; its source map remains local.
+
+These are not hosted CI, a physical-device test, remote delivery or alert
+evidence. The current dependency gate remains open: adding monitoring
+did not change the four underlying advisories (12 moderate/45 high affected
+entries across all dependencies, zero critical).
+
+SCRUM-43 remains **In Progress**. Project/team/email routing are prepared;
+real delivery/alert timings, privacy release choices, native crash privacy,
+symbolication, PostHog and signed-build verification remain open. Nothing in
+this checkpoint is a push, deployment, source-map upload, live database change
+or NFR sign-off.

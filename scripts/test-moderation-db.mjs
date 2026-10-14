@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { testBlockingConcurrency } from './test-blocking-concurrency.mjs';
+import { testRateLimitConcurrency } from './test-rate-limit-concurrency.mjs';
 
 // Uses a disposable PostgreSQL cluster and never reads a Supabase connection string.
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -44,7 +45,7 @@ try {
     .sort()) {
     sql(readFileSync(join(root, 'supabase/migrations', file), 'utf8'));
   }
-  for (const suite of ['moderation', 'blocking']) {
+  for (const suite of ['security', 'moderation', 'blocking']) {
     const assertions = readFileSync(join(root, `supabase/tests/${suite}.sql`), 'utf8');
     sql(assertions);
     const count =
@@ -52,6 +53,7 @@ try {
     console.log(`All migrations applied; ${count} ${suite} database assertions passed.`);
   }
   await testBlockingConcurrency({ sql, psqlArgs });
+  await testRateLimitConcurrency({ sql, psqlArgs });
 } catch (error) {
   console.error(error.stderr?.toString() || error.message);
   process.exitCode = 1;

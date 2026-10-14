@@ -11,13 +11,14 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Ban } from 'lucide-react-native';
+import { ArrowLeft, MoreHorizontal } from 'lucide-react-native';
 import { getProfileByUsername, getUserPrayers } from '@oratio/shared/queries';
 import type { PrayerRequest } from '@oratio/shared/prayer-data';
 import { Avatar } from '../components/avatar';
 import { asNativeIcon } from '../components/icon';
 import { PrayerCard } from '../components/prayer-card';
 import { ProfileCircleActions } from '../components/profile-circle-actions';
+import { ProfileActionsSheet } from '../components/profile-actions-sheet';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
 import { useBlockUser } from '../hooks/use-block-user';
@@ -27,7 +28,7 @@ import type { RootStackParamList } from '../navigation';
 type UserProfile = NonNullable<Awaited<ReturnType<typeof getProfileByUsername>>>;
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
-const BanIcon = asNativeIcon(Ban);
+const MoreIcon = asNativeIcon(MoreHorizontal);
 
 export function UserProfileScreen({
   navigation,
@@ -43,6 +44,7 @@ export function UserProfileScreen({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [optionsVisible, setOptionsVisible] = useState(false);
 
   const load = useCallback(async () => {
     setError('');
@@ -77,6 +79,7 @@ export function UserProfileScreen({
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => setOptionsVisible(false);
     }, [load])
   );
 
@@ -100,16 +103,17 @@ export function UserProfileScreen({
         </View>
         {profile && user && profile.id !== user.id && !error ? (
           <Pressable
-            accessibilityLabel="Block user"
+            accessibilityLabel="More profile options"
             accessibilityRole="button"
+            accessibilityState={{ expanded: optionsVisible, disabled: blocking }}
             disabled={blocking}
-            onPress={() => confirmBlock(profile.id, profile.username)}
+            onPress={() => setOptionsVisible(true)}
             style={styles.headerButton}
           >
             {blocking ? (
-              <ActivityIndicator color={colors.danger} />
+              <ActivityIndicator color={colors.textSecondary} />
             ) : (
-              <BanIcon color={colors.danger} size={20} strokeWidth={1.7} />
+              <MoreIcon color={colors.textSecondary} size={20} strokeWidth={1.7} />
             )}
           </Pressable>
         ) : (
@@ -186,6 +190,15 @@ export function UserProfileScreen({
           )}
         />
       )}
+      {profile && user && profile.id !== user.id && !error ? (
+        <ProfileActionsSheet
+          key={`${user.id}:${profile.id}`}
+          visible={optionsVisible}
+          busy={blocking}
+          onClose={() => setOptionsVisible(false)}
+          onBlock={() => confirmBlock(profile.id, profile.username)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
