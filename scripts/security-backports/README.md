@@ -46,6 +46,54 @@ Forge's BSD-3-Clause attribution is retained in `FORGE-LICENSE.txt`.
 Unified-diff blank context lines retain their required space marker; these are
 patch data, not trailing whitespace in the resulting JavaScript source.
 
+## Full Upstream Node Suite
+
+The broader verification uses a separately downloaded test fixture. It is not
+part of the offline comparison command or an Oratio dependency installation.
+Forge tag `v1.4.0` resolves to `fa385f92440879601240020f158bed68e444e83a`.
+Its RSA source matches the installed file hash above. Mocha `11.7.5` is installed
+only in the fixture runner, with lifecycle scripts disabled.
+
+The tag contains `describe.only` in `tests/unit/jsbn.js`. Without removing that
+focus marker, Mocha reports only five passing tests. The unfocus fixture changes
+only that registration, not assertions or library behavior. Both full runs use
+`--forbid-only`. Baseline: **828 passing, four pending**. Canonical RSA patch plus
+the proposal's five new upstream tests: **833 passing, the same four pending**.
+The pending tests are deterministic RSA key-generation comparisons skipped by
+upstream under this Node configuration. The existing `Buffer()` warning remains.
+
+Additional fixture provenance:
+
+- `forge-1159-tests.patch`: exact `tests/unit/rsa.js` diff from the same pinned
+  `db05494352dd3c9a5a07c5270333dcc78866cad2` proposal.
+  SHA-256: `8d7dd7a86ff1794b62a420e476488a4c47e577f48f7fa0627223b550f847f8ba`.
+- `forge-v1.4.0-unfocus.patch`: local test-registration correction only.
+  SHA-256: `07dda793a78802b76acb4acc2785ee5a793e655c180c14fd6307b2d8f7041f53`.
+
+From the Oratio repository root, repeat in a fresh disposable fixture:
+
+```bash
+(
+  set -eu
+  ORATIO="$PWD"
+  FIXTURE="$(mktemp -d /private/tmp/oratio-forge-full-XXXXXX)"
+  git clone --depth 1 --branch v1.4.0 https://github.com/digitalbazaar/forge.git "$FIXTURE/upstream"
+  test "$(git -C "$FIXTURE/upstream" rev-parse HEAD)" = fa385f92440879601240020f158bed68e444e83a
+  npm install --prefix "$FIXTURE/runner" --ignore-scripts --no-audit --no-fund --save-exact mocha@11.7.5
+  cd "$FIXTURE/upstream"
+  git apply --check --whitespace=error "$ORATIO/scripts/security-backports/forge-v1.4.0-unfocus.patch"
+  git apply --whitespace=error "$ORATIO/scripts/security-backports/forge-v1.4.0-unfocus.patch"
+  NODE_ENV=test node "$FIXTURE/runner/node_modules/mocha/bin/mocha.js" --no-config --no-package --forbid-only --timeout 30000 --reporter dot tests/unit/index.js
+  git apply --check --whitespace=error "$ORATIO/scripts/security-backports/forge-1159-rsa.patch" "$ORATIO/scripts/security-backports/forge-1159-tests.patch"
+  git apply --whitespace=error "$ORATIO/scripts/security-backports/forge-1159-rsa.patch" "$ORATIO/scripts/security-backports/forge-1159-tests.patch"
+  NODE_ENV=test node "$FIXTURE/runner/node_modules/mocha/bin/mocha.js" --no-config --no-package --forbid-only --timeout 30000 --reporter dot tests/unit/index.js
+)
+```
+
+Results above are local Node 24.19.0 evidence, not browser, native-binary or
+EAS-install verification. A test runner's temporary dependency tree is not
+added to Oratio's lockfile. Keep the candidate's adoption decision separate.
+
 ## Adoption Boundary
 
 The count-only candidate is rejected: NULL-with-content and non-minimal length

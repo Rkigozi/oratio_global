@@ -4,6 +4,60 @@ Last updated: 2026-10-14. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/S
 Status: **In Progress**, not security sign-off. Supports NFR-01 in
 [the NFR checklist](../NFR-CHECKLIST.md).
 
+## Broader Verification (2026-10-14)
+
+Forge's full Node suite was run in a disposable official `v1.4.0` checkout at
+`fa385f92440879601240020f158bed68e444e83a`, whose RSA source matches the published
+installed file. Node 24.19.0 and separately installed Mocha 11.7.5 were used;
+runner lifecycle scripts were disabled. No Oratio dependency was installed or
+patched by this verification.
+
+The tagged suite contains `describe.only` in `tests/unit/jsbn.js`. Its first run
+therefore executed only five tests and is **not** counted as full-suite evidence.
+Removing only that focus marker in the temporary fixture and enabling
+`--forbid-only` produces these results:
+
+| Fixture                                   | Passing | Pending | Failing |
+| ----------------------------------------- | ------- | ------- | ------- |
+| Unfocused upstream 1.4.0 baseline         | 828     | 4       | 0       |
+| Canonical RSA patch + five PR #1159 tests | 833     | 4       | 0       |
+
+Both runs retain the same four upstream deterministic RSA key-generation skips.
+No assertion was weakened or removed. The patched JSON report counts 837 tests
+across 38 suites; a repeat run also passes. The existing deprecated `Buffer()`
+warning remains. Exact upstream test diff, the minimal unfocus patch, source
+revisions/hashes and repeatable commands are in
+[the verification readme](../../scripts/security-backports/README.md).
+The previous 103-case installed-dependency/Expo-helper comparison is separate
+evidence, not included in the 833 count.
+
+### Separate Braces Assessment
+
+The installed `braces@3.0.3` compiler was probed with three bounded synthetic
+strings under its 10,000-character cap: 4,500 nested parentheses (9,001 chars),
+4,900 nested braces with one inner alternative (9,803 chars), and 2,000 nested
+valid alternatives (8,001 chars). Child processes had a two-second timeout and
+64 MB heap cap. All three returned normally on Node 24.19.0; no compiler
+stack-exhaustion failure was reproduced with these inputs on this runtime.
+This does not invalidate the advisory or establish safety on other runtimes,
+input shapes, expansion paths or the eventual build host.
+
+Passing `maxLength: 512` rejects all three string probes before compilation.
+That option is not a verified whole-library remediation: compilation of an
+already parsed AST bypasses the string-length check (confirmed with a 513-char
+literal), and inspected Metro watcher calls forward only `dot`, not `maxLength`.
+No app/shared import of braces/micromatch or prayer-text-to-glob path was found;
+the native Jest patterns remain repository-controlled. That narrows the observed
+input boundary, not every transitive caller or the audit disposition.
+
+**Disposition:** do not install a speculative braces patch or claim that an
+unused length option fixes the application toolchain. No suitable braces
+backport is verified by this assessment. The canonical Forge candidate now has
+broader Node compatibility evidence, but reproducible local/CI/EAS patch adoption
+and signed-artifact checks still require separate review. The installed tree,
+blocking audit and owner-risk-acceptance state are unchanged. SCRUM-47 remains
+open; this is not beta or merge approval.
+
 ## Backport Assessment (2026-10-14)
 
 **Reject the original Forge count-only candidate.** The isolated comparison
