@@ -53,8 +53,17 @@ as expected and never uses this exception. Clean iOS export passed (3,453 module
 22 assets, 3,441 source-map entries), with no sources for Forge, braces,
 micromatch, UUID or sprintf-js. Bundle SHA-256:
 `8a34a1b36c94efe85d8c1262753b1f40bb2b67ab9674cd855d5a6ae5422cbbde`.
-This is exported-JavaScript evidence, not native-binary safety. Clean npm-ci and
-hosted CI follow-up remain to be verified for this adoption commit.
+This is exported-JavaScript evidence, not native-binary safety.
+
+Hosted adoption checkpoint: commit `1c399be` passed all three jobs in
+[CI run 38548461986](https://github.com/Rkigozi/oratio_global/actions/runs/38548461986)
+on 2026-10-14. Clean Linux/Node 22 `npm ci` applied and verified the backport in
+both app jobs. Mobile passed all 304 tests, all 158 backport/policy checks, its
+type check, iOS export and the bounded audit gate. Web passed formatting, both
+zero-finding audits, type check, lint, all 537 tests with coverage and production
+build. The disposable database suite passed 140 assertions and nine concurrency
+cases. This verifies review-branch installation and CI, not a live migration,
+signed app or public-release acceptance. PR #5 remains draft; `main` is unchanged.
 
 The previous 833 upstream passes/four pending and helper/interoperability
 evidence below support this Node backport. Actual EAS archive/install and signed

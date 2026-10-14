@@ -14,6 +14,10 @@ The policy gate does not claim a clean raw audit or public-release acceptance;
 `npm run audit:mobile:release` stays strict. See
 [the active approval and evidence](./backlog/SECURITY-REVIEW.md). Previous
 "no waiver/local-only" snapshots below describe their historical checkpoints.
+The adoption commit `1c399be` passed hosted mobile, web and disposable database
+checks in [CI run 38548461986](https://github.com/Rkigozi/oratio_global/actions/runs/38548461986),
+including clean-install backport application. It is pushed to the review branch,
+not merged to `main`; release gates below remain separate.
 
 The [iOS NFR checklist](./NFR-CHECKLIST.md) defines measurable security,
 reliability, performance, accessibility, monitoring, recovery and operational
