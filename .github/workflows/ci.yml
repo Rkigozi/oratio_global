@@ -77,7 +77,7 @@ jobs:
         working-directory: apps/mobile
         run: npm test
 
-      - name: Assess isolated security backport candidates (not installed)
+      - name: Verify installed backport, controls and isolated comparison
         run: npm run test:security-backports
 
       - name: Verify iOS release bundling (not a distributable build)
@@ -90,8 +90,7 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://ci-preflight.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ci_build_check_only
 
-      # Keep functional results visible while upstream advisories remain open.
-      # This still fails the mobile job, including after an earlier step fails.
+      # Review exceptions expire; the separate audit:mobile:release command stays strict.
       - name: Audit mobile dependencies
         if: ${{ !cancelled() }}
         run: npm run audit:mobile

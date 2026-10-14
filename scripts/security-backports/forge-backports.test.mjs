@@ -14,8 +14,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { FORGE_BASE_HASH, FORGE_PATCHED_HASH, verifyForgeBackport } from './forge-backport.mjs';
 
-// Assessment only: patches are applied to disposable copies, never node_modules.
+// Comparison patches only touch disposable copies; installed source is verified too.
 const require = createRequire(import.meta.url);
 const here = dirname(fileURLToPath(import.meta.url));
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -33,9 +34,10 @@ assert.equal(require('node-forge/package.json').version, '1.4.0');
 assert.equal(require('@expo/code-signing-certificates/package.json').version, '0.0.6');
 assert.equal(
   originalHashes[1],
-  'fd4740238145ec26470eb3f06a627c72039538ce1307dbdce40521f94dfd0a50',
+  FORGE_PATCHED_HASH,
   'Forge source changed: review the candidate patches before updating this pin'
 );
+verifyForgeBackport();
 assert.equal(
   originalHashes[2],
   '3670cfbd69934b475257649886517d0314890ca4139708d2c812efaab04bc6d1',
@@ -52,7 +54,7 @@ after(() => {
 });
 
 const variants = [
-  { name: 'Installed 1.4.0', patch: null },
+  { name: 'Published 1.4.0 control', patch: null },
   {
     name: 'PR #1152 count-only',
     patch: 'forge-1152-rsa.patch',
@@ -63,7 +65,15 @@ const variants = [
     patch: 'forge-1159-rsa.patch',
     hash: 'be8e74c1d011bab844d9e2705f7a5f6428f444b28fa174cdad1572a45ef8f618',
   },
+  { name: 'Installed verified Node backport', installed: true },
 ].map((variant) => {
+  if (variant.installed) {
+    return {
+      ...variant,
+      forge: require(join(forgeRoot, 'lib/index.js')),
+      expo: require(join(expoRoot, 'build/main.js')),
+    };
+  }
   const modules = join(temp, variant.patch ?? 'baseline', 'node_modules');
   const fixtureForge = join(modules, 'node-forge');
   const fixtureExpo = join(modules, '@expo/code-signing-certificates');
@@ -75,6 +85,12 @@ const variants = [
   for (const file of ['build', 'package.json']) {
     cpSync(join(expoRoot, file), join(fixtureExpo, file), { recursive: true });
   }
+  execFileSync('git', ['init', '--quiet', fixtureForge]);
+  const canonical = join(here, 'forge-1159-rsa.patch');
+  execFileSync('git', ['-c', 'core.autocrlf=false', 'apply', '--reverse', canonical], {
+    cwd: fixtureForge,
+  });
+  assert.equal(digest(join(fixtureForge, 'lib/rsa.js')), FORGE_BASE_HASH);
   if (variant.patch) {
     const path = join(here, variant.patch);
     assert.equal(digest(path), variant.hash, 'Candidate differs from the pinned upstream diff');
@@ -130,7 +146,7 @@ function signatureFor(key, encoded) {
 const vectors = [
   {
     name: 'extra inner element',
-    accepted: [true, false, false],
+    accepted: [true, false, false, false],
     mutate(forge, info) {
       info.value[0].value.push(
         forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.INTEGER, false, '\x01')
@@ -139,7 +155,7 @@ const vectors = [
   },
   {
     name: 'non-NULL second element',
-    accepted: [true, false, false],
+    accepted: [true, false, false, false],
     mutate(forge, info) {
       info.value[0].value[1].type = forge.asn1.Type.INTEGER;
       info.value[0].value[1].value = '\x01';
@@ -147,14 +163,14 @@ const vectors = [
   },
   {
     name: 'NULL with 100 content bytes',
-    accepted: [true, true, false],
+    accepted: [true, true, false, false],
     mutate(_forge, info) {
       info.value[0].value[1].value = 'x'.repeat(100);
     },
   },
   {
     name: 'non-minimal outer length',
-    accepted: [true, true, false],
+    accepted: [true, true, false, false],
     mutate() {},
     changeBytes(bytes) {
       assert(bytes[1] < 128);
@@ -163,7 +179,7 @@ const vectors = [
   },
   {
     name: 'non-minimal inner length',
-    accepted: [true, true, false],
+    accepted: [true, true, false, false],
     mutate() {},
     changeBytes(bytes) {
       assert(bytes[1] < 127 && bytes[3] < 128);
@@ -175,7 +191,7 @@ const vectors = [
   },
   {
     name: 'extra outer element',
-    accepted: [false, false, false],
+    accepted: [false, false, false, false],
     mutate(forge, info) {
       info.value.push(
         forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.INTEGER, false, '\x01')
@@ -184,7 +200,7 @@ const vectors = [
   },
   {
     name: 'trailing bytes in strict mode',
-    accepted: [false, false, false],
+    accepted: [false, false, false, false],
     mutate() {},
     changeBytes(bytes) {
       return Buffer.concat([bytes, Buffer.from([0x00])]);

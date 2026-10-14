@@ -1,11 +1,19 @@
 # Oratio V1 Release Readiness
 
-Last updated: 2026-10-13
+Last updated: 2026-10-14
 
 Release-control checklist for the first small-group iOS beta and first public
 Apple App Store release. Expo Go is the current development channel; TestFlight
 is the release-candidate channel. Android follows later under `SCRUM-79` and is
 not a dependency of V1.
+
+Development security checkpoint (2026-10-14): the canonical Forge Node backport
+is now installed reproducibly. The owner approved a narrow development-review
+exception for two known tooling advisories, expiring `2026-11-13T00:00:00Z`.
+The policy gate does not claim a clean raw audit or public-release acceptance;
+`npm run audit:mobile:release` stays strict. See
+[the active approval and evidence](./backlog/SECURITY-REVIEW.md). Previous
+"no waiver/local-only" snapshots below describe their historical checkpoints.
 
 The [iOS NFR checklist](./NFR-CHECKLIST.md) defines measurable security,
 reliability, performance, accessibility, monitoring, recovery and operational

@@ -46,7 +46,9 @@ describe('iOS build configuration', () => {
   });
 
   it('checks client credentials before a native build can proceed', () => {
-    expect(pkg.scripts['eas-build-post-install']).toBe('npm run check:build-env');
+    expect(pkg.scripts['eas-build-post-install']).toBe(
+      'node ../../scripts/security-backports/forge-backport.mjs --verify-only && npm run check:build-env'
+    );
     expect(pkg.scripts['check:build-env']).toBe('node scripts/check-build-env.cjs');
     expect(pkg.scripts['export:ios']).toContain('--clear');
   });

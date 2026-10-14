@@ -44,7 +44,7 @@
     "web": "expo start --web",
     "export:ios": "expo export --platform ios --output-dir dist/ios --clear",
     "check:build-env": "node scripts/check-build-env.cjs",
-    "eas-build-post-install": "npm run check:build-env",
+    "eas-build-post-install": "node ../../scripts/security-backports/forge-backport.mjs --verify-only && npm run check:build-env",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch"

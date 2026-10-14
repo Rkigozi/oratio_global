@@ -4,6 +4,64 @@ Last updated: 2026-10-14. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/S
 Status: **In Progress**, not security sign-off. Supports NFR-01 in
 [the NFR checklist](../NFR-CHECKLIST.md).
 
+## Approved Development Mitigation (2026-10-14)
+
+The release owner explicitly approved proceeding with the scoped approach after
+the explanation of the tested Forge backport and a 30-day exception for known
+tooling findings. This changes the earlier **no waiver/no installed backport**
+state for development review only. It is not public-release approval, and does
+not authorize a live migration, signing/build purchase, deployment or merge.
+
+- The exact canonical RSA diff is applied to the Node implementation of every
+  present lockfile-listed `node-forge@1.4.0` during root npm `postinstall`.
+  SHA-256 is checked before/after, repeated installs are idempotent, unknown/local
+  source changes are preserved, and upstream version changes require review.
+  The installed RSA hash is
+  `c7b72e7ef41f4fc0e5228dce3e37851e9ca064c789365d5e392c25d1c5f6e710`.
+- The mobile EAS post-install hook verifies the backport before its existing
+  configuration check. Hook wiring is not evidence of an actual EAS/native build.
+- The owner-approved policy activates at `2026-10-14T00:00:00Z` and expires at
+  `2026-11-13T00:00:00Z` (exclusive), a maximum of 30 days. It covers only
+  `GHSA-vfj7-8cjw-p6xm` and `GHSA-86w9-cpqp-85rv`, the pinned current versions,
+  install paths and the 14 recorded high-severity parent entries. It requires the
+  verified Node patch. This is bounded build-tool risk acceptance, not a claim
+  that braces or Forge's browser distribution bundles are fixed.
+- All raw findings/counts remain printed. Critical/new high advisories, new
+  parents/paths/versions, missing/tampered source, incomplete/error reports and
+  expired approvals fail closed. Actual Metro dependency cycles are traversed
+  without discarding reachable advisory leaves. Moderate findings remain
+  reported and unwaived; the existing high/critical threshold is unchanged.
+- `audit:mobile` is the development/code-review policy gate;
+  `audit:mobile:raw` preserves the original npm command;
+  `audit:mobile:release` never uses the exception. Passing review CI does not
+  sign off external beta/public release. Do not renew/expand the policy silently.
+
+Controls for this approval: use only trusted repository/glob configuration and
+signing material; do not accept arbitrary remote patterns/certificates or expose
+development tooling to untrusted networks. Recheck upstream remediation before
+expiry and remove the exception/backport only after verified replacement. The
+owner must explicitly approve any renewal or external-release risk treatment.
+
+Local adoption checkpoint: the installer applied/verified the expected source,
+all **158** installer/policy/comparison checks, all **304** mobile tests and all
+**537** web tests passed, along with both type checks and repository formatting.
+The mobile post-install hook passed locally with nonfunctional CI client values.
+The real review audit reports seven moderate,
+14 high and zero critical affected-package entries and passes only under the
+recorded policy; the raw counts are not zero. The explicit release audit exits 1
+as expected and never uses this exception. Clean iOS export passed (3,453 modules,
+22 assets, 3,441 source-map entries), with no sources for Forge, braces,
+micromatch, UUID or sprintf-js. Bundle SHA-256:
+`8a34a1b36c94efe85d8c1262753b1f40bb2b67ab9674cd855d5a6ae5422cbbde`.
+This is exported-JavaScript evidence, not native-binary safety. Clean npm-ci and
+hosted CI follow-up remain to be verified for this adoption commit.
+
+The previous 833 upstream passes/four pending and helper/interoperability
+evidence below support this Node backport. Actual EAS archive/install and signed
+artifact checks remain open. NFR-01/SCRUM-47 stay open for full deployed-policy,
+moderate/signed-build review and separately approved migration 042 deployment.
+No prayer retention/expiry feature is introduced by this mitigation.
+
 ## Broader Verification (2026-10-14)
 
 Forge's full Node suite was run in a disposable official `v1.4.0` checkout at

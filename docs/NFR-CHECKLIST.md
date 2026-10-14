@@ -1,6 +1,6 @@
 # Oratio iOS Launch NFR Checklist
 
-Last updated: 2026-10-13
+Last updated: 2026-10-14
 
 Non-functional requirements define how safely, reliably and accessibly Oratio
 must work, alongside the features in [functional QA](./QA-CHECKLIST.md).
@@ -27,6 +27,11 @@ not evidence that the native app meets these requirements.
   tokens or real private prayer/report text.
 
 The release owner signs off through [SCRUM-40](https://oratio.atlassian.net/browse/SCRUM-40).
+Development-only mitigation (2026-10-14): the owner approved the verified Forge
+Node backport and a narrowly pinned tooling exception until
+`2026-11-13T00:00:00Z`. This unblocks code-review checks under recorded controls,
+not external beta/public release; the strict release audit and every NFR sign-off
+remain separate. See [the active approval record](./backlog/SECURITY-REVIEW.md).
 Confirmed unauthorized access, data-loss defects and crashes or accessibility
 failures preventing an essential journey block release. Any other unmet gate
 needs an explicit, time-limited risk decision and follow-up; it is not a pass.
