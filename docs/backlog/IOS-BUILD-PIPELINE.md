@@ -1,6 +1,6 @@
 # iOS Build Pipeline
 
-Last updated: 2026-10-07. Jira: `SCRUM-72`; Apple account prerequisite: `SCRUM-75`.
+Last updated: 2026-10-20. Jira: `SCRUM-72`; Apple account prerequisite: `SCRUM-75`.
 
 ## Current State
 
@@ -75,6 +75,29 @@ signing, installation or runtime behaviour. `dist/ios` is ignored and must not b
 treated as an App Store artifact. The export script clears Metro's cache so a
 changed client environment cannot reuse previously inlined values. EAS commands also run from `apps/mobile`, with
 the root workspace lockfile retained in the build archive.
+
+## Push And Deployment Scope
+
+A Git push saves committed source remotely; it is not an EAS build, EAS Update,
+TestFlight submission or App Store release. Expo Go loads the local Metro bundle
+and does not require a Git push to show local changes. No EAS Update workflow or
+automatic signed-build workflow is configured in this repository.
+
+For the owner's 2026-10-20 push without a web deployment:
+
+- Keep `codex/ios-launch-readiness` separate from `main` and PR #5 in draft.
+- Include `[skip netlify]` in the PR title to suppress Deploy Previews and in the
+  newest pushed commit message to suppress branch/production deploys for that
+  push. Use Netlify's marker, not `[skip ci]`, so GitHub CI still runs normally.
+- Keep web/mobile/database checks enabled. Testing web compatibility is not
+  publishing the website; shared/backend changes can affect both clients.
+- Do not start an EAS build/update or submit to Apple without selecting that
+  separate release action and verifying its prerequisites.
+
+The markers do not permanently disable the site or alter its configuration.
+Future web previews need the PR title marker removed; future branch deploys need
+a new commit without the marker. Manual build hooks are a separate action.
+See [Netlify's deploy controls](https://docs.netlify.com/deploy/manage-deploys/manage-deploys-overview/).
 
 ## First Signed Build
 

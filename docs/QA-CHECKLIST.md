@@ -305,9 +305,9 @@ Reuse the dated functional results above without treating them as a full NFR pas
   - Local opt-in JavaScript reporting and a non-production Settings diagnostic
     are implemented; follow [the monitoring runbook](./backlog/NATIVE-MONITORING.md).
     A controlled Expo Go error reached `oratio-mobile` on 2026-10-20 and the owner
-    confirmed the triggered alert email. Additional provider-side IP/geographic
-    scrubbing is saved but needs a fresh event to verify its effect. An empty-stack
-    follow-up is tested locally. Native crash capture remains disabled; signed-build
+    confirmed the triggered alert email. A follow-up event from committed `c856c52`
+    shows filtered geography and no empty-stack processing warning. Full provider
+    payload review remains open. Native crash capture remains disabled; signed-build
     privacy/timing verification is still required, so this release gate stays open.
 - [ ] Verify PostHog receives approved app-open/auth/prayer/map events without prayer text or personal data
 

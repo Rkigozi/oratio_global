@@ -10,8 +10,9 @@ recommended `@sentry/react-native` 7.11.0. It does not yet enable native crash
 collection, PostHog, performance tracing or session replay. Reporting defaults
 to off. The initial 2026-10-08 implementation had no provider configuration;
 the approved project setup on 2026-10-13 is recorded below. The first controlled
-Expo Go error and email alert were verified on 2026-10-20. No source maps have
-been uploaded; provider-side privacy re-verification remains open.
+Expo Go error and email alert were verified on 2026-10-20. A second event confirms
+filtered geography and no empty-stack processing warning in Sentry's event view.
+No source maps have been uploaded; full payload/privacy review remains open.
 
 - Initialization precedes application imports. Incomplete/invalid configuration
   leaves reporting off; SDK failures do not prevent normal startup. The shared
@@ -155,6 +156,28 @@ never `EXPO_PUBLIC_*`, app config, a commit or a chat message.
   the project to load the restored configuration. No normal `.env.local` values
   were changed.
 
+### Follow-Up Event (2026-10-20)
+
+- The owner supplied the queued reference in a phone screenshot. Exact lookup
+  found event `0235c346d2404505990b45ef21cb081f` in
+  [ORATIO-MOBILE-1](https://oratio-3j.sentry.io/issues/155016588/events/0235c346d2404505990b45ef21cb081f/),
+  timestamp **22:20:18.504 UTC**, environment/build `development`, version `1.0.0`
+  and full SHA `c856c525cea245de8f1ca76ae8bd37eeae9e57cc`.
+- This event's Geography displays `[Filtered] ([Filtered])`; the event detail
+  view has no Processing Error warning or Event Processing Errors section. The
+  missing stack trace is intentional when all frames are outside the allowlist.
+  These observations verify the specific geography/empty-stack follow-ups, not
+  every stored field or a complete provider-payload privacy audit.
+- The earlier event still contains its original provider-derived geography:
+  changing project scrubbing is not retroactive. No event was deleted or marked
+  resolved, and no second alert email is claimed for an existing high-priority
+  issue whose priority did not change.
+- The follow-up source is committed, with 318 mobile tests passing. The owner
+  requested a review-branch push without a web deployment. Netlify's preview
+  skip marker is set on PR #5; the evidence commit also uses `[skip netlify]`
+  to suppress branch deploys. No EAS build/update or Apple submission is part of
+  this push; see [the build runbook](./IOS-BUILD-PIPELINE.md#push-and-deployment-scope).
+
 ## Evidence And Remaining Gates
 
 Local checks cover configuration/disabled states, production diagnostic gating,
@@ -183,7 +206,8 @@ did not change the four underlying advisories (12 moderate/45 high affected
 entries across all dependencies, zero critical).
 
 SCRUM-43 remains **In Progress**. Controlled Expo Go delivery and email receipt
-are confirmed. Post-change privacy/payload checks, measured release-build timings,
+are confirmed, as are filtered geography and no empty-stack processing warning
+on the follow-up event. Full privacy/payload review, measured release-build timings,
 privacy release choices, native crash privacy, symbolication, PostHog and
 signed-build verification remain open. The live test does not sign off NFR-05
 or authorize production collection, source-map uploads or a release deployment.

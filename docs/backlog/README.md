@@ -143,15 +143,15 @@ The [iOS NFR checklist](../NFR-CHECKLIST.md) is the acceptance source for
 measurable quality gates. Jira sync on 2026-09-30 is scoped to the following
 items; no test results or completed statuses were manufactured.
 
-| Key      | Scope                                                          | Jira status / release track                                                                       |
-| -------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| SCRUM-40 | Combined functional and NFR release sign-off                   | To Do; Highest; V1 Launch                                                                         |
-| SCRUM-43 | Native monitoring and privacy-safe telemetry                   | In Progress; Highest; V1 Launch; Expo Go error/email verified, privacy re-test/native checks open |
-| SCRUM-47 | Current RLS/access review and dependency exposure assessment   | In Progress; Highest; V1 Launch; 042 deployed/verified 2026-10-19; wider review open              |
-| SCRUM-53 | Verify existing public-web smoke and failed-check notification | To Do; Highest; moved to V1 Launch                                                                |
-| SCRUM-54 | Verified backup coverage and isolated recovery drill           | To Do; Highest; moved to V1 Launch                                                                |
-| SCRUM-95 | Native performance and network/session resilience              | New; To Do; Highest; V1 Launch; native epic SCRUM-62                                              |
-| SCRUM-96 | Native accessibility acceptance                                | New; To Do; Highest; V1 Launch; native epic SCRUM-62                                              |
+| Key      | Scope                                                          | Jira status / release track                                                                                           |
+| -------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| SCRUM-40 | Combined functional and NFR release sign-off                   | To Do; Highest; V1 Launch                                                                                             |
+| SCRUM-43 | Native monitoring and privacy-safe telemetry                   | In Progress; Highest; V1 Launch; Expo Go error/email and filtered geography verified; full privacy/native checks open |
+| SCRUM-47 | Current RLS/access review and dependency exposure assessment   | In Progress; Highest; V1 Launch; 042 deployed/verified 2026-10-19; wider review open                                  |
+| SCRUM-53 | Verify existing public-web smoke and failed-check notification | To Do; Highest; moved to V1 Launch                                                                                    |
+| SCRUM-54 | Verified backup coverage and isolated recovery drill           | To Do; Highest; moved to V1 Launch                                                                                    |
+| SCRUM-95 | Native performance and network/session resilience              | New; To Do; Highest; V1 Launch; native epic SCRUM-62                                                                  |
+| SCRUM-96 | Native accessibility acceptance                                | New; To Do; Highest; V1 Launch; native epic SCRUM-62                                                                  |
 
 All seven carry `nfr`. Existing functional QA evidence is linked in the checklist,
 but none of these complete quality gates is signed off. SCRUM-47 remains under
@@ -174,8 +174,9 @@ and native crash verification remain open; see the monitoring runbook.
 Controlled monitoring test (2026-10-20): the Expo Go diagnostic reached the mobile
 project and triggered its high-priority alert; the owner confirmed email receipt.
 Approved provider-side IP/geographic scrubbing is saved after the first event
-revealed approximate geography. A local empty-stack fix passes focused tests.
-Post-change payload/privacy verification and signed-build checks remain open;
+revealed approximate geography. A second event from committed `c856c52` shows
+filtered geography and no empty-stack warning; 318 mobile tests pass. Full
+provider-payload/privacy review and signed-build checks remain open;
 SCRUM-43 is not Done. Evidence is in [NATIVE-MONITORING.md](./NATIVE-MONITORING.md).
 
 Security review checkpoint (2026-10-07): [SECURITY-REVIEW.md](./SECURITY-REVIEW.md)
