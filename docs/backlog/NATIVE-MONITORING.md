@@ -1,7 +1,7 @@
 # Native Monitoring
 
 Owner story: [SCRUM-43](https://oratio.atlassian.net/browse/SCRUM-43).
-Gate: NFR-05, before external TestFlight. Last updated: 2026-10-13.
+Gate: NFR-05, before external TestFlight. Last updated: 2026-10-20.
 
 ## Local Implementation
 
@@ -9,8 +9,9 @@ The first slice reports **JavaScript errors in the iOS app**, using Expo 57's
 recommended `@sentry/react-native` 7.11.0. It does not yet enable native crash
 collection, PostHog, performance tracing or session replay. Reporting defaults
 to off. The initial 2026-10-08 implementation had no provider configuration;
-the approved project setup on 2026-10-13 is recorded below. No events or source
-maps have been sent to a live provider.
+the approved project setup on 2026-10-13 is recorded below. The first controlled
+Expo Go error and email alert were verified on 2026-10-20. No source maps have
+been uploaded; provider-side privacy re-verification remains open.
 
 - Initialization precedes application imports. Incomplete/invalid configuration
   leaves reporting off; SDK failures do not prevent normal startup. The shared
@@ -25,7 +26,9 @@ maps have been sent to a live provider.
   line/column coordinates, event IDs and validated release metadata remain.
   Raw messages, custom error names, users, URLs, source snippets, local paths,
   contexts, arbitrary tags/extras, attachments and breadcrumbs are removed.
-  IP inference is disabled in SDK options and outgoing SDK metadata.
+  Outgoing SDK metadata requests no IP inference. The first live test still
+  showed provider-derived geography; the additional server-side controls and
+  remaining re-verification are recorded below.
 - Default integrations are off except JavaScript error/rejection handling and
   the privacy boundary. No console/network capture, device identifiers, sessions,
   screenshots, view hierarchy, logs, analytics or replay are enabled. No user ID
@@ -86,9 +89,13 @@ regression run or remote-delivery evidence.
 1. Confirm the approved mobile Sentry project, data region/retention, access and
    named alert recipient. Review privacy disclosures and consent requirements
    before enabling collection; this change does not choose that policy.
-2. For an approved synthetic-only Expo Go test, set local ignored environment
-   values shown below. Use a clean committed revision, restart Metro with its
-   cache cleared, and open the app in Expo Go. Do not reuse a web DSN by default.
+2. For an approved synthetic-only Expo Go test, set the temporary overrides in
+   ignored `apps/mobile/.env.development.local`, retaining the approved DSN in
+   `.env.local`. Expo 57's development environment module merges dotenv values
+   over shell values, so a shell-only enable flag can still leave reporting off.
+   Preserve any existing overrides. Use a clean committed revision, restart Metro
+   with its cache cleared, and fully reload the app in Expo Go. Do not reuse a
+   web DSN by default.
 3. Press **Send test error** once, record its reference and UTC trigger time,
    and confirm the event in Sentry within five minutes. Inspect the raw payload,
    environment, app version, build and SHA; check that no personal data appears.
@@ -96,7 +103,8 @@ regression run or remote-delivery evidence.
    within ten minutes. A queued reference is not evidence of either delivery or
    alerting. Record timestamps and evidence in SCRUM-43 without credentials.
 5. Repeat with reporting disabled, an unavailable provider and offline networking.
-   Normal app journeys must remain usable. Remove local test values afterwards.
+   Normal app journeys must remain usable. Remove the temporary overrides,
+   restart the normal server and fully reload the app afterwards.
 6. Before external beta, implement/test native crash redaction, source-map
    symbolication and approved PostHog events. Repeat the error/alert/privacy
    exercise on a signed Release build with the real version/build/SHA. Expo Go
@@ -114,6 +122,38 @@ automatically. Do not turn reporting on merely by choosing the production EAS
 profile. No Sentry config plugin, Metro upload hook or automatic source upload
 has been added. Future upload credentials belong only in build-time secrets,
 never `EXPO_PUBLIC_*`, app config, a commit or a chat message.
+
+### First Expo Go Delivery And Alert (2026-10-20)
+
+- The fixed Settings diagnostic reached `oratio-mobile` as
+  [ORATIO-MOBILE-1](https://oratio-3j.sentry.io/issues/155016588/), event
+  `606584df28604f64811f431bfef016d2`. The issue shows one handled synthetic
+  error, no identified users, environment/build `development`, version `1.0.0`
+  and full SHA `e374d1f469d3b088d661a8fd3950f8dad04b7d33`.
+- The existing [high-priority rule](https://oratio-3j.sentry.io/monitors/alerts/1368358/)
+  recorded one trigger for this issue at **22:07 UTC**. The owner confirmed email
+  receipt in this chat by **22:11 UTC**. The exact device tap and inbox receipt
+  timestamps were not captured, so these observations are not a complete timing
+  measurement or signed-build acceptance.
+- The event showed approximate provider-derived geography despite the client
+  allowlist and no-inference metadata. With owner approval, the mobile project's
+  **Prevent Storing of IP Addresses** setting was enabled and additional sensitive
+  fields `city`, `subdivision`, `region`, `country_code` and `ip_address` were
+  added. Both settings persisted after reload. Existing events are unaffected.
+  [Sentry's guidance](https://www.sentry.help/en/articles/13964201-can-i-disable-ip-geolocation-for-gdpr-compliance)
+  says changes can take 5-15 minutes to apply. A fresh event must verify actual
+  scrubbing before the privacy check passes; no location values are copied here.
+- Sentry also discarded an empty `exception.values.0.stacktrace.frames` value.
+  A local follow-up omits stack traces when no allowlisted frames remain, without
+  widening the frame allowlist. Its 56 focused monitoring/settings tests and
+  mobile type-check pass. The full 318-test mobile suite also passes before the
+  follow-up commit. A fresh provider-side check must use that committed revision;
+  the first event does not verify the patch.
+- The temporary development override was removed and Metro restarted normally
+  at `exp://192.168.1.213:8081`. Inspection confirms the served bundle's enable
+  flag is `false`. No phone was connected for Metro's reload broadcast; reopen
+  the project to load the restored configuration. No normal `.env.local` values
+  were changed.
 
 ## Evidence And Remaining Gates
 
@@ -142,8 +182,8 @@ evidence. The current dependency gate remains open: adding monitoring
 did not change the four underlying advisories (12 moderate/45 high affected
 entries across all dependencies, zero critical).
 
-SCRUM-43 remains **In Progress**. Project/team/email routing are prepared;
-real delivery/alert timings, privacy release choices, native crash privacy,
-symbolication, PostHog and signed-build verification remain open. Nothing in
-this checkpoint is a push, deployment, source-map upload, live database change
-or NFR sign-off.
+SCRUM-43 remains **In Progress**. Controlled Expo Go delivery and email receipt
+are confirmed. Post-change privacy/payload checks, measured release-build timings,
+privacy release choices, native crash privacy, symbolication, PostHog and
+signed-build verification remain open. The live test does not sign off NFR-05
+or authorize production collection, source-map uploads or a release deployment.

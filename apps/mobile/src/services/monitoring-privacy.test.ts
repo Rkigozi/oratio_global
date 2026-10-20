@@ -117,6 +117,28 @@ describe('monitoring payload allowlist', () => {
       expect(sanitizeMonitoringEvent(event as Event, config)).toBeNull();
     }
   );
+  it.each([
+    undefined,
+    {},
+    { frames: [] },
+    { frames: [{ filename: `/Users/private/${secret}.ts`, lineno: 1 }] },
+  ])('omits stack traces with no safe frames: %j', (stacktrace) => {
+    const clean = sanitizeMonitoringEvent(
+      { exception: { values: [{ type: 'Error', value: secret, stacktrace }] } },
+      config
+    )!;
+    expect(clean.exception?.values?.[0]).toEqual({
+      type: 'Error',
+      value: 'Application error (details withheld)',
+      mechanism: { type: 'generic', handled: true },
+    });
+    expect(sanitizeMonitoringEvent(clean, config)).toEqual(clean);
+    const envelope: [unknown, unknown[]] = [{}, [[{ type: 'event' }, clean]]];
+    sanitizeMonitoringEnvelope(envelope, config);
+    expect(envelope[1]).toEqual([[{ type: 'event' }, clean]]);
+    expect(JSON.stringify(envelope)).not.toContain('stacktrace');
+    expect(JSON.stringify(envelope)).not.toContain(secret);
+  });
   it('keeps a fixed smoke-test label only outside production', () => {
     const event: Event = {
       tags: { diagnostic: 'monitoring-smoke-test' },

@@ -75,17 +75,18 @@ export function sanitizeMonitoringEvent(event: Event, config: MonitoringConfig):
       ...(smoke ? { diagnostic: 'monitoring-smoke-test' } : {}),
     },
     exception: {
-      values: event.exception.values.slice(-3).map((exception) => ({
-        type: errorTypes.has(exception.type ?? '') ? exception.type : 'Error',
-        value: smoke ? 'Oratio monitoring smoke test' : 'Application error (details withheld)',
-        mechanism: { type: 'generic', handled: exception.mechanism?.handled !== false },
-        stacktrace: {
-          frames: (exception.stacktrace?.frames ?? []).slice(-50).flatMap((frame) => {
-            const clean = safeFrame(frame);
-            return clean ? [clean] : [];
-          }),
-        },
-      })),
+      values: event.exception.values.slice(-3).map((exception) => {
+        const frames = (exception.stacktrace?.frames ?? []).slice(-50).flatMap((frame) => {
+          const clean = safeFrame(frame);
+          return clean ? [clean] : [];
+        });
+        return {
+          type: errorTypes.has(exception.type ?? '') ? exception.type : 'Error',
+          value: smoke ? 'Oratio monitoring smoke test' : 'Application error (details withheld)',
+          mechanism: { type: 'generic', handled: exception.mechanism?.handled !== false },
+          ...(frames.length ? { stacktrace: { frames } } : {}),
+        };
+      }),
     },
   };
 }

@@ -304,9 +304,11 @@ Reuse the dated functional results above without treating them as a full NFR pas
 - [ ] Verify Sentry receives a deliberate release-tagged test error for this build
   - Local opt-in JavaScript reporting and a non-production Settings diagnostic
     are implemented; follow [the monitoring runbook](./backlog/NATIVE-MONITORING.md).
-    No remote delivery or alert evidence yet. Native crash capture remains disabled.
-    The `oratio-mobile` Sentry project/team/email rule was prepared on 2026-10-13;
-    reporting is still disabled pending controlled verification.
+    A controlled Expo Go error reached `oratio-mobile` on 2026-10-20 and the owner
+    confirmed the triggered alert email. Additional provider-side IP/geographic
+    scrubbing is saved but needs a fresh event to verify its effect. An empty-stack
+    follow-up is tested locally. Native crash capture remains disabled; signed-build
+    privacy/timing verification is still required, so this release gate stays open.
 - [ ] Verify PostHog receives approved app-open/auth/prayer/map events without prayer text or personal data
 
 ## Visual Parity
