@@ -292,7 +292,7 @@ export function Submit() {
                         Public
                       </span>
                       <span className="block text-text-dim text-[11px] leading-relaxed">
-                        Appears in the public feed and map for signed-in people to pray.
+                        Public for 14 days, then kept in My Prayers.
                       </span>
                     </button>
                     <button

@@ -23,7 +23,7 @@ const RefreshIcon = asNativeIcon(RefreshCw);
 const UsersIcon = asNativeIcon(UsersRound);
 
 const AUDIENCE_OPTIONS: Array<{ value: Audience; label: string; hint: string }> = [
-  { value: 'public', label: 'Public', hint: 'Anyone can see and pray' },
+  { value: 'public', label: 'Public', hint: 'Public for 14 days, then kept in My Prayers' },
   { value: 'circle', label: 'Prayer Circle', hint: 'Only your Circle sees it' },
   { value: 'private', label: 'Private', hint: 'Just for you' },
 ];

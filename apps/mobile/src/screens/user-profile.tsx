@@ -13,7 +13,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, MoreHorizontal } from 'lucide-react-native';
 import { getProfileByUsername, getUserPrayers } from '@oratio/shared/queries';
-import type { PrayerRequest } from '@oratio/shared/prayer-data';
+import { isPrayerArchived, type PrayerRequest } from '@oratio/shared/prayer-data';
 import { Avatar } from '../components/avatar';
 import { asNativeIcon } from '../components/icon';
 import { PrayerCard } from '../components/prayer-card';
@@ -22,6 +22,7 @@ import { ProfileActionsSheet } from '../components/profile-actions-sheet';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
 import { useBlockUser } from '../hooks/use-block-user';
+import { usePrayerClock } from '../hooks/use-prayer-clock';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -41,6 +42,8 @@ export function UserProfileScreen({
   const username = route.params.username.trim().replace(/^@/, '').toLowerCase();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const now = usePrayerClock(prayers);
+  const visiblePrayers = prayers.filter((prayer) => !isPrayerArchived(prayer, now));
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -135,8 +138,11 @@ export function UserProfileScreen({
         </View>
       ) : (
         <FlatList
-          contentContainerStyle={[styles.content, prayers.length === 0 && styles.emptyContent]}
-          data={prayers}
+          contentContainerStyle={[
+            styles.content,
+            visiblePrayers.length === 0 && styles.emptyContent,
+          ]}
+          data={visiblePrayers}
           keyExtractor={(prayer) => prayer.id}
           ListHeaderComponent={
             <View>
@@ -159,7 +165,7 @@ export function UserProfileScreen({
               </View>
 
               <View style={styles.presenceRow}>
-                <Text style={styles.presenceCount}>{prayers.length}</Text>
+                <Text style={styles.presenceCount}>{visiblePrayers.length}</Text>
                 <View style={styles.presenceCopy}>
                   <Text style={styles.presenceTitle}>Shared prayers</Text>
                   <Text style={styles.presenceHint}>Prayers visible to you from this person</Text>

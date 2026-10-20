@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { testBlockingConcurrency } from './test-blocking-concurrency.mjs';
 import { testRateLimitConcurrency } from './test-rate-limit-concurrency.mjs';
+import { testPrayerRenewalConcurrency } from './test-prayer-renewal-concurrency.mjs';
 
 // Uses a disposable PostgreSQL cluster and never reads a Supabase connection string.
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -43,9 +44,17 @@ try {
   for (const file of readdirSync(join(root, 'supabase/migrations'))
     .filter((name) => name.endsWith('.sql'))
     .sort()) {
+    if (file === '043_public_prayer_expiry.sql')
+      sql(readFileSync(join(root, 'supabase/tests/prayer-expiry-before-rollout.sql'), 'utf8'));
     sql(readFileSync(join(root, 'supabase/migrations', file), 'utf8'));
+    if (file === '043_public_prayer_expiry.sql') {
+      sql(readFileSync(join(root, 'supabase/tests/prayer-expiry-after-rollout.sql'), 'utf8'));
+      console.log(
+        'Public expiry rollout: legacy prayers receive a full window; other spaces stay unchanged.'
+      );
+    }
   }
-  for (const suite of ['security', 'moderation', 'blocking']) {
+  for (const suite of ['security', 'moderation', 'blocking', 'prayer-expiry']) {
     const assertions = readFileSync(join(root, `supabase/tests/${suite}.sql`), 'utf8');
     sql(assertions);
     const count =
@@ -54,6 +63,7 @@ try {
   }
   await testBlockingConcurrency({ sql, psqlArgs });
   await testRateLimitConcurrency({ sql, psqlArgs });
+  await testPrayerRenewalConcurrency({ sql, psqlArgs });
 } catch (error) {
   console.error(error.stderr?.toString() || error.message);
   process.exitCode = 1;

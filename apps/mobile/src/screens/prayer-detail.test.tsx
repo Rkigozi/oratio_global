@@ -16,6 +16,7 @@ jest.mock('lucide-react-native', () => ({
   MapPin: () => null,
   MoreHorizontal: () => null,
   Pencil: () => null,
+  RotateCcw: () => null,
   Share2: () => null,
   Trash2: () => null,
   MessageCircle: () => null,
@@ -43,6 +44,7 @@ jest.mock('@oratio/shared/queries', () => ({
   togglePray: jest.fn(),
   toggleSavePrayer: jest.fn(),
   updatePrayerRequest: jest.fn(),
+  renewPublicPrayer: jest.fn(),
   deletePrayerRequest: jest.fn(),
   getComments: jest.fn(),
   getCommentCount: jest.fn(),
@@ -73,6 +75,7 @@ import {
   togglePray,
   toggleSavePrayer,
   updatePrayerRequest,
+  renewPublicPrayer,
   deletePrayerRequest,
   getComments,
   getCommentCount,
@@ -132,6 +135,55 @@ describe('PrayerDetailScreen', () => {
     jest.mocked(subscribeToPrayerCommentChanges).mockReturnValue(jest.fn());
     jest.mocked(createReport).mockResolvedValue('created' as never);
     jest.mocked(blockUser).mockResolvedValue(undefined);
+  });
+
+  it('keeps an owner archive readable and renews it without replacing its history', async () => {
+    jest.mocked(getPrayerById).mockResolvedValue({
+      ...prayer,
+      authorId: 'user-1',
+      expiresAt: '2020-01-01T00:00:00Z',
+    } as never);
+    jest
+      .mocked(renewPublicPrayer)
+      .mockResolvedValue(new Date(Date.now() + 14 * 86400000).toISOString());
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    expect(await screen.findByText('Archived prayer')).toBeTruthy();
+    expect(screen.getByText(prayer.text)).toBeTruthy();
+    expect(screen.queryByLabelText('Post comment')).toBeNull();
+    fireEvent.press(screen.getByText('Renew for 14 days'));
+    expect(await screen.findByText('Your prayer is public again for 14 days.')).toBeTruthy();
+    expect(renewPublicPrayer).toHaveBeenCalledWith(prayer.id);
+    expect(screen.queryByText('Archived prayer')).toBeNull();
+    expect(screen.getByText('4 people prayed')).toBeTruthy();
+    expect(screen.getByLabelText('Post comment')).toBeTruthy();
+  });
+
+  it('keeps the archive and shows a retryable error when renewal fails', async () => {
+    jest.mocked(getPrayerById).mockResolvedValue({
+      ...prayer,
+      authorId: 'user-1',
+      expiresAt: '2020-01-01T00:00:00Z',
+    } as never);
+    jest.mocked(renewPublicPrayer).mockResolvedValue(null);
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByText('Renew for 14 days'));
+    expect(
+      await screen.findByText("We couldn't renew this prayer. Refresh and try again.")
+    ).toBeTruthy();
+    expect(screen.getByText('Archived prayer')).toBeTruthy();
+    expect(screen.queryByLabelText('Post comment')).toBeNull();
+  });
+
+  it('does not reveal an expired prayer loaded from a stale shared-link cache', async () => {
+    jest.mocked(getPrayerById).mockResolvedValue({
+      ...prayer,
+      authorId: 'other-user',
+      expiresAt: '2020-01-01T00:00:00Z',
+    } as never);
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    expect(await screen.findByText(/Prayer unavailable/)).toBeTruthy();
+    expect(screen.queryByText(prayer.text)).toBeNull();
+    expect(screen.queryByText('Renew for 14 days')).toBeNull();
   });
 
   it('waits for the prayer actions sheet to dismiss before confirming a block', async () => {
@@ -305,7 +357,11 @@ describe('PrayerDetailScreen', () => {
     render(<PrayerDetailScreen navigation={navigation} route={route} />);
 
     await waitFor(() =>
-      expect(screen.getByText('Prayer unavailable. It may have been removed.')).toBeTruthy()
+      expect(
+        screen.getByText(
+          'Prayer unavailable. It may have expired, been removed, or no longer be shared with you.'
+        )
+      ).toBeTruthy()
     );
   });
 

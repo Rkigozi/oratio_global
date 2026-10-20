@@ -41,9 +41,11 @@ type ReplyTarget = {
 export function PrayerComments({
   prayer,
   onBlocked,
+  readOnly = false,
 }: {
   prayer: PrayerRequest;
   onBlocked?: () => void;
+  readOnly?: boolean;
 }) {
   const { profile, user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -64,13 +66,13 @@ export function PrayerComments({
   const loadedLimitRef = useRef(PAGE_SIZE);
   const submittingRef = useRef(false);
   const isPrivate = prayer.audience === 'private';
-  const commentsAvailable = prayer.audience !== 'public' || commentsEnabled;
+  const commentsAvailable = readOnly || prayer.audience !== 'public' || commentsEnabled;
   const canModerate =
     !!user &&
     (prayer.authorId
       ? prayer.authorId === user.id
       : !!prayer.username && prayer.username === profile?.username);
-  const canToggleComments = prayer.audience === 'public' && canModerate;
+  const canToggleComments = !readOnly && prayer.audience === 'public' && canModerate;
   const { blocking, confirmBlock } = useBlockUser(() => {
     setComments([]);
     setReplyTo(null);
@@ -345,6 +347,7 @@ export function PrayerComments({
                   editText={editText}
                   editingId={editingId}
                   isPrivate={isPrivate}
+                  readOnly={readOnly}
                   onCancelEdit={cancelEdit}
                   onChangeEdit={(value) => {
                     setEditText(value);
@@ -380,7 +383,7 @@ export function PrayerComments({
             </Pressable>
           ) : null}
 
-          {replyTo ? (
+          {!readOnly && replyTo ? (
             <View style={styles.replyingRow}>
               <Text numberOfLines={1} style={styles.replyingText}>
                 Replying to @{replyTo.username}
@@ -397,52 +400,56 @@ export function PrayerComments({
             </View>
           ) : null}
 
-          <View style={styles.composer}>
-            <View style={styles.inputShell}>
-              <TextInput
-                maxLength={500}
-                multiline
-                onChangeText={(value) => {
-                  setDraft(value);
-                  setError('');
-                }}
-                placeholder={
-                  isPrivate
-                    ? 'Add a note...'
-                    : replyTo
-                      ? 'Write a reply...'
-                      : 'Write an encouragement...'
-                }
-                placeholderTextColor={colors.textDim}
-                style={styles.input}
-                textAlignVertical="top"
-                value={draft}
-              />
-              <Text style={styles.counter}>{draft.length}/500</Text>
-            </View>
-            <Pressable
-              accessibilityLabel={isPrivate ? 'Save note' : replyTo ? 'Post reply' : 'Post comment'}
-              accessibilityRole="button"
-              disabled={!draft.trim() || submitting}
-              onPress={() => void submit()}
-              style={({ pressed }) => [
-                styles.sendButton,
-                draft.trim() && styles.sendButtonActive,
-                pressed && draft.trim() && styles.sendButtonPressed,
-                (!draft.trim() || submitting) && styles.disabled,
-              ]}
-            >
-              {submitting ? (
-                <ActivityIndicator color={colors.white} size="small" />
-              ) : (
-                <SendIcon
-                  color={draft.trim() ? colors.white : colors.textDim}
-                  size={17}
-                  strokeWidth={1.8}
+          {!readOnly && (
+            <View style={styles.composer}>
+              <View style={styles.inputShell}>
+                <TextInput
+                  maxLength={500}
+                  multiline
+                  onChangeText={(value) => {
+                    setDraft(value);
+                    setError('');
+                  }}
+                  placeholder={
+                    isPrivate
+                      ? 'Add a note...'
+                      : replyTo
+                        ? 'Write a reply...'
+                        : 'Write an encouragement...'
+                  }
+                  placeholderTextColor={colors.textDim}
+                  style={styles.input}
+                  textAlignVertical="top"
+                  value={draft}
                 />
-              )}
-            </Pressable>
-          </View>
+                <Text style={styles.counter}>{draft.length}/500</Text>
+              </View>
+              <Pressable
+                accessibilityLabel={
+                  isPrivate ? 'Save note' : replyTo ? 'Post reply' : 'Post comment'
+                }
+                accessibilityRole="button"
+                disabled={!draft.trim() || submitting}
+                onPress={() => void submit()}
+                style={({ pressed }) => [
+                  styles.sendButton,
+                  draft.trim() && styles.sendButtonActive,
+                  pressed && draft.trim() && styles.sendButtonPressed,
+                  (!draft.trim() || submitting) && styles.disabled,
+                ]}
+              >
+                {submitting ? (
+                  <ActivityIndicator color={colors.white} size="small" />
+                ) : (
+                  <SendIcon
+                    color={draft.trim() ? colors.white : colors.textDim}
+                    size={17}
+                    strokeWidth={1.8}
+                  />
+                )}
+              </Pressable>
+            </View>
+          )}
         </>
       )}
       <ContentReportSheet
@@ -461,6 +468,7 @@ function CommentThread({
   currentUserId,
   canModerate,
   isPrivate,
+  readOnly,
   editingId,
   editText,
   savingEdit,
@@ -479,6 +487,7 @@ function CommentThread({
   currentUserId?: string;
   canModerate: boolean;
   isPrivate: boolean;
+  readOnly: boolean;
   editingId: string | null;
   editText: string;
   savingEdit: boolean;
@@ -500,8 +509,9 @@ function CommentThread({
         comment={comment}
         currentUserId={currentUserId}
         editText={editText}
-        editing={editingId === comment.id}
+        editing={!readOnly && editingId === comment.id}
         isPrivate={isPrivate}
+        readOnly={readOnly}
         onCancelEdit={onCancelEdit}
         onChangeEdit={onChangeEdit}
         onDelete={onDelete}
@@ -525,8 +535,9 @@ function CommentThread({
               compact
               currentUserId={currentUserId}
               editText={editText}
-              editing={editingId === reply.id}
+              editing={!readOnly && editingId === reply.id}
               isPrivate={false}
+              readOnly={readOnly}
               onCancelEdit={onCancelEdit}
               onChangeEdit={onChangeEdit}
               onDelete={onDelete}
@@ -551,6 +562,7 @@ function CommentEntry({
   currentUserId,
   canModerate,
   isPrivate,
+  readOnly,
   compact = false,
   editing,
   editText,
@@ -569,6 +581,7 @@ function CommentEntry({
   currentUserId?: string;
   canModerate: boolean;
   isPrivate: boolean;
+  readOnly: boolean;
   compact?: boolean;
   editing: boolean;
   editText: string;
@@ -606,7 +619,7 @@ function CommentEntry({
           onSaveEdit={onSaveEdit}
           savingEdit={savingEdit}
         />
-        {!editing ? (
+        {!editing && !readOnly ? (
           <View style={styles.entryActions}>
             <TextAction label="Edit" onPress={() => onStartEdit(comment)} />
             <TextAction
@@ -641,7 +654,7 @@ function CommentEntry({
           onSaveEdit={onSaveEdit}
           savingEdit={savingEdit}
         />
-        {!editing ? (
+        {!editing && !readOnly ? (
           <View style={styles.entryActions}>
             <TextAction label="Reply" onPress={onReply} />
             {own ? <TextAction label="Edit" onPress={() => onStartEdit(comment)} /> : null}

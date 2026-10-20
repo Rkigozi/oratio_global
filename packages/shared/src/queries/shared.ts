@@ -24,7 +24,8 @@ export type RpcResponse<T> = {
 export const PRAYER_SELECT_COLUMNS = `
   id, user_id, body, category,
   location_city, location_country, location_lat, location_lng,
-  is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled
+  is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled,
+  public_expires_at
 `;
 
 export const PRAYER_SELECT = `${PRAYER_SELECT_COLUMNS},
@@ -59,6 +60,7 @@ export function mapPrayerRequest(
     category: (row.category as string) || undefined,
     createdAt: row.created_at as string,
     editedAt: (row.edited_at as string | null) || undefined,
+    expiresAt: (row.public_expires_at as string | null) || undefined,
     isAnonymous,
     commentCount: (row.comment_count as number) || 0,
     commentsEnabled: row.comments_enabled !== false,
@@ -92,6 +94,7 @@ export function mapHotspotTotal(row: Record<string, unknown>): PrayerRequest {
     lat: Number(row.location_lat || 0),
     lng: Number(row.location_lng || 0),
     createdAt: row.latest_created_at as string,
+    expiresAt: (row.next_expires_at as string | null) || undefined,
   };
 }
 

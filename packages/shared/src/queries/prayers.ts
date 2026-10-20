@@ -52,6 +52,7 @@ export async function getMapHotspots({ throwOnError = false }: QueryBehavior = {
     .from('prayer_requests')
     .select(PRAYER_SELECT)
     .eq('audience', 'public')
+    .gt('public_expires_at', new Date().toISOString())
     .not('location_lat', 'is', null)
     .not('location_lng', 'is', null)
     .order('created_at', { ascending: false })
@@ -86,6 +87,7 @@ export async function getPublicPrayersAtLocation(
     .from('prayer_requests')
     .select(PRAYER_SELECT)
     .eq('audience', 'public')
+    .gt('public_expires_at', new Date().toISOString())
     .eq('location_city', location.city)
     .eq('location_country', location.country)
     .order('created_at', { ascending: false })
@@ -141,7 +143,7 @@ export async function getFeedPrayers(
   if (audienceMode === 'circle') {
     query = query.eq('audience', 'circle');
   } else {
-    query = query.eq('audience', 'public');
+    query = query.eq('audience', 'public').gt('public_expires_at', new Date().toISOString());
   }
 
   if (cursor) {
@@ -283,6 +285,15 @@ export async function deletePrayerRequest(prayerId: string): Promise<boolean> {
   return Boolean(data);
 }
 
+export async function renewPublicPrayer(prayerId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('renew_public_prayer', { p_prayer_id: prayerId });
+  if (error || typeof data !== 'string' || !Number.isFinite(Date.parse(data))) {
+    logError('renew prayer', error || new Error('Invalid renewal response'));
+    return null;
+  }
+  return data;
+}
+
 export async function toggleCommentsEnabled(prayerId: string, enabled: boolean): Promise<boolean> {
   const { error } = await supabase
     .from('prayer_requests')
@@ -305,6 +316,7 @@ export async function getUserPrayers(username: string): Promise<PrayerRequest[]>
     .select(PRAYER_SELECT_COLUMNS)
     .eq('user_id', profile.id)
     .eq('is_anonymous', false)
+    .or(`audience.neq.public,public_expires_at.gt.${new Date().toISOString()}`)
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -317,7 +329,8 @@ export async function getUserPrayers(username: string): Promise<PrayerRequest[]>
 }
 
 export async function getMyPrayers(
-  audience?: NonNullable<PrayerRequest['audience']>
+  audience?: NonNullable<PrayerRequest['audience']>,
+  { offset = 0, throwOnError = false }: QueryBehavior & { offset?: number } = {}
 ): Promise<PrayerRequest[]> {
   const {
     data: { user },
@@ -328,10 +341,15 @@ export async function getMyPrayers(
 
   if (audience) query = query.eq('audience', audience);
 
-  const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
+  const safeOffset = Number.isFinite(offset) ? Math.max(0, Math.trunc(offset)) : 0;
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
+    .range(safeOffset, safeOffset + 49);
 
   if (error || !data) {
     logError('fetch my prayers', error);
+    if (error && throwOnError) throw error;
     return [];
   }
 

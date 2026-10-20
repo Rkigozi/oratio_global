@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { Alert } from 'react-native';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { LocationPrayersScreen, MapScreen } from './map';
 
 const mockNavigation = { navigate: jest.fn(), goBack: jest.fn() };
@@ -103,7 +103,30 @@ describe('MapScreen', () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     jest.restoreAllMocks();
+  });
+
+  it('refreshes aggregate counts when the next request expires', async () => {
+    jest.useFakeTimers();
+    const start = Date.now();
+    jest
+      .mocked(getMapHotspots)
+      .mockResolvedValueOnce([
+        { ...hotspot, expiresAt: new Date(start + 1000).toISOString() },
+      ] as never)
+      .mockResolvedValue([
+        { ...hotspot, requestCount: 2, expiresAt: new Date(start + 10000).toISOString() },
+      ] as never);
+    render(<MapScreen />);
+    await screen.findByLabelText('View prayer activity in London');
+    await act(async () => {
+      jest.advanceTimersByTime(1001);
+    });
+    expect(getMapHotspots).toHaveBeenCalledTimes(2);
+    fireEvent.press(screen.getByLabelText('View prayer activity in London'));
+    expect(screen.getByText('2')).toBeTruthy();
+    expect(screen.queryByText('3')).toBeNull();
   });
 
   it('renders the global map and its public prayer hotspots', async () => {

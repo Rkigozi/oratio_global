@@ -48,6 +48,16 @@ describe('buildPrayerShareContent', () => {
     expect(buildPrayerShareContent({ ...prayer, audience: 'private' })).toBeNull();
   });
 
+  it('does not share or copy an archived public prayer', async () => {
+    const archived = { ...prayer, expiresAt: '2020-01-01T00:00:00Z' };
+    const share = jest.spyOn(Share, 'share');
+    expect(buildPrayerShareContent(archived)).toBeNull();
+    expect(await sharePrayer(archived)).toBe('unavailable');
+    expect(await copyPrayerLink(archived)).toBe(false);
+    expect(share).not.toHaveBeenCalled();
+    expect(Clipboard.setStringAsync).not.toHaveBeenCalled();
+  });
+
   it('includes the link in the message on Android, where the URL field is unsupported', () => {
     jest.replaceProperty(Platform, 'OS', 'android');
     expect(buildPrayerShareContent(prayer)).toEqual({

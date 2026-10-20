@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { getFeedPrayers } from '@oratio/shared/queries';
-import type { PrayerRequest } from '@oratio/shared/prayer-data';
+import { isPrayerArchived, type PrayerRequest } from '@oratio/shared/prayer-data';
+import { usePrayerClock } from './use-prayer-clock';
 import type { FeedAudienceMode, FeedPrayerFilters } from '@oratio/shared/queries';
 
 const PAGE_SIZE = 20;
@@ -9,6 +10,7 @@ type UseFeedOptions = Pick<FeedPrayerFilters, 'country' | 'savedOnly' | 'search'
 
 export function useFeed(audienceMode: FeedAudienceMode = 'public', options: UseFeedOptions = {}) {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const now = usePrayerClock(prayers);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -72,5 +74,15 @@ export function useFeed(audienceMode: FeedAudienceMode = 'public', options: UseF
 
   // The screen drives loading: FeedScreen calls load() via useFocusEffect so
   // the list refreshes on first focus and whenever the user returns to it.
-  return { prayers, loading, refreshing, loadingMore, hasMore, error, refresh, loadMore, load };
+  return {
+    prayers: prayers.filter((prayer) => !isPrayerArchived(prayer, now)),
+    loading,
+    refreshing,
+    loadingMore,
+    hasMore,
+    error,
+    refresh,
+    loadMore,
+    load,
+  };
 }

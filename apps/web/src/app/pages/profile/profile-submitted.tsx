@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, Send, Users } from 'lucide-react';
 import { Drawer } from 'vaul';
@@ -39,7 +39,7 @@ function getViewCopy(view: PrayerLibraryView) {
 
   return {
     title: 'Public prayers',
-    description: 'Prayers you shared on the public feed.',
+    description: 'Your active and archived public prayers.',
     emptyTitle: 'No public prayers yet',
     emptyDescription: 'Public prayers will appear here after you share on the feed.',
     Icon: Send,
@@ -54,7 +54,14 @@ export function ProfileSubmitted() {
 
   const [mySubmitted, setMySubmitted] = useState<PrayerRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState('');
   const activeView = getPrayerLibraryView(searchParams);
+  const viewRef = useRef(activeView);
+  useEffect(() => {
+    viewRef.current = activeView;
+  }, [activeView]);
   const viewCopy = getViewCopy(activeView);
   const Icon = viewCopy.Icon;
   const visiblePrayers = mySubmitted.filter((prayer) => {
@@ -67,9 +74,13 @@ export function ProfileSubmitted() {
 
     const loadSubmitted = async () => {
       setLoading(true);
+      setMoreError('');
       try {
-        const prayers = await getMyPrayers();
-        if (active) setMySubmitted(prayers);
+        const prayers = await getMyPrayers(activeView);
+        if (active) {
+          setMySubmitted(prayers);
+          setHasMore(prayers.length === 50);
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -80,7 +91,30 @@ export function ProfileSubmitted() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeView]);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    setMoreError('');
+    try {
+      const next = await getMyPrayers(activeView, {
+        offset: mySubmitted.length,
+        throwOnError: true,
+      });
+      if (viewRef.current !== activeView) return;
+      setMySubmitted((current) => {
+        const ids = new Set(current.map((prayer) => prayer.id));
+        return [...current, ...next.filter((prayer) => !ids.has(prayer.id))];
+      });
+      setHasMore(next.length === 50);
+    } catch {
+      if (viewRef.current === activeView)
+        setMoreError("We couldn't load earlier prayers. Please try again.");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const handleOpenPrayer = (prayer: PrayerRequest) => {
     void navigate(`/prayer/${prayer.id}`);
@@ -170,6 +204,23 @@ export function ProfileSubmitted() {
                   Submit Prayer
                 </button>
               </motion.div>
+            )}
+            {hasMore && (
+              <div className="py-3 text-center">
+                {moreError && (
+                  <p role="alert" className="text-text-muted text-xs mb-2">
+                    {moreError}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={loadingMore}
+                  onClick={() => void loadMore()}
+                  className="min-h-11 px-4 rounded-md border border-accent/20 text-accent text-xs disabled:opacity-50"
+                >
+                  {loadingMore ? 'Loading earlier prayers...' : 'Load earlier prayers'}
+                </button>
+              </div>
             )}
           </div>
         )}

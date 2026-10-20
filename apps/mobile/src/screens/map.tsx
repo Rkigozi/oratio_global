@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -25,12 +25,13 @@ import type {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, ArrowRight, LocateFixed, RefreshCw } from 'lucide-react-native';
 import { getMapHotspots, getPublicPrayersAtLocation } from '@oratio/shared/queries';
-import type { PrayerRequest } from '@oratio/shared/prayer-data';
+import { isPrayerArchived, type PrayerRequest } from '@oratio/shared/prayer-data';
 import { PrayerCard } from '../components/prayer-card';
 import { asNativeIcon } from '../components/icon';
 import { BrandLockup } from '../components/brand-lockup';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useTheme } from '../hooks/theme-context';
+import { usePrayerClock } from '../hooks/use-prayer-clock';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -91,6 +92,10 @@ export function MapScreen() {
   const { theme } = useTheme();
   const mapRef = useRef<MapView>(null);
   const [hotspots, setHotspots] = useState<PrayerRequest[]>([]);
+  const now = usePrayerClock(hotspots);
+  const nextExpiry = Math.min(
+    ...hotspots.map((prayer) => Date.parse(prayer.expiresAt || '')).filter(Number.isFinite)
+  );
   const [selected, setSelected] = useState<PrayerRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [locating, setLocating] = useState(false);
@@ -169,6 +174,10 @@ export function MapScreen() {
     }
   }, [locating]);
 
+  useEffect(() => {
+    if (nextExpiry <= now) void load();
+  }, [nextExpiry, now, load]);
+
   useFocusEffect(
     useCallback(() => {
       void load();
@@ -198,29 +207,31 @@ export function MapScreen() {
         userInterfaceStyle={theme}
         zoomEnabled
       >
-        {hotspots.map((hotspot) => {
-          const activity = Math.max(hotspot.requestCount || 1, hotspot.prayerCount || 0);
-          const markerSize = Math.min(30, 16 + Math.sqrt(activity) * 2);
+        {hotspots
+          .filter((hotspot) => !isPrayerArchived(hotspot, now))
+          .map((hotspot) => {
+            const activity = Math.max(hotspot.requestCount || 1, hotspot.prayerCount || 0);
+            const markerSize = Math.min(30, 16 + Math.sqrt(activity) * 2);
 
-          return (
-            <Marker
-              key={hotspot.id}
-              accessibilityLabel={`View prayer activity in ${hotspot.city}`}
-              coordinate={{ latitude: hotspot.lat, longitude: hotspot.lng }}
-              onPress={(event) => handleMarkerPress(event, hotspot)}
-              tracksViewChanges={false}
-            >
-              <View
-                style={[
-                  styles.markerHalo,
-                  { width: markerSize, height: markerSize, borderRadius: markerSize / 2 },
-                ]}
+            return (
+              <Marker
+                key={hotspot.id}
+                accessibilityLabel={`View prayer activity in ${hotspot.city}`}
+                coordinate={{ latitude: hotspot.lat, longitude: hotspot.lng }}
+                onPress={(event) => handleMarkerPress(event, hotspot)}
+                tracksViewChanges={false}
               >
-                <View style={styles.markerCore} />
-              </View>
-            </Marker>
-          );
-        })}
+                <View
+                  style={[
+                    styles.markerHalo,
+                    { width: markerSize, height: markerSize, borderRadius: markerSize / 2 },
+                  ]}
+                >
+                  <View style={styles.markerCore} />
+                </View>
+              </Marker>
+            );
+          })}
       </MapView>
 
       <SafeAreaView edges={['top']} pointerEvents="box-none" style={styles.mapHeaderSafeArea}>
@@ -282,7 +293,7 @@ export function MapScreen() {
         </View>
       )}
 
-      {selected && (
+      {selected && !isPrayerArchived(selected, now) && (
         <View accessibilityRole="summary" style={styles.locationSheet}>
           <View style={styles.sheetHandle} />
           <Text style={styles.locationName}>{selected.city}</Text>
@@ -330,6 +341,7 @@ export function LocationPrayersScreen({
 }: NativeStackScreenProps<RootStackParamList, 'LocationPrayers'>) {
   const { city, country } = route.params;
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const now = usePrayerClock(prayers);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -392,7 +404,7 @@ export function LocationPrayersScreen({
       ) : (
         <FlatList
           contentContainerStyle={styles.prayerList}
-          data={prayers}
+          data={prayers.filter((prayer) => !isPrayerArchived(prayer, now))}
           keyExtractor={(item) => item.id}
           ListEmptyComponent={
             <View style={styles.centerState}>

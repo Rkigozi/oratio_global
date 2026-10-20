@@ -13,7 +13,14 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Bookmark, Languages, MapPin, MoreHorizontal } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Bookmark,
+  Languages,
+  MapPin,
+  MoreHorizontal,
+  RotateCcw,
+} from 'lucide-react-native';
 import {
   deletePrayerRequest,
   getProfilePreferences,
@@ -23,8 +30,14 @@ import {
   togglePray,
   toggleSavePrayer,
   updatePrayerRequest,
+  renewPublicPrayer,
 } from '@oratio/shared/queries';
-import { getAttributionText, timeAgo, type PrayerRequest } from '@oratio/shared/prayer-data';
+import {
+  getAttributionText,
+  isPrayerArchived,
+  timeAgo,
+  type PrayerRequest,
+} from '@oratio/shared/prayer-data';
 import {
   detectLanguage,
   getLanguageName,
@@ -38,6 +51,7 @@ import { ContentReportSheet } from '../components/content-report-sheet';
 import { PrayerActionsSheet, PrayerEditSheet } from '../components/prayer-owner-actions';
 import { useAuth } from '../hooks/auth-context';
 import { useBlockUser } from '../hooks/use-block-user';
+import { usePrayerClock } from '../hooks/use-prayer-clock';
 import { copyPrayerLink, sharePrayer } from '../services/prayer-sharing';
 import { translatePrayerText, type PrayerTranslation } from '../services/prayer-translation';
 import { colors, fontFamilies } from '../theme';
@@ -48,6 +62,7 @@ const BookmarkIcon = asNativeIcon(Bookmark);
 const LanguagesIcon = asNativeIcon(Languages);
 const MapPinIcon = asNativeIcon(MapPin);
 const MoreIcon = asNativeIcon(MoreHorizontal);
+const RenewIcon = asNativeIcon(RotateCcw);
 
 function getDeviceLocale(): string {
   try {
@@ -85,9 +100,13 @@ export function PrayerDetailScreen({
   const [editError, setEditError] = useState('');
   const [editBusy, setEditBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [renewBusy, setRenewBusy] = useState(false);
+  const [renewMessage, setRenewMessage] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
   const [languagePreference, setLanguagePreference] = useState('auto');
   const [translation, setTranslation] = useState<PrayerTranslation | null>(null);
+  const now = usePrayerClock(prayer ? [prayer] : []);
+  const archived = Boolean(prayer && isPrayerArchived(prayer, now));
   const [showingOriginal, setShowingOriginal] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [translationMessage, setTranslationMessage] = useState('');
@@ -125,7 +144,7 @@ export function PrayerDetailScreen({
   );
 
   const handlePray = async () => {
-    if (!prayer || prayer.audience === 'private' || prayBusy) return;
+    if (!prayer || prayer.audience === 'private' || isPrayerArchived(prayer) || prayBusy) return;
     setPrayBusy(true);
     const next = !prayed;
     try {
@@ -144,7 +163,7 @@ export function PrayerDetailScreen({
   };
 
   const handleSave = async () => {
-    if (!prayer || saveBusy) return;
+    if (!prayer || isPrayerArchived(prayer) || saveBusy) return;
     setSaveBusy(true);
     const next = !saved;
     try {
@@ -194,9 +213,28 @@ export function PrayerDetailScreen({
       ? prayer.authorId === user?.id
       : Boolean(prayer.username && prayer.username === authProfile?.username)
     : false;
-  const canShare = Boolean(prayer && prayer.audience !== 'private');
-  const canReport = Boolean(prayer && !isOwner && prayer.audience !== 'private');
+  const canShare = Boolean(prayer && prayer.audience !== 'private' && !archived);
+  const canReport = Boolean(prayer && !isOwner && prayer.audience !== 'private' && !archived);
   const isPrivate = prayer?.audience === 'private';
+
+  const handleRenew = async () => {
+    if (!prayer || !isOwner || !isPrayerArchived(prayer) || renewBusy) return;
+    setRenewBusy(true);
+    setRenewMessage('');
+    try {
+      const expiresAt = await renewPublicPrayer(prayer.id);
+      if (!expiresAt) {
+        setRenewMessage("We couldn't renew this prayer. Refresh and try again.");
+        return;
+      }
+      setPrayer((current) => (current?.id === prayer.id ? { ...current, expiresAt } : current));
+      setRenewMessage('Your prayer is public again for 14 days.');
+    } catch {
+      setRenewMessage("We couldn't renew this prayer. Check your connection and try again.");
+    } finally {
+      setRenewBusy(false);
+    }
+  };
 
   const openAuthorProfile = () => {
     if (!prayer?.username) return;
@@ -348,10 +386,13 @@ export function PrayerDetailScreen({
     );
   }
 
-  if (error || !prayer) {
+  if (error || !prayer || (archived && !isOwner)) {
     return (
       <SafeAreaView style={styles.center} edges={['top', 'bottom']}>
-        <Text style={styles.dim}>{error || 'Prayer unavailable. It may have been removed.'}</Text>
+        <Text style={styles.dim}>
+          {error ||
+            'Prayer unavailable. It may have expired, been removed, or no longer be shared with you.'}
+        </Text>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backText}>Back</Text>
         </Pressable>
@@ -392,7 +433,7 @@ export function PrayerDetailScreen({
             <Pressable
               accessibilityLabel={saved ? 'Remove saved prayer' : 'Save prayer'}
               accessibilityRole="button"
-              disabled={saveBusy}
+              disabled={saveBusy || archived}
               onPress={() => void handleSave()}
               style={[styles.headerButton, saveBusy && styles.headerButtonDisabled]}
             >
@@ -448,6 +489,47 @@ export function PrayerDetailScreen({
             {prayer.createdAt ? timeAgo(prayer.createdAt) : ''}
             {prayer.editedAt ? ' - Edited' : ''}
           </Text>
+
+          {archived ? (
+            <View style={styles.archiveStatus}>
+              <Text style={styles.archiveTitle}>Archived prayer</Text>
+              <Text style={styles.archiveText}>
+                No longer public. Your prayer and its history are kept here.
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                disabled={renewBusy}
+                onPress={() => void handleRenew()}
+                style={[styles.renewButton, renewBusy && styles.headerButtonDisabled]}
+              >
+                {renewBusy ? (
+                  <ActivityIndicator color={colors.accent} size="small" />
+                ) : (
+                  <RenewIcon color={colors.accent} size={17} />
+                )}
+                <Text style={styles.renewText}>
+                  {renewBusy ? 'Renewing...' : 'Renew for 14 days'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : prayer.audience === 'public' && prayer.expiresAt ? (
+            <Text style={styles.time}>
+              Public until{' '}
+              {new Date(prayer.expiresAt).toLocaleString(undefined, {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short',
+              })}
+            </Text>
+          ) : null}
+          {renewMessage ? (
+            <Text accessibilityRole="alert" style={styles.archiveText}>
+              {renewMessage}
+            </Text>
+          ) : null}
 
           <Text style={styles.text}>{showingTranslation ? translated?.text : prayer.text}</Text>
 
@@ -508,28 +590,30 @@ export function PrayerDetailScreen({
                 </Text>
               </View>
 
-              <Pressable
-                onPress={() => void handlePray()}
-                disabled={prayBusy}
-                style={[styles.prayButton, prayed && styles.prayedButton]}
-              >
-                {prayBusy ? (
-                  <ActivityIndicator color={prayed ? colors.accent : colors.white} />
-                ) : (
-                  <Text style={[styles.prayText, prayed && styles.prayedText]}>
-                    🙏 {prayed ? 'Prayed for this' : 'Pray for this'}
-                  </Text>
-                )}
-              </Pressable>
+              {!archived && (
+                <Pressable
+                  onPress={() => void handlePray()}
+                  disabled={prayBusy}
+                  style={[styles.prayButton, prayed && styles.prayedButton]}
+                >
+                  {prayBusy ? (
+                    <ActivityIndicator color={prayed ? colors.accent : colors.white} />
+                  ) : (
+                    <Text style={[styles.prayText, prayed && styles.prayedText]}>
+                      🙏 {prayed ? 'Prayed for this' : 'Pray for this'}
+                    </Text>
+                  )}
+                </Pressable>
+              )}
             </>
           )}
 
-          <PrayerComments prayer={prayer} onBlocked={returnAfterBlock} />
+          <PrayerComments prayer={prayer} onBlocked={returnAfterBlock} readOnly={archived} />
         </ScrollView>
       </KeyboardAvoidingView>
 
       <PrayerActionsSheet
-        busy={shareBusy || blocking}
+        busy={shareBusy || blocking || renewBusy}
         onBlock={
           canReport && prayer?.username && prayer.authorId
             ? () => confirmBlock(prayer.authorId!, prayer.username)
@@ -573,6 +657,38 @@ export function PrayerDetailScreen({
 }
 
 const styles = StyleSheet.create({
+  archiveStatus: {
+    marginTop: 16,
+    gap: 8,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.divider,
+  },
+  archiveTitle: {
+    color: colors.textSecondary,
+    fontFamily: fontFamilies.bodySemiBold,
+    fontSize: 14,
+  },
+  archiveText: {
+    color: colors.textMuted,
+    fontFamily: fontFamilies.body,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  renewButton: {
+    minHeight: 44,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+    backgroundColor: colors.surface,
+  },
+  renewText: { color: colors.accent, fontFamily: fontFamilies.bodySemiBold, fontSize: 13 },
   screen: {
     flex: 1,
     backgroundColor: colors.bg,

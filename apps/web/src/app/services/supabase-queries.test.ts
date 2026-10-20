@@ -5,6 +5,7 @@ const fake = vi.hoisted(() => {
     const qb: Record<string, ReturnType<typeof vi.fn>> = {};
     qb.select = vi.fn().mockReturnThis();
     qb.eq = vi.fn().mockReturnThis();
+    qb.gt = vi.fn().mockReturnThis();
     qb.neq = vi.fn().mockReturnThis();
     qb.is = vi.fn().mockReturnThis();
     qb.order = vi.fn().mockReturnThis();
@@ -98,6 +99,7 @@ beforeEach(() => {
 
   qb.select.mockReturnThis();
   qb.eq.mockReturnThis();
+  qb.gt.mockReturnThis();
   qb.neq.mockReturnThis();
   qb.is.mockReturnThis();
   qb.order.mockReturnThis();
@@ -285,6 +287,14 @@ describe('getPublicPrayersAtLocation', () => {
 });
 
 describe('getFeedPrayers', () => {
+  it('filters public expiry before pagination, but leaves Circle unchanged', async () => {
+    setAlways([]);
+    await m.getFeedPrayers();
+    expect(qb.gt).toHaveBeenCalledWith('public_expires_at', expect.any(String));
+    qb.gt.mockClear();
+    await m.getFeedPrayers(undefined, 20, 'circle');
+    expect(qb.gt).not.toHaveBeenCalled();
+  });
   it('returns mapped prayers on success', async () => {
     setAlways([
       {
@@ -1491,6 +1501,21 @@ describe('getUserPrayers', () => {
   });
 });
 
+describe('renewPublicPrayer', () => {
+  it('uses only the owner-authorized RPC and returns its server deadline', async () => {
+    rpc.mockResolvedValueOnce({ data: '2026-11-01T12:00:00Z', error: null });
+    expect(await m.renewPublicPrayer('p1')).toBe('2026-11-01T12:00:00Z');
+    expect(rpc).toHaveBeenCalledWith('renew_public_prayer', { p_prayer_id: 'p1' });
+    expect(qb.update).not.toHaveBeenCalled();
+  });
+  it('does not report renewal success after failure or an invalid response', async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: { code: '42501' } });
+    expect(await m.renewPublicPrayer('p1')).toBeNull();
+    rpc.mockResolvedValueOnce({ data: 'invalid-date', error: null });
+    expect(await m.renewPublicPrayer('p1')).toBeNull();
+  });
+});
+
 describe('searchUsers', () => {
   it('returns matching users on success', async () => {
     setAlways([{ username: 'testuser', display_name: 'Test User' }]);
@@ -1571,6 +1596,32 @@ describe('getSavedPrayers', () => {
 });
 
 describe('getMyPrayers', () => {
+  it('loads earlier owner history in bounded, stable-order pages', async () => {
+    setAlways([]);
+    await m.getMyPrayers('public', { offset: 50 });
+    expect(qb.range).toHaveBeenCalledWith(50, 99);
+    expect(qb.order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(qb.order).toHaveBeenCalledWith('id', { ascending: false });
+    expect(qb.gt).not.toHaveBeenCalled();
+  });
+  it('does not mistake a failed history page for the end of the archive', async () => {
+    const error = new Error('offline');
+    setAlways(null, error);
+    await expect(m.getMyPrayers('public', { offset: 50, throwOnError: true })).rejects.toBe(error);
+  });
+  it('retains public archives in owner history and maps their server deadline', async () => {
+    setAlways([
+      {
+        id: 'old',
+        body: 'Archived prayer',
+        audience: 'public',
+        public_expires_at: '2026-01-01T00:00:00Z',
+      },
+    ]);
+    const rows = await m.getMyPrayers('public');
+    expect(rows[0].expiresAt).toBe('2026-01-01T00:00:00Z');
+    expect(qb.gt).not.toHaveBeenCalled();
+  });
   it('returns my prayers on success', async () => {
     setAlways([
       {

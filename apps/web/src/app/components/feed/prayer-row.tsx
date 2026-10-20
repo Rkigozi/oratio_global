@@ -1,7 +1,8 @@
 import { motion } from 'motion/react';
 import { Lock, MapPin, Trash2, Users } from 'lucide-react';
 import type { PrayerRequest } from '../../services/prayer-data';
-import { timeAgo, getAttributionText } from '../../services/prayer-data';
+import { timeAgo, getAttributionText, isPrayerArchived } from '../../services/prayer-data';
+import { usePrayerClock } from '../../hooks/use-prayer-clock';
 import { renderHashtags } from '../../services/hashtags';
 
 interface PrayerRowProps {
@@ -30,6 +31,7 @@ export function PrayerRow({
   onTagClick,
 }: PrayerRowProps) {
   const prayed = hasPrayed;
+  const now = usePrayerClock([prayer]);
 
   const handlePray = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -78,7 +80,7 @@ export function PrayerRow({
             {prayer.createdAt && (
               <span className="text-text-muted text-[10px] ml-auto">
                 {prayer.editedAt ? 'Edited · ' : ''}
-                {timeAgo(prayer.createdAt)}
+                {isPrayerArchived(prayer, now) ? 'Archived' : timeAgo(prayer.createdAt)}
               </span>
             )}
           </div>
