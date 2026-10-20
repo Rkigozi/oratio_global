@@ -1,7 +1,9 @@
 # Data Model
 
-> **⚠️ FUTURE TARGET — Not yet implemented.**
-> The app currently uses localStorage with an implicit schema. This document describes the Supabase/PostgreSQL schema to be built during backend integration (planned for v0.3). See `src/app/data/prayer-data.ts` and `src/app/data/profile-data.ts` for the current implementation.
+> **Historical prototype proposal, not the current schema.** The app now uses
+> Supabase Auth/PostgreSQL, not localStorage-only identity. The original proposal
+> below is retained for context; use the [active HLD/LLDs](../design/README.md)
+> and applied `supabase/migrations/` for current contracts.
 
 ## 1. Purpose
 

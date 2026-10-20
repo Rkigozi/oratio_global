@@ -1,5 +1,8 @@
 # Safety & Moderation
 
+> Historical safety proposal. Current behavior and access boundaries are defined
+> in the [safety LLD](../design/lld/SAFETY-AND-MODERATION.md) and linked runbooks.
+
 ## Purpose
 
 Ensure safe and respectful use of the platform.

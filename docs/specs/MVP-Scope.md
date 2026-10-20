@@ -1,5 +1,8 @@
 # MVP Scope — Oratio
 
+> Historical PWA/prototype scope. Use the [active iOS requirements and design](../design/README.md)
+> for current release boundaries; the original proposal below is preserved.
+
 ## 1. Purpose
 
 Oratio is a global Christian prayer platform designed to connect people through shared prayer.

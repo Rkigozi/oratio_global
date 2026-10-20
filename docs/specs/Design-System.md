@@ -1,5 +1,8 @@
 # Design System
 
+> Historical visual guidance. Current native themes/components and their
+> [identity/theme design](../design/lld/IDENTITY-AND-ACCESS.md) take precedence.
+
 ## 1. Purpose
 
 Defines visual consistency and UI behaviour for MVP.

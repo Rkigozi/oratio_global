@@ -1,5 +1,8 @@
 # Screen Specifications
 
+> Historical prototype screen proposal, not the current native screen contract.
+> Use the [active HLD/LLDs](../design/README.md) and current native navigation.
+
 ## 1. Purpose
 
 This document defines the structure, behaviour, and states of each screen in the MVP.

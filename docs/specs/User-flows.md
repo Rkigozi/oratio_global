@@ -1,5 +1,8 @@
 # User Flows
 
+> Historical prototype flows, including superseded anonymous-first onboarding.
+> Use the [active iOS HLD/LLDs](../design/README.md) for current journeys.
+
 ## 1. Purpose
 
 Defines how users move through the application and complete core actions.

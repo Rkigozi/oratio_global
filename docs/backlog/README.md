@@ -1,10 +1,20 @@
 # Oratio Backlog — Working Agreement
 
-Last updated: 2026-10-07
+Last updated: 2026-10-20
 
 Canonical source for the JIRA backlog (project `SCRUM` at
 https://oratio.atlassian.net). This file and JIRA must stay in sync: change
 work in one place, mirror it in the other (OPS: SCRUM-56).
+
+## Design Baseline
+
+The active [design index](../design/README.md) links requirements, the
+[HLD](../ARCHITECTURE.md), six domain LLDs and [traceability](../design/TRACEABILITY.md).
+This is the current iOS-first baseline; `docs/specs/` preserves historical proposals.
+Live Jira lookup on 2026-10-20 reconciled the mapped story names/statuses without
+creating duplicate epics/stories or changing any release acceptance status.
+Documentation alignment supports existing `SCRUM-56`; its wider workflow scope
+is not marked Done by this pass.
 
 Native migration keys: epic `SCRUM-62`, stories `SCRUM-63`–`SCRUM-77` and
 `SCRUM-80`–`SCRUM-83`, and `SCRUM-94`–`SCRUM-96`.
@@ -26,6 +36,9 @@ GIVEN <context> WHEN <action> THEN <observable result>
 Tests:
 <the repo test files / commands that prove this story>
 
+Design:
+<FR/NFR ID, HLD/domain LLD link and traceability entry>
+
 Out of scope:
 <explicitly not included, to stop scope creep>
 ```
@@ -34,7 +47,7 @@ Out of scope:
 
 - `npm run type-check`, `npm run lint`, `npm test`, `npm run build` all green
 - Tests updated or added for the changed behaviour
-- Relevant docs updated (`docs/`, memory bank)
+- Relevant requirements, HLD/LLD, traceability and QA evidence updated (`docs/`)
 - Deployed to live (or a documented reason why not)
 
 ## Priority semantics
@@ -85,7 +98,7 @@ load. Introduce points (or T-shirt sizes) only when a second developer joins.
 | LAUNCH: Launch Readiness                   | SCRUM-31 | SCRUM-36…40                           |
 | TEST: Testing & Observability Maturity     | SCRUM-32 | SCRUM-41…44                           |
 | HARD: Post-Launch Hardening                | SCRUM-33 | SCRUM-45…48                           |
-| COMM: Community & Retention                | SCRUM-34 | SCRUM-49…52                           |
+| COMM: Community & Retention                | SCRUM-34 | SCRUM-49…52, SCRUM-98                 |
 | OPS: Platform & Operations                 | SCRUM-35 | SCRUM-53…56, SCRUM-97                 |
 | NATIVE: iOS Product Migration              | SCRUM-62 | SCRUM-63…77, SCRUM-80…83, SCRUM-94…96 |
 | MAP: Map Scalability & Canonical Locations | SCRUM-78 | SCRUM-84…89                           |
@@ -97,6 +110,14 @@ track those, not task counts.
 The MAP story-level acceptance criteria live in
 [`MAP-SCALABILITY.md`](./MAP-SCALABILITY.md). The future Android release plan
 lives in [`ANDROID-RELEASE.md`](./ANDROID-RELEASE.md).
+
+`SCRUM-98` adds public-prayer expiry and owner renewal under COMM: High priority,
+V1 Launch, In Progress. The 14-day rule, history/renewal behavior, migration order,
+verification and outstanding client/device acceptance are tracked in
+[`PUBLIC-PRAYER-EXPIRY.md`](./PUBLIC-PRAYER-EXPIRY.md).
+Migrations 042/043 were applied and verified on Oratio_DB on 2026-10-19; content
+and moderator access were preserved. Client implementation is checkpointed in
+`817b4b8` on the review branch, not merged to `main` or externally distributed.
 
 ## Service notices
 
@@ -126,7 +147,7 @@ items; no test results or completed statuses were manufactured.
 | -------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | SCRUM-40 | Combined functional and NFR release sign-off                   | To Do; Highest; V1 Launch                                                                  |
 | SCRUM-43 | Native monitoring and privacy-safe telemetry                   | In Progress; Highest; V1 Launch; local JS error reporting, remote/native verification open |
-| SCRUM-47 | Current RLS/access review and dependency exposure assessment   | In Progress; Highest; V1 Launch; tested local hardening, live deployment/review pending    |
+| SCRUM-47 | Current RLS/access review and dependency exposure assessment   | In Progress; Highest; V1 Launch; 042 deployed/verified 2026-10-19; wider review open       |
 | SCRUM-53 | Verify existing public-web smoke and failed-check notification | To Do; Highest; moved to V1 Launch                                                         |
 | SCRUM-54 | Verified backup coverage and isolated recovery drill           | To Do; Highest; moved to V1 Launch                                                         |
 | SCRUM-95 | Native performance and network/session resilience              | New; To Do; Highest; V1 Launch; native epic SCRUM-62                                       |
@@ -163,28 +184,28 @@ the migration is not live and the full deployed-policy review remains open.
 
 ## Native migration snapshot
 
-| Key      | Scope                                       | Jira status / repo state                                                                                     |
-| -------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| SCRUM-63 | Monorepo foundation                         | Done                                                                                                         |
-| SCRUM-64 | Shared platform-neutral logic               | Done                                                                                                         |
-| SCRUM-65 | Native email/password auth                  | Done                                                                                                         |
-| SCRUM-66 | Native feed, detail, and prayer interaction | Done; public filters, search/trending, save, and count integrity included                                    |
-| SCRUM-67 | Native prayer submission and visibility     | Done across all three prayer spaces                                                                          |
-| SCRUM-68 | Native comments and replies                 | Done; comments, replies, and private Notes included                                                          |
-| SCRUM-69 | Native Circle management and updates        | Done; Circle management and live Updates included                                                            |
-| SCRUM-70 | Native profile, settings, and avatar        | Done; profile edit, avatar upload, preferences, and sign-out included                                        |
-| SCRUM-71 | Native reporting and moderation             | In Review; report-form/privacy QA recorded; remaining edge-case/enforcement/release checks open              |
-| SCRUM-72 | EAS/TestFlight beta distribution            | In Progress; existing Expo team project linked; EAS environment, Apple setup and signed distribution pending |
-| SCRUM-73 | Apple App Store submission                  | To Do                                                                                                        |
-| SCRUM-74 | Reduce web to landing/web presence          | To Do; full PWA remains live during migration                                                                |
-| SCRUM-75 | Apple Developer membership                  | To Do; membership inactive; individual/organisation seller decision open                                     |
-| SCRUM-76 | Native global prayer map                    | Done                                                                                                         |
-| SCRUM-77 | Native Updates inbox                        | Done                                                                                                         |
-| SCRUM-80 | Native light/dark/system themes             | Done; automated and physical iPhone QA complete                                                              |
-| SCRUM-81 | Native prayer owner actions and sharing     | In QA; iPhone share/copy retest passed; remaining owner/privacy QA open                                      |
-| SCRUM-82 | Native saved-language translation           | Blocked; implementation complete, Google Cloud billing reactivation needed                                   |
-| SCRUM-83 | Account deletion and legal support access   | Done; live disposable-account deletion and production links verified                                         |
-| SCRUM-94 | Native user blocking and blocked accounts   | In Progress; migration 041 live; basic profile/prayer/comment block and unblock QA passed; edge checks open  |
+| Key      | Scope                                              | Jira status / repo state                                                                                     |
+| -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| SCRUM-63 | Monorepo foundation                                | Done                                                                                                         |
+| SCRUM-64 | Shared platform-neutral logic                      | Done                                                                                                         |
+| SCRUM-65 | Native email/password auth                         | Done                                                                                                         |
+| SCRUM-66 | Native feed, detail, and prayer interaction        | Done; public filters, search/trending, save, and count integrity included                                    |
+| SCRUM-67 | Native prayer submission and visibility            | Done across all three prayer spaces                                                                          |
+| SCRUM-68 | Native comments and replies                        | Done; comments, replies, and private Notes included                                                          |
+| SCRUM-69 | Native Circle management and updates               | Done; Circle management and live Updates included                                                            |
+| SCRUM-70 | Native profile, settings, and avatar               | Done; profile edit, avatar upload, preferences, and sign-out included                                        |
+| SCRUM-71 | Native reporting and moderation                    | In Review; report-form/privacy QA recorded; remaining edge-case/enforcement/release checks open              |
+| SCRUM-72 | EAS/TestFlight beta distribution                   | In Progress; existing Expo team project linked; EAS environment, Apple setup and signed distribution pending |
+| SCRUM-73 | Apple App Store submission                         | To Do                                                                                                        |
+| SCRUM-74 | Reduce web to landing/web presence                 | To Do; full PWA remains live during migration                                                                |
+| SCRUM-75 | Apple Developer membership                         | To Do; membership inactive; individual/organisation seller decision open                                     |
+| SCRUM-76 | Native global prayer map                           | Done                                                                                                         |
+| SCRUM-77 | Native visual alignment with the PWA design system | Done; Updates implementation belongs to SCRUM-69                                                             |
+| SCRUM-80 | Native light/dark/system themes                    | Done; automated and physical iPhone QA complete                                                              |
+| SCRUM-81 | Native prayer owner actions and sharing            | In Review (verified 2026-10-20); iPhone share/copy retest passed; remaining release checks open              |
+| SCRUM-82 | Native saved-language translation                  | Blocked; implementation complete, Google Cloud billing reactivation needed                                   |
+| SCRUM-83 | Account deletion and legal support access          | Done; live disposable-account deletion and production links verified                                         |
+| SCRUM-94 | Native user blocking and blocked accounts          | In Progress; migration 041 live; basic profile/prayer/comment block and unblock QA passed; edge checks open  |
 
 The Jira workflow now has a correctly named `Done` status. Completed native
 stories `SCRUM-63`–`SCRUM-70`, `SCRUM-76`, `SCRUM-77`, and `SCRUM-80` were

@@ -10,6 +10,17 @@ unchanged; this native checklist is still the source for open iPhone/release che
 
 ## Before You Start
 
+Use the [active design baseline](./design/README.md) and
+[traceability register](./design/TRACEABILITY.md) to identify the requirement,
+LLD and story behind each changed journey. Historical prototype specs are not
+the expected behavior for this native pass.
+
+Public-prayer expiry (`SCRUM-98`): migrations 042/043 were applied to Oratio_DB
+and verified on 2026-10-19, with content and moderator access preserved. Client
+changes remain local; physical-iPhone acceptance is still pending. The
+[expiry runbook](./backlog/PUBLIC-PRAYER-EXPIRY.md) contains the exact behavior,
+rollout evidence and two-account device checks. Backend checks are not a device pass.
+
 Automated checkpoint (2026-10-07): 534 web and 255 mobile tests, 140 disposable
 SQL assertions, nine database races, both type checks, web lint/build, Expo Doctor
 (21/21) and the CI-style iOS JS export passed. Local browser regressions passed
@@ -18,13 +29,14 @@ The mobile dependency audit remains blocked; see [release readiness](./V1_RELEAS
 and the current [security findings](./backlog/SECURITY-REVIEW.md). Commits are a
 local checkpoint only, not a deployed backend, TestFlight build or launch approval.
 
-Security checkpoint (2026-09-30): [migration 042 and its regression evidence](./backlog/SECURITY-REVIEW.md)
-are local only. Before external beta, approve/apply it to the verified backend
-and retest waitlist signup plus prayer/comment submission and quota errors.
-The disposable database suite passing does not confirm deployed permissions.
+Security rollout (2026-10-19): [migration 042 and its regression evidence](./backlog/SECURITY-REVIEW.md)
+now include deployed RLS/grant and migration-history checks. Before external beta,
+retest real waitlist signup plus prayer/comment submission and quota errors.
+Catalogue checks and the disposable database suite do not replace these journeys.
 
 - [ ] Test the latest `main` commit with no local changes affecting the build
 - [x] Apply all Supabase migrations through `040_reporter_details.sql` (Oratio_DB local/remote migration history aligned, 2026-09-23)
+- [x] Apply migrations 042/043 after verifying 001-041 alignment (Oratio_DB, 2026-10-19); read-only content, role, deadline and permission checks passed
 - [ ] Prepare three verified test accounts with distinct usernames, profiles, and avatars
 - [ ] Account A is new or intentionally empty; Account B owns representative public, Circle, and private prayers; Account C is an accepted Circle peer
 - [ ] Connect B and C before creating B's Circle prayers; an empty Circle cannot publish, and A initially stays outside B's Circle for non-member visibility checks

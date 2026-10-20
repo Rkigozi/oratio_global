@@ -1,8 +1,25 @@
 # iOS Launch Security Review
 
-Last updated: 2026-10-14. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
+Last updated: 2026-10-19. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
 Status: **In Progress**, not security sign-off. Supports NFR-01 in
 [the NFR checklist](../NFR-CHECKLIST.md).
+
+## Live Security Migration (2026-10-19)
+
+Following the owner's scoped continuation approval, Oratio_DB
+(`tfwgoavbbudkxthjhnrx`) was verified at migration 041. A dry run listed only
+042 and 043, and both were applied successfully. Read-only checks confirmed all
+43 migration versions, RLS, effective denial of waitlist reads and direct quota
+table access, retained email/source waitlist inserts, authenticated-only quota
+execution and its empty search path. Prayer/comment fingerprints, all recorded
+content counts and the moderator-role fingerprint were unchanged.
+
+Migration 043 adds public-prayer expiry; its deployment evidence and remaining
+device checks are in [the feature runbook](./PUBLIC-PRAYER-EXPIRY.md). No moderator
+was added, no retained prayer was deleted and no test expiry was forced live.
+Actual PostgREST signup/submission/quota journeys, full deployed-policy review,
+signed-artifact checks and the dependency release gate remain open. This resolves
+the migration-042 deployment item below, not NFR-01 or SCRUM-47 as a whole.
 
 ## Approved Development Mitigation (2026-10-14)
 
@@ -68,7 +85,8 @@ signed app or public-release acceptance. PR #5 remains draft; `main` is unchange
 The previous 833 upstream passes/four pending and helper/interoperability
 evidence below support this Node backport. Actual EAS archive/install and signed
 artifact checks remain open. NFR-01/SCRUM-47 stay open for full deployed-policy,
-moderate/signed-build review and separately approved migration 042 deployment.
+moderate/signed-build review. Migration 042 deployment was completed on 2026-10-19
+as recorded above; this does not extend the development-only audit exception.
 No prayer retention/expiry feature is introduced by this mitigation.
 
 ## Broader Verification (2026-10-14)
@@ -221,19 +239,20 @@ by this workflow change. External beta and merge readiness remain unsigned.
 ## Findings And Fixes
 
 These findings were established from the checked-in migrations and disposable
-PostgreSQL tests, not a fresh inventory of the live Supabase project.
+PostgreSQL tests. The 2026-10-19 rollout adds scoped live catalogue verification,
+not a full live-project security inventory.
 
 | Finding                                                                                                                                                                           | Local remediation                                                                                                                                                                                                                     | Deployment state                                   |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| Any authenticated account could read all waitlist email addresses under migration 005's SELECT policy.                                                                            | Migration 042 removes the read policy and client read/update/delete privileges. Anonymous and authenticated clients retain only email/source INSERT access; trusted backend access remains.                                           | Tested locally; not applied live.                  |
-| `rate_limits` lacked RLS, and `check_rate_limit` trusted arbitrary user IDs, action names, limits and windows. Direct access or RPC calls could inspect/manipulate quota records. | Migration 042 enables RLS, removes client table privileges, authenticates the caller and accepts only the existing 10-prayer/30-comment hourly limits. Same-user/action calls serialize; rolled-back writes release their quota slot. | Tested locally; not applied live.                  |
+| Any authenticated account could read all waitlist email addresses under migration 005's SELECT policy.                                                                            | Migration 042 removes the read policy and client read/update/delete privileges. Anonymous and authenticated clients retain only email/source INSERT access; trusted backend access remains.                                           | Applied live; grants verified 2026-10-19.          |
+| `rate_limits` lacked RLS, and `check_rate_limit` trusted arbitrary user IDs, action names, limits and windows. Direct access or RPC calls could inspect/manipulate quota records. | Migration 042 enables RLS, removes client table privileges, authenticates the caller and accepts only the existing 10-prayer/30-comment hourly limits. Same-user/action calls serialize; rolled-back writes release their quota slot. | Applied live; RLS/grants verified 2026-10-19.      |
 | Dependency audit found a high-severity brace-expansion report and the vulnerable navigation URL decoder.                                                                          | Compatible lockfile updates: React Navigation core 7.21.13 -> 7.23.0 removes query-string/decode-uri-component. Brace-expansion branches move to 1.1.21, 2.1.7 and 5.0.12. No forced overrides or Expo downgrade.                     | Included in the local checkpoint; not distributed. |
 
 The security test initially failed on the missing-RLS assertion against migrations
 001-041, then passed with 042. Existing migrations were not edited.
 Waitlist registration remains supported; clients must not request inserted rows
 back. The existing shared query uses `.insert({ email, source })` without `.select()`.
-No moderator role, account data or prayer visibility was changed in the live project.
+Migration 042 changes no moderator role, account data or prayer visibility.
 
 Dependency sources: the [URL-decoder advisory](https://github.com/advisories/GHSA-vcc3-ghjq-m6fr)
 describes malformed-input denial of service; the brace-expansion advisories cover
@@ -445,8 +464,8 @@ that new hosted CI job has not run yet. See the October checkpoint for current a
 
 ## Remaining Release Gates
 
-- Approve and apply migration 042 to the verified backend, then confirm deployed
-  policies/grants and migration history. No live deployment was performed here.
+- Migration 042 deployment and scoped RLS/grant/history checks are complete
+  (2026-10-19); full live-policy and client-path acceptance remain outstanding.
 - Recheck the actual PostgREST waitlist signup and prayer/comment submission paths,
   including denial/retry messages and expected rate-limit behaviour after deployment.
 - Finish the whole deployed table/RPC/storage/role review. Having RLS enabled does
@@ -457,5 +476,6 @@ that new hosted CI job has not run yet. See the October checkpoint for current a
   reachability evidence and an explicit, time-limited decision for any residual
   exposure. No automatic release waiver or audit-gate bypass has been granted.
 
-The full NFR-01 gate and SCRUM-47 remain open. The local checkpoint is not a push,
-live migration, TestFlight distribution or update to the external QA spreadsheet.
+The full NFR-01 gate and SCRUM-47 remain open. Historical local checkpoints are
+not TestFlight distribution or external QA spreadsheet updates; the separately
+verified 2026-10-19 live migration is recorded at the top of this document.

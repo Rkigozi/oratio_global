@@ -54,7 +54,7 @@ Native observability and signed beta distribution remain open.
 - React 19 + TypeScript + Vite for the web presence
 - Tailwind CSS v4 in `apps/web`
 - Supabase (auth, DB, storage, realtime, edge functions)
-- Sentry + PostHog on the web; native observability is still to be wired
+- Sentry + PostHog on the web; native privacy-filtered JS error reporting is implemented, with remote/native verification still open
 
 ## Project Structure
 
@@ -115,12 +115,14 @@ Native development uses `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANO
 
 ## Docs To Read
 
+- [Design index](./docs/design/README.md) — active requirements, HLD, six domain LLDs and Jira/test traceability
+- [High-level design](./docs/ARCHITECTURE.md) — system boundaries, decisions and known gaps
 - `docs/CODEBASE_NAVIGATION_GUIDE.md` — the mental model of the whole codebase
 - `docs/V1_RELEASE_READINESS.md` — release-control checklist
 - `docs/backlog/IOS-BUILD-PIPELINE.md` — iOS build configuration, verification and TestFlight prerequisites
-- `docs/ARCHITECTURE.md` — architecture detail
 - `docs/QUICK-START.md` — dev-server troubleshooting on this machine
-- `docs/specs/` + `docs/guidelines/` — product specs and testing guidelines (historical reference)
+- [Historical specs](./docs/specs/README.md) — original PWA/prototype proposals, not current native contracts
+- `docs/guidelines/` — development and testing guidance
 - `docs/backlog/` — agile working agreement + JIRA sync source
 
 ## Remaining Release Work

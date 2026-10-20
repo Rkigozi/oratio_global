@@ -1,12 +1,21 @@
 # Oratio iOS Launch NFR Checklist
 
-Last updated: 2026-10-14
+Last updated: 2026-10-20
 
 Non-functional requirements define how safely, reliably and accessibly Oratio
 must work, alongside the features in [functional QA](./QA-CHECKLIST.md).
 Scope: the iOS product, its shared backend and launch-critical web destinations.
 The [original PWA requirements](./specs/v1.0-requirements.md) are historical,
 not evidence that the native app meets these requirements.
+
+The [active design baseline](./design/README.md) and
+[traceability register](./design/TRACEABILITY.md) now connect these requirements
+to domain LLDs, existing stories and tests. The 2026-10-20 documentation review
+does not sign off any gate or change the targets below. Security migration 042
+was applied and scoped live grants/RLS checks passed on 2026-10-19; the historical
+local-only checkpoint below is superseded for that deployment item only. Full
+deployed-policy, client-path and release security review remain open in
+[the current security record](./backlog/SECURITY-REVIEW.md).
 
 ## Gates And Evidence
 

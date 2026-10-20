@@ -1,11 +1,16 @@
 # Oratio V1 Release Readiness
 
-Last updated: 2026-10-14
+Last updated: 2026-10-20
 
 Release-control checklist for the first small-group iOS beta and first public
 Apple App Store release. Expo Go is the current development channel; TestFlight
 is the release-candidate channel. Android follows later under `SCRUM-79` and is
 not a dependency of V1.
+
+Design baseline: [requirements, HLD and domain LLDs](./design/README.md), with
+[requirement-to-story/test traceability](./design/TRACEABILITY.md). The 2026-10-20
+reconciliation identifies existing map-foundation gaps (SCRUM-84/85/86); it does
+not complete those stories, duplicate scope or sign off any NFR.
 
 Development security checkpoint (2026-10-14): the canonical Forge Node backport
 is now installed reproducibly. The owner approved a narrow development-review
@@ -76,8 +81,9 @@ npm run export:ios --workspace @oratio/mobile
 Run `npx expo-doctor` from `apps/mobile`. An iOS export is a bundling check,
 not a signed native build or TestFlight install. The current dependency audit
 is a release blocker; the September audit is historical, not current clearance.
-Migration 042's waitlist/quota hardening
-passes local security tests but still needs approved live deployment and verification.
+Migration 042's waitlist/quota hardening was applied to Oratio_DB on 2026-10-19;
+read-only checks verified effective grants, RLS and migration history. Signed-in
+PostgREST/device submission and quota-error checks remain outstanding.
 See [the security review](./backlog/SECURITY-REVIEW.md) for evidence and remaining scope.
 See [the iOS build runbook](./backlog/IOS-BUILD-PIPELINE.md) for verified local
 preparation, exact build commands and remaining account/security gates.
@@ -106,6 +112,14 @@ Authenticated E2E journeys run when `E2E_TEST_EMAIL`/`E2E_TEST_PASSWORD` are exp
 - Native Sentry/PostHog must be configured and verified before external beta distribution
 
 ## Product Checks
+
+- Public-prayer expiry/renewal (`SCRUM-98`) has a verified backend rollout on
+  2026-10-19 and implementation checkpoint `817b4b8` on the review branch;
+  wider device acceptance is pending:
+  public requests leave discovery after 14 days but stay in owner history. Follow
+  [the rollout/device runbook](./backlog/PUBLIC-PRAYER-EXPIRY.md). Migrations 042/043
+  are live, with content and moderator access preserved. Private and Circle
+  prayers do not expire.
 
 - Logged-out users see only the native auth stack
 - Public, Prayer Circle, and Private are distinct spaces in the signed-in tab bar

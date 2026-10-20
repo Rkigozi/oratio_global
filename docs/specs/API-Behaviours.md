@@ -1,7 +1,9 @@
 # API Behaviours
 
-> **⚠️ FUTURE TARGET — Not yet implemented.**
-> The app currently uses mock data + localStorage with no backend. This document defines the REST API endpoints to be built during backend integration (planned for v0.3). See `src/app/data/` for the current mock data layer.
+> **Historical prototype proposal, not the current API.** Current clients use
+> shared Supabase SDK queries, scoped RPCs and Edge Functions. The custom REST
+> endpoints below are not the implemented contract; use the
+> [active HLD/LLDs](../design/README.md).
 
 ## 1. Purpose
 

@@ -1,12 +1,16 @@
 # Oratio Codebase Navigation Guide
 
-Last updated: 2026-09-10
+Last updated: 2026-10-20
 
 A plain-English map of the Oratio V1 codebase.
 
 ## Short Answer
 
 Oratio is a monorepo in an iOS-first migration. `apps/mobile` is the product, `apps/web` is becoming the landing/web presence, `packages/shared` holds cross-platform product logic, and Supabase is the common backend.
+
+Start at the [design index](./design/README.md) for active requirements, the
+[HLD](./ARCHITECTURE.md), domain LLDs and [Jira/test traceability](./design/TRACEABILITY.md).
+This guide is the file lookup; historical `docs/specs/` proposals are not active contracts.
 
 ## Mental Model
 
@@ -64,7 +68,7 @@ Logged in: Public / Map / Prayer Circle / Private / Me tabs → Submit, Prayer D
 | Client adapters | `apps/mobile/src/services/supabase.ts`, `apps/web/src/app/services/supabase.ts` |
 | Domain queries  | `packages/shared/src/queries/`                                                  |
 | Web shims       | `apps/web/src/app/services/`                                                    |
-| Migrations      | `supabase/migrations/` (38, immutable once applied)                             |
+| Migrations      | `supabase/migrations/` (001-043 at this review; immutable once applied)         |
 | Edge functions  | `supabase/functions/`                                                           |
 
 ## Environment Variables
@@ -76,7 +80,7 @@ Web: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`, `VITE_POS
 ## Deploys
 
 Netlify deploys only `apps/web`. Native development currently uses Expo Go;
-EAS/TestFlight has not been configured as the release channel yet. The first
+EAS profiles are prepared, but actual signing/TestFlight distribution remains open. The first
 public release targets the Apple App Store; Android release work is isolated in
 post-launch epic `SCRUM-79`.
 
@@ -97,9 +101,9 @@ Use Node 22 from `.nvmrc`; unsupported Node versions can create misleading Expo/
 
 ## How To Navigate A Future Change
 
-1. Which user flow is affected?
-2. Is it native product UI, web presence, or shared logic?
+1. Which requirement, domain LLD and existing Jira story are affected?
+2. Which user flow and platform own the change?
 3. Which screen and shared query module own it?
 4. Does the database/RLS need a new migration?
 5. Which native/web tests should prove it?
-6. Does the QA checklist need a row?
+6. Does traceability or the functional/NFR acceptance record need an update?
