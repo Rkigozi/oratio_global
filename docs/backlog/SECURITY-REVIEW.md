@@ -1,8 +1,30 @@
 # iOS Launch Security Review
 
-Last updated: 2026-10-19. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
+Last updated: 2026-10-20. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
 Status: **In Progress**, not security sign-off. Supports NFR-01 in
 [the NFR checklist](../NFR-CHECKLIST.md).
+
+## Web Tooling Patch (2026-10-20)
+
+The first checkpoint push (`817b4b8` feature, `43717da` design) reached
+[CI run 39503260467](https://github.com/Rkigozi/oratio_global/actions/runs/39503260467).
+Its strict web development-tool audit caught a newly reported high-severity
+Vite entry with three launch-editor advisories, including
+[the maintainer's CLI-argument advisory](https://github.com/vitejs/launch-editor/security/advisories/GHSA-r825-w8mm-5pxw).
+The initial web job stopped at the audit; local feature tests were not failing.
+
+The exact Vite pin and existing pnpm metadata were moved from 6.4.3 to the
+[same-series 6.4.4 security release](https://github.com/vitejs/vite/releases/tag/v6.4.4).
+The root lockfile retains its existing hoisted layout, changes only the Vite
+version/artifact metadata and workspace requirement, and adds no audit waiver.
+A clean install with CI's npm 10.9.9 reapplied/verified the existing Forge
+backport. Strict web tooling audit now reports zero vulnerabilities; all 549 web
+tests with coverage, type check, lint, production/PWA build and ten isolated
+expiry browser journeys passed against the patched install.
+
+The mobile exception, scope and expiry are unchanged. This patch does not close
+the strict native release audit, full security review or any NFR gate. Hosted
+checks for the follow-up revision must be verified separately.
 
 ## Live Security Migration (2026-10-19)
 
