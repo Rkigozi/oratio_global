@@ -2,6 +2,8 @@ export interface PrayerRequest {
   id: string;
   city: string;
   country: string;
+  placeId?: string;
+  countryCode?: string;
   text: string;
   audience?: 'public' | 'circle' | 'private';
   name?: string; // Legacy field - use displayName instead

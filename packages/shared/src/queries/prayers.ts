@@ -1,16 +1,13 @@
 import { getSupabaseClient } from '../client';
 import {
-  hasMappablePrayerLocation,
-  mapHotspotTotal,
   mapOwnedPrayerRequest,
   mapPrayerRequest,
   PRAYER_SELECT,
   PRAYER_SELECT_COLUMNS,
   type FeedAudienceMode,
-  type MapHotspotTotalRow,
-  type RpcResponse,
 } from './shared';
 import { normalizePrayerLocation, type PrayerRequest } from '../prayer-data';
+import { mapHotspotTotal, type MapHotspot } from '../map-hotspots';
 import { getProfileByUsername } from './profiles';
 import { logError } from '../logger';
 
@@ -38,60 +35,124 @@ function normalizeFeedSearchTerm(value?: string): string {
 // ─── Map Hotspots ──────────────────────────────────────────────────────
 
 export async function getMapHotspots({ throwOnError = false }: QueryBehavior = {}): Promise<
-  PrayerRequest[]
+  MapHotspot[]
 > {
-  const aggregateResult = (await supabase.rpc('get_map_hotspot_totals')) as unknown as RpcResponse<
-    MapHotspotTotalRow[]
-  >;
-
-  if (!aggregateResult.error && aggregateResult.data) {
-    return aggregateResult.data.map(mapHotspotTotal).filter(hasMappablePrayerLocation);
-  }
-
-  const { data, error } = await supabase
-    .from('prayer_requests')
-    .select(PRAYER_SELECT)
-    .eq('audience', 'public')
-    .gt('public_expires_at', new Date().toISOString())
-    .not('location_lat', 'is', null)
-    .not('location_lng', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(200);
-
-  if (error) {
+  try {
+    const { data, error } = await supabase.rpc('get_map_hotspot_totals');
+    if (error || !Array.isArray(data)) throw new Error('Invalid map totals');
+    const places = new Set<string>();
+    return data.map((row: unknown) => {
+      const hotspot = mapHotspotTotal(row);
+      if (!hotspot || places.has(hotspot.placeId)) throw new Error('Invalid map totals');
+      places.add(hotspot.placeId);
+      return hotspot;
+    });
+  } catch {
+    const error = new Error('Prayer map is unavailable');
     logError('getMapHotspots', error);
     if (throwOnError) throw error;
     return [];
   }
-
-  if (!data) {
-    return [];
-  }
-
-  return data
-    .map((row: Record<string, unknown>) => mapPrayerRequest(row))
-    .filter(hasMappablePrayerLocation);
 }
 
 // ─── Feed ──────────────────────────────────────────────────────────────
+
+export type LocationPrayerCursor = { createdAt: string; id: string };
+export type LocationPrayerPage = {
+  prayers: PrayerRequest[];
+  nextCursor: LocationPrayerCursor | null;
+  // A first-page snapshot, not a live or all-time total. Later pages omit it.
+  totalCount: number | null;
+};
+
+function validLocationCursor(cursor: LocationPrayerCursor): boolean {
+  return (
+    typeof cursor.createdAt === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/.test(
+      cursor.createdAt
+    ) &&
+    Number.isFinite(Date.parse(cursor.createdAt)) &&
+    /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(cursor.id)
+  );
+}
+
+export async function getPublicPrayersAtLocationPage(
+  city: string,
+  country: string,
+  {
+    placeId,
+    cursor,
+    pageLimit = 50,
+  }: {
+    placeId?: string;
+    cursor?: LocationPrayerCursor;
+    pageLimit?: number;
+  } = {}
+): Promise<LocationPrayerPage> {
+  try {
+    if (cursor && !validLocationCursor(cursor)) throw new Error('Invalid location cursor');
+    const limit = Number.isFinite(pageLimit)
+      ? Math.max(1, Math.min(100, Math.trunc(pageLimit)))
+      : 50;
+    const location = normalizePrayerLocation(city, country);
+    let query = supabase
+      .from('prayer_requests')
+      .select(PRAYER_SELECT, cursor ? undefined : { count: 'exact' })
+      .eq('audience', 'public')
+      .gt('public_expires_at', new Date().toISOString());
+    query = placeId
+      ? query.eq('location_place_id', placeId)
+      : query.eq('location_city', location.city).eq('location_country', location.country);
+    if (cursor) {
+      // Keep PostgreSQL's microsecond precision; Date.toISOString would lose rows.
+      query = query.or(
+        `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`
+      );
+    }
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(limit + 1);
+    if (error || !Array.isArray(data)) throw new Error('Invalid location page');
+    const prayers = data
+      .slice(0, limit)
+      .map((row: Record<string, unknown>) => mapPrayerRequest(row));
+    const last = prayers.at(-1);
+    const nextCursor =
+      data.length > limit && last ? { createdAt: last.createdAt!, id: last.id } : null;
+    if (nextCursor && !validLocationCursor(nextCursor)) throw new Error('Invalid location page');
+    return {
+      prayers,
+      nextCursor,
+      totalCount:
+        !cursor && typeof count === 'number' && Number.isSafeInteger(count) && count >= 0
+          ? count
+          : null,
+    };
+  } catch {
+    const error = new Error('Location prayers are unavailable');
+    logError('getPublicPrayersAtLocationPage', error);
+    throw error;
+  }
+}
 
 export async function getPublicPrayersAtLocation(
   city: string,
   country: string,
   pageLimit = 50,
-  { throwOnError = false }: QueryBehavior = {}
+  { throwOnError = false, placeId }: QueryBehavior & { placeId?: string } = {}
 ): Promise<PrayerRequest[]> {
   const location = normalizePrayerLocation(city, country);
   const safeLimit = Math.max(1, Math.min(pageLimit, 100));
-  const { data, error } = await supabase
+  let query = supabase
     .from('prayer_requests')
     .select(PRAYER_SELECT)
     .eq('audience', 'public')
-    .gt('public_expires_at', new Date().toISOString())
-    .eq('location_city', location.city)
-    .eq('location_country', location.country)
-    .order('created_at', { ascending: false })
-    .limit(safeLimit);
+    .gt('public_expires_at', new Date().toISOString());
+  query = placeId
+    ? query.eq('location_place_id', placeId)
+    : query.eq('location_city', location.city).eq('location_country', location.country);
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(safeLimit);
 
   if (error) {
     logError('getPublicPrayersAtLocation', error);
@@ -110,14 +171,17 @@ export async function getFeedPrayers(
   cursor?: string,
   pageLimit = 20,
   audienceMode: FeedAudienceMode = 'public',
-  filters: FeedPrayerFilters = {}
+  filters: FeedPrayerFilters = {},
+  { throwOnError = false }: QueryBehavior = {}
 ): Promise<PrayerRequest[]> {
   let savedPrayerIds: string[] | null = null;
 
   if (filters.savedOnly) {
     const {
       data: { user },
+      error: authError,
     } = await supabase.auth.getUser();
+    if (authError && throwOnError) throw new Error('Prayer feed is unavailable');
     if (!user) return [];
 
     const { data, error } = await supabase
@@ -127,6 +191,7 @@ export async function getFeedPrayers(
 
     if (error || !data) {
       logError('fetch saved feed IDs', error);
+      if (throwOnError) throw new Error('Prayer feed is unavailable');
       return [];
     }
 
@@ -171,13 +236,17 @@ export async function getFeedPrayers(
 
   if (error || !data) {
     logError('getFeedPrayers', error);
+    if (throwOnError) throw new Error('Prayer feed is unavailable');
     return [];
   }
 
   return data.map((row: Record<string, unknown>) => mapPrayerRequest(row));
 }
 
-export async function getPrayerById(prayerId: string): Promise<PrayerRequest | null> {
+export async function getPrayerById(
+  prayerId: string,
+  { throwOnError = false }: QueryBehavior = {}
+): Promise<PrayerRequest | null> {
   const { data, error } = await supabase
     .from('prayer_requests')
     .select(PRAYER_SELECT)
@@ -186,6 +255,7 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
 
   if (error) {
     logError('fetch prayer', error);
+    if (throwOnError) throw new Error('Prayer is unavailable');
     return null;
   }
 
@@ -199,41 +269,114 @@ export async function getPrayerById(prayerId: string): Promise<PrayerRequest | n
   return user?.id && row.user_id === user.id ? mapOwnedPrayerRequest(row) : mapPrayerRequest(row);
 }
 
+export class PrayerSubmissionError extends Error {
+  constructor(public readonly uncertain: boolean) {
+    super(uncertain ? 'Prayer submission could not be confirmed' : 'Prayer could not be saved');
+    this.name = 'PrayerSubmissionError';
+  }
+}
+
 export async function createPrayerRequest(
-  prayer: Omit<PrayerRequest, 'id' | 'createdAt'>
+  prayer: Omit<PrayerRequest, 'id' | 'createdAt'>,
+  {
+    requestId,
+    expectedUserId,
+    verifyExisting = false,
+    throwOnError = false,
+  }: QueryBehavior & {
+    requestId?: string;
+    expectedUserId?: string;
+    verifyExisting?: boolean;
+  } = {}
 ): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  let writeStarted = false;
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user || (expectedUserId && user.id !== expectedUserId))
+      throw new PrayerSubmissionError(verifyExisting);
+    if (requestId && !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(requestId))
+      throw new PrayerSubmissionError(false);
 
-  const isPrivate = prayer.audience === 'private';
-  const location = isPrivate
-    ? { city: '', country: '' }
-    : normalizePrayerLocation(prayer.city, prayer.country);
+    const recover = async () => {
+      const { data: existing, error } = await supabase
+        .from('prayer_requests')
+        .select('id, user_id, body, audience, is_anonymous, comments_enabled, location_place_id')
+        .eq('id', requestId!)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) throw new PrayerSubmissionError(true);
+      if (!existing) return null;
+      if (
+        existing.id !== requestId ||
+        existing.user_id !== user.id ||
+        existing.body !== prayer.text ||
+        existing.audience !== (prayer.audience ?? 'public') ||
+        existing.is_anonymous !== !prayer.username ||
+        existing.comments_enabled !== (prayer.commentsEnabled ?? true) ||
+        (prayer.audience !== 'private' &&
+          prayer.placeId &&
+          existing.location_place_id !== prayer.placeId)
+      ) {
+        throw new PrayerSubmissionError(true);
+      }
+      return requestId!;
+    };
+    if (requestId && verifyExisting) {
+      const recovered = await recover();
+      if (recovered) return recovered;
+    }
 
-  const { data, error } = await supabase
-    .from('prayer_requests')
-    .insert({
-      user_id: user.id,
-      body: prayer.text,
-      category: prayer.category || null,
-      audience: prayer.audience || 'public',
-      location_city: location.city,
-      location_country: location.country,
-      location_lat: isPrivate ? null : prayer.lat,
-      location_lng: isPrivate ? null : prayer.lng,
-      is_anonymous: !prayer.username,
-      comments_enabled: prayer.commentsEnabled ?? true,
-    })
-    .select('id')
-    .single();
+    const isPrivate = prayer.audience === 'private';
+    const location = isPrivate
+      ? { city: '', country: '' }
+      : !prayer.country.trim() || prayer.country.trim().toLowerCase() === 'unknown'
+        ? { city: prayer.city.trim() || 'Unknown', country: 'Unknown' }
+        : normalizePrayerLocation(prayer.city, prayer.country);
 
-  if (error) {
+    writeStarted = true;
+    const { data, error } = await supabase
+      .from('prayer_requests')
+      .insert({
+        ...(requestId ? { id: requestId } : {}),
+        user_id: user.id,
+        body: prayer.text,
+        category: prayer.category || null,
+        audience: prayer.audience || 'public',
+        location_city: location.city,
+        location_country: location.country,
+        // Canonical coordinates come from the database catalog, never caller GPS.
+        location_lat: null,
+        location_lng: null,
+        ...(!isPrivate && prayer.placeId ? { location_place_id: prayer.placeId } : {}),
+        is_anonymous: !prayer.username,
+        comments_enabled: prayer.commentsEnabled ?? true,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      if (requestId && error.code === '23505') {
+        const recovered = await recover();
+        if (recovered) return recovered;
+        throw new PrayerSubmissionError(true);
+      }
+      // HTTP status alone cannot distinguish rejection from a failed write confirmation.
+      const rejected = ['42501', '23514', '23503', '22023'].includes(error.code);
+      throw new PrayerSubmissionError(verifyExisting || !rejected);
+    }
+    if (!data?.id || (requestId && data.id !== requestId)) throw new PrayerSubmissionError(true);
+    return (data as { id: string }).id;
+  } catch (cause) {
+    const error =
+      cause instanceof PrayerSubmissionError
+        ? cause
+        : new PrayerSubmissionError(writeStarted || verifyExisting);
     logError('create prayer', error);
+    if (throwOnError) throw error;
     return null;
   }
-  return (data as { id: string }).id;
 }
 
 export async function updatePrayerRequest(

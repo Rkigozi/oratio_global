@@ -179,8 +179,18 @@ function PrayerFeedScreen({
   const [activeSearch, setActiveSearch] = useState('');
   const countryFilter = filtersEnabled && filterMode === 'country' ? selectedCountry : undefined;
   const savedOnly = filtersEnabled && filterMode === 'saved';
-  const { prayers, loading, refreshing, loadingMore, hasMore, error, refresh, loadMore, load } =
-    useFeed(audienceMode, { country: countryFilter, savedOnly, search: activeSearch });
+  const {
+    prayers,
+    loading,
+    refreshing,
+    loadingMore,
+    error,
+    pageError,
+    refresh,
+    loadMore,
+    load,
+    cancel,
+  } = useFeed(audienceMode, { country: countryFilter, savedOnly, search: activeSearch });
   const trendingHashtags = useMemo(() => getHashtagCounts(prayers).slice(0, 8), [prayers]);
   const feedSummary = activeSearch
     ? `Search: ${activeSearch}`
@@ -217,7 +227,8 @@ function PrayerFeedScreen({
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [load])
+      return cancel;
+    }, [load, cancel])
   );
 
   return (
@@ -402,10 +413,10 @@ function PrayerFeedScreen({
         <View style={styles.center}>
           <Text style={styles.dim}>Loading prayers…</Text>
         </View>
-      ) : error ? (
+      ) : error && prayers.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.dim}>{error}</Text>
-          <Pressable onPress={() => void refresh()} style={styles.retry}>
+          <Pressable accessibilityRole="button" onPress={() => void refresh()} style={styles.retry}>
             <Text style={styles.retryText}>Retry</Text>
           </Pressable>
         </View>
@@ -414,6 +425,22 @@ function PrayerFeedScreen({
           data={prayers}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          ListHeaderComponent={
+            error ? (
+              <View style={styles.center}>
+                <Text accessibilityRole="alert" style={styles.dim}>
+                  {error}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void refresh()}
+                  style={styles.retry}
+                >
+                  <Text style={styles.retryText}>Retry refresh</Text>
+                </Pressable>
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => (
             <PrayerCard
               onAuthorPress={
@@ -432,7 +459,7 @@ function PrayerFeedScreen({
               tintColor={colors.accent}
             />
           }
-          onEndReached={() => void loadMore()}
+          onEndReached={pageError ? undefined : () => void loadMore()}
           onEndReachedThreshold={0.4}
           ListEmptyComponent={
             <View style={styles.center}>
@@ -440,7 +467,22 @@ function PrayerFeedScreen({
             </View>
           }
           ListFooterComponent={
-            loadingMore ? <Text style={styles.footer}>Loading more…</Text> : hasMore ? null : null
+            loadingMore ? (
+              <Text style={styles.footer}>Loading more…</Text>
+            ) : pageError ? (
+              <View style={styles.center}>
+                <Text accessibilityRole="alert" style={styles.dim}>
+                  {pageError}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void loadMore()}
+                  style={styles.retry}
+                >
+                  <Text style={styles.retryText}>Retry loading more</Text>
+                </Pressable>
+              </View>
+            ) : null
           }
         />
       )}

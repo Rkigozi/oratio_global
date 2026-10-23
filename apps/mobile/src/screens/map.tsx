@@ -24,7 +24,16 @@ import type {
 } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, ArrowRight, LocateFixed, RefreshCw } from 'lucide-react-native';
-import { getMapHotspots, getPublicPrayersAtLocation } from '@oratio/shared/queries';
+import {
+  getMapHotspots,
+  getPublicPrayersAtLocationPage,
+  type LocationPrayerCursor,
+} from '@oratio/shared/queries';
+import {
+  getHotspotMarkerSize,
+  isMapHotspotCurrent,
+  type MapHotspot,
+} from '@oratio/shared/map-hotspots';
 import { isPrayerArchived, type PrayerRequest } from '@oratio/shared/prayer-data';
 import { PrayerCard } from '../components/prayer-card';
 import { asNativeIcon } from '../components/icon';
@@ -32,6 +41,7 @@ import { BrandLockup } from '../components/brand-lockup';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useTheme } from '../hooks/theme-context';
 import { usePrayerClock } from '../hooks/use-prayer-clock';
+import { withRequestTimeout } from '../services/request-timeout';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -91,39 +101,49 @@ export function MapScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { theme } = useTheme();
   const mapRef = useRef<MapView>(null);
-  const [hotspots, setHotspots] = useState<PrayerRequest[]>([]);
-  const now = usePrayerClock(hotspots);
+  const [hotspots, setHotspots] = useState<MapHotspot[]>([]);
+  const now = usePrayerClock(hotspots.map((hotspot) => ({ expiresAt: hotspot.nextExpiresAt })));
   const nextExpiry = Math.min(
-    ...hotspots.map((prayer) => Date.parse(prayer.expiresAt || '')).filter(Number.isFinite)
+    ...hotspots.map((hotspot) => Date.parse(hotspot.nextExpiresAt)).filter(Number.isFinite)
   );
-  const [selected, setSelected] = useState<PrayerRequest | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const visibleHotspots = hotspots.filter((hotspot) => isMapHotspotCurrent(hotspot, now));
+  const selected = visibleHotspots.find((hotspot) => hotspot.placeId === selectedPlaceId);
+  const mapRequest = useRef(0);
   const [loading, setLoading] = useState(true);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleMapPress = useCallback((event: MapPressEvent) => {
-    if (event.nativeEvent.action !== 'marker-press') setSelected(null);
+    if (event.nativeEvent.action !== 'marker-press') setSelectedPlaceId(null);
   }, []);
 
   const handleMarkerPress = useCallback(
-    (event: MarkerPressEvent | undefined, hotspot: PrayerRequest) => {
+    (event: MarkerPressEvent | undefined, hotspot: MapHotspot) => {
       event?.stopPropagation();
-      setSelected(hotspot);
+      setSelectedPlaceId(hotspot.placeId);
     },
     []
   );
 
   const load = useCallback(async () => {
+    const request = ++mapRequest.current;
     setLoading(true);
     setError(null);
     try {
-      const next = await getMapHotspots({ throwOnError: true });
+      const next = await withRequestTimeout(getMapHotspots({ throwOnError: true }));
+      if (request !== mapRequest.current) return;
       setHotspots(next);
-      setSelected((current) => next.find((item) => item.id === current?.id) || null);
+      setSelectedPlaceId((current) =>
+        next.some((hotspot) => hotspot.placeId === current) ? current : null
+      );
     } catch {
+      if (request !== mapRequest.current) return;
+      setHotspots([]);
+      setSelectedPlaceId(null);
       setError("We couldn't load the prayer map. Check your connection and try again.");
     } finally {
-      setLoading(false);
+      if (request === mapRequest.current) setLoading(false);
     }
   }, []);
 
@@ -154,7 +174,7 @@ export function MapScreen() {
           accuracy: Location.Accuracy.Balanced,
         }));
 
-      setSelected(null);
+      setSelectedPlaceId(null);
       mapRef.current?.animateToRegion(
         {
           latitude: position.coords.latitude,
@@ -181,6 +201,11 @@ export function MapScreen() {
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        mapRequest.current += 1;
+        setHotspots([]);
+        setSelectedPlaceId(null);
+      };
     }, [load])
   );
 
@@ -207,31 +232,30 @@ export function MapScreen() {
         userInterfaceStyle={theme}
         zoomEnabled
       >
-        {hotspots
-          .filter((hotspot) => !isPrayerArchived(hotspot, now))
-          .map((hotspot) => {
-            const activity = Math.max(hotspot.requestCount || 1, hotspot.prayerCount || 0);
-            const markerSize = Math.min(30, 16 + Math.sqrt(activity) * 2);
+        {visibleHotspots.map((hotspot) => {
+          const markerSize = getHotspotMarkerSize(hotspot.recentRequestCount);
 
-            return (
-              <Marker
-                key={hotspot.id}
-                accessibilityLabel={`View prayer activity in ${hotspot.city}`}
-                coordinate={{ latitude: hotspot.lat, longitude: hotspot.lng }}
-                onPress={(event) => handleMarkerPress(event, hotspot)}
-                tracksViewChanges={false}
+          // Native marker views are cached; a size change needs a fresh snapshot.
+          return (
+            <Marker
+              key={`${hotspot.placeId}:${markerSize}`}
+              accessibilityLabel={`View prayer activity in ${hotspot.city}`}
+              coordinate={{ latitude: hotspot.lat, longitude: hotspot.lng }}
+              onPress={(event) => handleMarkerPress(event, hotspot)}
+              tracksViewChanges={false}
+            >
+              <View
+                testID={`hotspot-${hotspot.placeId}`}
+                style={[
+                  styles.markerHalo,
+                  { width: markerSize, height: markerSize, borderRadius: markerSize / 2 },
+                ]}
               >
-                <View
-                  style={[
-                    styles.markerHalo,
-                    { width: markerSize, height: markerSize, borderRadius: markerSize / 2 },
-                  ]}
-                >
-                  <View style={styles.markerCore} />
-                </View>
-              </Marker>
-            );
-          })}
+                <View style={styles.markerCore} />
+              </View>
+            </Marker>
+          );
+        })}
       </MapView>
 
       <SafeAreaView edges={['top']} pointerEvents="box-none" style={styles.mapHeaderSafeArea}>
@@ -271,7 +295,7 @@ export function MapScreen() {
         )}
       </Pressable>
 
-      {!loading && hotspots.length === 0 && !error && (
+      {!loading && visibleHotspots.length === 0 && !error && (
         <View style={styles.mapMessage}>
           <Text style={styles.mapMessageTitle}>The map is quiet for now</Text>
           <Text style={styles.mapMessageText}>
@@ -293,28 +317,28 @@ export function MapScreen() {
         </View>
       )}
 
-      {selected && !isPrayerArchived(selected, now) && (
+      {selected && (
         <View accessibilityRole="summary" style={styles.locationSheet}>
           <View style={styles.sheetHandle} />
           <Text style={styles.locationName}>{selected.city}</Text>
           <Text style={styles.countryName}>{selected.country}</Text>
           <View style={styles.totalsRow}>
             <View style={styles.totalItem}>
-              <Text style={styles.totalValue}>{selected.requestCount || 1}</Text>
+              <Text style={styles.totalValue}>{selected.requestCount}</Text>
               <Text style={styles.totalLabel}>
-                {(selected.requestCount || 1) === 1 ? 'prayer request' : 'prayer requests'}
+                {selected.requestCount === 1 ? 'prayer request' : 'prayer requests'}
               </Text>
             </View>
             <View style={styles.totalDivider} />
             <View style={styles.totalItem}>
-              <Text style={styles.totalValue}>{selected.prayerCount || 0}</Text>
+              <Text style={styles.totalValue}>{selected.peoplePrayedCount}</Text>
               <Text style={styles.totalLabel}>
-                {(selected.prayerCount || 0) === 1 ? 'person prayed' : 'people prayed'}
+                {selected.peoplePrayedCount === 1 ? 'person prayed' : 'people prayed'}
               </Text>
             </View>
           </View>
           <Text style={styles.sheetSummary}>
-            {requestLabel(selected.requestCount || 1)}. {prayedLabel(selected.prayerCount || 0)}.
+            {requestLabel(selected.requestCount)}. {prayedLabel(selected.peoplePrayedCount)}.
           </Text>
           <Pressable
             accessibilityRole="button"
@@ -322,6 +346,7 @@ export function MapScreen() {
               navigation.navigate('LocationPrayers', {
                 city: selected.city,
                 country: selected.country,
+                ...(selected.placeId ? { placeId: selected.placeId } : {}),
               })
             }
             style={styles.locationButton}
@@ -339,33 +364,99 @@ export function LocationPrayersScreen({
   navigation,
   route,
 }: NativeStackScreenProps<RootStackParamList, 'LocationPrayers'>) {
-  const { city, country } = route.params;
+  const { city, country, placeId } = route.params;
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const now = usePrayerClock(prayers);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<LocationPrayerCursor | null>(null);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const requestGeneration = useRef(0);
+  const resetting = useRef(false);
+  const paging = useRef(false);
+  const visiblePrayers = prayers.filter((prayer) => !isPrayerArchived(prayer, now));
 
   const load = useCallback(
     async (isRefresh = false) => {
+      const request = ++requestGeneration.current;
+      resetting.current = true;
+      paging.current = false;
+      setLoadingMore(false);
+      setPageError(null);
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
       setError(null);
       try {
-        setPrayers(await getPublicPrayersAtLocation(city, country, 50, { throwOnError: true }));
+        const page = await withRequestTimeout(
+          getPublicPrayersAtLocationPage(city, country, { placeId })
+        );
+        if (request !== requestGeneration.current) return;
+        setPrayers(page.prayers);
+        setNextCursor(page.nextCursor);
+        setTotalCount(page.totalCount);
       } catch {
+        if (request !== requestGeneration.current) return;
         setError("We couldn't load prayers from this location. Try again.");
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (request === requestGeneration.current) {
+          resetting.current = false;
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
-    [city, country]
+    [city, country, placeId]
   );
+
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || paging.current || resetting.current || error) return;
+    const request = requestGeneration.current;
+    paging.current = true;
+    setLoadingMore(true);
+    setPageError(null);
+    try {
+      const page = await withRequestTimeout(
+        getPublicPrayersAtLocationPage(city, country, {
+          placeId,
+          cursor: nextCursor,
+        })
+      );
+      if (request !== requestGeneration.current) return;
+      setPrayers((current) => {
+        const ids = new Set(current.map((prayer) => prayer.id));
+        return [
+          ...current,
+          ...page.prayers.filter((prayer) => {
+            if (ids.has(prayer.id)) return false;
+            ids.add(prayer.id);
+            return true;
+          }),
+        ];
+      });
+      setNextCursor(page.nextCursor);
+    } catch {
+      if (request === requestGeneration.current) setPageError("We couldn't load more prayers.");
+    } finally {
+      if (request === requestGeneration.current) {
+        paging.current = false;
+        setLoadingMore(false);
+      }
+    }
+  }, [city, country, placeId, nextCursor, error]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        requestGeneration.current += 1;
+        resetting.current = true;
+        setPrayers([]);
+        setNextCursor(null);
+        setTotalCount(null);
+      };
     }, [load])
   );
 
@@ -390,7 +481,7 @@ export function LocationPrayersScreen({
         <View style={styles.centerState}>
           <ActivityIndicator color={colors.accent} />
         </View>
-      ) : error ? (
+      ) : error && prayers.length === 0 ? (
         <View style={styles.centerState}>
           <Text style={styles.stateText}>{error}</Text>
           <Pressable
@@ -404,8 +495,66 @@ export function LocationPrayersScreen({
       ) : (
         <FlatList
           contentContainerStyle={styles.prayerList}
-          data={prayers.filter((prayer) => !isPrayerArchived(prayer, now))}
+          data={visiblePrayers}
           keyExtractor={(item) => item.id}
+          onEndReached={pageError ? undefined : () => void loadMore()}
+          onEndReachedThreshold={0.4}
+          ListHeaderComponent={
+            <View style={styles.listSummary}>
+              {totalCount !== null && (
+                <Text style={styles.stateText}>{requestLabel(totalCount)} at last refresh</Text>
+              )}
+              <Text style={styles.stateText}>{visiblePrayers.length} loaded</Text>
+              {error && (
+                <>
+                  <Text accessibilityRole="alert" style={styles.stateText}>
+                    {error}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void load(true)}
+                    style={styles.retryButton}
+                  >
+                    <Text style={styles.retryText}>Retry refresh</Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
+          }
+          ListFooterComponent={
+            <View style={styles.listFooter}>
+              {loadingMore ? (
+                <ActivityIndicator
+                  accessibilityLabel="Loading more prayers"
+                  color={colors.accent}
+                />
+              ) : pageError ? (
+                <>
+                  <Text accessibilityRole="alert" style={styles.stateText}>
+                    {pageError}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void loadMore()}
+                    style={styles.retryButton}
+                  >
+                    <Text style={styles.retryText}>Retry loading more</Text>
+                  </Pressable>
+                </>
+              ) : nextCursor && !error ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={refreshing}
+                  onPress={() => void loadMore()}
+                  style={styles.retryButton}
+                >
+                  <Text style={styles.retryText}>Load more prayers</Text>
+                </Pressable>
+              ) : visiblePrayers.length > 0 && !error ? (
+                <Text style={styles.stateText}>You're up to date</Text>
+              ) : null}
+            </View>
+          }
           ListEmptyComponent={
             <View style={styles.centerState}>
               <Text style={styles.stateText}>No public prayers are available here right now.</Text>
@@ -667,5 +816,16 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingBottom: 24,
+  },
+  listSummary: {
+    paddingVertical: 14,
+    gap: 6,
+  },
+  listFooter: {
+    minHeight: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
   },
 });

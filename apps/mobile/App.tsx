@@ -12,7 +12,7 @@ import { useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
-import { AuthProvider } from './src/hooks/auth-context';
+import { AuthProvider, useAuth } from './src/hooks/auth-context';
 import { ActivityUpdatesProvider } from './src/hooks/activity-updates-context';
 import { useTheme } from './src/hooks/theme-context';
 import { ThemeProvider } from './src/hooks/theme-provider';
@@ -21,6 +21,7 @@ import { colors } from './src/theme';
 import { ServiceNoticeShell } from './src/components/service-notice';
 
 function AppContent() {
+  const { user } = useAuth();
   const { theme } = useTheme();
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -54,7 +55,7 @@ function AppContent() {
   }
 
   return (
-    <ActivityUpdatesProvider>
+    <ActivityUpdatesProvider key={user?.id ?? 'signed-out'}>
       <ServiceNoticeShell>
         <NavigationContainer theme={navigationTheme}>
           <RootNavigator />

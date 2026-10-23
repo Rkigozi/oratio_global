@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./prayer-data": "./src/prayer-data.ts",
+    "./map-hotspots": "./src/map-hotspots.ts",
     "./validation": "./src/validation.ts",
     "./username": "./src/username.ts",
     "./hashtags": "./src/hashtags.ts",
@@ -18,6 +19,6 @@
     "./queries": "./src/queries/index.ts"
   },
   "dependencies": {
-    "zod": "^4.3.6"
+    "zod": "^4.6.7"
   }
 }

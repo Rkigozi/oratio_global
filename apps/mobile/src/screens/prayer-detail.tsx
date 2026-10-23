@@ -53,6 +53,7 @@ import { useAuth } from '../hooks/auth-context';
 import { useBlockUser } from '../hooks/use-block-user';
 import { usePrayerClock } from '../hooks/use-prayer-clock';
 import { copyPrayerLink, sharePrayer } from '../services/prayer-sharing';
+import { withRequestTimeout } from '../services/request-timeout';
 import { translatePrayerText, type PrayerTranslation } from '../services/prayer-translation';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
@@ -110,19 +111,25 @@ export function PrayerDetailScreen({
   const [showingOriginal, setShowingOriginal] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [translationMessage, setTranslationMessage] = useState('');
+  const loadRequest = useRef(0);
 
   const targetLanguage = resolveTranslationLanguage(languagePreference, getDeviceLocale());
 
   const load = useCallback(async () => {
+    const request = ++loadRequest.current;
     setLoading(true);
     setError(null);
+    setPrayer(null);
     try {
-      const [fetched, prayedIds, savedIds, preferences] = await Promise.all([
-        getPrayerById(prayerId),
-        getMyPrayedIds(),
-        getMySavedIds(),
-        getProfilePreferences(),
-      ]);
+      const [fetched, prayedIds, savedIds, preferences] = await withRequestTimeout(
+        Promise.all([
+          getPrayerById(prayerId, { throwOnError: true }),
+          getMyPrayedIds(),
+          getMySavedIds(),
+          getProfilePreferences(),
+        ])
+      );
+      if (request !== loadRequest.current) return;
       setPrayer(fetched);
       setPrayed(prayedIds.includes(prayerId));
       setSaved(savedIds.includes(prayerId));
@@ -131,15 +138,20 @@ export function PrayerDetailScreen({
       setShowingOriginal(false);
       setTranslationMessage('');
     } catch {
+      if (request !== loadRequest.current) return;
       setError("We couldn't load this prayer. Check your connection and try again.");
     } finally {
-      setLoading(false);
+      if (request === loadRequest.current) setLoading(false);
     }
   }, [prayerId]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        loadRequest.current += 1;
+        setPrayer(null);
+      };
     }, [load])
   );
 
@@ -393,7 +405,20 @@ export function PrayerDetailScreen({
           {error ||
             'Prayer unavailable. It may have expired, been removed, or no longer be shared with you.'}
         </Text>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+        {error && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void load()}
+            style={styles.backButton}
+          >
+            <Text style={styles.backText}>Try again</Text>
+          </Pressable>
+        )}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
           <Text style={styles.backText}>Back</Text>
         </Pressable>
       </SafeAreaView>

@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
-import type { PrayerRequest } from '@oratio/shared/prayer-data';
 
 // Re-evaluate loaded prayers at their deadlines and after returning from background.
-export function usePrayerClock(prayers: readonly PrayerRequest[]): number {
+export function usePrayerClock(prayers: readonly { expiresAt?: string }[]): number {
   const [now, setNow] = useState(Date.now);
   const deadlines = JSON.stringify(prayers.map((prayer) => prayer.expiresAt || null).sort());
   useEffect(() => {

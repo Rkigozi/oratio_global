@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, renderHook, act } from '@testing-library/react';
 import { ThemeProvider, useTheme } from './theme-context';
 
@@ -19,6 +19,10 @@ vi.mock('../services/supabase', () => ({
 
 describe('ThemeProvider', () => {
   const matchMediaMock = vi.fn();
+
+  afterEach(async () => {
+    await vi.dynamicImportSettled();
+  });
 
   beforeEach(() => {
     localStorage.clear();

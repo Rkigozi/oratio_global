@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Alert, Modal } from 'react-native';
 import { PrayerActionsSheet } from '../components/prayer-owner-actions';
@@ -104,6 +104,9 @@ const navigate = jest.fn();
 const reset = jest.fn();
 const navigation = { goBack, navigate, reset } as never;
 const route = { params: { prayerId: 'prayer-1' } } as never;
+afterEach(() => {
+  jest.useRealTimers();
+});
 
 function dismissActionsSheet() {
   const modal = screen.UNSAFE_getByType(PrayerActionsSheet).findByType(Modal);
@@ -135,6 +138,44 @@ describe('PrayerDetailScreen', () => {
     jest.mocked(subscribeToPrayerCommentChanges).mockReturnValue(jest.fn());
     jest.mocked(createReport).mockResolvedValue('created' as never);
     jest.mocked(blockUser).mockResolvedValue(undefined);
+  });
+
+  it('offers retry after a stalled read instead of calling it a missing prayer', async () => {
+    jest.useFakeTimers();
+    jest.mocked(getPrayerById).mockImplementationOnce(() => new Promise(() => {}));
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(18_000);
+    });
+    expect(
+      screen.getByText("We couldn't load this prayer. Check your connection and try again.")
+    ).toBeTruthy();
+    fireEvent.press(screen.getByText('Try again'));
+    expect(await screen.findByText(prayer.text)).toBeTruthy();
+  });
+
+  it('ignores a superseded prayer read after the route changes', async () => {
+    let finish!: (value: never) => void;
+    jest.mocked(getPrayerById).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    const view = render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    jest
+      .mocked(getPrayerById)
+      .mockResolvedValueOnce({ ...prayer, id: 'new-prayer', text: 'New route prayer' } as never);
+    view.rerender(
+      <PrayerDetailScreen
+        navigation={navigation}
+        route={{ params: { prayerId: 'new-prayer' } } as never}
+      />
+    );
+    await screen.findByText('New route prayer');
+    await act(async () => finish(prayer as never));
+    expect(screen.queryByText(prayer.text)).toBeNull();
+    expect(screen.getByText('New route prayer')).toBeTruthy();
   });
 
   it('keeps an owner archive readable and renews it without replacing its history', async () => {
