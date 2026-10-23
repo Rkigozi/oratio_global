@@ -1,12 +1,19 @@
 # Oratio Codebase Navigation Guide
 
-Last updated: 2026-09-10
+Last updated: 2026-10-21
 
 A plain-English map of the Oratio V1 codebase.
 
 ## Short Answer
 
-Oratio is a monorepo in an iOS-first migration. `apps/mobile` is the product, `apps/web` is becoming the landing/web presence, `packages/shared` holds cross-platform product logic, and Supabase is the common backend.
+`apps/mobile` is the iOS product. `apps/web` owns the supporting website, protected
+admin tools and web handoffs; public-site conversion is later work. `packages/shared`
+holds platform-neutral logic and Supabase is the common backend.
+
+Start at the [design index](./design/README.md) for active requirements, the
+[HLD](./ARCHITECTURE.md), domain LLDs and [Jira/test traceability](./design/TRACEABILITY.md).
+This guide is the file lookup, not another release dashboard. Start at
+[docs/README.md](./README.md) for platform scope and current delivery order.
 
 ## Mental Model
 
@@ -22,17 +29,18 @@ For native work:
 
 ## Important Entry Points
 
-| Area                    | File                                      |
-| ----------------------- | ----------------------------------------- |
-| Native entry/providers  | `apps/mobile/App.tsx`                     |
-| Native navigation       | `apps/mobile/src/navigation/index.tsx`    |
-| Native screens          | `apps/mobile/src/screens/`                |
-| Native session/feed     | `apps/mobile/src/hooks/`                  |
-| Native Supabase adapter | `apps/mobile/src/services/supabase.ts`    |
-| Shared domain queries   | `packages/shared/src/queries/`            |
-| Shared types/validation | `packages/shared/src/`                    |
-| Web entry/routes        | `apps/web/src/main.tsx`, `app/routes.tsx` |
-| Database and RLS        | `supabase/migrations/`                    |
+| Area                     | File                                          |
+| ------------------------ | --------------------------------------------- |
+| Native entry/providers   | `apps/mobile/App.tsx`                         |
+| Native navigation        | `apps/mobile/src/navigation/index.tsx`        |
+| Native screens           | `apps/mobile/src/screens/`                    |
+| Native session/feed      | `apps/mobile/src/hooks/`                      |
+| Native Supabase adapter  | `apps/mobile/src/services/supabase.ts`        |
+| Native request deadlines | `apps/mobile/src/services/request-timeout.ts` |
+| Shared domain queries    | `packages/shared/src/queries/`                |
+| Shared types/validation  | `packages/shared/src/`                        |
+| Web entry/routes         | `apps/web/src/main.tsx`, `app/routes.tsx`     |
+| Database and RLS         | `supabase/migrations/`                        |
 
 ## Native Screen Map
 
@@ -42,20 +50,20 @@ Logged in: Public / Map / Prayer Circle / Private / Me tabs → Submit, Prayer D
 
 ## Core Flows → Files
 
-| Flow                   | Native owner                                                 | Shared data owner                            |
-| ---------------------- | ------------------------------------------------------------ | -------------------------------------------- |
-| Auth/session           | `hooks/auth-context.tsx`, auth screens                       | `queries/profiles.ts`                        |
-| Public/circle feeds    | `screens/feed.tsx`, `hooks/use-feed.ts`                      | `queries/prayers.ts`, `queries/saved.ts`     |
-| Private prayer library | `screens/private-prayers.tsx`                                | `queries/prayers.ts#getMyPrayers`            |
-| Global map / locations | `screens/map.tsx`                                            | `queries/prayers.ts#getMapHotspots`          |
-| Submit                 | `screens/submit.tsx`                                         | `queries/prayers.ts`, `validation.ts`        |
-| Prayer detail / prayed | `screens/prayer-detail.tsx`                                  | `queries/prayers.ts`, `queries/interactions` |
-| Comments/private Notes | `components/prayer-comments.tsx`                             | `queries/comments.ts`                        |
-| Circle management      | `screens/prayer-circle-management.tsx`                       | `queries/circle.ts`, `queries/profiles.ts`   |
-| Profile/settings       | `screens/profile.tsx`, `screens/settings.tsx`                | `queries/profiles.ts`, Supabase Storage      |
-| Updates/live badge     | `screens/updates.tsx`, `hooks/activity-updates-context.tsx`  | `queries/updates.ts`                         |
-| Remaining native work  | tracked in JIRA `SCRUM-71`–`SCRUM-75`, `SCRUM-80`–`SCRUM-86` | existing shared query modules                |
-| Web migration source   | matching screens under `apps/web/src/app/`                   | thin web re-exports of shared logic          |
+| Flow                   | Native owner                                                                               | Shared data owner                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| Auth/session           | `hooks/auth-context.tsx`, auth screens                                                     | `queries/profiles.ts`                                                       |
+| Public/circle feeds    | `screens/feed.tsx`, `hooks/use-feed.ts`                                                    | `queries/prayers.ts`, `queries/saved.ts`                                    |
+| Private prayer library | `screens/private-prayers.tsx`                                                              | `queries/prayers.ts#getMyPrayers`                                           |
+| Global map / locations | `screens/map.tsx`                                                                          | `map-hotspots.ts`, `queries/prayers.ts#getMapHotspots`, `queries/places.ts` |
+| Submit                 | `screens/submit.tsx`, `components/prayer-location-picker.tsx`, `services/submission-id.ts` | `queries/prayers.ts`, `queries/places.ts`, `validation.ts`                  |
+| Prayer detail / prayed | `screens/prayer-detail.tsx`                                                                | `queries/prayers.ts`, `queries/interactions`                                |
+| Comments/private Notes | `components/prayer-comments.tsx`                                                           | `queries/comments.ts`                                                       |
+| Circle management      | `screens/prayer-circle-management.tsx`                                                     | `queries/circle.ts`, `queries/profiles.ts`                                  |
+| Profile/settings       | `screens/profile.tsx`, `screens/settings.tsx`                                              | `queries/profiles.ts`, Supabase Storage                                     |
+| Updates/live badge     | `screens/updates.tsx`, `hooks/activity-updates-context.tsx`                                | `queries/updates.ts`                                                        |
+| Remaining native work  | tracked in JIRA `SCRUM-71`–`SCRUM-75`, `SCRUM-80`–`SCRUM-86`                               | existing shared query modules                                               |
+| Supporting web tools   | routes/pages under `apps/web/src/app/`                                                     | thin web re-exports of shared logic                                         |
 
 ## Supabase Map
 
@@ -64,7 +72,7 @@ Logged in: Public / Map / Prayer Circle / Private / Me tabs → Submit, Prayer D
 | Client adapters | `apps/mobile/src/services/supabase.ts`, `apps/web/src/app/services/supabase.ts` |
 | Domain queries  | `packages/shared/src/queries/`                                                  |
 | Web shims       | `apps/web/src/app/services/`                                                    |
-| Migrations      | `supabase/migrations/` (38, immutable once applied)                             |
+| Migrations      | `supabase/migrations/` (001-045 at this review; immutable once applied)         |
 | Edge functions  | `supabase/functions/`                                                           |
 
 ## Environment Variables
@@ -75,8 +83,9 @@ Web: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SENTRY_DSN`, `VITE_POS
 
 ## Deploys
 
-Netlify deploys only `apps/web`. Native development currently uses Expo Go;
-EAS/TestFlight has not been configured as the release channel yet. The first
+Netlify publishes the supporting web workspace/functions, not mobile. Finish
+mobile in Expo Go first; EAS profiles are prepared but Apple membership, signing
+and TestFlight require distribution entry approval. The first
 public release targets the Apple App Store; Android release work is isolated in
 post-launch epic `SCRUM-79`.
 
@@ -97,9 +106,9 @@ Use Node 22 from `.nvmrc`; unsupported Node versions can create misleading Expo/
 
 ## How To Navigate A Future Change
 
-1. Which user flow is affected?
-2. Is it native product UI, web presence, or shared logic?
+1. Which requirement, domain LLD and existing Jira story are affected?
+2. Which user flow and platform own the change?
 3. Which screen and shared query module own it?
 4. Does the database/RLS need a new migration?
 5. Which native/web tests should prove it?
-6. Does the QA checklist need a row?
+6. Does traceability or the functional/NFR acceptance record need an update?

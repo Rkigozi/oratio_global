@@ -18,6 +18,7 @@ vi.mock('../../components/comments/comment-section', () => ({
 vi.mock('../../services/supabase-queries', () => ({
   getPrayerById: vi.fn(),
   updatePrayerRequest: vi.fn(),
+  renewPublicPrayer: vi.fn(),
   togglePray: vi.fn(),
   toggleSavePrayer: vi.fn(),
   getProfileByUsername: vi.fn(),
@@ -66,6 +67,7 @@ vi.mock('motion/react', () => ({
 import { useAuth } from '../../hooks/auth-context';
 import {
   getPrayerById,
+  renewPublicPrayer,
   getMyPrayedIds,
   getMySavedIds,
   getPrayerCircleStatus,
@@ -135,6 +137,26 @@ describe('PrayerDetail', () => {
     vi.mocked(togglePray).mockResolvedValue(true);
     vi.mocked(toggleSavePrayer).mockResolvedValue(true);
     vi.mocked(reportContent).mockResolvedValue({ error: null, alreadyReported: false });
+  });
+
+  it('lets only the owner renew an archived public prayer', async () => {
+    mockAuth('other-user');
+    vi.mocked(getPrayerById).mockResolvedValue({ ...prayer, expiresAt: '2020-01-01T00:00:00Z' });
+    vi.mocked(renewPublicPrayer).mockResolvedValue(
+      new Date(Date.now() + 14 * 86400000).toISOString()
+    );
+    renderDetail();
+    fireEvent.click(await screen.findByRole('button', { name: 'Renew for 14 days' }));
+    expect(await screen.findByText('Your prayer is public again for 14 days.')).toBeInTheDocument();
+    expect(renewPublicPrayer).toHaveBeenCalledWith(prayer.id);
+    expect(screen.getByText(prayer.text)).toBeInTheDocument();
+  });
+
+  it('does not reveal an expired cached prayer through a shared link', async () => {
+    vi.mocked(getPrayerById).mockResolvedValue({ ...prayer, expiresAt: '2020-01-01T00:00:00Z' });
+    renderDetail();
+    expect(await screen.findByText('Prayer unavailable')).toBeInTheDocument();
+    expect(screen.queryByText(prayer.text)).not.toBeInTheDocument();
   });
 
   it('renders the prayer text, location, and attribution', async () => {

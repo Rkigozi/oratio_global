@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { WorldMapClean } from '../../components/world-map-clean';
 import {
   getPrayerLocationKey,
+  isPrayerArchived,
   hasMappablePrayerLocation,
   normalizePrayerLocation,
   type PrayerRequest,
@@ -12,6 +13,7 @@ import { Heart, ArrowRight, MapPin, Locate } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useGeolocation } from '../../hooks/use-geolocation';
 import { getMapHotspots } from '../../services/supabase-queries';
+import { usePrayerClock } from '../../hooks/use-prayer-clock';
 import { logError } from '../../../lib/logger';
 
 function getLocationMarkerId(city: string, country: string) {
@@ -174,6 +176,22 @@ export function Home() {
     resetDenied,
   } = useGeolocation();
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const now = usePrayerClock(prayers);
+  const nextExpiry = Math.min(
+    ...prayers.map((prayer) => Date.parse(prayer.expiresAt || '')).filter(Number.isFinite)
+  );
+  useEffect(() => {
+    if (!(nextExpiry <= now)) return;
+    let active = true;
+    void getMapHotspots()
+      .then((hotspots) => {
+        if (active) setPrayers(hotspots);
+      })
+      .catch((error: unknown) => logError('refresh expired hotspots', error));
+    return () => {
+      active = false;
+    };
+  }, [nextExpiry, now]);
 
   // Load real prayers from Supabase for map hotspots
   useEffect(() => {
@@ -193,9 +211,12 @@ export function Home() {
     };
   }, []);
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
-  const mapPrayers = useMemo(() => aggregateMapPrayers(prayers), [prayers]);
+  const mapPrayers = useMemo(
+    () => aggregateMapPrayers(prayers.filter((prayer) => !isPrayerArchived(prayer, now))),
+    [prayers, now]
+  );
   const selectedPrayerDetails = selectedPrayer
-    ? mapPrayers.find((prayer) => prayer.id === selectedPrayer.id) || selectedPrayer
+    ? mapPrayers.find((prayer) => prayer.id === selectedPrayer.id) || null
     : null;
   const nearbyArea = useMemo(() => {
     if (!geoLocation) return null;
@@ -250,7 +271,14 @@ export function Home() {
 
     const handleAdd = (e: Event) => {
       const prayer = (e as CustomEvent).detail as PrayerRequest;
-      if (prayer.audience === 'circle' || !hasMappablePrayerLocation(prayer)) return;
+      if ((prayer.audience || 'public') !== 'public' || !hasMappablePrayerLocation(prayer)) return;
+
+      if (!prayer.expiresAt) {
+        void getMapHotspots()
+          .then(setPrayers)
+          .catch((error: unknown) => logError('refresh submitted hotspots', error));
+        return;
+      }
 
       const location = normalizePrayerLocation(prayer.city, prayer.country);
       const normalizedPrayer = { ...prayer, city: location.city, country: location.country };
@@ -288,11 +316,18 @@ export function Home() {
     window.addEventListener('oratio-prayer-added', handleAdd);
     window.addEventListener('oratio-prayer-removed', handleRemove);
     window.addEventListener('oratio-prayer-updated', handleUpdate);
+    const renew = () => {
+      void getMapHotspots()
+        .then(setPrayers)
+        .catch((error: unknown) => logError('refresh renewed hotspots', error));
+    };
+    window.addEventListener('oratio-prayer-renewed', renew);
 
     return () => {
       window.removeEventListener('oratio-prayer-added', handleAdd);
       window.removeEventListener('oratio-prayer-removed', handleRemove);
       window.removeEventListener('oratio-prayer-updated', handleUpdate);
+      window.removeEventListener('oratio-prayer-renewed', renew);
     };
   }, []);
 

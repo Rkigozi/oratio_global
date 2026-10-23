@@ -1,5 +1,11 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { getAttributionText, timeAgo, type PrayerRequest } from '@oratio/shared/prayer-data';
+import {
+  getAttributionText,
+  isPrayerArchived,
+  timeAgo,
+  type PrayerRequest,
+} from '@oratio/shared/prayer-data';
+import { usePrayerClock } from '../hooks/use-prayer-clock';
 import { colors, fontFamilies } from '../theme';
 
 export function PrayerCard({
@@ -14,6 +20,7 @@ export function PrayerCard({
   const count = prayer.prayerCount ?? 0;
   const attribution = getAttributionText(prayer);
   const isPrivate = prayer.audience === 'private';
+  const now = usePrayerClock([prayer]);
 
   return (
     <Pressable
@@ -54,7 +61,13 @@ export function PrayerCard({
         </View>
       )}
       <View style={styles.footerRow}>
-        <Text style={styles.time}>{prayer.createdAt ? timeAgo(prayer.createdAt) : ''}</Text>
+        <Text style={styles.time}>
+          {isPrayerArchived(prayer, now)
+            ? 'Archived'
+            : prayer.createdAt
+              ? timeAgo(prayer.createdAt)
+              : ''}
+        </Text>
         {!isPrivate && (
           <Text style={styles.count}>
             🙏 {count} {count === 1 ? 'person prayed' : 'people prayed'}

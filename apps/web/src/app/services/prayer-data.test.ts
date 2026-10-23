@@ -6,8 +6,29 @@ import {
   getPrayerLocationKey,
   normalizePrayerLocation,
   timeAgo,
+  isPrayerArchived,
+  type PrayerRequest,
 } from './prayer-data';
 import { mockFeedPrayers, mockHotspots } from '../../test/mocks/mock-prayers';
+
+describe('public prayer expiry', () => {
+  const deadline = '2026-11-01T12:00:00Z';
+  const prayer = { audience: 'public', expiresAt: deadline } as PrayerRequest;
+  it('archives at the exact UTC deadline, not a local-calendar boundary', () => {
+    const now = Date.parse(deadline);
+    expect(isPrayerArchived(prayer, now - 1)).toBe(false);
+    expect(isPrayerArchived(prayer, now)).toBe(true);
+    expect(isPrayerArchived(prayer, now + 1)).toBe(true);
+  });
+  it('does not expire Circle or Private and tolerates pre-rollout rows', () => {
+    expect(isPrayerArchived({ ...prayer, audience: 'circle' }, Infinity)).toBe(false);
+    expect(isPrayerArchived({ ...prayer, audience: 'private' }, Infinity)).toBe(false);
+    expect(isPrayerArchived({ ...prayer, expiresAt: undefined })).toBe(false);
+  });
+  it('does not treat a malformed public deadline as an active prayer', () => {
+    expect(isPrayerArchived({ ...prayer, expiresAt: 'invalid' })).toBe(true);
+  });
+});
 
 describe('timeAgo', () => {
   it('returns "just now" for recent times', () => {

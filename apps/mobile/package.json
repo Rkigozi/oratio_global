@@ -9,12 +9,16 @@
     "@react-navigation/bottom-tabs": "^7.18.18",
     "@react-navigation/native": "^7.3.18",
     "@react-navigation/native-stack": "^7.18.10",
+    "@sentry/react-native": "~7.11.0",
     "@supabase/supabase-js": "^2.116.0",
-    "expo": "~57.0.21",
+    "expo": "~57.0.27",
+    "expo-application": "~57.0.3",
     "expo-clipboard": "~57.0.1",
-    "expo-font": "~57.0.3",
-    "expo-image-picker": "~57.0.16",
-    "expo-location": "~57.0.17",
+    "expo-constants": "~57.0.21",
+    "expo-font": "~57.0.4",
+    "expo-image-picker": "~57.0.20",
+    "expo-location": "~57.0.20",
+    "expo-modules-core": "57.0.21",
     "expo-status-bar": "~57.0.1",
     "lucide-react-native": "^1.44.0",
     "react": "19.2.3",
@@ -39,6 +43,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "export:ios": "expo export --platform ios --output-dir dist/ios --clear",
+    "check:build-env": "node scripts/check-build-env.cjs",
+    "eas-build-post-install": "node ../../scripts/security-backports/forge-backport.mjs --verify-only && npm run check:build-env",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch"
@@ -49,12 +56,28 @@
     "setupFiles": [
       "<rootDir>/jest.setup.js"
     ],
+    "transform": {
+      "\\.[jt]sx?$": [
+        "babel-jest",
+        {
+          "presets": [
+            "babel-preset-expo"
+          ],
+          "caller": {
+            "name": "metro",
+            "bundler": "metro",
+            "platform": "ios",
+            "preserveEnvVars": true
+          }
+        }
+      ]
+    },
     "testMatch": [
       "**/*.test.ts",
       "**/*.test.tsx"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|lucide-react-native|@supabase/supabase-js|@oratio/.*))"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|lucide-react-native|@supabase/supabase-js|@sentry/.*|@oratio/.*))"
     ],
     "testTimeout": 15000
   }

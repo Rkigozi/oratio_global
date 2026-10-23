@@ -1,11 +1,14 @@
-// Platform-agnostic error logging. The web app plugs its Sentry sink in via
-// setExceptionSink(); the mobile app uses the console-only default for now.
+// Each app supplies its own optional, privacy-aware exception sink.
 
-type ExceptionSink = (exception: Error, context: string, extra: Record<string, unknown>) => void;
+type ExceptionSink = (
+  exception: Error,
+  context: string,
+  extra: Record<string, unknown>
+) => void | Promise<void>;
 
 let exceptionSink: ExceptionSink | null = null;
 
-export function setExceptionSink(fn: ExceptionSink) {
+export function setExceptionSink(fn: ExceptionSink | null) {
   exceptionSink = fn;
 }
 
@@ -59,7 +62,16 @@ function normalizeError(
 export function logError(context: string, error: unknown, extra?: Record<string, unknown>) {
   const normalized = normalizeError(context, error);
 
-  exceptionSink?.(normalized.exception, context, { ...normalized.extra, ...extra });
+  try {
+    const result = exceptionSink?.(normalized.exception, context, {
+      ...normalized.extra,
+      ...extra,
+    });
+    // Reporting must never change the outcome of the original app operation.
+    if (result) void result.catch(() => {});
+  } catch {
+    // Do not recursively log failures from the logging provider itself.
+  }
 
   console.error(`[${context}]`, normalized.message, extra ?? '');
 }

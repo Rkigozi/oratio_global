@@ -3,6 +3,7 @@ export * from './blocks';
 export * from './circle';
 export * from './comments';
 export * from './interactions';
+export * from './places';
 export * from './prayers';
 export * from './profiles';
 export * from './reports';

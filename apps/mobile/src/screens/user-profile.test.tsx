@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { Alert, Modal } from 'react-native';
 import { UserProfileScreen } from './user-profile';
+import { ProfileActionsSheet } from '../components/profile-actions-sheet';
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
   Ban: () => null,
+  MoreHorizontal: () => null,
   Check: () => null,
   Clock: () => null,
   UserPlus: () => null,
@@ -70,6 +72,16 @@ const reset = jest.fn();
 const navigation = { goBack: jest.fn(), navigate: jest.fn(), reset } as never;
 const route = { params: { username: 'miriam' } } as never;
 
+function dismissOptionsSheet() {
+  fireEvent(screen.UNSAFE_getByType(ProfileActionsSheet).findByType(Modal), 'dismiss');
+}
+
+async function chooseBlock() {
+  fireEvent.press(await screen.findByLabelText('More profile options'));
+  fireEvent.press(screen.getByLabelText('Block user'));
+  dismissOptionsSheet();
+}
+
 describe('UserProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -89,6 +101,8 @@ describe('UserProfileScreen', () => {
     expect(screen.getAllByText('@miriam').length).toBeGreaterThan(0);
     expect(screen.getByText('Joined January 2026')).toBeTruthy();
     expect(screen.getByText('Please pray for renewed strength this week')).toBeTruthy();
+    expect(screen.getByLabelText('More profile options')).toBeTruthy();
+    expect(screen.queryByLabelText('Block user')).toBeNull();
 
     fireEvent.press(screen.getByText('Please pray for renewed strength this week'));
     expect((navigation as unknown as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith(
@@ -104,6 +118,7 @@ describe('UserProfileScreen', () => {
     render(<UserProfileScreen navigation={navigation} route={route} />);
 
     await waitFor(() => expect(screen.getByText('This profile is unavailable.')).toBeTruthy());
+    expect(screen.queryByLabelText('More profile options')).toBeNull();
   });
 
   it('invites the resolved profile ID, including when opened through a username alias', async () => {
@@ -124,7 +139,76 @@ describe('UserProfileScreen', () => {
     await screen.findByText('Miriam');
     expect(screen.queryByText('Invite to Prayer Circle')).toBeNull();
     expect(screen.queryByLabelText('Block user')).toBeNull();
+    expect(screen.queryByLabelText('More profile options')).toBeNull();
     expect(getPrayerCircleStatus).not.toHaveBeenCalled();
+  });
+
+  it('does not offer profile actions to a signed-out viewer', async () => {
+    jest.mocked(useAuth).mockReturnValue({ user: null } as never);
+    render(<UserProfileScreen navigation={navigation} route={route} />);
+    await screen.findByText('Miriam');
+    expect(screen.queryByLabelText('More profile options')).toBeNull();
+    expect(screen.queryByLabelText('Block user')).toBeNull();
+  });
+
+  it.each(['Close profile options', 'Dismiss profile options'])(
+    'closes the options via %s without starting a block',
+    async (label) => {
+      const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+      render(<UserProfileScreen navigation={navigation} route={route} />);
+      fireEvent.press(await screen.findByLabelText('More profile options'));
+      expect(screen.getByLabelText('Block user')).toBeTruthy();
+      fireEvent.press(screen.getByLabelText(label));
+      dismissOptionsSheet();
+      expect(screen.queryByLabelText('Block user')).toBeNull();
+      expect(alert).not.toHaveBeenCalled();
+      expect(blockUser).not.toHaveBeenCalled();
+      expect(reset).not.toHaveBeenCalled();
+      fireEvent.press(screen.getByLabelText('More profile options'));
+      expect(screen.getByLabelText('Block user')).toBeTruthy();
+      alert.mockRestore();
+    }
+  );
+
+  it('waits for the iOS options sheet to dismiss before presenting one block confirmation', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    render(<UserProfileScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('More profile options'));
+    fireEvent.press(screen.getByLabelText('Block user'));
+    expect(alert).not.toHaveBeenCalled();
+    expect(blockUser).not.toHaveBeenCalled();
+    dismissOptionsSheet();
+    dismissOptionsSheet();
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(alert.mock.calls[0][0]).toBe('Block @miriam?');
+    alert.mockRestore();
+  });
+
+  it('drops a queued confirmation if the viewer signs out while the sheet is closing', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const { rerender } = render(<UserProfileScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('More profile options'));
+    const onDismiss = screen.UNSAFE_getByType(ProfileActionsSheet).findByType(Modal)
+      .props.onDismiss;
+    fireEvent.press(screen.getByLabelText('Block user'));
+    jest.mocked(useAuth).mockReturnValue({ user: null } as never);
+    rerender(<UserProfileScreen navigation={navigation} route={route} />);
+    act(() => onDismiss());
+    expect(alert).not.toHaveBeenCalled();
+    expect(blockUser).not.toHaveBeenCalled();
+    alert.mockRestore();
+  });
+
+  it('closes on the native back request without starting a block', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    render(<UserProfileScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('More profile options'));
+    fireEvent(screen.UNSAFE_getByType(ProfileActionsSheet).findByType(Modal), 'requestClose');
+    dismissOptionsSheet();
+    expect(screen.queryByLabelText('Block user')).toBeNull();
+    expect(alert).not.toHaveBeenCalled();
+    expect(blockUser).not.toHaveBeenCalled();
+    alert.mockRestore();
   });
 
   it('opens existing Circle management for a connected profile', async () => {
@@ -139,7 +223,7 @@ describe('UserProfileScreen', () => {
   it('confirms blocking before sending and clears the native stack on success', async () => {
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     render(<UserProfileScreen navigation={navigation} route={route} />);
-    fireEvent.press(await screen.findByLabelText('Block user'));
+    await chooseBlock();
     expect(blockUser).not.toHaveBeenCalled();
     expect(alert.mock.calls[0][0]).toBe('Block @miriam?');
     const confirm = alert.mock.calls[0][2]?.find((button) => button.text === 'Block');
@@ -161,13 +245,13 @@ describe('UserProfileScreen', () => {
     jest.mocked(blockUser).mockRejectedValueOnce(new Error('Please try again.'));
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     render(<UserProfileScreen navigation={navigation} route={route} />);
-    fireEvent.press(await screen.findByLabelText('Block user'));
+    await chooseBlock();
     await act(async () => {
       alert.mock.calls[0][2]?.[1]?.onPress?.();
     });
     expect(reset).not.toHaveBeenCalled();
     expect(alert).toHaveBeenLastCalledWith('Account not blocked', 'Please try again.');
-    fireEvent.press(screen.getByLabelText('Block user'));
+    await chooseBlock();
     expect(alert.mock.calls.at(-1)?.[0]).toBe('Block @miriam?');
     alert.mockRestore();
   });
@@ -175,7 +259,7 @@ describe('UserProfileScreen', () => {
   it('cancels blocking without changing data or navigation', async () => {
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     render(<UserProfileScreen navigation={navigation} route={route} />);
-    fireEvent.press(await screen.findByLabelText('Block user'));
+    await chooseBlock();
     act(() => {
       alert.mock.calls[0][2]?.[0]?.onPress?.();
     });
