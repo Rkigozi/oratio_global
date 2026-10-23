@@ -1,8 +1,16 @@
 # Oratio Design Index
 
-Last reviewed: 2026-10-20. This directory is the active iOS-first design baseline.
+Last reviewed: 2026-10-21. This directory is the iOS product design baseline.
 It consolidates the implemented candidate and identifies planned work; it does
 not certify a deployment, security review or App Store-ready release.
+
+Start at the [documentation index](../README.md) for product/platform scope.
+Finish mobile implementation and Expo Go QA first; TestFlight and supporting
+website conversion are later stages in [release readiness](../V1_RELEASE_READINESS.md).
+
+Contributions follow the [documentation standard](../guidelines/DOCUMENTATION.md).
+Design changes must distinguish implemented contracts, planned behaviour and
+verification evidence without depending on prior project discussions.
 
 ## Read In This Order
 
@@ -37,8 +45,12 @@ in `817b4b8` on the review branch; distribution and rollout evidence remain sepa
 | `docs/design/`                                  | Active requirements, domain LLDs and traceability                                                  |
 | `docs/backlog/`                                 | Story acceptance, delivery sequence, dated implementation/deployment/QA evidence; Jira sync source |
 | `docs/QA-CHECKLIST.md`, `docs/NFR-CHECKLIST.md` | Functional and quality acceptance protocols                                                        |
-| `docs/specs/`                                   | Historical PWA/prototype proposals, not active native contracts                                    |
+| `docs/backlog/WEB-PRESENCE.md`                  | Later supporting-site conversion and services that must remain                                     |
 | `docs/CODEBASE_NAVIGATION_GUIDE.md`             | Fast file lookup, not another detailed design                                                      |
+
+Superseded prototype specifications and generic development templates have been
+removed from the working documentation. Git retains prior revisions; do not
+reintroduce their proposed API/schema or a separate web-product scope.
 
 Code/migrations establish implemented behavior, not necessarily desired behavior.
 A requirement mismatch must remain explicit and map to a story; do not silently

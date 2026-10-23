@@ -1,8 +1,46 @@
 # iOS Launch Security Review
 
-Last updated: 2026-10-20. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
+Last updated: 2026-10-23. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
 Status: **In Progress**, not security sign-off. Supports NFR-01 in
 [the NFR checklist](../NFR-CHECKLIST.md).
+
+## Dependency Review Follow-Up (2026-10-23)
+
+Fresh advisory checks found new findings after the earlier green checkpoint.
+The review branch updates application/shared Zod from 4.3.6 to 4.6.7,
+transitive DOMPurify from 3.4.16 to 3.4.17, and Vitest/coverage/mocker from
+4.1.11 to 4.1.12. Sources: the
+[Zod collection-bound fix](https://github.com/colinhacks/zod/pull/6652),
+[DOMPurify maintainer advisory](https://github.com/cure53/DOMPurify/security/advisories/GHSA-cg2g-xh64-v4q7)
+and [Vitest 4.1.12 release](https://github.com/vitest-dev/vitest/releases/tag/v4.1.12).
+The web workspace's optional React peer pins now match its existing 19.2.3
+dependencies and root pins, avoiding a second React copy. No React or Expo SDK
+upgrade is included.
+
+Local verification after the patched install: 649 web/shared tests across 55
+files with coverage, 368 mobile tests across 33 suites, both type checks,
+web lint/build and the CI-style iOS JS/Hermes export passed. The clean root
+`npm ci` reapplied and verified the Forge backport; all 158 backport/policy
+tests passed. Disposable database checks passed 238 assertions and 11
+concurrency scenarios. The complete web tooling audit reported zero
+vulnerabilities. Markdown file targets and all eight unchanged NFR targets/gates
+were checked. These are local checks, not signed-build or device acceptance.
+
+**The mobile dependency gate remains failing.** Expo CLI 57.0.28 retains
+Zod 3.25.76 under `^3.25.76`; the latest checked same-series CLI 57.0.32 has
+the same requirement, and the registry lists no newer Zod 3 patch. The
+[upstream Zod 3 issue](https://github.com/colinhacks/zod/issues/6653) remains
+separate from the Zod 4 fix. This is an Expo development-tool dependency, not
+the app's patched Zod 4 runtime, but it is still a new high advisory under
+the existing policy. It is not waived or hidden. Do not force Zod 4 into the
+CLI's Zod 3 contract, disable the audit or infer release approval.
+
+Keep [PR #5](https://github.com/Rkigozi/oratio_global/pull/5) draft and preserve
+the Netlify suppression marker. The existing Forge/tooling exception and its
+`2026-11-13T00:00:00Z` expiry are unchanged. Resolving the CLI finding requires a
+verified compatible upstream fix or separately reviewed treatment; the strict
+release audit and full NFR-01 remain open. No website, iPhone binary or live
+database change is deployed by this checkpoint push.
 
 ## Web Tooling Patch (2026-10-20)
 
@@ -28,7 +66,7 @@ checks for the follow-up revision must be verified separately.
 
 ## Live Security Migration (2026-10-19)
 
-Following the owner's scoped continuation approval, Oratio_DB
+Following recorded deployment approval, Oratio_DB
 (`tfwgoavbbudkxthjhnrx`) was verified at migration 041. A dry run listed only
 042 and 043, and both were applied successfully. Read-only checks confirmed all
 43 migration versions, RLS, effective denial of waitlist reads and direct quota
@@ -45,9 +83,8 @@ the migration-042 deployment item below, not NFR-01 or SCRUM-47 as a whole.
 
 ## Approved Development Mitigation (2026-10-14)
 
-The release owner explicitly approved proceeding with the scoped approach after
-the explanation of the tested Forge backport and a 30-day exception for known
-tooling findings. This changes the earlier **no waiver/no installed backport**
+Recorded risk acceptance covers the verified Forge backport and a 30-day exception
+for the specified tooling findings. This changes the earlier **no waiver/no installed backport**
 state for development review only. It is not public-release approval, and does
 not authorize a live migration, signing/build purchase, deployment or merge.
 
@@ -59,7 +96,7 @@ not authorize a live migration, signing/build purchase, deployment or merge.
   `c7b72e7ef41f4fc0e5228dce3e37851e9ca064c789365d5e392c25d1c5f6e710`.
 - The mobile EAS post-install hook verifies the backport before its existing
   configuration check. Hook wiring is not evidence of an actual EAS/native build.
-- The owner-approved policy activates at `2026-10-14T00:00:00Z` and expires at
+- The approved policy activates at `2026-10-14T00:00:00Z` and expires at
   `2026-11-13T00:00:00Z` (exclusive), a maximum of 30 days. It covers only
   `GHSA-vfj7-8cjw-p6xm` and `GHSA-86w9-cpqp-85rv`, the pinned current versions,
   install paths and the 14 recorded high-severity parent entries. It requires the
@@ -79,7 +116,7 @@ Controls for this approval: use only trusted repository/glob configuration and
 signing material; do not accept arbitrary remote patterns/certificates or expose
 development tooling to untrusted networks. Recheck upstream remediation before
 expiry and remove the exception/backport only after verified replacement. The
-owner must explicitly approve any renewal or external-release risk treatment.
+release approver must explicitly approve any renewal or external-release risk treatment.
 
 Local adoption checkpoint: the installer applied/verified the expected source,
 all **158** installer/policy/comparison checks, all **304** mobile tests and all
@@ -162,7 +199,7 @@ unused length option fixes the application toolchain. No suitable braces
 backport is verified by this assessment. The canonical Forge candidate now has
 broader Node compatibility evidence, but reproducible local/CI/EAS patch adoption
 and signed-artifact checks still require separate review. The installed tree,
-blocking audit and owner-risk-acceptance state are unchanged. SCRUM-47 remains
+blocking audit and release-risk-acceptance state are unchanged. SCRUM-47 remains
 open; this is not beta or merge approval.
 
 ## Backport Assessment (2026-10-14)
@@ -204,9 +241,9 @@ labelled acceptance cases for the baseline/unsafe candidate; it is not a passing
 security gate. Source commits, file hashes, BSD attribution, isolation and fixture
 scope are recorded in [the harness readme](../../scripts/security-backports/README.md).
 
-Current GitHub advisory pages still list no patched Forge/braces version, and
-both Forge proposals remain open/unreleased. Today's public npm registry recheck
-succeeded on retry after an initial sandbox DNS/permission-review timeout:
+As of the 2026-10-14 review, GitHub advisories listed no patched Forge/braces version,
+and both Forge proposals remained open/unreleased. The public npm registry recheck
+succeeded after a retry:
 `node-forge@1.4.0` and `braces@3.0.3` remain the latest published versions.
 The fresh mobile production audit exits 1 with seven moderate, 14 high and zero
 critical affected-package entries. The two underlying high advisories are
@@ -218,7 +255,7 @@ verification or assume a Forge patch also resolves `braces`. Before adopting a
 backport, verify full upstream/Expo compatibility and a reproducible pinned patch
 mechanism across local/CI/EAS installs. npm's version-based audit may still report
 a source-patched package; any change in gate treatment needs a separate explicit,
-bounded owner decision. No waiver, merge, deployment or native build is authorized
+bounded risk-acceptance decision. No waiver, merge, deployment or native build is authorized
 by this assessment. SCRUM-47 and NFR-01 stay open.
 
 ## Hosted CI And Upstream Recheck (2026-10-13)
@@ -283,7 +320,7 @@ describes malformed-input denial of service; the brace-expansion advisories cove
 [quadratic rewriting](https://github.com/advisories/GHSA-q2hr-2g5m-vwhr).
 This establishes vulnerable dependencies, not evidence that Oratio was exploited.
 
-## Current Tooling Follow-Up (2026-10-07)
+## Tooling Follow-Up (2026-10-07)
 
 This follow-up supersedes the initial October audit below. It is based on local
 checkpoint `7a1fe42` plus the dependency and CI changes, with Node 24.19.0.
@@ -384,7 +421,7 @@ The refreshed audit supersedes the September snapshot below. These are npm
 affected-package entries, including propagated parent findings, not independent
 vulnerabilities or proof of exploitation.
 
-| Scope                                   | Before today's patches                 | After today's patches           |
+| Scope                                   | Before patches                         | After patches                   |
 | --------------------------------------- | -------------------------------------- | ------------------------------- |
 | All workspaces, production dependencies | 1 low, 7 moderate, 16 high, 1 critical | 7 moderate, 14 high, 0 critical |
 | Web production dependencies             | 1 low, 1 high                          | Zero reported vulnerabilities   |
@@ -420,7 +457,7 @@ The checkpoint does not grant any risk waiver.
 
 Verification after the patches: 534 web tests and 255 mobile tests passed;
 both type checks, web lint/build, Expo Doctor and iOS JS/Hermes export passed.
-The disposable database suite also passed today: 140 assertions and nine races.
+The disposable database suite also passed on 2026-10-07: 140 assertions and nine races.
 Local browser regression results and checkpoint scope are recorded in
 [release readiness](../V1_RELEASE_READINESS.md). No live migration or production
 deployment was performed. Local commits preserve the work, not a release-ready build.
@@ -436,7 +473,7 @@ The [UUID advisory](https://github.com/advisories/GHSA-w5hq-g745-h8pq) concerns
 caller-supplied buffers in v3/v5/v6. The installed Xcode helper's observed call
 uses `uuid.v4()` without a supplied buffer. This narrows the observed exposure;
 it does **not** turn a nonzero audit into a clean security sign-off. Upstream
-remediation or an explicit owner-approved, time-limited exposure decision remains
+remediation or an explicitly approved, time-limited exposure decision remains
 required before external beta. Do not use `npm audit fix --force` to downgrade
 Expo to the incompatible version proposed by npm.
 

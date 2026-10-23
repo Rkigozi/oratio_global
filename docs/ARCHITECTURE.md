@@ -1,7 +1,7 @@
 # Oratio High-Level Design
 
-Last reviewed: 2026-10-20. Scope: the current iOS-first V1 candidate, including
-expiry implementation checkpoint `817b4b8`. This is a design baseline, not release approval.
+Last reviewed: 2026-10-21. Scope: the iOS product, supporting web services and
+shared backend, including the canonical-place checkpoint. This is design, not release approval.
 
 Start with the [design index](./design/README.md) for requirements, domain LLDs
 and requirements-to-Jira-to-test traceability. Dated deployment and acceptance
@@ -14,11 +14,16 @@ Oratio connects people through shared Christian prayer. The Expo/React Native
 iOS app is the primary product. Public Apple App Store release comes first;
 Android distribution is post-launch under `SCRUM-79`.
 
-The web app currently retains the legacy authenticated PWA. The intended cutover
-is a landing/marketing site plus necessary policy/support, authentication,
-shared-link fallback and protected operational routes. Do not remove moderation,
-password recovery or shared-link destinations just because the product is native.
-That cutover is open under `SCRUM-74`, not already deployed.
+Web owns public information, policy/support, authentication handoffs, authorised
+shared-link fallback and protected operational tools. Its current deployment
+also serves extra authenticated app screens; their removal/public-home conversion
+is later work under `SCRUM-74`, not already deployed or a second product roadmap.
+The [website plan](./backlog/WEB-PRESENCE.md) defines what must remain.
+
+Mobile implementation and Expo Go acceptance precede signed-build validation.
+TestFlight entry requires release approval and active Apple Developer Program
+membership. Website conversion belongs to release preparation, as defined in
+[release readiness](./V1_RELEASE_READINESS.md).
 
 Actors are signed-out visitors, authenticated prayer authors/readers, accepted
 Circle peers, explicitly authorised moderators and separately authorised notice
@@ -62,14 +67,14 @@ A preview build configured for the live backend still reaches live data.
 
 ## 3. Component Ownership
 
-| Component               | Responsibility                                                                          | Must Not Own                                                |
-| ----------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `apps/mobile`           | Native navigation, UI, permissions, session storage, lifecycle and platform adapters    | Privileged credentials or final authorisation decisions     |
-| `apps/web`              | Current PWA, future web presence, moderator/notice tools and web fallbacks              | A separate conflicting domain model                         |
-| `packages/shared`       | Supabase query operations, mapping, validation, location/username helpers and contracts | React Native/DOM UI or platform storage                     |
-| `supabase/migrations`   | Schema, constraints, triggers, RLS, grants and RPCs                                     | Mutable edits to applied migrations                         |
-| `supabase/functions`    | Translation integration and authenticated account deletion                              | Trust in a caller-supplied account ID                       |
-| Netlify notice function | Independent notice publication/read path                                                | Product data access or blanket moderator-to-admin authority |
+| Component               | Responsibility                                                                              | Must Not Own                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `apps/mobile`           | Native navigation, UI, permissions, session storage, lifecycle and platform adapters        | Privileged credentials or final authorisation decisions     |
+| `apps/web`              | Supporting website, moderator/notice tools and web handoffs; public-home conversion pending | A separate full prayer product or conflicting domain model  |
+| `packages/shared`       | Supabase query operations, mapping, validation, location/username helpers and contracts     | React Native/DOM UI or platform storage                     |
+| `supabase/migrations`   | Schema, constraints, triggers, RLS, grants and RPCs                                         | Mutable edits to applied migrations                         |
+| `supabase/functions`    | Translation integration and authenticated account deletion                                  | Trust in a caller-supplied account ID                       |
+| Netlify notice function | Independent notice publication/read path                                                    | Product data access or blanket moderator-to-admin authority |
 
 Each app registers one Supabase client before importing query modules. Shared
 queries obtain it through `setSupabaseClientProvider`. Web compatibility files
@@ -99,7 +104,7 @@ while active. Expiry clocks remove stale loaded public content and refresh map
 totals at deadlines; the server remains authoritative for actual access.
 
 Web `/prayer/:id`, `/moderate`, `/admin/service-notices` and `/user/:name` are
-auth-gated routes outside the legacy app-shell layout. Policy/support and
+auth-gated routes outside the main web app-shell layout. Policy/support and
 password-update routes remain public. See
 [`routes.tsx`](../apps/web/src/app/routes.tsx) for the actual route map. HTTPS
 prayer links currently use web fallback; producing a URL does not establish
@@ -107,19 +112,21 @@ production universal-link association or signed-iOS routing.
 
 ## 5. Data And Authorisation
 
-The candidate contains migrations **001-043**. Application of 042/043 to Oratio_DB
-was verified on 2026-10-19; detailed evidence is in the
-[expiry rollout record](./backlog/PUBLIC-PRAYER-EXPIRY.md). This is not a fresh
-live-schema audit on every document read.
+The candidate contains migrations **001-045**. Application of 042/043 to Oratio_DB
+was verified on 2026-10-19; 044/045 were approved, applied and verified on
+2026-10-21. Evidence is in the [expiry rollout record](./backlog/PUBLIC-PRAYER-EXPIRY.md)
+and [canonical-place record](./backlog/CANONICAL-PLACES.md). This is not a fresh
+live-schema audit on every document read or a native release-acceptance claim.
 
-| Domain     | Main Records                                                          | Boundary                                                                             |
-| ---------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Identity   | Auth users, `profiles`, `profile_username_aliases`                    | Current identity; restricted writes; historical usernames reserved                   |
-| Prayer     | `prayer_requests`, `prayer_interactions`, `saved_prayers`, `comments` | Ownership, audience, expiry, moderation and blocks compose                           |
-| Circle     | `prayer_circle_invites`, `prayer_circle_connections`                  | Explicit acceptance; 12 accepted peers per user; blocked pairs excluded              |
-| Activity   | `activity_events`                                                     | Recipient-owned events; related content still requires access                        |
-| Safety     | `reports`, `moderated_content`, `moderation_actions`, `user_blocks`   | Reporter scope, report-scoped review, private decision notes and caller-owned blocks |
-| Operations | `rate_limits`, `waitlist`; notices in Netlify Blobs                   | No client quota-table/waitlist reads; separate notice admin authority                |
+| Domain     | Main Records                                                          | Boundary                                                                                |
+| ---------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Identity   | Auth users, `profiles`, `profile_username_aliases`                    | Current identity; restricted writes; historical usernames reserved                      |
+| Prayer     | `prayer_requests`, `prayer_interactions`, `saved_prayers`, `comments` | Ownership, audience, expiry, moderation and blocks compose                              |
+| Places     | `prayer_places`, `prayer_place_aliases`                               | Read-only authenticated city catalog; server-derived place identity and fixed centroids |
+| Circle     | `prayer_circle_invites`, `prayer_circle_connections`                  | Explicit acceptance; 12 accepted peers per user; blocked pairs excluded                 |
+| Activity   | `activity_events`                                                     | Recipient-owned events; related content still requires access                           |
+| Safety     | `reports`, `moderated_content`, `moderation_actions`, `user_blocks`   | Reporter scope, report-scoped review, private decision notes and caller-owned blocks    |
+| Operations | `rate_limits`, `waitlist`; notices in Netlify Blobs                   | No client quota-table/waitlist reads; separate notice admin authority                   |
 
 Legacy `follows` and `push_subscriptions` remain in the schema. They do not imply
 a current follow or native push-notification product. Removal needs a future
@@ -161,16 +168,27 @@ account relationship or claim cryptographic anonymisation.
 
 Do not treat a design target or a Done foundation story as release acceptance.
 
-- Locations currently use normalised names/coarse coordinates, not canonical
-  place IDs (`SCRUM-84`). Hotspots still use synthetic `PrayerRequest` values and
-  a limited raw-row fallback (`SCRUM-85`). Native location detail stops at 50 rows
-  (`SCRUM-86`). Clustering/precomputation and million-row benchmarks are later work.
+- Canonical place IDs and server-derived fixed centroids are implemented, with
+  044/045 live; native changes are on the review branch and await device acceptance (`SCRUM-84`).
+  The dedicated aggregate-only hotspot contract, request-based logarithmic size
+  and explicit native failure handling are implemented locally (`SCRUM-85`);
+  the maintainer-reported iPhone hotspot/offline-retry smoke check passed on
+  2026-10-21, with wider acceptance open. Native location detail supports composite
+  cursor pages and separate last-refresh totals (`SCRUM-86`, implemented/tested
+  locally; device paging acceptance open). Candidate revisions and CI are tracked
+  in [draft PR #5](https://github.com/Rkigozi/oratio_global/pull/5).
+  Clustering/precomputation and million-row benchmarks are later work.
 - Not every saved/prayed/Circle helper is paginated. Remaining retrieval limits
   need review under `SCRUM-95`; current tests do not prove unlimited history or scale.
+- Native request deadlines, explicit read retry, account-state boundaries and
+  same-ID prayer-submission retries are implemented and tested locally under
+  `SCRUM-95`. Other write journeys, device fault acceptance and measured release
+  performance remain open; see the [resilience record](./backlog/NATIVE-RESILIENCE.md).
 - Translation-provider access, deployed gateway authentication and signed-build
   verification are distinct from the implemented adapter.
-- Native monitoring has a privacy-filtered JS foundation; remote alerts, native
-  crash coverage and analytics acceptance remain open (`SCRUM-43`).
+- Native monitoring has a privacy-filtered JS foundation and confirmed Expo Go
+  event/email delivery. Full payload/native crash, analytics and signed-build
+  acceptance remain open (`SCRUM-43`); see the monitoring record.
 - Apple enrolment, signed distribution, accessibility/performance evidence,
   backup restoration and final security/release sign-off remain open. The scoped
   development dependency exception is not external-release permission.

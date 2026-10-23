@@ -30,16 +30,26 @@ detection is disabled. Initial session restore has a five-second timeout so a
 failure cannot leave the loading view indefinitely. Profile failure is not a
 new anonymous identity; it does not grant data access.
 
+Profile/session request generations prevent stale restore/profile results from
+replacing a newer account or repopulating state after logout. Changing identity
+clears the previous profile; the keyed activity/navigation subtree remounts its
+account-scoped screens and drafts. Sign-out clears visible state immediately and
+uses the SDK's local scope for this device. Another account's stale token refresh
+cannot replace the current identity. Transport/logical deadlines bound the changed
+auth/profile operations; a timeout is not evidence of token revocation.
+
 Sign-up supplies username metadata to Supabase and shows email-verification
-guidance when required. Sign-in returns the provider error or success; sign-out
-clears local user/profile state in `finally`. Recovery sends a web
+guidance when required. Sign-in returns the provider error, a recoverable network
+message, or success. Uncertain sign-up/reset feedback advises checking email before
+another email-producing action. Recovery sends a web
 `/update-password` link using the current configured web destination. Launch
 domain/allowlist changes belong to `SCRUM-37`, not a new native REST endpoint.
 
 AsyncStorage use is an as-built fact, not a claim of encrypted credential storage
 or a complete session/cache race audit. Token handling, stale asynchronous
 profile responses, account changes and access revocation still require the
-NFR-01/02 signed-build review. Do not describe all device caches as remotely erased
+NFR-01/02 signed-build review. The [resilience record](../../backlog/NATIVE-RESILIENCE.md)
+owns the local checkpoint and remaining evidence. Do not describe all device caches as remotely erased
 when a session/relationship is revoked.
 
 ## Profile And Preference Contracts

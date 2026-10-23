@@ -1,6 +1,6 @@
 # LLD: Operations And Delivery
 
-Last reviewed: 2026-10-20. FR-12 and NFR-01 through NFR-08.
+Last reviewed: 2026-10-21. FR-12 and NFR-01 through NFR-08.
 Parent: [HLD](../../ARCHITECTURE.md). Exact owners: [traceability](../TRACEABILITY.md).
 
 ## Independent Service Notices
@@ -50,14 +50,20 @@ session/performance tracking, logs, screenshots/view hierarchy and breadcrumbs.
 and attachments. The shared exception sink maps operation names to safe labels.
 The non-production Settings smoke action is unavailable in production.
 
-This is implemented JS error reporting, not evidence of actual event/email
-delivery, native crash privacy, source-map symbolication or native PostHog
-instrumentation. The Sentry mobile project/team alert configuration exists in
-the dated runbook; delivery and signed-build acceptance remain `SCRUM-43`.
+The controlled Expo Go event/email and filtered follow-up were verified on
+2026-10-20. Full provider-payload review, native crash privacy, source-map
+symbolication, native PostHog and signed-build acceptance remain open under
+`SCRUM-43`; the [monitoring record](../../backlog/NATIVE-MONITORING.md) owns the evidence.
 Do not enable replay or pass prayer/report text, emails, tokens or precise
 coordinates to improve debugging. New telemetry needs its own privacy review.
 
 ## Build And Deployment Contracts
+
+Mobile implementation and Expo Go acceptance precede signed-build validation.
+TestFlight entry requires active Apple Developer Program membership and release
+approval. Supporting website conversion belongs to release preparation; see
+[release readiness](../../V1_RELEASE_READINESS.md) and
+[website boundaries](../../backlog/WEB-PRESENCE.md).
 
 One root npm lockfile covers the workspaces. CI uses Node 22; installation applies
 and verifies the existing scoped Forge Node backport. CI has separate web,
@@ -73,8 +79,9 @@ CI configuration with dotenv disabled; it is not a cloud signing operation.
 | Database           | New numbered migrations, explicit approved rollout before dependent client                          | Verify target/history/dry-run, before/after preservation and effective permissions |
 | Backend correction | Reviewed forward migration                                                                          | Never edit applied history or reset retained user data as rollback                 |
 
-The 042/043 rollout is recorded separately. Expiry UI implementation is checkpointed
-in `817b4b8`. A documentation or feature branch is not a production deploy.
+Backend rollout through 045 is recorded in the relevant feature records. Expiry UI
+is checkpointed in `817b4b8`; current place-picker changes remain local. A
+documentation or feature branch is not a production deploy.
 EAS `preview` configuration does not provision an isolated backend automatically.
 
 `audit:mobile` is the bounded development-review gate. The exact two-advisory

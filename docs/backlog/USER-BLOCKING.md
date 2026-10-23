@@ -48,7 +48,7 @@ it never connects to the live Supabase project.
 - [x] Shared query and native action/list/error/navigation regressions pass (2026-09-28).
 - [x] Review database concurrency, API bypasses and existing moderation regressions (2026-09-28).
 - [x] Both type-checks and relevant regression suites pass on the final diff (2026-09-28).
-- [x] Apply migration 041 to Oratio_DB with owner approval after verification (2026-09-28).
+- [x] Apply migration 041 to Oratio_DB with recorded deployment approval after verification (2026-09-28).
 - [ ] Physical iPhone/two-account tests cover Block, failed/cancelled actions,
       content refresh, connection removal, denied invites, reciprocal blocks and Unblock.
 - [ ] Record the live-migration and tested native build evidence before closing the story.
@@ -56,7 +56,7 @@ it never connects to the live Supabase project.
 ## Live Rollout - 2026-09-28
 
 Implementation commit `6b5a710` is pushed to main and its GitHub CI passed. With
-Robert's approval, the linked project was verified as Oratio_DB
+recorded maintainer approval, the linked project was verified as Oratio_DB
 (`tfwgoavbbudkxthjhnrx`); a dry run listed only `041_user_blocking.sql`, which was
 then applied using the Supabase migration CLI. Local/remote history matches 001-041.
 
@@ -74,23 +74,23 @@ physical iPhone/two-account acceptance tests. SCRUM-94 remains In Progress.
 
 ## Physical QA - 2026-09-28
 
-Robert confirmed the first Expo/iPhone test passed: block another QA account from
+The maintainer reported the first Expo/iPhone test passed: block another QA account from
 their profile, confirm the action, receive success feedback, return to Public prayers
-and find the account in Settings > Blocked accounts. Robert also explicitly confirmed
+and find the account in Settings > Blocked accounts. The maintainer also reported
 that switching to the blocked account and refreshing Public prayers hides the
 blocking account's prayers. The Settings Unblock journey also passed: confirming
 Unblock removes the list entry and refreshing both accounts restores public prayer
 visibility without automatically restoring a Circle connection. These confirmations
 cover those specific checks only.
 The zero-block count above is the pre-QA rollout snapshot, not a claim about the
-database after these user-run tests.
+database after these manual test sessions.
 
 ## Physical QA - 2026-09-29
 
-Robert explicitly confirmed both Cancel and Block from a named public prayer's
+The maintainer explicitly reported both Cancel and Block from a named public prayer's
 three-dot menu. Cancel leaves the prayer accessible; confirming Block succeeds,
 returns to Public prayers and hides that author's prayers from the blocking account.
-Robert also confirmed Cancel and Block from the other QA user's comment. All three
+The maintainer also reported Cancel and Block from the other QA user's comment. All three
 entry points (profile, named prayer and comment) are now confirmed, alongside the
 basic Unblock and public-feed visibility journeys. Do not repeat those passed tests
 unless the implementation changes or a regression is reported.
@@ -104,7 +104,7 @@ Group these checks into one pass; unconfirmed items stay open in the QA checklis
 2. Recovery and ownership: failed Block/Unblock with clear feedback and deliberate
    retry, caller-owned block lists, and one-sided Unblock with a reciprocal block.
    A reciprocal-block device check needs a suitable QA fixture; do not create
-   live blocks on the user's behalf without approval. Backend coverage already passes.
+   live block relationships outside the approved QA fixture scope. Backend coverage already passes.
 3. Presentation: the new controls and feedback are readable and reachable in both
    light and dark mode on iPhone.
 
@@ -124,8 +124,8 @@ Coverage includes hidden-until-open Block, close/backdrop/back cancellation,
 single confirmation after dismissal, sign-out during dismissal, failed-block
 retry and navigation reset. No backend changes, live blocks, commit or push.
 
-Robert confirmed the updated profile menu worked (2026-10-07). This records the
-basic relocated entry point as user-tested, not a separate confirmation of both
+The maintainer reported the updated profile menu worked (2026-10-07). This records the
+basic relocated entry point as maintainer-reported, not a separate confirmation of both
 themes or every cancellation/recovery case. Keep the remaining presentation
 checks in the consolidated device pass rather than repeating this basic flow.
 Existing passed backend/Unblock device evidence remains valid; this change is

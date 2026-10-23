@@ -7,7 +7,7 @@ High priority, V1 Launch, under OPS (SCRUM-35).
 
 ## Scope and current state
 
-The owner can preview and explicitly publish one short notice for iOS users.
+Notice administrators can preview and explicitly publish one short notice for iOS users.
 The banner is dismissible and never disables app features. Display start and
 expiry are required; title/message limits are 60/240 Unicode code points and
 the display window is at most seven days. Publishing replaces the existing
@@ -18,30 +18,31 @@ locale/timezone with timezone labels. Both endpoints include their dates and
 years so overnight windows and daylight-saving offset changes stay explicit.
 Text-only notices remain supported; times are not inferred from message prose.
 
-Implemented and deployed to an isolated Netlify draft with owner approval.
-Hosted API and browser checks pass; the user confirmed the basic Expo notice
-journey worked. Detailed physical iPhone QA, including the new date line, remains
+Implemented and deployed to an approved isolated Netlify draft.
+Hosted API and browser checks passed; the basic Expo notice journey has a
+maintainer-reported manual result. Detailed physical iPhone QA, including the new date line, remains
 open. All disposable test notices have been withdrawn. The production deployment and
 all non-test environment values were verified unchanged. No Supabase migration
-is needed; the separate security migration 042 has not been deployed.
+is needed. Security migration 042 was not deployed at this checkpoint; its
+subsequent rollout is recorded in the [security review](./SECURITY-REVIEW.md).
 
-Owner decision (2026-10-02): use the existing Miriam QA account as the temporary
+Test-access decision (2026-10-02): use the existing Miriam QA account as the temporary
 notice administrator for isolated testing only. On 2026-10-06 an authenticated
 Supabase lookup verified `qa_miriam` / `oratio.qa.miriam@example.com` as user
 `cd4d43a1-4b3d-463f-bff5-89b8a708466b`. This ID is allowed only in the named test
 deployment context; it has not been added to production. No database role was
 granted and no shared account password was changed.
 
-For launch, create a separate owner-controlled account with a real Oratio email
+For launch, provision a dedicated operational account with a managed Oratio email
 address and approve its verified user ID. The mailbox receives account messages;
 it does not itself grant notice permissions. Replacing an account means updating
 the server allowlist and verifying access; changing an existing account's email
 does not change its user-ID-based access. Remove Miriam's test access when the
 dedicated account is ready. Never turn the shared QA identity into the permanent
-launch administrator or put her ID in production by default.
+launch administrator or add the QA account ID to production by default.
 
 Out of scope: blocking maintenance mode, push/email notifications, automatic
-outage detection, multiple simultaneous notices, and Xcode setup.
+outage detection and multiple simultaneous notices.
 
 ## Design and safety
 
@@ -102,8 +103,8 @@ Provider references: [Blobs](https://docs.netlify.com/build/data-and-storage/net
   then reload Oratio in Expo Go. Any app account can see the banner; only the
   approved admin can manage it. Withdraw the notice after testing.
 - To show timing, enable **Include maintenance times** and enter both endpoints.
-  Set the independent banner display period to cover the announcement period
-  you intend. Refresh the admin page and reload Expo after this schema update;
+  Set the independent banner display period to cover the intended announcement
+  period. Refresh the admin page and reload Expo after this schema update;
   older running clients do not understand the new structured field.
 - A new draft deployment has its own notice store. Redeploying the alias does
   not carry its existing notice forward; verify the empty state before QA.

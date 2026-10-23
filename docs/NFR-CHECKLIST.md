@@ -1,21 +1,18 @@
 # Oratio iOS Launch NFR Checklist
 
-Last updated: 2026-10-20
+Last updated: 2026-10-23 (review evidence; acceptance targets unchanged)
 
 Non-functional requirements define how safely, reliably and accessibly Oratio
 must work, alongside the features in [functional QA](./QA-CHECKLIST.md).
 Scope: the iOS product, its shared backend and launch-critical web destinations.
-The [original PWA requirements](./specs/v1.0-requirements.md) are historical,
-not evidence that the native app meets these requirements.
+The [active requirements](./design/REQUIREMENTS.md) define product scope.
 
-The [active design baseline](./design/README.md) and
-[traceability register](./design/TRACEABILITY.md) now connect these requirements
-to domain LLDs, existing stories and tests. The 2026-10-20 documentation review
-does not sign off any gate or change the targets below. Security migration 042
-was applied and scoped live grants/RLS checks passed on 2026-10-19; the historical
-local-only checkpoint below is superseded for that deployment item only. Full
-deployed-policy, client-path and release security review remain open in
-[the current security record](./backlog/SECURITY-REVIEW.md).
+The [design baseline](./design/README.md) and [traceability](./design/TRACEABILITY.md)
+connect these requirements to domain LLDs, existing stories and tests. Current
+delivery order is mobile implementation and Expo Go acceptance, followed by
+signed-build validation. Distribution requires active Apple Developer Program
+membership and release approval. Development checks proceed independently;
+signed-build measurements remain open until the distribution stage.
 
 ## Gates And Evidence
 
@@ -36,7 +33,7 @@ deployed-policy, client-path and release security review remain open in
   tokens or real private prayer/report text.
 
 The release owner signs off through [SCRUM-40](https://oratio.atlassian.net/browse/SCRUM-40).
-Development-only mitigation (2026-10-14): the owner approved the verified Forge
+Development-only mitigation (2026-10-14): recorded approval covers the verified Forge
 Node backport and a narrowly pinned tooling exception until
 `2026-11-13T00:00:00Z`. This unblocks code-review checks under recorded controls,
 not external beta/public release; the strict release audit and every NFR sign-off
@@ -47,48 +44,35 @@ needs an explicit, time-limited risk decision and follow-up; it is not a pass.
 
 ## Acceptance Register
 
-| ID / Requirement                                 | Measurable acceptance target                                                                                                                                                                                                                                                                                                                                                                               | Gate                    | Evidence / remaining work                                                                                                                                                                                                      | Jira                                                                                                                                                                         |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| NFR-01 Security and privacy                      | Zero unexpected permitted reads/writes across owner, Circle peer, outsider, blocked, signed-out and moderator roles, including direct API/RPC/storage access. Review all deployed policies/grants and sensitive logging; no privileged client credentials. No unresolved exploitable high/critical dependency finding; every moderate finding fixed or explicitly assessed with a time-limited mitigation. | Beta                    | **Partial**: focused policy/race tests and cross-account checks exist. Full current-policy review, remaining blocking/privacy checks and advisory triage are open; 13 moderate findings were recorded on 2026-09-29.           | [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47), [SCRUM-71](https://oratio.atlassian.net/browse/SCRUM-71), [SCRUM-94](https://oratio.atlassian.net/browse/SCRUM-94) |
-| NFR-02 Reliability and data integrity            | Action feedback within 500 ms; stalled requests reach a recoverable state within 20 s. Recoverable failures retain current-session drafts; no false success or duplicated writes/counts after repeated taps or uncertain-result retries. Logout, expired sessions, account changes and revoked access never expose stale unauthorized content.                                                             | Beta                    | **Partial**: report offline/retry and several privacy flows passed in Expo Go. Signed-build failure coverage across core journeys remains open.                                                                                | [SCRUM-95](https://oratio.atlassian.net/browse/SCRUM-95)                                                                                                                     |
-| NFR-03 Performance and launch capacity           | Signed-build p95 usable cold-start shell <=3 s; first feed/map data <=3 s from its request under recorded normal-network conditions. Bounded staging baseline: read API p95 <=1 s and unexpected errors <1% at 25 concurrent sessions for 10 minutes. No unbounded client fetch of prayers.                                                                                                                | Launch                  | **Open / unmeasured**: no native timing or load baseline recorded. Map foundations remain part of the existing plan. Use the protocol below, not web Lighthouse or Expo Go timings.                                            | [SCRUM-95](https://oratio.atlassian.net/browse/SCRUM-95), SCRUM-84/85/86                                                                                                     |
-| NFR-04 Accessibility                             | Core journeys complete with VoiceOver and maximum accessibility text size in both themes; correct names, focus and error announcements. Targets >=44 x 44 pt. Text contrast >=4.5:1 (qualifying large text >=3:1), essential non-text cues >=3:1. No colour-only status or motion-dependent essential action.                                                                                              | Launch                  | **Partial**: theme and reporting keyboard checks passed. Full VoiceOver, Dynamic Type, target-size and measured contrast pass remains open.                                                                                    | [SCRUM-96](https://oratio.atlassian.net/browse/SCRUM-96)                                                                                                                     |
-| NFR-05 Native monitoring and privacy             | A controlled non-production Sentry error is visible within 5 minutes and alerts the named owner within 10 minutes. Build/version/environment/SHA identify the release. Analytics and errors exclude prayer/report text, emails, precise coordinates, credentials and tokens; disabled/unavailable telemetry never blocks use.                                                                              | Beta                    | **Partial**: Expo Go error/email and follow-up filtered geography verified 2026-10-20. Full payload review, measured release timings, native crash privacy, symbolication, PostHog and signed-build verification remain open.  | [SCRUM-43](https://oratio.atlassian.net/browse/SCRUM-43)                                                                                                                     |
-| NFR-06 Backup and recovery                       | Verified backup/export coverage with working RPO <=24 h and RTO <=24 h. Restore in isolation; login, audience boundaries, blocking and moderator permissions pass before any traffic switch. Reconcile deletions/revocations since the backup.                                                                                                                                                             | Beta                    | **Open**: actual plan, schedule, retention, object coverage, failure alerts and measured restore drill are not verified. No production restore or paid upgrade is authorized by this checklist.                                | [SCRUM-54](https://oratio.atlassian.net/browse/SCRUM-54)                                                                                                                     |
-| NFR-07 Operational readiness                     | Recent launch-domain smoke pass plus controlled failed-check notification received within 10 minutes. Named incident/moderation owner, review coverage and escalation route recorded. Launch usage/cost budget and provider quotas checked; alert or manual review arrangements recorded before sign-off.                                                                                                  | Launch                  | **Partial**: daily public-web smoke workflow exists. Successful current-domain run, alert delivery, operational ownership and initial cost/limit review remain to be evidenced. No continuous uptime or 24/7 response promise. | [SCRUM-53](https://oratio.atlassian.net/browse/SCRUM-53), SCRUM-40/71                                                                                                        |
-| NFR-08 Release reproducibility and compatibility | Latest candidate passes applicable CI/security gates, has traceable SHA/version/build and approved migrations, and completes signed-build install, upgrade, relaunch and core-journey checks on the agreed iPhone/iOS matrix. No unresolved release-blocking defect.                                                                                                                                       | Beta; repeat for Launch | **Partial**: local EAS setup, tests, type-check, Doctor and JS export passed. Apple/signing setup, actual binary installation and release-device acceptance remain open.                                                       | [SCRUM-72](https://oratio.atlassian.net/browse/SCRUM-72), SCRUM-40                                                                                                           |
+| ID / Requirement                                 | Measurable acceptance target                                                                                                                                                                                                                                                                                                                                                                               | Gate                    | Evidence / remaining work                                                                                                                                                                                                                  | Jira                                                                                                                                                                         |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NFR-01 Security and privacy                      | Zero unexpected permitted reads/writes across owner, Circle peer, outsider, blocked, signed-out and moderator roles, including direct API/RPC/storage access. Review all deployed policies/grants and sensitive logging; no privileged client credentials. No unresolved exploitable high/critical dependency finding; every moderate finding fixed or explicitly assessed with a time-limited mitigation. | Beta                    | **Partial**: focused policy/race tests and cross-account checks exist; 042 is deployed. Full current-policy review, remaining blocking/privacy checks and release advisory treatment remain open in the security record.                   | [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47), [SCRUM-71](https://oratio.atlassian.net/browse/SCRUM-71), [SCRUM-94](https://oratio.atlassian.net/browse/SCRUM-94) |
+| NFR-02 Reliability and data integrity            | Action feedback within 500 ms; stalled requests reach a recoverable state within 20 s. Recoverable failures retain current-session drafts; no false success or duplicated writes/counts after repeated taps or uncertain-result retries. Logout, expired sessions, account changes and revoked access never expose stale unauthorized content.                                                             | Beta                    | **Partial**: prior Expo Go report/privacy evidence plus local deadline, read-retry, account-boundary and same-ID prayer-submission regressions. Wider journeys/device proof remain open; see [resilience](./backlog/NATIVE-RESILIENCE.md). | [SCRUM-95](https://oratio.atlassian.net/browse/SCRUM-95)                                                                                                                     |
+| NFR-03 Performance and launch capacity           | Signed-build p95 usable cold-start shell <=3 s; first feed/map data <=3 s from its request under recorded normal-network conditions. Bounded staging baseline: read API p95 <=1 s and unexpected errors <1% at 25 concurrent sessions for 10 minutes. No unbounded client fetch of prayers.                                                                                                                | Launch                  | **Open / unmeasured**: no native timing or load baseline recorded. Map foundations remain part of the existing plan. Use the protocol below, not web Lighthouse or Expo Go timings.                                                        | [SCRUM-95](https://oratio.atlassian.net/browse/SCRUM-95), SCRUM-84/85/86                                                                                                     |
+| NFR-04 Accessibility                             | Core journeys complete with VoiceOver and maximum accessibility text size in both themes; correct names, focus and error announcements. Targets >=44 x 44 pt. Text contrast >=4.5:1 (qualifying large text >=3:1), essential non-text cues >=3:1. No colour-only status or motion-dependent essential action.                                                                                              | Launch                  | **Partial**: theme and reporting keyboard checks passed. Full VoiceOver, Dynamic Type, target-size and measured contrast pass remains open.                                                                                                | [SCRUM-96](https://oratio.atlassian.net/browse/SCRUM-96)                                                                                                                     |
+| NFR-05 Native monitoring and privacy             | A controlled non-production Sentry error is visible within 5 minutes and alerts the named owner within 10 minutes. Build/version/environment/SHA identify the release. Analytics and errors exclude prayer/report text, emails, precise coordinates, credentials and tokens; disabled/unavailable telemetry never blocks use.                                                                              | Beta                    | **Partial**: Expo Go error/email and follow-up filtered geography verified 2026-10-20. Full payload review, measured release timings, native crash privacy, symbolication, PostHog and signed-build verification remain open.              | [SCRUM-43](https://oratio.atlassian.net/browse/SCRUM-43)                                                                                                                     |
+| NFR-06 Backup and recovery                       | Verified backup/export coverage with working RPO <=24 h and RTO <=24 h. Restore in isolation; login, audience boundaries, blocking and moderator permissions pass before any traffic switch. Reconcile deletions/revocations since the backup.                                                                                                                                                             | Beta                    | **Open**: actual plan, schedule, retention, object coverage, failure alerts and measured restore drill are not verified. No production restore or paid upgrade is authorized by this checklist.                                            | [SCRUM-54](https://oratio.atlassian.net/browse/SCRUM-54)                                                                                                                     |
+| NFR-07 Operational readiness                     | Recent launch-domain smoke pass plus controlled failed-check notification received within 10 minutes. Named incident/moderation owner, review coverage and escalation route recorded. Launch usage/cost budget and provider quotas checked; alert or manual review arrangements recorded before sign-off.                                                                                                  | Launch                  | **Partial**: daily public-web smoke workflow exists. Successful current-domain run, alert delivery, operational ownership and initial cost/limit review remain to be evidenced. No continuous uptime or 24/7 response promise.             | [SCRUM-53](https://oratio.atlassian.net/browse/SCRUM-53), SCRUM-40/71                                                                                                        |
+| NFR-08 Release reproducibility and compatibility | Latest candidate passes applicable CI/security gates, has traceable SHA/version/build and approved migrations, and completes signed-build install, upgrade, relaunch and core-journey checks on the agreed iPhone/iOS matrix. No unresolved release-blocking defect.                                                                                                                                       | Beta; repeat for Launch | **Partial**: local EAS setup, tests, type-check, Doctor and JS export passed. Apple/signing setup, actual binary installation and release-device acceptance remain open.                                                                   | [SCRUM-72](https://oratio.atlassian.net/browse/SCRUM-72), SCRUM-40                                                                                                           |
 
-Security checkpoint (2026-10-07): [the security review](./backlog/SECURITY-REVIEW.md)
-records 140 passing SQL assertions and nine races, including the new security and
-quota checks. After compatible patches, production audit counts are zero for web
-and seven moderate/14 high/zero critical for mobile. The later tooling follow-up
-removed all critical findings: web including tooling is clean; the full tree
-retains 12 moderate/45 high entries from four underlying advisories. These
-supersede the September snapshot in the register;
-the mobile CI audit and NFR-01 gate remain open. Migration 042 is tested locally but
-not live. No complete NFR gate is signed off by this automated checkpoint.
+The [security record](./backlog/SECURITY-REVIEW.md) owns exact audit history,
+active development controls and remaining release treatment. Migration 042 is
+live; catalog migrations 044/045 have their own [rollout evidence](./backlog/CANONICAL-PLACES.md).
+Neither deployment nor a development-only exception signs off NFR-01.
+
+The 2026-10-23 dependency follow-up patches application Zod, DOMPurify and
+test tooling, but the new Expo CLI/Zod 3 finding still fails the mobile audit.
+The review exception has not been expanded; no current-candidate green CI or
+NFR-01/08 sign-off is implied.
 
 ## Test Boundaries
 
-Monitoring checkpoint (2026-10-08): the [native monitoring foundation](./backlog/NATIVE-MONITORING.md)
-adds opt-in JavaScript error reporting, strict payload/envelope allowlisting and
-a non-production test action. The real SDK is tested with an in-memory transport;
-no remote event or alert was sent. Native crash collection, symbolication,
-PostHog and signed-build acceptance remain outstanding. NFR-05 is still unsigned.
-
-Provider setup (2026-10-13): `oratio-mobile` is created in Sentry with the
-`#oratio` team and an enabled high-priority email alert. Local DSN configuration
-is prepared with reporting disabled. No live event or test email was sent;
-the delivery/alert targets and NFR-05 remain unverified.
-
-Controlled Expo Go test (2026-10-20): the synthetic error reached `oratio-mobile`
-with version/build/environment/SHA, its high-priority alert triggered at 22:07 UTC,
-and the owner confirmed email receipt by 22:11 UTC. Provider-derived geography
-required additional approved server-side IP/geographic scrubbing. A second event
-from committed `c856c52` shows filtered geography and no empty-stack processing
-warning; the mobile suite passes 318 tests. These observations do not replace a
-full provider-payload audit. See the [monitoring runbook](./backlog/NATIVE-MONITORING.md)
-for evidence and boundaries. NFR-05 remains unsigned.
+Monitoring uses opt-in JS reporting with payload/envelope allowlisting. Controlled
+Expo Go event/email delivery and filtered follow-up were verified on 2026-10-20;
+see the [monitoring runbook](./backlog/NATIVE-MONITORING.md) for exact timing and
+provider controls. Full payload review, native crash/symbolication, analytics and
+signed-build acceptance remain open. NFR-05 is still unsigned; disabled telemetry
+must not block use.
 
 ### Reliability And Performance
 
@@ -141,9 +125,8 @@ rechecks, deletion/revocation reconciliation and any manual prerequisites.
 The daily public-web smoke job is not continuous backend or native monitoring.
 Native error alerts belong to NFR-05; authenticated backend verification belongs
 to release QA. Define who reviews moderation reports and failure notifications,
-when, and how they escalate; do not imply an unstaffed 24/7 service. The owner must
-choose the launch cost budget; this document does not invent a spending allowance
-or authorize provider upgrades.
+when, and how they escalate. Continuous staffed response is not currently provided.
+The launch cost budget and provider changes require explicit operational approval.
 
 ## Existing Evidence To Reuse
 
@@ -154,8 +137,8 @@ or authorize provider upgrades.
   concurrent-session tests and recorded basic block/unblock device results.
 - [Moderation](./backlog/MODERATION-LAUNCH.md): report-scoped review/actions and
   audit-history implementation; operational follow-ups still open.
-- [Build runbook](./backlog/IOS-BUILD-PIPELINE.md): 2026-09-29 local build-preparation
-  evidence, including 224 mobile tests, Doctor 21/21 and iOS export. None is a
+- [Build runbook](./backlog/IOS-BUILD-PIPELINE.md): prepared local profiles/checks,
+  future signing steps and deployment boundaries. A JS export is not a
   signed-binary performance, install or upgrade test.
 - `.github/workflows/smoke.yml`: existing daily/manual public-web checks. A file
   in the repository is not evidence that the current production run or alert passed.

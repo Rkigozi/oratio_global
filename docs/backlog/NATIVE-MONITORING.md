@@ -1,6 +1,6 @@
 # Native Monitoring
 
-Owner story: [SCRUM-43](https://oratio.atlassian.net/browse/SCRUM-43).
+Tracking: [SCRUM-43](https://oratio.atlassian.net/browse/SCRUM-43).
 Gate: NFR-05, before external TestFlight. Last updated: 2026-10-20.
 
 ## Local Implementation
@@ -55,8 +55,8 @@ Expo setup and source-map guidance is at
 - Created [oratio-mobile](https://oratio-3j.sentry.io/settings/projects/oratio-mobile/)
   in the existing `oratio-3j` organisation, using the React Native platform.
   Project ID: `4512249578061904`; assigned team: `#oratio`.
-- Retained `javascript-react-router` (`4511569786765392`) for the website,
-  protected moderation/admin pages and existing PWA. Separate projects keep
+- Retained `javascript-react-router` (`4511569786765392`) for the website and
+  protected moderation/admin pages. Separate projects keep
   mobile and web incidents distinguishable; no new account was created.
 - Saved the mobile public DSN only in ignored `apps/mobile/.env.local`, with
   `EXPO_PUBLIC_SENTRY_ENABLED=false` and environment `development`. Existing
@@ -122,7 +122,7 @@ For signed QA builds use `staging`; EAS provides `EAS_BUILD_GIT_COMMIT_HASH`
 automatically. Do not turn reporting on merely by choosing the production EAS
 profile. No Sentry config plugin, Metro upload hook or automatic source upload
 has been added. Future upload credentials belong only in build-time secrets,
-never `EXPO_PUBLIC_*`, app config, a commit or a chat message.
+never client configuration, source control or general project correspondence.
 
 ### First Expo Go Delivery And Alert (2026-10-20)
 
@@ -132,12 +132,12 @@ never `EXPO_PUBLIC_*`, app config, a commit or a chat message.
   error, no identified users, environment/build `development`, version `1.0.0`
   and full SHA `e374d1f469d3b088d661a8fd3950f8dad04b7d33`.
 - The existing [high-priority rule](https://oratio-3j.sentry.io/monitors/alerts/1368358/)
-  recorded one trigger for this issue at **22:07 UTC**. The owner confirmed email
-  receipt in this chat by **22:11 UTC**. The exact device tap and inbox receipt
+  recorded one trigger for this issue at **22:07 UTC**. Email receipt was
+  maintainer-reported by **22:11 UTC**. The exact device tap and inbox receipt
   timestamps were not captured, so these observations are not a complete timing
   measurement or signed-build acceptance.
 - The event showed approximate provider-derived geography despite the client
-  allowlist and no-inference metadata. With owner approval, the mobile project's
+  allowlist and no-inference metadata. Following configuration approval, the mobile project's
   **Prevent Storing of IP Addresses** setting was enabled and additional sensitive
   fields `city`, `subdivision`, `region`, `country_code` and `ip_address` were
   added. Both settings persisted after reload. Existing events are unaffected.
@@ -150,15 +150,15 @@ never `EXPO_PUBLIC_*`, app config, a commit or a chat message.
   mobile type-check pass. The full 318-test mobile suite also passes before the
   follow-up commit. A fresh provider-side check must use that committed revision;
   the first event does not verify the patch.
-- The temporary development override was removed and Metro restarted normally
-  at `exp://192.168.1.213:8081`. Inspection confirms the served bundle's enable
-  flag is `false`. No phone was connected for Metro's reload broadcast; reopen
-  the project to load the restored configuration. No normal `.env.local` values
+- The temporary development override was removed and Metro restarted with the
+  normal development configuration. Inspection confirmed the served bundle's enable
+  flag was `false`. No phone was connected to verify the reload at that checkpoint.
+  No normal `.env.local` values
   were changed.
 
 ### Follow-Up Event (2026-10-20)
 
-- The owner supplied the queued reference in a phone screenshot. Exact lookup
+- A device screenshot supplied the queued diagnostic reference. Exact lookup
   found event `0235c346d2404505990b45ef21cb081f` in
   [ORATIO-MOBILE-1](https://oratio-3j.sentry.io/issues/155016588/events/0235c346d2404505990b45ef21cb081f/),
   timestamp **22:20:18.504 UTC**, environment/build `development`, version `1.0.0`
@@ -172,8 +172,8 @@ never `EXPO_PUBLIC_*`, app config, a commit or a chat message.
   changing project scrubbing is not retroactive. No event was deleted or marked
   resolved, and no second alert email is claimed for an existing high-priority
   issue whose priority did not change.
-- The follow-up source is committed, with 318 mobile tests passing. The owner
-  requested a review-branch push without a web deployment. Netlify's preview
+- The follow-up source is committed, with 318 mobile tests passing. The approved
+  push scope was the review branch with web deployment suppressed. Netlify's preview
   skip marker is set on PR #5; the evidence commit also uses `[skip netlify]`
   to suppress branch deploys. No EAS build/update or Apple submission is part of
   this push; see [the build runbook](./IOS-BUILD-PIPELINE.md#push-and-deployment-scope).

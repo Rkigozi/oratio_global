@@ -57,11 +57,10 @@ Submission-event caches lacking a server deadline reload authoritative data.
 
 ### Live Rollout (2026-10-19)
 
-After the owner asked to continue the scoped deployment, the CLI connection
-recovered. The linked project was verified as Oratio_DB (`tfwgoavbbudkxthjhnrx`),
+The scoped deployment was approved. The linked project was verified as Oratio_DB (`tfwgoavbbudkxthjhnrx`),
 history matched 001-041, and `supabase db push --linked --dry-run` listed exactly
 042 and 043. Both were applied successfully through the CLI; read-only checks
-confirmed migration history now contains all 43 versions.
+confirmed migration history contained all 43 versions at this checkpoint.
 
 - All **23 prayers** remain: 13 public, seven Circle and three Private. Prayer
   fingerprints excluding the new deadline and automatic `updated_at` field
@@ -126,8 +125,8 @@ deadline and an expired shared link. No real account or remote write is used.
 
 ### Live QA Handoff (2026-10-20)
 
-The owner confirmed the initial Expo check and created the disposable public
-prayer **Expiry QA just testing** as Jonah QA (`qa_jonah`). Read-only inspection
+The initial Expo check was maintainer-reported. A disposable public QA
+prayer, **Expiry QA just testing**, was created through the Jonah QA account (`qa_jonah`). Read-only inspection
 verified ID `c21aee55-3d8b-4330-8044-0f8ff776ee31`, creation at
 `2026-10-20T21:10:11.017227Z` and the server-assigned deadline at
 `2026-11-03T21:10:11.022834Z` (336 hours, within insertion timing precision).
@@ -143,13 +142,13 @@ The backend initially confirmed this test prayer was expired. A subsequent
 read-only follow-up confirmed it is active again with deadline
 `2026-11-03T21:13:52.932451Z`, after the original window. Its ID, original creation
 time, zero prayer/comment counts and preserved-fields fingerprint match the
-pre-expiry record. This verifies renewed backend state; no renewal was performed
-on the owner's behalf. Separate visual feedback, other-account visibility,
+pre-expiry record. This verifies renewed backend state; the inspection itself
+did not execute a renewal. Separate visual feedback, other-account visibility,
 earlier-page history and nonzero-history device checks remain unconfirmed.
 
 - [ ] On the approved backend, create a disposable public QA prayer and verify
       its displayed local deadline, active feed entry, location and shared link.
-- [x] Shorten only the owner-identified disposable Jonah QA prayer for the agreed
+- [x] Shorten only the explicitly approved disposable Jonah QA prayer for the agreed
       expiry test (2026-10-20); transaction preservation checks passed. No bulk
       expiry or client authority to set deadlines was introduced.
 - [ ] Keep another account's feed/detail open across expiry, then background and

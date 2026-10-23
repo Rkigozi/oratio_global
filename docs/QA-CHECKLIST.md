@@ -1,54 +1,55 @@
 # Oratio Native V1 — QA Checklist
 
-Use this on a physical iPhone in Expo Go after native changes. Repeat the critical set in TestFlight once EAS distribution is introduced. Web/PWA regression checks remain separate during the migration.
+Scope: physical-iPhone functional acceptance for the iOS product. Use Expo Go
+during development and repeat the critical set in TestFlight after distribution
+entry approval. Supporting-website/admin checks cover retained services separately.
+
+Manual results labelled **maintainer-reported** record the project maintainer's
+observations; they are not independently reproduced QA results. Preserve the
+recorded date, scope and open follow-ups when reusing this evidence. Named QA
+accounts are test aliases, not staff assignments or production operator identities.
 
 QA workbook: [oratio_v1_qa_smoke_test_workbook](https://docs.google.com/spreadsheets/d/1SUlp0WxPbaROUWlg37LXuNgC99F--lPEzSoTICU5zB4/edit).
 Partial sync on 2026-09-26 added confirmed reporting/moderation follow-up evidence to
 `REPORT-001` and `MOD-002`, including the iPhone report-limit warning retest.
-The release checklist records migrations through 040. Historical PWA results remain
-unchanged; this native checklist is still the source for open iPhone/release checks.
+That workbook sync is historical and partial, not a current migration ledger or
+live mirror. This checklist and linked feature records own current iPhone evidence.
 
-## Before You Start
+## Test Prerequisites
+
+Canonical-place checkpoint (2026-10-21, `SCRUM-84`): approved migrations
+044/045 are applied and read-only-verified on Oratio_DB. Native/shared changes
+remain local. 330 mobile tests, 566 web/shared tests, 214 disposable SQL assertions,
+11 concurrency cases, both type checks, web lint/build and iOS JS export passed.
+The [place record](./backlog/CANONICAL-PLACES.md) contains source/licensing,
+preservation evidence and Expo Go steps. Physical-device checks below remain open.
 
 Use the [active design baseline](./design/README.md) and
 [traceability register](./design/TRACEABILITY.md) to identify the requirement,
-LLD and story behind each changed journey. Historical prototype specs are not
-the expected behavior for this native pass.
+LLD and story behind each changed journey. Use [release readiness](./V1_RELEASE_READINESS.md)
+to distinguish development acceptance from signed-build acceptance.
 
 Public-prayer expiry (`SCRUM-98`): migrations 042/043 were applied to Oratio_DB
 and verified on 2026-10-19, with content and moderator access preserved. Client
-changes remain local; physical-iPhone acceptance is still pending. The
-[expiry runbook](./backlog/PUBLIC-PRAYER-EXPIRY.md) contains the exact behavior,
-rollout evidence and two-account device checks. Backend checks are not a device pass.
-
-Automated checkpoint (2026-10-07): 534 web and 255 mobile tests, 140 disposable
-SQL assertions, nine database races, both type checks, web lint/build, Expo Doctor
-(21/21) and the CI-style iOS JS export passed. Local browser regressions passed
-38 tests; six authenticated tests were skipped. No new device checks were claimed.
-The mobile dependency audit remains blocked; see [release readiness](./V1_RELEASE_READINESS.md)
-and the current [security findings](./backlog/SECURITY-REVIEW.md). Commits are a
-local checkpoint only, not a deployed backend, TestFlight build or launch approval.
+implementation is checkpointed on the review branch. The
+[expiry runbook](./backlog/PUBLIC-PRAYER-EXPIRY.md) defines remaining device
+acceptance, exact behavior and two-account checks. Backend checks are not a device pass.
 
 Security rollout (2026-10-19): [migration 042 and its regression evidence](./backlog/SECURITY-REVIEW.md)
-now include deployed RLS/grant and migration-history checks. Before external beta,
-retest real waitlist signup plus prayer/comment submission and quota errors.
-Catalogue checks and the disposable database suite do not replace these journeys.
+include deployed RLS/grant and migration-history checks. Retest relevant signed-in
+prayer/comment and quota-error journeys before external beta; the later website
+pass covers its waitlist if retained. Catalog/SQL checks do not replace client QA.
 
-- [ ] Test the latest `main` commit with no local changes affecting the build
+- [ ] Record the tested branch/commit and any local changes; use an exact clean committed candidate for the later signed-release pass
 - [x] Apply all Supabase migrations through `040_reporter_details.sql` (Oratio_DB local/remote migration history aligned, 2026-09-23)
 - [x] Apply migrations 042/043 after verifying 001-041 alignment (Oratio_DB, 2026-10-19); read-only content, role, deadline and permission checks passed
+- [x] Apply migrations 044/045 with recorded deployment approval and verify preserved prayer history, canonical locations and effective access (Oratio_DB, 2026-10-21; see place record)
 - [ ] Prepare three verified test accounts with distinct usernames, profiles, and avatars
 - [ ] Account A is new or intentionally empty; Account B owns representative public, Circle, and private prayers; Account C is an accepted Circle peer
 - [ ] Connect B and C before creating B's Circle prayers; an empty Circle cannot publish, and A initially stays outside B's Circle for non-member visibility checks
 - [ ] Keep Account B signed in on the physical iPhone and Accounts A/C in separate browser or device sessions
 - [ ] Confirm all sessions reach the same Supabase project before testing Circle, privacy, comments, and Updates
-- [ ] Record the latest TestFlight version/build and Git commit used for the pass
-
-Build-preparation checkpoint (2026-09-29): local EAS profiles, Expo Doctor (21/21),
-mobile tests (224), type-check and iOS JS/Hermes export passed. No signed binary,
-TestFlight installation or new physical-device pass is implied. Expo/Apple setup,
-dependency-advisory review and release-device checks remain open; see
-[the iOS build runbook](./backlog/IOS-BUILD-PIPELINE.md).
+- [ ] For signed-build acceptance: record the version/build, EAS build ID and Git commit; these identifiers are not required for an Expo Go development check
 
 ## Authentication (email/password only)
 
@@ -78,7 +79,7 @@ dependency-advisory review and release-device checks remain open; see
 - [ ] Public tab loads only recent public prayers and paginates on scroll
 - [ ] Prayer Circle tab loads only prayers visible through accepted circle connections
 - [ ] Private tab loads only the signed-in user's private prayers
-- [x] Accounts A and B cannot see each other's Private prayers after connecting through Prayer Circle (user-confirmed two-account UI check, 2026-09-19)
+- [x] Accounts A and B cannot see each other's Private prayers after connecting through Prayer Circle (maintainer-reported two-account UI check, 2026-09-19)
 - [ ] Empty states clearly describe each space
 - [ ] Pull-to-refresh works in all three spaces
 - [ ] Bottom-tab icons have stable 44pt+ targets and respect the iPhone safe area across Public / Map / Circle / Private / Me
@@ -86,6 +87,8 @@ dependency-advisory review and release-device checks remain open; see
 ## Submit
 
 - [ ] Text required (10–500 chars); validation messages shown
+- [ ] City search selects a recognized city/region/country; London and Kampala are available, similar names are distinguishable, and an unfinished search asks for a selection or clearing
+- [ ] Search loading, empty, failure and retry preserve the prayer draft; a late search/detection result never replaces a newer manual selection
 - [ ] Blank location is stored as unknown and never becomes a random map point
 - [ ] "Use my current location" requests foreground access only when tapped, fills city and country, stores only the coarse city map point, and leaves manual entry available when permission or reverse-geocoding fails
 - [ ] Anonymous is offered only for Public and hides attribution there
@@ -97,21 +100,28 @@ dependency-advisory review and release-device checks remain open; see
 - [ ] Switching to Private clears entered location; a late location detection result or error is ignored, including after switching back
 - [ ] Starting from My Prayers uses its selected audience; Write a private prayer and Write another prayer in Private keep Private selected
 - [ ] A new private prayer saves without city, country, or coordinates; failed saves preserve the private draft for retry
-- [x] Post-submit return to the main journey works in the user's retest (confirmed 2026-09-19); the full audience and Back-history checks below remain open
+- [x] Post-submit return to the main journey works in the maintainer's reported retest (confirmed 2026-09-19); the full audience and Back-history checks below remain open
 - [ ] Success offers a one-tap return to the submitted audience's Public/Circle/Private main tab, restores bottom navigation, and removes the completed composer from Back history
 - [ ] Success still offers View Prayer and another submission; View Prayer's Back returns to the matching main tab instead of the old success screen, and failed saves never navigate away
 
 ## Global Map
 
+- [x] Expo Go iPhone hotspot selection and offline → reconnect → Retry smoke check passed (2026-10-21, maintainer-reported on the local uncommitted candidate; device/iOS version not recorded). This is not the wider map or signed-build acceptance pass.
 - [ ] Map tab opens a full-screen world map without a blank or crashed native view
 - [ ] Only public prayers with valid locations appear as hotspots
 - [ ] Selecting a hotspot shows the correct prayer-request and people-prayed totals
+- [ ] Marker size follows active request activity only; increasing people-prayed counts alone does not enlarge it, and a data refresh updates its size
 - [ ] "View [location] prayers" opens only public prayers from that location
+- [ ] Canonical hotspot drill-down uses place identity, not just matching display names; unmapped legacy prayers remain readable but have no fabricated map marker
 - [ ] London-area names such as Greater London appear together as London
 - [ ] The bottom-right "Go to my location" control requests foreground access only when tapped, recentres in one tap, leaves pan/zoom and hotspots responsive, and never changes a prayer's stored location
 - [ ] Denied or unavailable location access shows clear guidance without blocking the map
 - [ ] Pull down on a location prayer list refreshes it; map refresh remains responsive
-- [ ] Slow or interrupted internet shows a retryable state instead of blocking navigation
+- [ ] Unavailable/invalid map totals show a retryable error, not a quiet empty map or individual-prayer markers; reconnecting and Retry restores valid hotspots
+- [ ] A failed refresh clears previous marker totals and selection; an expired aggregate disappears even if reloading fails, and a late response after leaving the map cannot replace newer data
+- [ ] A city with more than 50 active matching prayers loads subsequent pages in stable order without duplicates; the last-refresh total remains separate from loaded rows
+- [ ] A failed next page retains existing rows and offers Retry loading more; reconnecting and retrying continues from the same cursor
+- [ ] Pull-to-refresh replaces all loaded pages, cursor and total together; new prayers appear at the top and an older in-flight page cannot append afterward
 
 ## Prayer Detail
 
@@ -128,7 +138,7 @@ dependency-advisory review and release-device checks remain open; see
 - [ ] An owner can edit a valid 10-500 character prayer; invalid edits stay open with clear guidance and successful edits show as Edited
 - [ ] Deleting an owned prayer requires explicit confirmation, returns to the matching My Prayers tab rather than the stale submission success screen, and removes it from its feed, Profile count, and map aggregates
 - [ ] A non-owner never sees Edit or Delete, including when opening a shared link directly
-- [x] Copy link and Share prayer both work in the physical iPhone retest after the share-sheet sequencing and clipboard feedback fix (user confirmed, 2026-09-14)
+- [x] Copy link and Share prayer both work in the physical iPhone retest after the share-sheet sequencing and clipboard feedback fix (maintainer reported, 2026-09-14)
 - [ ] Public and Circle Share opens the native iOS share sheet with safe attribution and the authenticated web prayer link, without copying prayer text or location
 - [ ] Share, Edit, Report, and Delete open only after the prayer-actions sheet finishes closing; repeat taps do not open duplicate sheets
 - [ ] Copy link copies only the prayer URL and shows "Link copied to clipboard." after success; paste into Messages or Notes to verify
@@ -144,7 +154,7 @@ dependency-advisory review and release-device checks remain open; see
 
 ## Prayer Circle
 
-- [x] Connected members see explicitly shared circle-only prayers (user confirmed between Accounts A and B, 2026-09-19)
+- [x] Connected members see explicitly shared circle-only prayers (maintainer reported between Accounts A and B, 2026-09-19)
 - [ ] A non-member cannot fetch a circle prayer directly
 - [ ] Circle header management icon opens the management screen and Back returns to Circle prayers
 - [ ] Searching by exact or partial `@username` finds another user but never the signed-in user
@@ -189,32 +199,32 @@ dependency-advisory review and release-device checks remain open; see
 - [ ] Pull-to-refresh reloads activity; foregrounding the app catches activity received while away
 - [ ] Deleting an update requires confirmation and removes only that user's inbox event
 - [ ] Realtime failure does not block the inbox; foreground refresh and polling remain functional
-- [x] Another account's public prayer can be reported by choosing a reason; the success confirmation appears (user-confirmed Miriam/Jonah QA flow, 2026-09-21)
-- [x] Reporting the same prayer again shows the already-reported message (user-confirmed, 2026-09-21)
-- [x] Comment menus allow eligible users to choose a report reason and submit it; success and duplicate-report states are clear (user confirmed this flow was already tested, 2026-09-26)
-- [x] Comment reporting waits for explicit Submit after reason/details entry, then the correct comment and reporter details appear in moderator review (user confirmed this flow was already tested, 2026-09-26)
-- [x] New report-details character-limit warning works on the physical iPhone after the feedback fix (user-confirmed, 2026-09-26)
+- [x] Another account's public prayer can be reported by choosing a reason; the success confirmation appears (maintainer-reported Miriam/Jonah QA flow, 2026-09-21)
+- [x] Reporting the same prayer again shows the already-reported message (maintainer-reported, 2026-09-21)
+- [x] Comment menus allow eligible users to choose a report reason and submit it; success and duplicate-report states are clear (maintainer reported this flow was already tested, 2026-09-26)
+- [x] Comment reporting waits for explicit Submit after reason/details entry, then the correct comment and reporter details appear in moderator review (maintainer reported this flow was already tested, 2026-09-26)
+- [x] New report-details character-limit warning works on the physical iPhone after the feedback fix (maintainer-reported, 2026-09-26)
 - [ ] Retest prayer/comment reporting on iPhone: reason selection alone does not send, exactly 1000 details characters remain valid, longer drafts are preserved with a clear excess-count warning and disabled Submit, and shortening clears the error
-- [x] Report form scrolls with the iPhone keyboard open in light/dark mode; details, character warning and Submit remain readable and reachable (user-confirmed, 2026-09-26)
+- [x] Report form scrolls with the iPhone keyboard open in light/dark mode; details, character warning and Submit remain readable and reachable (maintainer-reported, 2026-09-26)
 - [x] Automated report-length regressions cover both forms, the 999/1000/1001 boundaries, untruncated drafts, shortening/re-enabling Submit, and Unicode counting in the UI and shared save guard; web feedback visually checked at desktop and phone widths without submitting a report (2026-09-26)
-- [x] Prayer/comment reports submit successfully with a reason and no optional details (user confirmed this flow was already tested, 2026-09-26)
-- [x] Report details reach moderator review but are unavailable to the reported author or unrelated accounts (user-confirmed, 2026-09-26)
-- [x] Submitting a report while offline shows a clear error and preserves the reason/details draft; reconnecting and retrying succeeds without duplicate reports (user-confirmed, 2026-09-26)
+- [x] Prayer/comment reports submit successfully with a reason and no optional details (maintainer reported this flow was already tested, 2026-09-26)
+- [x] Report details reach moderator review but are unavailable to the reported author or unrelated accounts (maintainer-reported, 2026-09-26)
+- [x] Submitting a report while offline shows a clear error and preserves the reason/details draft; reconnecting and retrying succeeds without duplicate reports (maintainer-reported, 2026-09-26)
 - [ ] Report authentication-error states are clear
 - [ ] Reports reach the moderation queue without changing private or Circle visibility
 - [x] Local moderation tests apply all migrations through 040 and verify moderator-only review/actions, Private isolation, hide/restore across direct reads, map totals, comment threads, activity previews, audit privacy, stale-decision rejection, and reporter-details limits/RLS (`node scripts/test-moderation-db.mjs`, 2026-09-23; 45 assertions in a disposable database)
-- [x] Migrations 039 and 040 applied to Oratio_DB with owner approval; existing signed-in moderator can load a real Circle report in the local web dashboard (2026-09-23; read-only verification, no roles or content changed)
+- [x] Migrations 039 and 040 applied to Oratio_DB with recorded deployment approval; existing signed-in moderator can load a real Circle report in the local web dashboard (2026-09-23; read-only verification, no roles or content changed)
 - [ ] Deploy the updated web moderation UI and native report form; confirm the dedicated approved launch moderator account and ownership
 - [ ] Moderator reviews a real QA prayer/comment, supplies a decision reason, confirms Hide, and sees the related reports resolve; another account cannot fetch the hidden content
-- [x] Restore the recent public QA prayer: after refreshing Expo it reappears for Miriam and Jonah; the report stays Resolved and decision history records Hide and Restore (user-confirmed, 2026-09-24)
-- [x] Hide a disposable Circle prayer, refresh Expo to confirm it disappears, then Restore: the author and accepted Circle member see it again, an unconnected account still cannot, and the report remains Resolved with Hide/Restore history (user-confirmed, 2026-09-26)
-- [x] Dismiss moves a disposable report to Dismissed while the public prayer remains visible in Expo (user-confirmed Miriam/Jonah QA flow, 2026-09-24)
-- [x] Non-moderator reporter Jonah receives the review outcome in Updates after Miriam dismisses a disposable report, without seeing her distinctive internal decision note (user-confirmed, 2026-09-26)
+- [x] Restore the recent public QA prayer: after refreshing Expo it reappears for Miriam and Jonah; the report stays Resolved and decision history records Hide and Restore (maintainer-reported, 2026-09-24)
+- [x] Hide a disposable Circle prayer, refresh Expo to confirm it disappears, then Restore: the author and accepted Circle member see it again, an unconnected account still cannot, and the report remains Resolved with Hide/Restore history (maintainer-reported, 2026-09-26)
+- [x] Dismiss moves a disposable report to Dismissed while the public prayer remains visible in Expo (maintainer-reported Miriam/Jonah QA flow, 2026-09-24)
+- [x] Non-moderator reporter Jonah receives the review outcome in Updates after Miriam dismisses a disposable report, without seeing her distinctive internal decision note (maintainer-reported, 2026-09-26)
 - [ ] Review updates never reveal another reporter's identity
 - [ ] A failed queue/review load shows retry, not an empty/all-clear state; a failed or conflicting decision requires a fresh review and preserves the draft reason
 - [x] Queue offers oldest/newest ordering before pagination; newest pending entries appear above historical reports; desktop and phone-width web layouts verified (2026-09-24, read-only live queue)
 - [x] Automated queue tests cover focus/reconnection/30-second refresh, hidden-tab suppression, stale-refresh warnings, request races, and preservation of open review drafts (2026-09-24)
-- [x] A new disposable report from Expo appears in the visible Pending / Newest reports queue within 30 seconds without manual refresh (user-confirmed, 2026-09-24)
+- [x] A new disposable report from Expo appears in the visible Pending / Newest reports queue within 30 seconds without manual refresh (maintainer-reported, 2026-09-24)
 
 ## User Blocking (SCRUM-94)
 
@@ -229,37 +239,37 @@ dependency-advisory review and release-device checks remain open; see
 - [x] Automated native/query tests cover confirmed/cancelled/failed actions,
       duplicate taps, stack reset, own/anonymous exclusions, list errors/pagination,
       Settings entry and Unblock (2026-09-28).
-- [x] Migration 041 applied to Oratio_DB with owner approval; local/remote history
+- [x] Migration 041 applied to Oratio_DB with recorded deployment approval; local/remote history
       matches 001-041. Read-only live checks confirm policies, relationship guards,
       restricted RPC/table permissions and anonymous/missing-identity rejection.
       Existing data counts and moderator-role fingerprint are unchanged; no accounts
       were blocked (2026-09-28). Implementation `6b5a710` passed GitHub CI.
 - [x] On a physical iPhone, block another QA account from their profile; confirmation,
       success feedback, return to Public prayers and the entry in Settings > Blocked
-      accounts work (user-confirmed, 2026-09-28).
+      accounts work (maintainer-reported, 2026-09-28).
 - [x] Profile Block moved behind a neutral three-dot options button; automated
       opening/closing, confirmation handoff, cancellation, retry and identity
       visibility checks pass (2026-10-07; 64 focused native tests and type-check).
-- [x] Updated profile options entry point works in Expo (user-confirmed, 2026-10-07).
+- [x] Updated profile options entry point works in Expo (maintainer-reported, 2026-10-07).
 - [ ] In the remaining light/dark device pass, verify options-sheet dismissal and
       Block user > Cancel leaves the profile intact; the basic menu success above
       does not independently confirm each case in both themes.
 - [x] Named public prayer's three-dot menu > Block user: Cancel keeps the prayer
       accessible; confirming Block shows success and returns to Public prayers with
-      that author's prayers hidden (user-confirmed, 2026-09-29).
+      that author's prayers hidden (maintainer-reported, 2026-09-29).
 - [x] Cancel and Block from another QA user's comment work on iPhone
-      (user-confirmed, 2026-09-29).
+      (maintainer-reported, 2026-09-29).
 - [ ] A failed Block shows clear feedback without claiming success; reconnecting
       allows a deliberate retry on device.
 - [x] After switching to the blocked QA account and refreshing Public prayers, the
-      blocking account's prayers disappear (user-confirmed, 2026-09-28).
+      blocking account's prayers disappear (maintainer-reported, 2026-09-28).
 - [ ] Verify blocking on other surfaces/direct links and that unrelated accounts
       retain their original access.
 - [ ] Existing Circle membership and pending invites disappear; new invites and
       interactions fail without changing the other account's data.
 - [x] Settings > Blocked accounts > Unblock confirmation removes the entry; after
       refreshing both accounts, public prayers are visible again without automatically
-      restoring a Circle connection (user-confirmed, 2026-09-28).
+      restoring a Circle connection (maintainer-reported, 2026-09-28).
 - [ ] Settings lists only the viewer's blocks; failed Unblock retains the row;
       one-sided Unblock still respects a reciprocal block.
 - [ ] New controls remain readable and reachable in light/dark mode on iPhone.
@@ -275,7 +285,7 @@ broadcast a test message to production users. See
 - [x] Hosted API rejects missing/invalid tokens and Jonah's management requests; Miriam can manage. Moderator role alone does not bypass the allowlist (2026-10-06).
 - [x] Real hosted browser preview/publish/withdraw journeys pass on desktop Chromium/light and phone-width WebKit/dark; no horizontal overflow (2026-10-06).
 - [x] Hosted API rejects stale writes, omits admin audit fields publicly, expires a notice and returns empty state after cleanup (2026-10-06).
-- [x] User confirmed the basic hosted-admin/Expo notice journey worked; this does not establish every signed-in/out, dismissal or offline check below (2026-10-06).
+- [x] Maintainer reported the basic hosted-admin/Expo notice journey worked; this does not establish every signed-in/out, dismissal or offline check below (2026-10-06).
 - [x] Optional UTC maintenance window passes editor/API validation and renders locally in preview/native tests; cross-midnight/year, DST offset changes, non-whole-hour zones and offline cache covered. Six mocked browser checks pass with inspected light/dark screenshots (2026-10-07).
 - [ ] Publish a notice with maintenance times and verify title, details and local dates/timezone in Expo; change the device timezone and foreground the app to verify conversion, including overnight windows and larger text.
 - [ ] Publish on the isolated preview and verify the matching banner in Expo Go signed in and signed out.
@@ -291,6 +301,15 @@ broadcast a test message to production users. See
 
 Non-functional acceptance is tracked in [NFR-CHECKLIST.md](./NFR-CHECKLIST.md).
 Reuse the dated functional results above without treating them as a full NFR pass.
+
+The [resilience record](./backlog/NATIVE-RESILIENCE.md) tracks the local SCRUM-95
+checkpoint; the following new device checks remain unconfirmed:
+
+- [ ] Offline/slow feed, map/location and prayer-detail loading reach a retryable state; failed reads are not displayed as genuine empty results
+- [ ] Failed feed refresh/page loading preserves appropriate rows/cursor with explicit retry; superseded responses cannot replace newer filters/routes
+- [ ] Prayer submission retains its draft without false success; an uncertain outcome locks the intent and Check and retry submission confirms only one matching prayer
+- [ ] Failed verification of an uncertain submission retains its original ID/intent, including after an authentication/network failure
+- [ ] Logout/account change removes previous profile, navigation, drafts and activity state; delayed old-account responses/token refreshes cannot restore it
 
 - [ ] Attach evidence for Beta NFR-01/02/05/06/08 before external TestFlight distribution
 - [ ] Attach evidence for Launch NFR-03/04/07 and revalidate Beta gates on the public release candidate

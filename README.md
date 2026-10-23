@@ -1,141 +1,61 @@
-# Oratio — Global Prayer Platform
+# Oratio
 
-Oratio connects people through shared prayer. The **iOS app (Expo/React Native) is the product**; this repo is a monorepo that also holds the web PWA, which becomes the landing/marketing site.
+Oratio connects people through shared Christian prayer. The **iOS app is the
+product**, built with Expo and React Native. The website supports the product
+with public information, legal/support pages, account recovery, shared links
+and protected administration.
 
-## Status
+## Current Priority
 
-**iOS-first migration in progress.** The Expo app now covers authentication and the core prayer journey in Expo Go. The existing web PWA remains live at https://oratiotest.netlify.app while it is reduced to the landing/web presence. TestFlight distribution is deliberately deferred until the first native beta is feature-complete and the Apple Developer membership is active.
+The V1 delivery sequence is **mobile implementation and Expo Go acceptance**,
+followed by TestFlight validation and public App Store release. TestFlight entry
+requires a feature-complete candidate, active Apple Developer Program membership
+and release approval. Membership and signed distribution remain pending.
+Android distribution is outside the initial iOS release scope.
 
-## Layout
+Website conversion is a separate release workstream. The current web deployment
+still contains authenticated product screens; the simplified public website is
+planned. The iOS app remains the sole product implementation target.
 
-```
-apps/
-├── web/                  # React 19 PWA — landing + web presence (Netlify)
-└── mobile/               # Expo/React Native iOS app — the product
-packages/
-└── shared/               # Platform-agnostic logic: queries, validation, types
-supabase/                 # Migrations + edge functions (shared backend)
-docs/                     # HLD, backlog, QA, guides
-```
+## Start Development
 
-## Quick Start
+Use the Node version in `.nvmrc`. From the repository root:
 
 ```bash
-npm install               # once, at the repo root (npm workspaces)
-./start-dev.sh            # web dev server
-npm run dev:mobile        # Expo dev server; scan the QR code with Expo Go
-npm test                  # web tests
-npm run test:mobile       # native tests
-npm run type-check && npm run type-check:mobile
-npm run lint && npm run build
+npm install
+npm run dev:mobile
 ```
 
-Web and native suites run separately, alongside the existing Playwright web journeys. Pushing `main` deploys `apps/web` to Netlify; it does not distribute a native build.
+Open the project in Expo Go using the QR code. See
+[Quick Start](./docs/QUICK-START.md) for environment setup and troubleshooting.
 
-## Product
+## Repository
 
-Native today:
+| Location          | Responsibility                                                            |
+| ----------------- | ------------------------------------------------------------------------- |
+| `apps/mobile`     | iOS product UI, navigation, permissions and device integration            |
+| `apps/web`        | Website, protected operational tools and web handoffs; conversion pending |
+| `packages/shared` | Platform-neutral queries, types and validation                            |
+| `supabase`        | Shared schema, RLS, RPCs, migrations and Edge Functions                   |
+| `docs`            | Current design, delivery plan, QA and operating records                   |
 
-- Email/password authentication and session restoration
-- Public, Map, Prayer Circle, and Private prayer spaces
-- Prayer submission with public/circle/private visibility and public anonymity
-- Prayer detail, "Pray for this" interactions, comments/replies, and private Notes
-- Prayer Circle invitations, management, and live in-app Updates
-- Profile editing, avatar upload, Settings preferences, and sign-out
-- Global prayer hotspots with location-specific public prayer lists
+New shared logic belongs in `packages/shared`; UI stays in its app. Never edit
+an applied migration. A Git push, database migration, Netlify deploy and signed
+iOS release are four distinct actions.
 
-Prayer edit/delete, sharing, reporting/moderation, user blocking and light/dark/system
-themes are implemented; remaining device/release checks are tracked in the QA checklist.
-Native observability and signed beta distribution remain open.
+## Documentation
 
-## Stack
+Start at the [documentation index](./docs/README.md). It separates current mobile
+work, future distribution and website responsibilities without duplicating status.
 
-- Expo 57 + React Native 0.86 + React Navigation
-- React 19 + TypeScript + Vite for the web presence
-- Tailwind CSS v4 in `apps/web`
-- Supabase (auth, DB, storage, realtime, edge functions)
-- Sentry + PostHog on the web; native privacy-filtered JS error reporting is implemented, with remote/native verification still open
-
-## Project Structure
-
-```
-apps/
-├── web/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── components/        # Reusable UI (auth, comments, feed, layout, map)
-│   │   │   ├── hooks/             # Auth, theme, geolocation, activity-updates contexts
-│   │   │   ├── pages/             # One folder per route (auth, feed, prayer, profile, info)
-│   │   │   ├── services/
-│   │   │   │   ├── supabase.ts    # Client setup
-│   │   │   │   └── queries/       # Domain query modules (prayers, comments, circle, ...)
-│   │   │   └── routes.tsx         # Route map
-│   │   ├── lib/                   # Validation, analytics, monitoring, utils
-│   │   ├── styles/                # Tailwind entry + theme tokens
-│   │   └── test/                  # Test setup + shared mocks
-│   ├── e2e/                       # Playwright specs + config
-│   ├── public/                    # PWA icons + manifest
-│   └── netlify.toml               # Build + headers + redirects
-└── mobile/
-    ├── App.tsx                    # providers + navigation root
-    └── src/
-        ├── navigation/            # auth stack + signed-in bottom tabs
-        ├── screens/               # native product screens
-        ├── hooks/                 # auth and feed state
-        └── services/supabase.ts   # native Supabase client registration
-packages/
-└── shared/                        # Queries, validation, types used by both apps
-supabase/
-├── migrations/                    # Sequential SQL migrations (never edit applied ones)
-└── functions/                     # Edge functions: translate, delete-account
-docs/                              # HLD, backlog, QA, guides
-```
-
-New platform-neutral queries and validation belong in `packages/shared`; app folders should retain UI and platform integration only. The web service files are thin compatibility re-exports while the native migration is underway.
-
-## Workflow
-
-- **Web**: `git push` → CI → Netlify auto-deploy. Roll back from the Netlify deploy list.
-- **Native development**: `npm run dev:mobile` → Expo Go. This is development distribution, not a release.
-- **Native beta (later)**: EAS build → TestFlight → invited testers. Local build profiles are prepared; see [the build runbook](./docs/backlog/IOS-BUILD-PIPELINE.md) for pending account setup and release gates.
-- **Schema changes**: add a new numbered migration in `supabase/migrations/`, never edit an applied one.
-
-## Environment Variables
-
-Set in Netlify (build) and GitHub Actions secrets (CI):
-
-| Variable                                 | Purpose                                                        |
-| ---------------------------------------- | -------------------------------------------------------------- |
-| `VITE_SUPABASE_URL`                      | Supabase project URL                                           |
-| `VITE_SUPABASE_ANON_KEY`                 | Public Supabase anon key (safe to expose; security is via RLS) |
-| `VITE_SENTRY_DSN`                        | Sentry error tracking                                          |
-| `VITE_POSTHOG_KEY` / `VITE_POSTHOG_HOST` | Product analytics                                              |
-
-Native development uses `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` in the local environment. These are public client credentials; authorization is enforced by Supabase RLS.
-
-## Docs To Read
-
-- [Design index](./docs/design/README.md) — active requirements, HLD, six domain LLDs and Jira/test traceability
-- [High-level design](./docs/ARCHITECTURE.md) — system boundaries, decisions and known gaps
-- `docs/CODEBASE_NAVIGATION_GUIDE.md` — the mental model of the whole codebase
-- `docs/V1_RELEASE_READINESS.md` — release-control checklist
-- `docs/backlog/IOS-BUILD-PIPELINE.md` — iOS build configuration, verification and TestFlight prerequisites
-- `docs/QUICK-START.md` — dev-server troubleshooting on this machine
-- [Historical specs](./docs/specs/README.md) — original PWA/prototype proposals, not current native contracts
-- `docs/guidelines/` — development and testing guidance
-- `docs/backlog/` — agile working agreement + JIRA sync source
-
-## Remaining Release Work
-
-- Complete remaining native safety, privacy and release-device QA
-- Add native Sentry/PostHog and finish Apple/EAS setup and signed TestFlight distribution
-- Resolve or explicitly assess outstanding native dependency advisories before external beta
-- Reduce `apps/web` to landing, policy, support, protected moderation and shared-link fallbacks at native cutover
-- Custom domain and production app-link configuration
-
-Post-launch schema cleanup may remove unused tables only through a future migration;
-`waitlist` backs the landing beta-updates form.
+- [Release plan](./docs/V1_RELEASE_READINESS.md): delivery stages and acceptance gates.
+- [Requirements and design](./docs/design/README.md): requirements, HLD, LLDs and traceability.
+- [Functional QA](./docs/QA-CHECKLIST.md) and [NFRs](./docs/NFR-CHECKLIST.md): acceptance evidence.
+- [Testing strategy](./docs/guidelines/TESTING_STRATEGY.md): actual suites and commands.
+- [Documentation standard](./docs/guidelines/DOCUMENTATION.md): contributor-facing writing and evidence conventions.
+- [Backlog agreement](./docs/backlog/README.md): story ownership and feature runbooks.
+- [AGENTS.md](./AGENTS.md): repository instructions for coding agents.
 
 ## License
 
-All rights reserved. Prototype for the Oratio prayer platform.
+All rights reserved. Third-party asset credits are in [Attributions](./docs/ATTRIBUTIONS.md).

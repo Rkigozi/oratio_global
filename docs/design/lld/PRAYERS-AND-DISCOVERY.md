@@ -1,13 +1,13 @@
 # LLD: Prayers And Discovery
 
-Last reviewed: 2026-10-20. FR-02/03/04/07/11; NFR-01/02/03/04.
+Last reviewed: 2026-10-21. FR-02/03/04/07/11; NFR-01/02/03/04.
 Parent: [HLD](../../ARCHITECTURE.md). [Story mapping](../TRACEABILITY.md).
 Expiry implementation is checkpointed in `817b4b8`; this does not imply distribution.
 
 ## Records And Mapping
 
 `prayer_requests` owns ID, `user_id`, body/category, audience, anonymity,
-city/country/coarse coordinates, counters, comment setting, creation/edit times
+place ID/country code/city/country/coarse coordinates, counters, comment setting, creation/edit times
 and `public_expires_at`. The mapper exposes `text`, `authorId`, `createdAt`,
 `editedAt` and optional `expiresAt` to clients. Shared queries use explicit select
 columns, with a joined profile where needed. Anonymous mapping suppresses displayed
@@ -23,11 +23,15 @@ Related reads/writes must still satisfy current prayer access, not merely know a
 Native Submit validates the shared 10-500-character text contract and presents
 Public/Circle/Private. Location is optional. Detection is explicit, requires
 foreground permission and resolves a coarse place rather than persisting the
-device's precise GPS position. Manual location and canonicalisation currently
-use shared normalisation/coarse lookup, not stable place IDs.
+device's precise GPS position. The native picker searches the backend city
+catalog, selecting a stable GeoNames place ID with region/country disambiguation.
+Auto-detection resolves the OS city and ISO country code against that same catalog;
+ambiguous/unsupported results allow manual search or no location. Unfinished search
+text must be selected or cleared before submission. No typed street/GPS is saved.
 
 `createPrayerRequest` obtains the authenticated user, inserts only intended input
-fields, then returns the inserted ID or null. The server assigns public expiry.
+fields, then returns the inserted ID or null. The server assigns public expiry
+and derives location from the catalog, ignoring all caller-supplied coordinates.
 Private explicitly stores blank city/country and null coordinates regardless of
 stale form state. Circle is attributed and requires at least one accepted peer.
 RLS enforces own identity, supported audience and the fixed creation quota.
@@ -74,13 +78,14 @@ existing comment history. Private Notes and Circle prayers do not expire.
 
 ## Discovery And Retrieval Contracts
 
-| Operation                    | Current Bound / Order                                  | Important Behavior                                                                                                     |
-| ---------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `getFeedPrayers`             | Default 20; creation descending; timestamp-only cursor | Public expiry/audience/country/saved/search filters run before limit. Circle uses a separate audience filter.          |
-| `getMyPrayers`               | 50-row offset pages; creation then ID descending       | Owner history retains archives; explicit throw-on-error option for paging; UI deduplicates/retries earlier-page loads. |
-| `getUserPrayers`             | Up to 50, creation descending                          | Excludes anonymous attribution and expired public rows; RLS decides eligible non-public rows.                          |
-| `getPublicPrayersAtLocation` | Default 50, capped at 100; creation descending         | Normalised city/country + active public filter; native currently requests only first 50.                               |
-| `getMapHotspots`             | Aggregate RPC; legacy fallback at most 200 raw rows    | Authorisation is enforced by underlying RLS; fallback is a known incomplete target, not scale acceptance.              |
+| Operation                        | Current Bound / Order                                    | Important Behavior                                                                                                     |
+| -------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `getFeedPrayers`                 | Default 20; creation descending; timestamp-only cursor   | Public expiry/audience/country/saved/search filters run before limit. Circle uses a separate audience filter.          |
+| `getMyPrayers`                   | 50-row offset pages; creation then ID descending         | Owner history retains archives; explicit throw-on-error option for paging; UI deduplicates/retries earlier-page loads. |
+| `getUserPrayers`                 | Up to 50, creation descending                            | Excludes anonymous attribution and expired public rows; RLS decides eligible non-public rows.                          |
+| `getPublicPrayersAtLocationPage` | Default 50, capped at 100; creation then UUID descending | Native cursor paging with one lookahead row, active public/place filters and a separate first-page count.              |
+| `getPublicPrayersAtLocation`     | Default 50, capped at 100; creation descending           | Single-page compatibility helper; normalised names retained for existing callers.                                      |
+| `getMapHotspots`                 | Aggregate RPC; one row per eligible canonical place      | Dedicated `MapHotspot` values; no individual-prayer fallback. Native uses explicit throw-on-error for retry UI.        |
 
 Search normalises/bounds the term to 80 characters and applies text/location/
 category matching on the server. Trending tags come from loaded feed content,
@@ -89,18 +94,77 @@ are not all paginated. Timestamp-only feed cursor ties and those helper bounds
 remain part of resilience/capacity review; do not claim deterministic composite
 pagination for every list.
 
+### Location Cursor Pages
+
+`getPublicPrayersAtLocationPage` returns `{ prayers, nextCursor, totalCount }`.
+`nextCursor` contains the last included row's original `createdAt` and UUID `id`,
+or null when the lookahead proves the end. Queries order both columns descending
+and select rows where creation is earlier, or equal with a smaller UUID. Preserve
+the raw PostgreSQL timestamp string, including microseconds; converting through a
+JavaScript Date would truncate precision. Cursor fields are validated before
+constructing the PostgREST disjunction. Place ID, audience, expiry and normal RLS
+apply to every page; row offsets are not used.
+
+The first page requests an exact count before the page limit. Later pages return
+null for `totalCount` rather than recounting a cursor-filtered subset. Native UI
+labels the total **at last refresh**, separately from currently loaded, unexpired
+rows. This is a caller-visible active-request snapshot, not an all-time statistic
+or a transactional snapshot across pages. Newer insertions appear after refresh;
+deletions, expiry and access changes can alter subsequent page membership.
+
+Native next-page loads deduplicate IDs and guard repeated end-of-list events.
+Failure preserves rows and cursor, with explicit retry rather than automatic
+retry loops. A successful refresh replaces rows, cursor and total together; a
+failed refresh retains rows with a retry warning and suspends paging. Request
+generations discard results superseded by refresh, route changes or blur.
+
+The disposable database suite checks the authenticated, profile-joined cursor
+query uses the 044 `prayer_requests_place_created_idx` index without planner
+overrides. This check does not prove a production-scale latency target. No new
+schema migration is needed for this paging contract.
+
 ## Map Contract And Location Privacy
 
-The 043 `get_map_hotspot_totals()` RPC is security-invoker. It aggregates only
-active public requests with usable coarse locations and returns city/country,
-average coarse latitude/longitude, request count, distinct people-prayed count,
-latest original creation time and `next_expires_at`. It canonicalises known
-country/London aliases. Unknown/zero/absent places do not produce public hotspots.
+The 044 `get_map_hotspot_totals()` RPC is security-invoker. It aggregates active
+public requests by catalog place ID and returns canonical city/country/country
+code, a fixed catalog centroid, request count, distinct people-prayed count,
+latest original creation time and `next_expires_at`. Caller RLS still applies.
+Unknown/unmapped/absent places do not produce public hotspots.
 
-The legacy RPC column `prayer_count` means distinct people who prayed at that
-place, not sum of request interactions. Shared `mapHotspotTotal` currently maps
-an aggregate into a synthetic `PrayerRequest` with a location ID. Native map
-uses `react-native-maps`, limits zoom and provides one-tap recentering without
+`prayer_places` and `prayer_place_aliases` are authenticated read-only tables;
+search is indexed and capped at 12. The server trigger canonicalises explicit
+place IDs or unique city/country aliases. Unverified legacy names remain readable
+but lose coordinates; Private loses all location fields. The 045 seed/backfill
+preserves prayer identity/content/audience/expiry. Catalog provenance, rollout
+state and device acceptance are in the [place record](../../backlog/CANONICAL-PLACES.md).
+
+### Hotspot Client Contract
+
+Shared queries return `MapHotspot`, not `PrayerRequest`. The strict mapper accepts
+only a canonical place ID, country code, valid centroid, integer counts and valid
+creation/expiry timestamps. Malformed or duplicate place rows fail the request;
+they are not silently dropped into a partial aggregate. Transport/RPC failures
+never query individual prayers as a fallback. The existing web query shim alone
+adapts validated aggregates into its renderer's historical marker shape.
+
+| Field                                                     | Meaning                                                                                                                                         |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `placeId`, `city`, `country`, `countryCode`, `lat`, `lng` | Canonical catalog identity/display names and fixed coarse centroid                                                                              |
+| `requestCount`                                            | Active public requests visible to the caller; not an all-time total                                                                             |
+| `recentRequestCount`                                      | Same active count under the existing 14-day server-managed visibility lifecycle, including renewed requests; no independent creation-age filter |
+| `peoplePrayedCount`                                       | Distinct eligible people who prayed across those active requests, from the RPC's legacy `prayer_count` column; not the sum of interactions      |
+| `latestRequestCreatedAt`                                  | Latest original creation time among contributing requests; not a renewal or interaction timestamp                                               |
+| `nextExpiresAt`                                           | First contributing request's visibility deadline; the aggregate must be invalidated/reloaded at that point                                      |
+
+Marker diameter is `min(30, 16 + 2 * log2(1 + recentRequestCount))`. Engagement
+does not influence size. Native marker snapshots are recreated when that size
+changes. Distinct historical totals or independently configurable recency windows
+are not provided by this foundation; they remain `SCRUM-87` scope.
+
+The native map clears prior markers/counts and selection on a failed refresh,
+shows a retryable error rather than an empty-success state, and ignores in-flight
+responses after blur or a newer request. There is no persisted aggregate cache.
+`react-native-maps` retains the existing zoom limits and one-tap recentering without
 writing the device position to a prayer row.
 
 `usePrayerClock` updates loaded content at deadlines and on foreground; map uses
@@ -111,10 +175,14 @@ Device clock skew and changed access still belong in candidate QA.
 
 ### Open Map Targets
 
-- `SCRUM-84`: stable canonical place identity/centroids, beyond name normalisation.
-- `SCRUM-85`: dedicated `MapHotspot` type and honest aggregate-error/cached behavior;
-  remove the raw-row fallback rather than presenting it as complete totals.
-- `SCRUM-86`: stable complete location pagination and separate total/loaded counts.
+- `SCRUM-84`: canonical-place implementation tested and 044/045 deployed; local
+  client/device acceptance tracked in the place record, not a completed release gate.
+- `SCRUM-85`: dedicated aggregate-only contract, request-based scale and native
+  error/retry/stale-response handling implemented and tested locally. A reported
+  iPhone hotspot/offline-retry smoke check passed on 2026-10-21; wider acceptance
+  and candidate CI remain open. Review revisions are tracked in draft PR #5.
+- `SCRUM-86`: composite location pagination and separate total/loaded counts
+  implemented and tested locally; physical-device paging acceptance remains open.
 - `SCRUM-87`-`SCRUM-89`: post-launch precomputation/clustering/large-scale work.
 
 The [map plan](../../backlog/MAP-SCALABILITY.md) defines these acceptance criteria;
@@ -133,8 +201,21 @@ Private Notes reuse this table under owner-only audience access. Comment setting
 moderation, blocks, parent visibility and expiry compose with base access. Do not
 claim that a Realtime event itself authorises reading its target.
 
-Query failures currently use null/false/empty fallbacks in several helpers;
-selected paging/map operations can throw for an explicit retry view. A missing
+Native feed/detail queries opt into explicit read errors; compatibility callers
+retain the existing fallbacks. Feed, map/location and detail loading use logical
+deadlines and request-generation guards. Feed next-page failures retain the cursor
+and show explicit retry; failed refresh retains loaded rows with a warning.
+
+Native prayer submission supplies a fixed per-attempt UUID and expected account.
+An uncertain result locks the draft/settings until owner-scoped verification and
+same-ID retry confirms the outcome. The existing primary key prevents duplicate
+inserts; conflicts never trigger an overwrite. First-attempt definite rejections
+permit editing; failed verification of a prior uncertain attempt never allocates
+a new ID. This is an open-composer contract, not persistent offline storage.
+See the [resilience record](../../backlog/NATIVE-RESILIENCE.md) for source/tests,
+failure semantics and device acceptance.
+
+Query failures still use null/false/empty fallbacks in other helpers. A missing
 result is not proof that a write succeeded. Full timeout/uncertain-response/draft
 retention across all core journeys remains NFR-02 work, not a universal guarantee
 from this document.
@@ -155,6 +236,15 @@ from this document.
   [sharing](../../../apps/mobile/src/services/prayer-sharing.ts).
 - Exact expiry schema/RPC: [043](../../../supabase/migrations/043_public_prayer_expiry.sql).
   Count integrity: [037](../../../supabase/migrations/037_prayer_interaction_count_integrity.sql).
+- Places: [shared lookup](../../../packages/shared/src/queries/places.ts),
+  [native picker](../../../apps/mobile/src/components/prayer-location-picker.tsx),
+  [catalog schema/RPC](../../../supabase/migrations/044_prayer_place_catalog.sql),
+  [database assertions](../../../supabase/tests/prayer-places.sql).
+- Hotspots: [contract/mapper/scale](../../../packages/shared/src/map-hotspots.ts),
+  [contract/query regressions](../../../apps/web/src/app/services/map-hotspots.test.ts),
+  [web compatibility shim](../../../apps/web/src/app/services/supabase-queries.ts).
+- Location paging: [cursor query tests](../../../apps/web/src/app/services/location-pagination.test.ts),
+  [RLS/paging/index-plan assertions](../../../supabase/tests/location-pagination.sql).
 - Tests: [shared queries](../../../apps/web/src/app/services/supabase-queries.test.ts),
   [domain mapping](../../../apps/web/src/app/services/prayer-data.test.ts),
   [native detail](../../../apps/mobile/src/screens/prayer-detail.test.tsx),
