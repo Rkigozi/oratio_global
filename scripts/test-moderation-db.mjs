@@ -46,6 +46,8 @@ try {
     .sort()) {
     if (file === '043_public_prayer_expiry.sql')
       sql(readFileSync(join(root, 'supabase/tests/prayer-expiry-before-rollout.sql'), 'utf8'));
+    if (file === '044_prayer_place_catalog.sql')
+      sql(readFileSync(join(root, 'supabase/tests/prayer-places-before-rollout.sql'), 'utf8'));
     sql(readFileSync(join(root, 'supabase/migrations', file), 'utf8'));
     if (file === '043_public_prayer_expiry.sql') {
       sql(readFileSync(join(root, 'supabase/tests/prayer-expiry-after-rollout.sql'), 'utf8'));
@@ -53,8 +55,22 @@ try {
         'Public expiry rollout: legacy prayers receive a full window; other spaces stay unchanged.'
       );
     }
+    if (file === '045_prayer_place_catalog_data.sql') {
+      sql(readFileSync(join(root, 'supabase/tests/prayer-places-after-rollout.sql'), 'utf8'));
+      console.log(
+        'Place rollout: prayer history preserved; known cities canonicalized; private/unverified locations stripped.'
+      );
+    }
   }
-  for (const suite of ['security', 'moderation', 'blocking', 'prayer-expiry']) {
+  for (const suite of [
+    'security',
+    'moderation',
+    'blocking',
+    'prayer-expiry',
+    'prayer-places',
+    'location-pagination',
+    'prayer-submission-retries',
+  ]) {
     const assertions = readFileSync(join(root, `supabase/tests/${suite}.sql`), 'utf8');
     sql(assertions);
     const count =
