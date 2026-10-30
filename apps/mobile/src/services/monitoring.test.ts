@@ -138,42 +138,55 @@ describe('native-app monitoring lifecycle', () => {
     expect(mockCapture).not.toHaveBeenCalled();
   });
 
-  it('scrubs real SDK envelopes, including internal errors and attachments, without network', async () => {
-    load().initializeMonitoring();
-    const options = mockInit.mock.calls[0][0];
-    sdkIntervals = jest.spyOn(globalThis, 'setInterval');
-    const sdk = jest.requireActual<typeof import('@sentry/react-native')>('@sentry/react-native');
-    const send = jest
-      .fn<() => Promise<{ statusCode: number }>>()
-      .mockResolvedValue({ statusCode: 200 });
-    const integrations = options.integrations as Array<{ name: string }>;
-    const client = new sdk.ReactNativeClient({
-      ...options,
-      stackParser: () => [],
-      integrations: integrations.filter((integration) => integration.name === 'OratioPrivacy'),
-      transport: () => ({ send, flush: async () => true }),
-    } as ConstructorParameters<typeof sdk.ReactNativeClient>[0]);
-    client.init();
-    for (const internal of [false, true]) {
-      client.captureEvent(
-        {
-          message: 'PRIVATE prayer',
-          user: { email: 'private@example.com' },
-          exception: { values: [{ type: 'Error', value: 'PRIVATE report Bearer private-token' }] },
-        },
-        {
-          data: { __sentry__: internal },
-          attachments: [{ filename: 'private.txt', data: 'PRIVATE attachment' }],
-        }
-      );
-    }
-    await client.flush(1000);
-    expect(send).toHaveBeenCalledTimes(2);
-    const payload = JSON.stringify(send.mock.calls);
-    expect(payload).not.toMatch(/PRIVATE|private@example|private-token|private\.txt/);
-    expect(payload).toContain('Application error (details withheld)');
-    expect(payload).toContain('"infer_ip":"never"');
-    expect(payload).toContain(require('@sentry/react-native/package.json').version);
-    await client.close();
+  describe('real SDK envelope transport', () => {
+    let sdk: typeof import('@sentry/react-native');
+    let sdkVersion: string;
+
+    // Cold Babel transformation of the real SDK is fixture setup, separate
+    // from the test's existing timeout and one-second envelope flush budget.
+    beforeEach(() => {
+      sdkIntervals = jest.spyOn(globalThis, 'setInterval');
+      sdk = jest.requireActual<typeof import('@sentry/react-native')>('@sentry/react-native');
+      sdkVersion = require('@sentry/react-native/package.json').version;
+    }, 60_000);
+
+    it('scrubs real SDK envelopes, including internal errors and attachments, without network', async () => {
+      load().initializeMonitoring();
+      const options = mockInit.mock.calls[0][0];
+      const send = jest
+        .fn<() => Promise<{ statusCode: number }>>()
+        .mockResolvedValue({ statusCode: 200 });
+      const integrations = options.integrations as Array<{ name: string }>;
+      const client = new sdk.ReactNativeClient({
+        ...options,
+        stackParser: () => [],
+        integrations: integrations.filter((integration) => integration.name === 'OratioPrivacy'),
+        transport: () => ({ send, flush: async () => true }),
+      } as ConstructorParameters<typeof sdk.ReactNativeClient>[0]);
+      client.init();
+      for (const internal of [false, true]) {
+        client.captureEvent(
+          {
+            message: 'PRIVATE prayer',
+            user: { email: 'private@example.com' },
+            exception: {
+              values: [{ type: 'Error', value: 'PRIVATE report Bearer private-token' }],
+            },
+          },
+          {
+            data: { __sentry__: internal },
+            attachments: [{ filename: 'private.txt', data: 'PRIVATE attachment' }],
+          }
+        );
+      }
+      await client.flush(1000);
+      expect(send).toHaveBeenCalledTimes(2);
+      const payload = JSON.stringify(send.mock.calls);
+      expect(payload).not.toMatch(/PRIVATE|private@example|private-token|private\.txt/);
+      expect(payload).toContain('Application error (details withheld)');
+      expect(payload).toContain('"infer_ip":"never"');
+      expect(payload).toContain(sdkVersion);
+      await client.close();
+    });
   });
 });

@@ -48,7 +48,15 @@ passed. Expo Doctor passed 20/20. Both type checks, web lint/build and the
 iOS JS/Hermes export passed. One initial mobile run under concurrent build load
 timed out during the real Sentry SDK envelope test; the complete mobile suite
 passed on an isolated serial rerun, retaining the same 15-second test timeout
-and all privacy assertions. This is not an application-performance measurement.
+and all privacy assertions. Hosted
+[CI for 91bdfa6](https://github.com/Rkigozi/oratio_global/actions/runs/41040935676)
+then reproduced the cold SDK import timeout and the separate Zod audit failure;
+its database-security job passed. The follow-up moves real SDK loading into a
+fixture hook with a 60-second cold-transform budget. The envelope test retains
+its 15-second timeout, one-second flush budget and every privacy assertion.
+All 369 tests across 33 suites pass with Jest's cache disabled after that change;
+mobile type checking also passes. These fixture timings are not application
+performance measurements, and hosted verification of the follow-up is separate.
 The export contains 4,545 source entries and no CLI-nested Zod 3, Forge or braces
 source. It does contain Expo's Metro require helper and the application's Zod 4
 implementation; this is scoped JavaScript evidence, not a native-binary audit.
