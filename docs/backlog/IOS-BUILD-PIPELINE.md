@@ -57,9 +57,12 @@ Dependency follow-up (2026-10-29/30): the final local candidate uses Expo
 tooling. Expo Doctor passes 20/20. Clean install, both type checks,
 369 mobile tests, 649 web/shared tests, 168 security checks, web lint/build and
 the iOS JS/Hermes export pass. The web high/critical audit gate passes; the mobile
-gate remains failing on Expo CLI's Zod 3 dependency. The
+gate initially failed on Expo CLI's Zod 3 dependency. The
 [security record](./SECURITY-REVIEW.md#dependency-remediation-2026-10-29)
-owns the exact findings, artifact evidence and proposed review-only treatment.
+owns the exact findings and artifact evidence. The release owner approved the
+bounded development-only exception on 2026-10-30; all 172 security checks and
+the actual development audit pass. The strict release audit still rejects the
+finding. No distribution acceptance is implied.
 The earlier phone checks remain scoped reports against the then-local candidate;
 they do not establish complete device or signed-build acceptance.
 

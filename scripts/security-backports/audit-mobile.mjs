@@ -39,7 +39,7 @@ try {
     release,
   });
   console.log(
-    `Raw mobile audit: ${verdict.counts.high} high, ${verdict.counts.critical} critical, ${verdict.counts.moderate} moderate affected-package entries.`
+    `Raw mobile audit: ${verdict.counts.high} high, ${verdict.counts.critical} critical, ${verdict.counts.moderate} moderate, ${verdict.counts.low} low, ${verdict.counts.info} informational affected-package entries.`
   );
   console.log('Unfiltered affected-package findings:');
   for (const [name, finding] of Object.entries(report.vulnerabilities)) {

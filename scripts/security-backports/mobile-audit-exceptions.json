@@ -1,62 +1,25 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "scope": "development-review-ci",
-  "approvedAt": "2026-10-14T00:00:00Z",
+  "approvedAt": "2026-10-30T00:00:00Z",
   "expiresAt": "2026-11-13T00:00:00Z",
   "owner": "Oratio release owner",
-  "approval": "User explicitly approved the scoped approach in this desktop chat on 2026-10-14.",
+  "approval": "Release owner explicitly approved the documented development-only Zod exception on 2026-10-30, retaining the 2026-11-13 deadline and strict release audit.",
   "advisories": {
-    "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm": {
-      "package": "braces",
-      "treatment": "Temporary trusted-build-input risk acceptance; no vulnerability fix claimed."
-    },
-    "https://github.com/advisories/GHSA-86w9-cpqp-85rv": {
-      "package": "node-forge",
-      "treatment": "Verified canonical RSA backport for Node tooling; npm metadata/dist bundles are not claimed patched."
+    "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5": {
+      "package": "zod",
+      "treatment": "Temporary trusted-development-plugin risk acceptance for the reviewed Expo CLI dependency only; no Zod 3 fix or distribution approval claimed."
     }
   },
   "packages": {
     "@expo/cli": {
-      "node_modules/@expo/cli": "57.0.28"
-    },
-    "@expo/code-signing-certificates": {
-      "node_modules/@expo/code-signing-certificates": "0.0.6"
-    },
-    "@expo/metro": {
-      "node_modules/@expo/metro": "56.0.2"
-    },
-    "@expo/metro-config": {
-      "node_modules/@expo/metro-config": "57.0.13"
-    },
-    "@react-native/community-cli-plugin": {
-      "node_modules/@react-native/community-cli-plugin": "0.86.3"
-    },
-    "braces": {
-      "node_modules/braces": "3.0.3"
+      "node_modules/@expo/cli": "58.1.17"
     },
     "expo": {
-      "node_modules/expo": "57.0.27"
+      "node_modules/expo": "58.0.21"
     },
-    "metro": {
-      "node_modules/metro": "0.84.5"
-    },
-    "metro-config": {
-      "node_modules/metro-config": "0.84.5"
-    },
-    "metro-file-map": {
-      "node_modules/metro-file-map": "0.84.5"
-    },
-    "metro-transform-worker": {
-      "node_modules/metro-transform-worker": "0.84.5"
-    },
-    "micromatch": {
-      "node_modules/micromatch": "4.0.8"
-    },
-    "node-forge": {
-      "node_modules/node-forge": "1.4.0"
-    },
-    "react-native": {
-      "node_modules/react-native": "0.86.3"
+    "zod": {
+      "node_modules/@expo/cli/node_modules/zod": "3.25.76"
     }
   }
 }

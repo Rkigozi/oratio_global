@@ -1,3 +1,10 @@
+const approvedPackages = {
+  '@expo/cli': { 'node_modules/@expo/cli': '58.1.17' },
+  expo: { 'node_modules/expo': '58.0.21' },
+  zod: { 'node_modules/@expo/cli/node_modules/zod': '3.25.76' },
+};
+const approvedAdvisory = 'https://github.com/advisories/GHSA-mrhx-c7xc-m3w5';
+
 export function evaluateMobileAudit(
   report,
   { policy, versions, forgeVerified, now = new Date(), release = false }
@@ -10,7 +17,7 @@ export function evaluateMobileAudit(
   ) {
     throw new Error('Dependency audit did not return a complete supported report');
   }
-  if (policy.schemaVersion !== 1 || policy.scope !== 'development-review-ci') {
+  if (policy.schemaVersion !== 2 || policy.scope !== 'development-review-ci') {
     throw new Error('Invalid temporary audit policy');
   }
   const expiry = new Date(policy.expiresAt);
@@ -20,15 +27,26 @@ export function evaluateMobileAudit(
   }
   if (expiry <= approved || expiry - approved > 30 * 24 * 60 * 60 * 1000)
     throw new Error('Audit approval exceeds its 30-day bound');
-  const allowed = [
-    'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm',
-    'https://github.com/advisories/GHSA-86w9-cpqp-85rv',
-  ];
+  if (policy.approvedAt !== '2026-10-30T00:00:00Z' || policy.expiresAt !== '2026-11-13T00:00:00Z')
+    throw new Error('Audit approval dates differ from the reviewed window');
   if (
-    Object.keys(policy.advisories).length !== 2 ||
-    Object.keys(policy.advisories).some((url) => !allowed.includes(url))
+    Object.keys(policy.advisories).length !== 1 ||
+    !Object.hasOwn(policy.advisories, approvedAdvisory) ||
+    policy.advisories[approvedAdvisory].package !== 'zod'
   )
     throw new Error('Unapproved advisory exception');
+  if (
+    Object.keys(policy.packages).length !== Object.keys(approvedPackages).length ||
+    Object.entries(approvedPackages).some(([name, nodes]) => {
+      const configured = Object.hasOwn(policy.packages, name) ? policy.packages[name] : null;
+      return (
+        !configured ||
+        Object.keys(configured).length !== Object.keys(nodes).length ||
+        Object.entries(nodes).some(([path, version]) => configured[path] !== version)
+      );
+    })
+  )
+    throw new Error('Unapproved package exception');
   const active = !release && now >= approved && now < expiry && forgeVerified;
   const blocked = [];
   const accepted = [];
@@ -63,7 +81,7 @@ export function evaluateMobileAudit(
     if (!['high', 'critical'].includes(entry.severity)) continue;
     let reason = active
       ? ''
-      : 'Release mode, expired/inactive approval, or missing verified backport';
+      : 'Release mode, expired/inactive approval, or missing verified dependency source';
     if (entry.severity === 'critical') reason = 'Critical findings never qualify for the exception';
     const approvedNodes = Object.hasOwn(policy.packages, name) ? policy.packages[name] : null;
     if (

@@ -24,7 +24,7 @@ environment remains jsdom. Sources: the
 and published [Forge RSA source](https://github.com/digitalbazaar/forge/blob/v1.4.2/lib/rsa.js).
 
 The web high/critical tooling gate passes with four low affected-package entries
-through deepmerge. The mobile gate still fails with three high entries:
+through deepmerge. The raw mobile audit reports three high entries:
 `zod@3.25.76`, `@expo/cli@58.1.17` and its `expo@58.0.21` parent. Five low
 deepmerge-related entries also remain reported. Forge and the changed signing
 helper no longer appear as high findings. These counts include propagated
@@ -62,7 +62,7 @@ source. It does contain Expo's Metro require helper and the application's Zod 4
 implementation; this is scoped JavaScript evidence, not a native-binary audit.
 Bundle SHA-256: `b99987ca7cb41243e3a88035539f561d9d6262794518318553eafef7c2a08ac9`.
 
-### Remaining Zod Decision — Proposed, Not Approved
+### Approved Zod Development Exception (2026-10-30)
 
 The inspected CLI imports Zod in `DevToolsPlugin.schema.js` and
 `createMCPDevToolsExtensionSchema.js`. These define local development-plugin
@@ -74,7 +74,8 @@ This narrows observed exposure; it does not establish that Zod 3 is fixed or
 safe for arbitrary plugin input. A bounded four-element synthetic collection
 with `.max(2)` still parsed all four elements and returned five issues.
 
-The proposed development-only treatment requires explicit release-owner approval:
+The release owner explicitly approved the following development-only treatment
+on 2026-10-30:
 
 - Cover only `GHSA-mrhx-c7xc-m3w5` at the three exact paths/versions:
   `node_modules/@expo/cli/node_modules/zod` 3.25.76,
@@ -88,9 +89,19 @@ The proposed development-only treatment requires explicit release-owner approval
   public release, deployment, signing or a merge to `main`. Recheck upstream
   remediation before expiry and before any distribution decision.
 
-No policy change is applied by this checkpoint. The mobile review gate remains
-failing until compatible remediation or an approved treatment is implemented
-and tested. SCRUM-47 and NFR-01 remain open.
+The active policy uses schema version 2 and replaces the superseded approval.
+The original policy is preserved verbatim in
+[the approval history](../../scripts/security-backports/approval-history/2026-10-14.json).
+The evaluator pins both the approved package table and the exact approval window;
+changing configuration alone cannot add a package/path or extend the deadline.
+
+All 172 security checks pass, including removal of the old exceptions, changed
+package/path rejection, advisory identity, boundary dates and strict release mode.
+The live `audit:mobile` command passes under this approval while printing all
+three high and five low affected-package entries. `audit:mobile:release` rejects
+the same three high entries and exits 1, as required. These findings are accepted
+only for development review; Zod 3 is not claimed fixed. SCRUM-47 and NFR-01
+remain open. Hosted verification of this policy checkpoint is separate.
 
 ## SDK 58 Audit Follow-Up (2026-10-26)
 

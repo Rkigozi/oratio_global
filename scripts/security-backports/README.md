@@ -20,19 +20,33 @@ The reconstruction diff has SHA-256
 `ca88156f6407c4c8ab9eb514cc4cc42f09711f864738b5d6dfeda257a5db9dd5`;
 the original baseline and proposal hashes below remain unchanged.
 
-The temporary audit approval below is historical and remains unchanged. It does
-not cover the current Zod advisory in Expo CLI. See the dated
+The original backport approval below is historical. The current Zod treatment
+is a separate, explicitly approved development-only exception. See the dated
 [security review](../../docs/backlog/SECURITY-REVIEW.md#dependency-remediation-2026-10-29)
 for current findings and verification. No new risk acceptance is implied by
 installing an upstream patch.
 
-## Development Backport Approval (2026-10-14)
+## Current Development Audit Approval (2026-10-30)
 
-The release owner explicitly approved the bounded development-review approach
-on 2026-10-14. That checkpoint applied Forge's canonical RSA patch through the
-root npm `postinstall` hook, with a hash/version-checked, idempotent installer.
-The mobile EAS post-install hook verifies the reviewed source before the existing build-environment check.
-No cloud/native build or public release is implied by these hooks.
+The release owner approved only `GHSA-mrhx-c7xc-m3w5` for the reviewed Expo CLI
+dependency: Zod 3.25.76 at `node_modules/@expo/cli/node_modules/zod`, CLI 58.1.17
+at `node_modules/@expo/cli` and Expo 58.0.21 at `node_modules/expo`. The schema-2
+policy pins those entries and the window from `2026-10-30T00:00:00Z` until
+`2026-11-13T00:00:00Z` (exclusive). No deadline extension is granted.
+
+The development audit reports raw findings and applies only this exception.
+Changed packages/paths/versions, new high/critical advisories, inactive dates,
+missing verified source and incomplete audits fail. The policy evaluator also
+rejects expanding the configured package table or moving its approved dates.
+Release mode never accepts this exception; it does not approve beta/distribution
+or repair Zod 3. Use trusted local development plugins/configuration and keep
+development tooling off untrusted networks.
+
+The superseded Forge/braces JSON is preserved in
+[approval history](./approval-history/2026-10-14.json) and cannot activate under
+the current evaluator. All 172 security checks pass. The actual development
+audit passes with three high and five low affected-package entries still
+reported; the release audit rejects those same high findings.
 
 ```bash
 npm run install:security-backport
@@ -42,13 +56,21 @@ npm run audit:mobile:raw      # unchanged npm findings, without policy treatment
 npm run audit:mobile:release  # strict gate; never uses the temporary exception
 ```
 
+## Development Backport Approval (2026-10-14)
+
+The release owner explicitly approved the bounded development-review approach
+on 2026-10-14. That checkpoint applied Forge's canonical RSA patch through the
+root npm `postinstall` hook, with a hash/version-checked, idempotent installer.
+The mobile EAS post-install hook verifies the reviewed source before the existing build-environment check.
+No cloud/native build or public release is implied by these hooks.
+
 The recorded approval lasts from `2026-10-14T00:00:00Z` until
 `2026-11-13T00:00:00Z` (exclusive): at most 30 days. It covers only the two
-recorded advisories, exact current package versions/install paths and their
+recorded advisories, exact then-approved package versions/install paths and their
 reviewed parent entries. All findings remain visible. Every critical, new high
 advisory, new parent/path/version, unknown source, failed audit or expired approval
 fails closed. The exception does not waive moderate findings or authorize
-external beta/public distribution. See `mobile-audit-exceptions.json` and
+external beta/public distribution. See `approval-history/2026-10-14.json` and
 [the approval record](../../docs/backlog/SECURITY-REVIEW.md).
 
 The approved 1.4.0 Node RSA source after backport installation has SHA-256
