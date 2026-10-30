@@ -15,6 +15,7 @@ type CommentThreadProps = {
   onDelete: (id: string) => void;
   onUpdate: (id: string, body: string) => Promise<boolean>;
   canModerateComments: boolean;
+  readOnly?: boolean;
 };
 
 export function CommentThread({
@@ -24,6 +25,7 @@ export function CommentThread({
   onDelete,
   onUpdate,
   canModerateComments,
+  readOnly = false,
 }: CommentThreadProps) {
   const { user } = useAuth();
   const username = comment.user?.username || comment.user?.display_name || 'Anonymous';
@@ -130,7 +132,7 @@ export function CommentThread({
   };
 
   const renderBody = (target: Comment, textClassName: string) => {
-    const isEditing = editingId === target.id;
+    const isEditing = !readOnly && editingId === target.id;
     if (!isEditing) {
       return (
         <>
@@ -205,6 +207,7 @@ export function CommentThread({
     isOwn: boolean,
     kind: 'comment' | 'reply'
   ) => {
+    if (readOnly) return null;
     const canDelete = isOwn || canModerateComments;
     return (
       <div className="flex items-center gap-3 mt-1">

@@ -1,79 +1,94 @@
 # Oratio V1 Release Readiness
 
-Last updated: 2026-09-12
+Last reviewed: 2026-10-30. Defines the V1 delivery stages, prerequisites and
+acceptance gates. The
+[documentation index](./README.md) defines platform responsibilities.
 
-Release-control checklist for the first small-group iOS beta and first public
-Apple App Store release. Expo Go is the current development channel; TestFlight
-is the release-candidate channel. Android follows later under `SCRUM-79` and is
-not a dependency of V1.
+## 1. Mobile Development Acceptance
 
-## Release Gates
+Mobile V1 implementation and Expo Go acceptance precede TestFlight distribution.
+Apple Developer Program membership remains pending and is a prerequisite for the
+distribution stage, not for completing development. No signed build or website
+cutover is scheduled.
 
-```bash
-npm run type-check
-npm run type-check:mobile
-npm run lint
-npm test
-npm run test:mobile
-npm run test:coverage
-npm run build
-npm audit --omit=dev --audit-level=moderate
-npx expo-doctor
-npx expo export --platform ios
-```
+Complete the agreed V1 scope and development acceptance:
 
-Web regression tests while the PWA remains live:
+- Map foundations: city-picker device acceptance (`SCRUM-84`), aggregate-only
+  hotspot wider acceptance (`SCRUM-85`, reported iPhone hotspot/offline-retry smoke
+  passed), and location paging device acceptance (`SCRUM-86`, implemented locally).
+- Remaining safety/ownership/sharing/privacy checks (`SCRUM-71`, `SCRUM-81`,
+  `SCRUM-94`) using existing evidence rather than repeating confirmed tests.
+- Resolve the translation-provider dependency (`SCRUM-82`) or record an explicit
+  product-approved scope decision. Provider delivery requires verification.
+- Finish remaining applicable functional QA and development-stage security,
+  monitoring/privacy, accessibility and reliability checks. Track quality proof
+  in [NFR-CHECKLIST.md](./NFR-CHECKLIST.md), not as new features.
+- Network/session hardening (`SCRUM-95`) has a local deadline/read-retry,
+  account-boundary and write-recovery checkpoint for submission, comments/reports,
+  Circle actions, interactions and prayer/profile/settings ownership changes. Finish the remaining
+  journeys and device acceptance in the [resilience record](./backlog/NATIVE-RESILIENCE.md).
+- Track the candidate in [draft PR #5](https://github.com/Rkigozi/oratio_global/pull/5)
+  and pass applicable automated/CI gates. The October 30 development dependency
+  approval covers only the pinned Expo CLI/Zod finding until November 13; strict
+  release treatment remains open in the [security record](./backlog/SECURITY-REVIEW.md).
+  That approval is not permission for external distribution.
 
-```bash
-npm run test:e2e          # local server, mobile WebKit + desktop Chrome
-npm run test:e2e:remote   # live site at oratiotest.netlify.app
-```
+### Current Evidence
 
-Authenticated E2E journeys run when `E2E_TEST_EMAIL`/`E2E_TEST_PASSWORD` are exported.
+| Area                   | Recorded state / source                                                                                                                                                                                    |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| City locations         | 044/045 applied and verified on Oratio_DB; app changes on the review branch and device acceptance open. [Place record](./backlog/CANONICAL-PLACES.md)                                                      |
+| Map reliability/paging | Dedicated hotspot contract and cursor paging tested locally; reported iPhone hotspot/offline-retry smoke passed. Wider device acceptance and candidate CI open. [Map record](./backlog/MAP-SCALABILITY.md) |
+| Public expiry          | 042/043 applied; client checkpoint on review branch; remaining acceptance is scoped in the [expiry record](./backlog/PUBLIC-PRAYER-EXPIRY.md)                                                              |
+| Moderation/blocking    | Implemented journeys and dated confirmations in [moderation](./backlog/MODERATION-LAUNCH.md), [blocking](./backlog/USER-BLOCKING.md) and [QA](./QA-CHECKLIST.md); not whole-release sign-off               |
+| Monitoring             | Expo Go error/email and scrubbed follow-up verified; wider privacy/native/signed-build checks open. [Monitoring record](./backlog/NATIVE-MONITORING.md)                                                    |
+| Security               | 042 deployed; exact advisory treatment and outstanding deployed-policy review in the [security record](./backlog/SECURITY-REVIEW.md)                                                                       |
+| Distribution           | Existing Expo team project linked and local EAS profiles prepared; no TestFlight release. [Build runbook](./backlog/IOS-BUILD-PIPELINE.md)                                                                 |
 
-## Native Beta Configuration
+Keep automated counts in the dated feature record and link them here, so this
+summary does not go stale after each run. Full current-candidate QA and all NFR
+sign-offs remain distinct from those local results.
 
-- Expo environment supplies `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-- Google Cloud billing is active for the project backing `GOOGLE_TRANSLATE_API_KEY`; `npm run qa:translation` passes with QA credentials supplied
-- Apple Developer membership and EAS project are required before TestFlight, but not for Expo Go development
-- Bundle identifier is `com.oratio.app`; version/build numbers must be set for every distributed build
-- Supabase migrations applied in order before schema-dependent deploys
-- Email/password is the only supported native authentication path; social sign-in providers remain disabled
-- Native Sentry/PostHog must be configured and verified before external beta distribution
+### Exit Criteria
 
-## Product Checks
+- [ ] Agreed mobile V1 implementation complete, with no unaccepted core defects
+- [ ] Applicable Expo Go functional QA and development quality checks recorded
+- [ ] Exact candidate committed/reviewed; automated gates pass
+- [ ] Remaining signed-build-only checks identified, not falsely marked passed
+- [ ] TestFlight entry approved and Apple Developer Program membership active
 
-- Logged-out users see only the native auth stack
-- Public, Prayer Circle, and Private are distinct spaces in the signed-in tab bar
-- Public prayers appear only in Public; circle prayers only to accepted connections; private prayers only to their owner
-- Submission, detail, and "Pray for this" work without double-counting
-- Profile editing, avatar upload, Settings preferences, session restoration, and sign-out work after foreground/background transitions
-- Safe areas and 44pt touch targets hold on a physical iPhone
-- Reporting and moderation parity (`SCRUM-71`) is complete before calling the native app V1-ready
-- Light/dark/system themes (`SCRUM-80`) pass without unreadable or incomplete screens
-- Prayer owner actions and sharing (`SCRUM-81`) work in every eligible prayer space
-- Saved-language translation (`SCRUM-82`) behaves consistently across supported content
-- Account deletion and legal/support access (`SCRUM-83`) are reachable in-app
-- Map foundations `SCRUM-84`–`SCRUM-86` preserve privacy, aggregate semantics, and complete location paging
+Feature-complete in Expo Go does not mean signed-release accepted. Native crash,
+release performance, installation/upgrade and some permission/link behaviour must
+still be verified in the actual distributed binary.
 
-## Observability Checks
+## 2. Signed-Build Validation
 
-- Native Sentry receives a deliberate test error tagged with app version/build
-- Native PostHog receives app-open and core prayer events without prayer text or personal data
-- A beta issue is traceable from Sentry version/build to the matching Git commit and EAS build
-- Native observability story `SCRUM-43` is complete and its alert path is verified
+Entry requires stage 1 acceptance and release approval:
 
-## Final QA Profiles
+1. Complete Apple membership, seller identity/App Store Connect, EAS client
+   environment and signing setup in the [build runbook](./backlog/IOS-BUILD-PIPELINE.md).
+2. Produce and identify a committed iOS candidate; install through TestFlight and
+   test real auth, permissions, audience isolation, moderation and lifecycle.
+3. Gather signed-build performance, crash/privacy, install/reinstall/upgrade and
+   device-matrix evidence. Fix issues and repeat the affected checks.
+4. Complete Beta NFR gates before inviting external testers with real user data.
 
-- Account A: newly created or intentionally empty profile for onboarding and empty states
-- Account B: active owner with public, Circle, and private prayers plus profile history
-- Account C: accepted Prayer Circle peer used to verify invitations, isolation, realtime updates, and cross-account visibility
-- Run `docs/QA-CHECKLIST.md` on the latest TestFlight build, including reinstall and upgrade paths, before the App Store go/no-go decision
+Internal test binaries provide evidence for signed-build requirements. These
+measurements are acceptance outputs of this stage, not prerequisites for producing
+the first test artifact. Stage 1 remains the active implementation workstream.
 
-## Known V1 Tradeoffs
+## 3. Public Website And App Store Launch
 
-- Expo Go is suitable for development and internal checks, not the final release artifact
-- Android compatibility and Google Play release work is deferred to `SCRUM-79` after the Apple App Store launch
-- Multi-circle support is not implemented; the current Prayer Circle is one accepted-connection space capped by product rules
-- The live PWA still contains the full legacy product until the native cutover is complete
-- Custom domain and app-link configuration remain separate launch tasks
+The [website conversion](./backlog/WEB-PRESENCE.md) under `SCRUM-74` replaces
+the public app journey with an Oratio information/download site while preserving
+support, recovery, authorised shared links and protected operational tools.
+This supporting workstream can run alongside beta/release preparation after
+mobile development acceptance and deployment approval.
+
+Before public launch, verify the actual production domain/auth links, support
+and legal disclosures, operational ownership, recovery evidence and all Launch
+NFRs. Complete store metadata/screenshots and signed-candidate QA. `SCRUM-40`
+owns the combined go/no-go; `SCRUM-73` owns App Store preparation/submission.
+
+Android (`SCRUM-79`), multiple Circles, messaging, push reminders and map growth
+work (`SCRUM-87`-`SCRUM-89`) remain outside the current iOS V1 implementation.

@@ -17,6 +17,10 @@ import { createReport, type CreateReportResult } from '@oratio/shared/queries';
 import { countReportDetailsCharacters, REPORT_DETAILS_MAX_LENGTH } from '@oratio/shared/validation';
 import { asNativeIcon } from './icon';
 import { colors, fontFamilies, radii } from '../theme';
+import { WriteOutcomeError } from '@oratio/shared/write-outcome';
+import { useAuth } from '../hooks/auth-context';
+import { useRecoverableWrite } from '../hooks/use-recoverable-write';
+import { WriteRecovery } from './write-recovery';
 
 const REPORT_REASONS = [
   'Spam or fake',
@@ -43,12 +47,22 @@ export function ContentReportSheet({
   reportableType: 'prayer' | 'comment';
   visible: boolean;
 }) {
+  const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<ReportOutcome>(null);
   const [details, setDetails] = useState('');
   const requestId = useRef(0);
   const submitLock = useRef(false);
+  const writes = useRecoverableWrite<Parameters<typeof createReport>[0], CreateReportResult>(
+    `${reportableType}:${reportableId}:${visible}`,
+    user?.id,
+    async (intent, attempt) => {
+      const result = await createReport(intent, attempt);
+      if (result === 'failed') throw new WriteOutcomeError(false);
+      return result;
+    }
+  );
   const detailsCount = countReportDetailsCharacters(details);
   const excessCharacters = detailsCount - REPORT_DETAILS_MAX_LENGTH;
   const detailsTooLong = excessCharacters > 0;
@@ -57,7 +71,7 @@ export function ContentReportSheet({
     : excessCharacters === 0
       ? `Character limit reached (${REPORT_DETAILS_MAX_LENGTH} characters).`
       : `Maximum ${REPORT_DETAILS_MAX_LENGTH} characters.`;
-  const submitDisabled = submitting || !selectedReason || detailsTooLong;
+  const submitDisabled = submitting || writes.locked || !selectedReason || detailsTooLong;
 
   useEffect(() => {
     requestId.current += 1;
@@ -71,13 +85,14 @@ export function ContentReportSheet({
     return () => {
       requestId.current += 1;
     };
-  }, [reportableId, reportableType, visible]);
+  }, [reportableId, reportableType, visible, user?.id]);
 
   const submit = async () => {
     if (
       !reportableId ||
       !selectedReason ||
       submitLock.current ||
+      writes.isLocked() ||
       detailsTooLong ||
       outcome === 'created' ||
       outcome === 'already_reported'
@@ -90,13 +105,16 @@ export function ContentReportSheet({
     setSubmitting(true);
     setOutcome(null);
     try {
-      const result = await createReport({
+      const result = await writes.run({
         reportable_type: reportableType,
         reportable_id: reportableId,
         reason: selectedReason,
         ...(details.trim() ? { details: details.trim() } : {}),
       });
-      if (request === requestId.current) setOutcome(result);
+      if (request === requestId.current && result.status !== 'ignored')
+        setOutcome(
+          result.status === 'saved' ? result.value : result.status === 'failed' ? 'failed' : null
+        );
     } catch {
       if (request === requestId.current) setOutcome('failed');
     } finally {
@@ -112,7 +130,9 @@ export function ContentReportSheet({
   return (
     <Modal
       animationType="fade"
-      onRequestClose={() => !submitting && onClose()}
+      onRequestClose={() => {
+        if (!submitting && !writes.busy) onClose();
+      }}
       transparent
       visible={visible}
     >
@@ -123,7 +143,7 @@ export function ContentReportSheet({
         <Pressable
           accessibilityLabel={`Close report ${reportableType}`}
           accessibilityRole="button"
-          disabled={submitting}
+          disabled={submitting || writes.busy}
           onPress={onClose}
           style={styles.backdrop}
         />
@@ -140,7 +160,7 @@ export function ContentReportSheet({
               <Pressable
                 accessibilityLabel={`Close report ${reportableType}`}
                 accessibilityRole="button"
-                disabled={submitting}
+                disabled={submitting || writes.busy}
                 onPress={onClose}
                 style={styles.closeButton}
               >
@@ -150,6 +170,18 @@ export function ContentReportSheet({
 
             <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
               {outcome ? <ReportNotice outcome={outcome} reportableType={reportableType} /> : null}
+              {writes.uncertain ? (
+                <WriteRecovery
+                  busy={writes.busy}
+                  onRetry={() => {
+                    const request = requestId.current;
+                    void writes.retry().then((result) => {
+                      if (request === requestId.current && result.status === 'saved')
+                        setOutcome(result.value);
+                    });
+                  }}
+                />
+              ) : null}
 
               {!complete ? (
                 <View style={styles.reasons}>
@@ -158,9 +190,9 @@ export function ContentReportSheet({
                       accessibilityRole="radio"
                       accessibilityState={{
                         checked: selectedReason === reason,
-                        disabled: submitting,
+                        disabled: submitting || writes.locked,
                       }}
-                      disabled={submitting}
+                      disabled={submitting || writes.locked}
                       key={reason}
                       onPress={() => {
                         setSelectedReason(reason);
@@ -187,8 +219,10 @@ export function ContentReportSheet({
                     accessibilityHint={detailsFeedback}
                     multiline
                     value={details}
-                    editable={!submitting}
-                    onChangeText={setDetails}
+                    editable={!submitting && !writes.locked}
+                    onChangeText={(value) => {
+                      if (!writes.isLocked()) setDetails(value);
+                    }}
                     style={[styles.detailsInput, detailsTooLong && styles.detailsInputError]}
                     textAlignVertical="top"
                   />
@@ -244,7 +278,7 @@ function ReportNotice({
       tone: 'success' as const,
     },
     already_reported: {
-      message: `You've already reported this ${noun}. It is still saved for moderation.`,
+      message: `You've already reported this ${noun}. Your report is saved.`,
       tone: 'info' as const,
     },
     unauthenticated: {

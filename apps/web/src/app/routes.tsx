@@ -11,6 +11,7 @@ import {
   loadInfo,
   loadLogin,
   loadModerate,
+  loadServiceNotices,
   loadNotFound,
   loadOnboarding,
   loadPrayerCircle,
@@ -48,6 +49,7 @@ const Support = lazy(loadSupport);
 const Info = lazy(loadInfo);
 const PrayerDetail = lazy(loadPrayerDetail);
 const Moderate = lazy(loadModerate);
+const ServiceNotices = lazy(loadServiceNotices);
 const UserProfile = lazy(loadUserProfile);
 const PrayerCircle = lazy(loadPrayerCircle);
 const Updates = lazy(loadUpdates);
@@ -83,6 +85,10 @@ export const router = createBrowserRouter([
         children: [
           { path: '/prayer/:id', element: <SuspenseWrapper Component={PrayerDetail} /> },
           { path: '/moderate', element: <SuspenseWrapper Component={Moderate} /> },
+          {
+            path: '/admin/service-notices',
+            element: <SuspenseWrapper Component={ServiceNotices} />,
+          },
           { path: '/user/:name', element: <SuspenseWrapper Component={UserProfile} /> },
 
           {

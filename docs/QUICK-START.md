@@ -1,57 +1,79 @@
 # Oratio Quick Start
 
-## Start the dev server
+Use Node 22.13 or newer on the 22 line from `.nvmrc`, then run commands from the repository root. The normal
+development workflow is the iOS app in Expo Go; no Apple membership is needed
+for this workflow.
+
+## Mobile Development
 
 ```bash
-./start-dev.sh
+npm install
+npm run dev:mobile
 ```
 
-This script cleans orphaned servers on ports 5173–5176 and stray esbuild processes, then starts a fresh Vite server (default http://localhost:5173).
+Configure ignored environment files under `apps/mobile` with
+`EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`. Match the intended
+backend; never use a service-role/secret server key. Do not commit environment
+or signing credentials. Local environment files are not automatically EAS setup.
 
-### Why not `npm run dev`?
+Open the terminal's QR code in Expo Go using an account with access to
+`@oratioglobals-team/oratio-global`. The phone must be able to reach the development
+host. Use the `exp://` URL from the active Metro session; local addresses can change.
 
-This repo lives on an external drive (Samsung T5), which triggers a known npm bug: `ENOENT: no such file or directory, uv_cwd`. Workarounds, in order of preference:
+The current development baseline is Expo SDK 58. Expo Go and the project must
+support the same SDK; restarting Metro cannot fix an SDK-version mismatch.
+See the [SDK 58 upgrade record](./backlog/IOS-BUILD-PIPELINE.md#sdk-58-development-upgrade-2026-10-26)
+for the dependency/test baseline and remaining acceptance.
 
-1. `./start-dev.sh` — recommended
-2. `node node_modules/vite/bin/vite.js` — direct Vite
-3. `alias npm='node /opt/homebrew/lib/node_modules/npm/bin/npm-cli.js'` — shell alias
-
-## Quality gates
+Stop the server with Ctrl+C in its terminal. To reset Metro's cache:
 
 ```bash
-npm run type-check   # tsc --noEmit
-npm run lint         # eslint
-npm test             # vitest (unit + component + integration)
-npm run build        # production build + PWA generation
+npm run start --workspace @oratio/mobile -- --clear
 ```
 
-## Tests
+Expo Go is the development preview channel. Signed distribution follows the
+entry criteria in the [release plan](./V1_RELEASE_READINESS.md).
+
+## Website And Admin Tools
+
+Only start web development when working on the supporting site, moderation,
+notice administration, recovery or web-link regressions:
 
 ```bash
-npm run test:watch       # vitest watch mode
-npm run test:coverage    # coverage report (html in coverage/)
-
-# Playwright E2E — needs browsers installed once:
-npx playwright install webkit
-npm run test:e2e                       # local dev server, mobile WebKit + desktop Chrome
-npm run test:e2e:remote                # live site at oratiotest.netlify.app
-npm run test:e2e:ui                    # Playwright UI mode
-
-# Authenticated journeys (sign in, submit, pray, comment):
-E2E_TEST_EMAIL=you@example.com E2E_TEST_PASSWORD=secret npm run test:e2e
+npm run dev --workspace @oratio/web -- --port 5173
 ```
 
-## Deploy
+Vite prints its actual local URL. Web uses `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY` in ignored local configuration. `/moderate` and
+`/admin/service-notices` still require their separately authorised accounts.
 
-No manual steps. `git push` to `main`:
+`./start-dev.sh` is an optional web cleanup wrapper, **not the mobile server**.
+It stops processes on ports 5173-5176 and matching project esbuild processes;
+avoid it when another server should remain running. The ordinary npm command
+above does not perform that cleanup.
 
-1. GitHub Actions runs type-check, lint, tests, build
-2. Netlify (Git-connected) builds and publishes
+## Verification
 
-Roll back from the Netlify deploys list. Preview builds run automatically on pull requests.
+```bash
+npm run type-check:mobile
+npm run test:mobile
+npm run format:check
+```
+
+Shared/backend changes also need the relevant web and database checks. The
+[testing strategy](./guidelines/TESTING_STRATEGY.md) lists the exact scope/commands;
+the [QA checklist](./QA-CHECKLIST.md) covers physical-iPhone behaviour.
 
 ## Troubleshooting
 
-- **Orphaned dev server**: `lsof -ti:5173 | xargs kill -9` (or any port 5173–5176)
-- **Stale service worker locally**: Dev server doesn't use the production SW; for the live site, hard-refresh or wait for the SW update
-- **Supabase errors in dev**: check `.env` has `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` matching the project
+- **Old UI:** reload the Expo project and check which Metro terminal/backend it uses.
+- **Cannot connect:** verify Metro is running, the current address is reachable
+  from the phone, and Expo CLI/Go accounts have project access.
+- **Busy port:** identify the owning process before stopping it or choose another
+  port; do not terminate every Node process.
+- **Permission denied:** use iOS Settings or manual city search; location remains optional.
+- **Supabase errors:** verify the target project's configuration and required
+  applied migrations; do not disable RLS to make a test pass.
+
+Starting a dev server or pushing Git does not deploy mobile. See
+[deployment scope](./backlog/IOS-BUILD-PIPELINE.md#push-and-deployment-scope).

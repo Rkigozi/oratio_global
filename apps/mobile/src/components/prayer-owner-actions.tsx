@@ -163,6 +163,8 @@ export function PrayerActionsSheet({
 
 export function PrayerEditSheet({
   error,
+  locked = false,
+  recovery,
   onChangeText,
   onClose,
   onSave,
@@ -171,6 +173,8 @@ export function PrayerEditSheet({
   visible,
 }: {
   error: string;
+  locked?: boolean;
+  recovery?: ReactNode;
   onChangeText: (value: string) => void;
   onClose: () => void;
   onSave: () => void;
@@ -181,7 +185,9 @@ export function PrayerEditSheet({
   return (
     <Modal
       animationType="slide"
-      onRequestClose={() => !saving && onClose()}
+      onRequestClose={() => {
+        if (!saving) onClose();
+      }}
       transparent
       visible={visible}
     >
@@ -206,6 +212,7 @@ export function PrayerEditSheet({
             />
 
             <TextInput
+              editable={!saving && !locked}
               accessibilityLabel="Prayer text"
               autoFocus
               maxLength={500}
@@ -221,6 +228,7 @@ export function PrayerEditSheet({
               <Text style={styles.editError}>{error}</Text>
               <Text style={styles.editCounter}>{text.length}/500</Text>
             </View>
+            {recovery}
             <View style={styles.editActions}>
               <Pressable
                 accessibilityRole="button"
@@ -232,7 +240,7 @@ export function PrayerEditSheet({
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                disabled={saving}
+                disabled={saving || locked}
                 onPress={onSave}
                 style={[styles.primaryButton, saving && styles.disabled]}
               >

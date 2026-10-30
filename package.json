@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "engines": {
-    "node": "^20.19.0 || ^22.13.0 || >=24"
+    "node": "^22.13.0 || ^24.3.0 || ^26.0.0 || >=27.0.0"
   },
   "scripts": {
     "dev": "npm run dev --workspace @oratio/web",
@@ -27,18 +27,29 @@
     "ios": "npm run ios --workspace @oratio/mobile",
     "type-check:mobile": "npm run typecheck --workspace @oratio/mobile",
     "prepare": "husky",
+    "postinstall": "node scripts/security-backports/forge-backport.mjs",
+    "install:security-backport": "node scripts/security-backports/forge-backport.mjs",
+    "verify:security-backport": "node scripts/security-backports/forge-backport.mjs --verify-only",
     "format:check": "prettier --check .",
     "test:mobile": "npm run test --workspace @oratio/mobile",
-    "audit:web": "npm audit -w @oratio/web --omit=dev --audit-level=high"
+    "audit:web": "npm audit -w @oratio/web --omit=dev --audit-level=high",
+    "audit:web:tooling": "npm audit -w @oratio/web --include=dev --audit-level=high",
+    "audit:mobile": "node scripts/security-backports/audit-mobile.mjs",
+    "audit:mobile:raw": "npm audit -w @oratio/mobile --omit=dev --audit-level=high",
+    "audit:mobile:release": "node scripts/security-backports/audit-mobile.mjs --release",
+    "test:db": "node scripts/test-moderation-db.mjs",
+    "test:security-backports": "node --test scripts/security-backports/*.test.mjs"
   },
   "devDependencies": {
+    "vite": "6.4.5",
+    "@types/react": "19.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.5.0",
-    "react-test-renderer": "19.2.3",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "react-native": "0.86.3",
-    "expo": "~57.0.21"
+    "react-test-renderer": "19.3.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "expo": "~58.0.21"
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx}": [
@@ -53,11 +64,12 @@
     ]
   },
   "overrides": {
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "react-native": "0.86.3",
+    "vite": "6.4.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
     "@testing-library/react-native": {
-      "react-test-renderer": "19.2.3"
+      "react-test-renderer": "19.3.0"
     }
   }
 }

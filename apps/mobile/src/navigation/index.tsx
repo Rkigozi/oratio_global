@@ -36,7 +36,7 @@ export type RootStackParamList = {
   MyPrayers: { initialAudience?: 'public' | 'circle' | 'private' } | undefined;
   PrayerDetail: { prayerId: string };
   UserProfile: { username: string };
-  LocationPrayers: { city: string; country: string };
+  LocationPrayers: { city: string; country: string; placeId?: string };
   PrayerCircleManagement: undefined;
   Profile: undefined;
   Settings: undefined;

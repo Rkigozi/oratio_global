@@ -4,13 +4,25 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ArrowLeft, ArrowRight, LocateFixed, RefreshCw, UsersRound } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import { createPrayerRequest, getPrayerCircleCount } from '@oratio/shared/queries';
-import { getApproximateCoordinates } from '@oratio/shared/prayer-data';
+import {
+  createPrayerRequest,
+  PrayerSubmissionError,
+  findPrayerPlace,
+  getPrayerCircleCount,
+  type PrayerPlace,
+} from '@oratio/shared/queries';
 import { sanitizePrayerText, validatePrayerSubmission } from '@oratio/shared/validation';
 import { useAuth } from '../hooks/auth-context';
+import {
+  REQUEST_TIMEOUT_MS,
+  RequestTimeoutError,
+  withRequestTimeout,
+} from '../services/request-timeout';
+import { createSubmissionId } from '../services/submission-id';
 import { Brand, ErrorText, Field, PrimaryButton, Screen } from '../components/ui';
 import { asNativeIcon } from '../components/icon';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
+import { PrayerLocationPicker } from '../components/prayer-location-picker';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
 
@@ -23,7 +35,7 @@ const RefreshIcon = asNativeIcon(RefreshCw);
 const UsersIcon = asNativeIcon(UsersRound);
 
 const AUDIENCE_OPTIONS: Array<{ value: Audience; label: string; hint: string }> = [
-  { value: 'public', label: 'Public', hint: 'Anyone can see and pray' },
+  { value: 'public', label: 'Public', hint: 'Public for 14 days, then kept in My Prayers' },
   { value: 'circle', label: 'Prayer Circle', hint: 'Only your Circle sees it' },
   { value: 'private', label: 'Private', hint: 'Just for you' },
 ];
@@ -34,8 +46,10 @@ export function SubmitScreen({
 }: NativeStackScreenProps<RootStackParamList, 'Submit'>) {
   const { profile, user } = useAuth();
   const [text, setText] = useState('');
-  const [city, setCity] = useState('');
-  const [country, setCountry] = useState('');
+  const [place, setPlace] = useState<PrayerPlace | null>(null);
+  const [locationQuery, setLocationQuery] = useState('');
+  const city = place?.city ?? '';
+  const country = place?.country ?? '';
   const [audience, setAudience] = useState<Audience>(route.params?.initialAudience ?? 'public');
   const [anonymous, setAnonymous] = useState(false);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
@@ -47,6 +61,9 @@ export function SubmitScreen({
   const locationRequest = useRef(0);
   const circleRequest = useRef(0);
   const submitPending = useRef(false);
+  const attemptId = useRef<string | null>(null);
+  const [uncertain, setUncertain] = useState(false);
+  const frozen = submitting || uncertain;
   const [circleAvailability, setCircleAvailability] = useState<
     'checking' | 'ready' | 'empty' | 'unavailable'
   >('checking');
@@ -57,7 +74,7 @@ export function SubmitScreen({
     setCircleAvailability('checking');
     try {
       if (!user?.id) throw new Error('No signed-in user');
-      const count = await getPrayerCircleCount(user.id, { throwOnError: true });
+      const count = await withRequestTimeout(getPrayerCircleCount(user.id, { throwOnError: true }));
       if (request !== circleRequest.current) return null;
       setCircleAvailability(count > 0 ? 'ready' : 'empty');
       return count;
@@ -84,7 +101,7 @@ export function SubmitScreen({
   );
 
   const selectAudience = (next: Audience) => {
-    if (submitting || submitPending.current || next === audience) return;
+    if (frozen || submitPending.current || next === audience) return;
     circleRequest.current += 1;
     if (next === 'circle') setCircleAvailability('checking');
     setAudience(next);
@@ -93,13 +110,13 @@ export function SubmitScreen({
     if (next === 'private') {
       locationRequest.current += 1;
       setLocating(false);
-      setCity('');
-      setCountry('');
+      setPlace(null);
+      setLocationQuery('');
     }
   };
 
   const handleDetectLocation = async () => {
-    if (locating || isPrivate || submitting) return;
+    if (locating || isPrivate || frozen) return;
 
     const request = ++locationRequest.current;
     const isCurrent = () => request === locationRequest.current;
@@ -116,7 +133,7 @@ export function SubmitScreen({
       if (!permission.granted) {
         Alert.alert(
           'Location access is off',
-          'Allow location access in Settings to add your current city, or enter it manually.'
+          'Allow location access in Settings to add your current city, or search for it manually.'
         );
         return;
       }
@@ -140,19 +157,22 @@ export function SubmitScreen({
       const address = addresses[0];
       const detectedCity =
         address?.city || address?.district || address?.subregion || address?.region;
-      const detectedCountry = address?.country;
+      const detectedCountry = address?.isoCountryCode || address?.country;
 
       if (!detectedCity || !detectedCountry) {
         throw new Error('Location did not resolve to a city and country');
       }
 
-      setCity(detectedCity);
-      setCountry(detectedCountry);
+      const detectedPlace = await findPrayerPlace(detectedCity, detectedCountry);
+      if (!isCurrent()) return;
+      if (!detectedPlace) throw new Error('City is not uniquely recognized');
+      setPlace(detectedPlace);
+      setLocationQuery('');
     } catch {
       if (!isCurrent()) return;
       Alert.alert(
         'Location unavailable',
-        "We couldn't detect your city. You can still enter it manually."
+        "We couldn't find a matching city. Search for one or continue without a location."
       );
     } finally {
       if (isCurrent()) setLocating(false);
@@ -162,9 +182,13 @@ export function SubmitScreen({
   const handleSubmit = async () => {
     if (submitting || submitPending.current) return;
     setError('');
+    if (!isPrivate && !place && locationQuery.trim()) {
+      setError('Select a city from the results or clear the location search.');
+      return;
+    }
     const validation = validatePrayerSubmission({
       text,
-      location: isPrivate ? '' : `${city}, ${country}`,
+      location: '',
       anonymous,
     });
     if (!validation.success) {
@@ -187,33 +211,59 @@ export function SubmitScreen({
 
     const trimmedCity = isPrivate ? '' : city.trim() || 'Unknown';
     const trimmedCountry = isPrivate ? '' : country.trim() || 'Unknown';
-    const coords = isPrivate
-      ? { lat: 0, lng: 0 }
-      : getApproximateCoordinates(trimmedCity, trimmedCountry);
+    const coords = isPrivate || !place ? { lat: 0, lng: 0 } : place;
 
     locationRequest.current += 1;
     setLocating(false);
     submitPending.current = true;
+    const deadline = Date.now() + REQUEST_TIMEOUT_MS;
     setSubmitting(true);
     let prayerId: string | null = null;
     try {
-      if (audience === 'circle') {
+      if (audience === 'circle' && !uncertain) {
         // Recheck at save time in case the last connection was removed elsewhere.
         const count = await checkCircle();
         if (count === null || count < 1) return;
       }
-      prayerId = await createPrayerRequest({
-        text: sanitizePrayerText(validation.data?.text ?? text),
-        city: trimmedCity,
-        country: trimmedCountry,
-        lat: coords.lat,
-        lng: coords.lng,
-        username: effectiveAnonymous ? undefined : profileUsername,
-        audience,
-        commentsEnabled: audience === 'public' ? commentsEnabled : true,
-        prayerCount: 0,
-      });
-    } catch {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw new RequestTimeoutError();
+      attemptId.current ??= createSubmissionId();
+      prayerId = await withRequestTimeout(
+        createPrayerRequest(
+          {
+            text: sanitizePrayerText(validation.data?.text ?? text),
+            city: trimmedCity,
+            country: trimmedCountry,
+            lat: coords.lat,
+            lng: coords.lng,
+            ...(!isPrivate && place ? { placeId: place.id, countryCode: place.countryCode } : {}),
+            username: effectiveAnonymous ? undefined : profileUsername,
+            audience,
+            commentsEnabled: audience === 'public' ? commentsEnabled : true,
+            prayerCount: 0,
+          },
+          {
+            requestId: attemptId.current,
+            expectedUserId: user.id,
+            verifyExisting: uncertain,
+            throwOnError: true,
+          }
+        ),
+        remaining
+      );
+      setUncertain(false);
+    } catch (cause) {
+      const unknownOutcome =
+        Boolean(attemptId.current) &&
+        (uncertain || !(cause instanceof PrayerSubmissionError) || cause.uncertain);
+      setUncertain(unknownOutcome);
+      if (!unknownOutcome) attemptId.current = null;
+      if (unknownOutcome) {
+        setError(
+          "We couldn't confirm whether your prayer was saved. Your draft is still here. Check and retry this submission to avoid a duplicate."
+        );
+        return;
+      }
       prayerId = null;
     } finally {
       submitPending.current = false;
@@ -277,11 +327,13 @@ export function SubmitScreen({
           onPress={() => {
             setDone(false);
             setText('');
-            setCity('');
-            setCountry('');
+            setPlace(null);
+            setLocationQuery('');
             setAnonymous(false);
             setCommentsEnabled(true);
             setSubmittedPrayerId(null);
+            attemptId.current = null;
+            setUncertain(false);
           }}
           style={styles.againButton}
         >
@@ -316,8 +368,8 @@ export function SubmitScreen({
             <Pressable
               key={option.value}
               accessibilityRole="radio"
-              accessibilityState={{ checked: selected, disabled: submitting }}
-              disabled={submitting}
+              accessibilityState={{ checked: selected, disabled: frozen }}
+              disabled={frozen}
               onPress={() => selectAudience(option.value)}
               style={[styles.audiencePill, selected && styles.audiencePillSelected]}
             >
@@ -375,9 +427,10 @@ export function SubmitScreen({
         placeholder={isPrivate ? "Write what's on your heart…" : "Share what's on your heart…"}
         placeholderTextColor={colors.textMuted}
         selectionColor={colors.accent}
-        editable={!submitting}
+        editable={!frozen}
         value={text}
         onChangeText={(value) => {
+          if (frozen) return;
           setText(value);
           setError('');
         }}
@@ -395,7 +448,7 @@ export function SubmitScreen({
           <Pressable
             accessibilityLabel="Use my current location"
             accessibilityRole="button"
-            disabled={locating || submitting}
+            disabled={locating || frozen}
             onPress={() => void handleDetectLocation()}
             style={({ pressed }) => [
               styles.locationButton,
@@ -413,27 +466,26 @@ export function SubmitScreen({
             </Text>
           </Pressable>
 
-          <Field
-            label="City (optional)"
-            editable={!submitting}
-            placeholder="e.g. London"
-            value={city}
-            onChangeText={(value) => {
-              setCity(value);
+          <PrayerLocationPicker
+            value={place}
+            query={locationQuery}
+            disabled={frozen}
+            onChange={(value) => {
+              if (frozen) return;
+              locationRequest.current += 1;
+              setLocating(false);
+              setPlace(value);
+              setLocationQuery('');
               setError('');
             }}
-            autoCorrect={false}
-          />
-          <Field
-            label="Country (optional)"
-            editable={!submitting}
-            placeholder="e.g. United Kingdom"
-            value={country}
-            onChangeText={(value) => {
-              setCountry(value);
+            onQueryChange={(value) => {
+              if (frozen) return;
+              locationRequest.current += 1;
+              setLocating(false);
+              setPlace(null);
+              setLocationQuery(value);
               setError('');
             }}
-            autoCorrect={false}
           />
         </>
       )}
@@ -444,9 +496,11 @@ export function SubmitScreen({
             <Text style={styles.preferenceText}>Share anonymously</Text>
             <Switch
               accessibilityLabel="Share anonymously"
-              disabled={submitting}
+              disabled={frozen}
               value={anonymous}
-              onValueChange={setAnonymous}
+              onValueChange={(value) => {
+                if (!frozen) setAnonymous(value);
+              }}
               trackColor={{ false: colors.surfaceBorder, true: colors.accentDark }}
               thumbColor={anonymous ? colors.accent : colors.textDim}
             />
@@ -455,9 +509,11 @@ export function SubmitScreen({
             <Text style={styles.preferenceText}>Let people encourage me</Text>
             <Switch
               accessibilityLabel="Let people encourage me"
-              disabled={submitting}
+              disabled={frozen}
               value={commentsEnabled}
-              onValueChange={setCommentsEnabled}
+              onValueChange={(value) => {
+                if (!frozen) setCommentsEnabled(value);
+              }}
               trackColor={{ false: colors.surfaceBorder, true: colors.accentDark }}
               thumbColor={commentsEnabled ? colors.accent : colors.textDim}
             />
@@ -467,10 +523,12 @@ export function SubmitScreen({
 
       <ErrorText>{error}</ErrorText>
       <PrimaryButton
-        title={isPrivate ? 'Save Prayer' : 'Submit Prayer'}
+        title={
+          uncertain ? 'Check and retry submission' : isPrivate ? 'Save Prayer' : 'Submit Prayer'
+        }
         onPress={() => void handleSubmit()}
         loading={submitting}
-        disabled={audience === 'circle' && circleAvailability !== 'ready'}
+        disabled={!uncertain && audience === 'circle' && circleAvailability !== 'ready'}
       />
     </Screen>
   );

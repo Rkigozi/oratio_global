@@ -101,12 +101,18 @@ describe('ProfileScreen', () => {
     fireEvent.press(screen.getByLabelText('Save profile'));
 
     await waitFor(() =>
-      expect(updateProfile).toHaveBeenCalledWith({
-        username: 'new_name',
-        display_name: 'New Name',
-        bio: 'Still praying',
-        location: 'Kampala',
-      })
+      expect(updateProfile).toHaveBeenCalledWith(
+        {
+          username: 'new_name',
+          display_name: 'New Name',
+          bio: 'Still praying',
+          location: 'Kampala',
+        },
+        expect.objectContaining({
+          expectedUserId: 'user-1',
+          expectedValues: expect.objectContaining({ username: profile.username, bio: profile.bio }),
+        })
+      )
     );
     expect(mockRefreshProfile).toHaveBeenCalled();
   });
@@ -117,9 +123,12 @@ describe('ProfileScreen', () => {
     fireEvent.press(await screen.findByLabelText('Change profile photo'));
 
     await waitFor(() =>
-      expect(updateProfile).toHaveBeenCalledWith({
-        avatar_url: 'https://cdn.oratio/avatar.jpg',
-      })
+      expect(updateProfile).toHaveBeenCalledWith(
+        {
+          avatar_url: 'https://cdn.oratio/avatar.jpg',
+        },
+        expect.objectContaining({ expectedUserId: 'user-1', expectedValues: { avatar_url: null } })
+      )
     );
     expect(mockRefreshProfile).toHaveBeenCalled();
   });
@@ -130,6 +139,54 @@ describe('ProfileScreen', () => {
     fireEvent.press(await screen.findByLabelText('Open settings'));
 
     expect(mockNavigation.navigate).toHaveBeenCalledWith('Settings');
+  });
+
+  it('keeps an uncertain profile draft and verifies the original values before retrying', async () => {
+    jest.mocked(updateProfile).mockRejectedValueOnce(new Error('lost confirmation'));
+    renderProfile();
+    fireEvent.press(await screen.findByLabelText('Edit profile'));
+    fireEvent.changeText(screen.getByDisplayValue('Praying daily'), 'Keep this draft');
+    fireEvent.press(screen.getByLabelText('Save profile'));
+    const retry = await screen.findByText('Check and retry');
+    expect(screen.getByDisplayValue('Keep this draft').props.editable).toBe(false);
+    expect(screen.getByLabelText('Save profile')).toBeDisabled();
+    fireEvent.press(retry);
+    await waitFor(() => expect(screen.queryByText('Check and retry')).toBeNull());
+    expect((await screen.findAllByText('Keep this draft')).length).toBeGreaterThan(0);
+    const calls = jest.mocked(updateProfile).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toEqual([
+      calls[0][0],
+      expect.objectContaining({
+        requestId: calls[0][1]?.requestId,
+        expectedValues: calls[0][1]?.expectedValues,
+        verifyExisting: true,
+      }),
+    ]);
+  });
+
+  it('retries a photo profile update without reopening the picker or uploading again', async () => {
+    jest.mocked(updateProfile).mockRejectedValueOnce(new Error('lost confirmation'));
+    renderProfile();
+    fireEvent.press(await screen.findByLabelText('Change profile photo'));
+    fireEvent.press(await screen.findByText('Check and retry'));
+    await waitFor(() => expect(screen.queryByText('Check and retry')).toBeNull());
+    expect(chooseAndUploadAvatar).toHaveBeenCalledTimes(1);
+    expect(chooseAndUploadAvatar).toHaveBeenCalledWith('user-1');
+    expect(updateProfile).toHaveBeenCalledTimes(2);
+    expect(jest.mocked(updateProfile).mock.calls[1][0]).toEqual({
+      avatar_url: 'https://cdn.oratio/avatar.jpg',
+    });
+  });
+
+  it('offers profile retry without replacing a failed read with editable defaults', async () => {
+    jest.mocked(getMyProfile).mockRejectedValueOnce(new Error('offline'));
+    renderProfile();
+    const retry = await screen.findByText('Refresh profile');
+    expect(screen.getByLabelText('Edit profile')).toBeDisabled();
+    fireEvent.press(retry);
+    await waitFor(() => expect(screen.getByLabelText('Edit profile')).toBeEnabled());
+    expect(screen.getAllByText('@testuser').length).toBeGreaterThan(0);
   });
 
   it('opens the owned prayer library from the Profile actions', async () => {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { ContentReportSheet } from './content-report-sheet';
 
 jest.mock('lucide-react-native', () => ({
@@ -11,6 +11,9 @@ jest.mock('lucide-react-native', () => ({
 
 jest.mock('@oratio/shared/queries', () => ({
   createReport: jest.fn(),
+}));
+jest.mock('../hooks/auth-context', () => ({
+  useAuth: () => ({ user: { id: 'user-1' } }),
 }));
 
 import { createReport } from '@oratio/shared/queries';
@@ -40,18 +43,21 @@ describe('ContentReportSheet', () => {
     fireEvent.press(screen.getByText('Submit report'));
 
     await waitFor(() =>
-      expect(createReport).toHaveBeenCalledWith({
-        reportable_type: 'prayer',
-        reportable_id: 'prayer-1',
-        reason: 'Harmful or unsafe',
-        details: 'Repeated unsafe advice',
-      })
+      expect(createReport).toHaveBeenCalledWith(
+        {
+          reportable_type: 'prayer',
+          reportable_id: 'prayer-1',
+          reason: 'Harmful or unsafe',
+          details: 'Repeated unsafe advice',
+        },
+        expect.objectContaining({ expectedUserId: 'user-1', verifyExisting: false })
+      )
     );
     expect(await screen.findByText(/Report sent for review/)).toBeTruthy();
     expect(screen.getByText('Done')).toBeTruthy();
   });
 
-  it('explains that a duplicate report is still pending', async () => {
+  it('confirms a previously saved report without assuming its moderation status', async () => {
     jest.mocked(createReport).mockResolvedValue('already_reported' as never);
     render(
       <ContentReportSheet
@@ -111,12 +117,15 @@ describe('ContentReportSheet', () => {
       fireEvent.changeText(details, 'x'.repeat(1000));
       fireEvent.press(submit());
       await waitFor(() =>
-        expect(createReport).toHaveBeenCalledWith({
-          reportable_type: reportableType,
-          reportable_id: 'target-1',
-          reason: 'Something else',
-          details: 'x'.repeat(1000),
-        })
+        expect(createReport).toHaveBeenCalledWith(
+          {
+            reportable_type: reportableType,
+            reportable_id: 'target-1',
+            reason: 'Something else',
+            details: 'x'.repeat(1000),
+          },
+          expect.objectContaining({ expectedUserId: 'user-1' })
+        )
       );
       expect(createReport).toHaveBeenCalledTimes(1);
     }
@@ -141,7 +150,10 @@ describe('ContentReportSheet', () => {
     expect(screen.getByText('1000/1000')).toBeTruthy();
     fireEvent.press(screen.getByText('Submit report'));
     await waitFor(() =>
-      expect(createReport).toHaveBeenCalledWith(expect.objectContaining({ details: text }))
+      expect(createReport).toHaveBeenCalledWith(
+        expect.objectContaining({ details: text }),
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
     );
   });
 
@@ -220,6 +232,39 @@ describe('ContentReportSheet', () => {
     expect(await screen.findByText(/Your draft has been kept/)).toBeTruthy();
     expect(screen.getByLabelText('Additional details (optional)').props.value).toBe(
       'Useful context'
+    );
+  });
+
+  it('locks an uncertain report and verifies its original ID and details before retrying', async () => {
+    jest
+      .mocked(createReport)
+      .mockRejectedValueOnce(new Error('confirmation lost'))
+      .mockResolvedValue('already_reported');
+    render(
+      <ContentReportSheet
+        onClose={jest.fn()}
+        reportableId="prayer-1"
+        reportableType="prayer"
+        visible
+      />
+    );
+    fireEvent.press(screen.getByText('Something else'));
+    fireEvent.changeText(
+      screen.getByLabelText('Additional details (optional)'),
+      'Keep this context'
+    );
+    const submit = screen.getByText('Submit report');
+    act(() => {
+      fireEvent.press(submit);
+      fireEvent.press(submit);
+    });
+    fireEvent.press(await screen.findByText('Check and retry'));
+    expect(await screen.findByText(/Your report is saved/)).toBeTruthy();
+    expect(createReport).toHaveBeenCalledTimes(2);
+    const calls = jest.mocked(createReport).mock.calls;
+    expect(calls[1][0]).toEqual(calls[0][0]);
+    expect(calls[1][1]).toEqual(
+      expect.objectContaining({ requestId: calls[0][1]?.requestId, verifyExisting: true })
     );
   });
 });

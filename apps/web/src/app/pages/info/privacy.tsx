@@ -51,7 +51,9 @@ export function Privacy() {
             <section>
               <h3 className="text-text font-medium text-sm mb-2">2. Prayer Visibility</h3>
               <p>
-                Public prayers are visible to signed-in Oratio users, Prayer Circle prayers are
+                Public prayers are visible to signed-in Oratio users for 14 days, then leave public
+                discovery and remain in the author&apos;s history until deleted. The author can
+                renew an expired public prayer for another 14 days. Prayer Circle prayers are
                 limited to accepted Circle connections, and private prayers are visible only to you.
                 Choosing anonymous hides your attribution from other users, but Oratio still retains
                 the account association needed to manage and delete the prayer.

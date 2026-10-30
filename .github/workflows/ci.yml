@@ -26,6 +26,9 @@ jobs:
       - name: Audit web dependencies
         run: npm run audit:web
 
+      - name: Audit web development tooling
+        run: npm run audit:web:tooling
+
       - name: Type check
         working-directory: apps/web
         run: npm run type-check
@@ -34,9 +37,9 @@ jobs:
         working-directory: apps/web
         run: npm run lint
 
-      - name: Tests
+      - name: Tests and coverage
         working-directory: apps/web
-        run: npm test
+        run: npm run test:coverage
 
       - name: Build
         working-directory: apps/web
@@ -73,3 +76,36 @@ jobs:
       - name: Tests
         working-directory: apps/mobile
         run: npm test
+
+      - name: Verify dependency source, RSA controls and audit policy
+        run: npm run test:security-backports
+
+      - name: Verify iOS release bundling (not a distributable build)
+        working-directory: apps/mobile
+        run: |
+          npm run check:build-env
+          npm run export:ios
+        env:
+          EXPO_NO_DOTENV: '1'
+          EXPO_PUBLIC_SUPABASE_URL: https://ci-preflight.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ci_build_check_only
+
+      # Review exceptions expire; the separate audit:mobile:release command stays strict.
+      - name: Audit mobile dependencies
+        if: ${{ !cancelled() }}
+        run: npm run audit:mobile
+
+  database-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install local PostgreSQL test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql
+          echo "$(pg_config --bindir)" >> "$GITHUB_PATH"
+      - name: Verify migrations, access controls and concurrent requests
+        run: node scripts/test-moderation-db.mjs

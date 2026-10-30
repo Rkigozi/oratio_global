@@ -2,12 +2,18 @@ import { getSupabaseClient } from '../client';
 import { mapPrayerRequest, PRAYER_SELECT } from './shared';
 import type { PrayerRequest } from '../prayer-data';
 import { logError } from '../logger';
+import { setPrayerMembership, type WriteAttempt } from '../write-outcome';
 
 const supabase = getSupabaseClient();
 
 // ─── "I Prayed" ────────────────────────────────────────────────────────
 
-export async function togglePray(prayerId: string, prayed: boolean): Promise<boolean> {
+export async function togglePray(
+  prayerId: string,
+  prayed: boolean,
+  attempt?: WriteAttempt
+): Promise<boolean> {
+  if (attempt) return setPrayerMembership('prayer_interactions', prayerId, prayed, attempt);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -35,10 +41,14 @@ export async function togglePray(prayerId: string, prayed: boolean): Promise<boo
   return true;
 }
 
-export async function getMyPrayedIds(): Promise<string[]> {
+export async function getMyPrayedIds({
+  throwOnError = false,
+}: { throwOnError?: boolean } = {}): Promise<string[]> {
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+  if (throwOnError && (authError || !user)) throw new Error('Prayer responses unavailable');
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -48,6 +58,7 @@ export async function getMyPrayedIds(): Promise<string[]> {
 
   if (error || !data) {
     logError('fetch prayed IDs', error);
+    if (throwOnError) throw new Error('Prayer responses unavailable');
     return [];
   }
 

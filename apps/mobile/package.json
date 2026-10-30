@@ -9,29 +9,33 @@
     "@react-navigation/bottom-tabs": "^7.18.18",
     "@react-navigation/native": "^7.3.18",
     "@react-navigation/native-stack": "^7.18.10",
+    "@sentry/react-native": "~8.28.0",
     "@supabase/supabase-js": "^2.116.0",
-    "expo": "~57.0.21",
-    "expo-clipboard": "~57.0.1",
-    "expo-font": "~57.0.3",
-    "expo-image-picker": "~57.0.16",
-    "expo-location": "~57.0.17",
-    "expo-status-bar": "~57.0.1",
+    "expo": "~58.0.21",
+    "expo-application": "~58.1.2",
+    "expo-clipboard": "~58.0.4",
+    "expo-constants": "~58.0.14",
+    "expo-font": "~58.0.11",
+    "expo-image-picker": "~58.0.10",
+    "expo-location": "~58.0.20",
+    "expo-status-bar": "~58.0.4",
     "lucide-react-native": "^1.44.0",
-    "react": "19.2.3",
-    "react-native": "0.86.3",
-    "react-native-maps": "1.27.2",
-    "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "~4.26.0",
-    "react-native-svg": "15.15.4",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-maps": "1.29.11",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.0",
+    "react-native-svg": "15.16.0",
     "react-native-url-polyfill": "^4.0.0"
   },
   "devDependencies": {
-    "@react-native/jest-preset": "^0.86.3",
+    "@react-native/jest-preset": "^0.88.0",
     "@testing-library/react-native": "^13.3.3",
-    "@types/jest": "^29.5.14",
-    "@types/react": "~19.2.2",
-    "jest": "~29.7.0",
-    "jest-expo": "~57.0.5",
+    "@types/jest": "30.0.0",
+    "@types/node": "^22.20.5",
+    "@types/react": "~19.3.0",
+    "jest": "~30.5.2",
+    "jest-expo": "~58.0.13",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -39,6 +43,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "export:ios": "expo export --platform ios --output-dir dist/ios --clear",
+    "check:build-env": "node scripts/check-build-env.cjs",
+    "eas-build-post-install": "node ../../scripts/security-backports/forge-backport.mjs --verify-only && npm run check:build-env",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch"
@@ -49,12 +56,28 @@
     "setupFiles": [
       "<rootDir>/jest.setup.js"
     ],
+    "transform": {
+      "\\.[jt]sx?$": [
+        "babel-jest",
+        {
+          "presets": [
+            "babel-preset-expo"
+          ],
+          "caller": {
+            "name": "metro",
+            "bundler": "metro",
+            "platform": "ios",
+            "preserveEnvVars": true
+          }
+        }
+      ]
+    },
     "testMatch": [
       "**/*.test.ts",
       "**/*.test.tsx"
     ],
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|lucide-react-native|@supabase/supabase-js|@oratio/.*))"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|lucide-react-native|@supabase/supabase-js|@sentry/.*|@oratio/.*))"
     ],
     "testTimeout": 15000
   }

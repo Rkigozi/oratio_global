@@ -12,6 +12,9 @@ import {
 } from '@oratio/shared/queries';
 import { asNativeIcon } from './icon';
 import { colors, fontFamilies } from '../theme';
+import { useRecoverableWrite } from '../hooks/use-recoverable-write';
+import { withRequestTimeout } from '../services/request-timeout';
+import { WriteRecovery } from './write-recovery';
 
 const CheckIcon = asNativeIcon(Check);
 const ClockIcon = asNativeIcon(Clock);
@@ -45,19 +48,41 @@ export function ProfileCircleActions({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const requestId = useRef(0);
-  const pending = useRef(false);
   const active = useRef(false);
+  const currentTarget = useRef('');
+  const target = `${viewerId}:${recipientId}`;
+  currentTarget.current = target;
   const full = count >= CIRCLE_LIMIT;
+  type ActionIntent = { action: Action; inviteId?: string };
+  const writes = useRecoverableWrite<ActionIntent, { action: Action; ok: boolean }>(
+    recipientId,
+    viewerId,
+    async (intent, attempt) => ({
+      action: intent.action,
+      ok:
+        intent.action === 'invite'
+          ? await sendPrayerCircleInvite(recipientId, undefined, attempt)
+          : intent.action === 'cancel'
+            ? await cancelPrayerCircleInvite(intent.inviteId!, attempt)
+            : await respondToPrayerCircleInvite(
+                intent.inviteId!,
+                intent.action === 'accept' ? 'accepted' : 'declined',
+                attempt
+              ),
+    })
+  );
 
   const load = useCallback(async () => {
     const request = ++requestId.current;
     setLoading(true);
     setError('');
     try {
-      const [nextStatus, nextCount] = await Promise.all([
-        getPrayerCircleStatus(recipientId, { throwOnError: true }),
-        getPrayerCircleCount(viewerId, { throwOnError: true }),
-      ]);
+      const [nextStatus, nextCount] = await withRequestTimeout(
+        Promise.all([
+          getPrayerCircleStatus(recipientId, { throwOnError: true }),
+          getPrayerCircleCount(viewerId, { throwOnError: true }),
+        ])
+      );
       if (request !== requestId.current) return;
       setStatus(nextStatus);
       setCount(nextCount);
@@ -73,7 +98,7 @@ export function ProfileCircleActions({
   useFocusEffect(
     useCallback(() => {
       active.current = true;
-      if (!pending.current) setBusy(null);
+      if (!writes.isLocked()) setBusy(null);
       setNotice('');
       void load();
       return () => {
@@ -84,11 +109,51 @@ export function ProfileCircleActions({
   );
 
   useEffect(() => {
-    if (refreshing && !pending.current) void load();
+    if (refreshing && !writes.isLocked()) void load();
   }, [refreshing, load]);
 
+  const finish = async (
+    result: Awaited<ReturnType<typeof writes.run>>,
+    failureMessage = "We couldn't update your Prayer Circle. Please try again."
+  ) => {
+    if (!active.current || currentTarget.current !== target || result.status === 'ignored') return;
+    setBusy(null);
+    if (result.status === 'failed') {
+      setError(failureMessage);
+      return;
+    }
+    if (result.status !== 'saved') return;
+    const { action, ok } = result.value;
+    if (!ok) {
+      await load();
+      if (!active.current || currentTarget.current !== target) return;
+      setError(
+        `We couldn't ${action === 'invite' ? 'send' : action} the invite. It may have changed; your Prayer Circle has been refreshed.`
+      );
+      return;
+    }
+    const messages: Record<Action, string> = {
+      invite: `Invite sent to @${username}.`,
+      cancel: 'Invite cancelled.',
+      accept: `@${username} is now in your Prayer Circle.`,
+      decline: 'Invite declined.',
+    };
+    setNotice(messages[action]);
+    await load();
+    if (action === 'accept' && active.current && currentTarget.current === target) {
+      try {
+        await withRequestTimeout(onAccepted());
+      } catch {
+        if (active.current && currentTarget.current === target)
+          setError(
+            "Your Prayer Circle was updated, but we couldn't refresh prayers. Please refresh this profile."
+          );
+      }
+    }
+  };
+
   const perform = async (action: Action) => {
-    if (pending.current || loading || !status || recipientId === viewerId) return;
+    if (writes.isLocked() || loading || !status || recipientId === viewerId) return;
     if (action === 'invite' && (status.state !== 'none' || full)) return;
     if (action === 'cancel' && (status.state !== 'pending_sent' || !status.inviteId)) return;
     if (
@@ -97,8 +162,6 @@ export function ProfileCircleActions({
     )
       return;
 
-    pending.current = true;
-    const request = ++requestId.current;
     setBusy(action);
     setError('');
     setNotice('');
@@ -110,36 +173,7 @@ export function ProfileCircleActions({
         "We couldn't accept the invite. Try again; it may have changed or a Circle may be full.",
       decline: "We couldn't decline the invite. Please try again.",
     };
-    try {
-      const ok =
-        action === 'invite'
-          ? await sendPrayerCircleInvite(recipientId)
-          : action === 'cancel'
-            ? await cancelPrayerCircleInvite(status.inviteId!)
-            : await respondToPrayerCircleInvite(
-                status.inviteId!,
-                action === 'accept' ? 'accepted' : 'declined'
-              );
-      if (request !== requestId.current) return;
-      if (!ok) {
-        setError(failures[action]);
-        return;
-      }
-      const messages: Record<Action, string> = {
-        invite: `Invite sent to @${username}.`,
-        cancel: 'Invite cancelled.',
-        accept: `@${username} is now in your Prayer Circle.`,
-        decline: 'Invite declined.',
-      };
-      setNotice(messages[action]);
-      if (action === 'accept') await onAccepted();
-      if (request === requestId.current) await load();
-    } catch {
-      if (request === requestId.current) setError(failures[action]);
-    } finally {
-      pending.current = false;
-      if (active.current) setBusy(null);
-    }
+    await finish(await writes.run({ action, inviteId: status.inviteId }), failures[action]);
   };
 
   if (recipientId === viewerId || status?.state === 'self') return null;
@@ -160,7 +194,7 @@ export function ProfileCircleActions({
       ) : status?.state === 'none' ? (
         <Pressable
           accessibilityRole="button"
-          disabled={full}
+          disabled={full || writes.locked}
           onPress={() => void perform('invite')}
           style={[styles.button, full && styles.disabled]}
         >
@@ -177,6 +211,7 @@ export function ProfileCircleActions({
           </View>
           <Pressable
             accessibilityRole="button"
+            disabled={writes.locked}
             onPress={() => void perform('cancel')}
             style={styles.button}
           >
@@ -190,7 +225,7 @@ export function ProfileCircleActions({
           <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"
-              disabled={full}
+              disabled={full || writes.locked}
               onPress={() => void perform('accept')}
               style={[styles.button, styles.response, full && styles.disabled]}
             >
@@ -199,6 +234,7 @@ export function ProfileCircleActions({
             </Pressable>
             <Pressable
               accessibilityRole="button"
+              disabled={writes.locked}
               onPress={() => void perform('decline')}
               style={[styles.button, styles.response]}
             >
@@ -224,6 +260,12 @@ export function ProfileCircleActions({
         <Text accessibilityLiveRegion="polite" style={styles.secondary}>
           {notice}
         </Text>
+      ) : null}
+      {writes.uncertain ? (
+        <WriteRecovery
+          busy={writes.busy}
+          onRetry={() => void writes.retry().then((result) => finish(result))}
+        />
       ) : null}
       {error ? (
         <>

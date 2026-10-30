@@ -1,209 +1,103 @@
-# Oratio Backlog — Working Agreement
+# Oratio Backlog Working Agreement
 
-Last updated: 2026-09-28
+Last reviewed: 2026-10-21. Project: [SCRUM](https://oratio.atlassian.net).
+These story/runbook files are the sync source; mirror scope/acceptance changes
+to Jira with evidence. This index is not a duplicate live status dashboard.
+Use [traceability](../design/TRACEABILITY.md) for the dated requirement/story snapshot.
 
-Canonical source for the JIRA backlog (project `SCRUM` at
-https://oratio.atlassian.net). This file and JIRA must stay in sync: change
-work in one place, mirror it in the other (OPS: SCRUM-56).
+## Delivery Order
 
-Native migration keys: epic `SCRUM-62`, stories `SCRUM-63`–`SCRUM-77` and
-`SCRUM-80`–`SCRUM-83`, and `SCRUM-94`.
+Follow the [release plan](../V1_RELEASE_READINESS.md): mobile implementation and
+Expo Go acceptance precede TestFlight. Distribution entry requires an accepted
+candidate, active Apple Developer Program membership and release approval.
+Website conversion is a subsequent supporting release workstream. Android
+distribution follows the initial public iOS release.
 
-## Story template
+## Story Template
 
-Every story follows this shape in JIRA:
-
-```
-Summary: <verb-first imperative, e.g. "Move the app to a custom domain">
+```text
+Summary: <verb-first description of observable intent>
 
 User Story:
 As a <user>, I want <capability>, so that <value>.
 
 Acceptance Criteria:
 GIVEN <context> WHEN <action> THEN <observable result>
-...
+
+Design:
+<FR/NFR ID, HLD/domain LLD and traceability entry>
 
 Tests:
-<the repo test files / commands that prove this story>
+<test files, automated commands and applicable device/role checks>
 
-Out of scope:
-<explicitly not included, to stop scope creep>
+Out of Scope:
+<explicit boundary>
 ```
 
-## Definition of Done (applies to every story)
+## Definition Of Done
 
-- `npm run type-check`, `npm run lint`, `npm test`, `npm run build` all green
-- Tests updated or added for the changed behaviour
-- Relevant docs updated (`docs/`, memory bank)
-- Deployed to live (or a documented reason why not)
+- Changed behaviour has appropriate tests, passing relevant type checks, format,
+  lint/build and security checks. Include native gates for native work and both
+  clients/database checks when shared behaviour changes.
+- Relevant requirements/design, acceptance and dated evidence are updated.
+- Applicable user/device/role checks pass; known gaps are recorded with an owner.
+- Deployment/distribution state is explicit. A mobile feature can be accepted in
+  Expo Go without prematurely starting TestFlight; a distribution story requires
+  its actual signed-build evidence. Backend changes require approved rollout.
+- No silent release approval: a Done feature does not close `SCRUM-40` or an NFR.
 
-## Priority semantics
+Use In Progress for unfinished implementation/verification, In Review for a
+reviewable candidate awaiting applicable acceptance, and Done only when that
+story's criteria are satisfied. A documented external dependency is not a test pass.
 
-| Priority | Meaning                                                             |
-| -------- | ------------------------------------------------------------------- |
-| Highest  | Blocks the V1 launch                                                |
-| High     | Should land before launch; safe to defer only with a written reason |
-| Medium   | Post-launch backlog                                                 |
-| Low      | Nice-to-have; only with spare capacity                              |
+## Priorities And Labels
 
-## Labels
+| Priority | Meaning                                                      |
+| -------- | ------------------------------------------------------------ |
+| Highest  | Blocks V1 launch                                             |
+| High     | Should land before launch; deferral needs an explicit reason |
+| Medium   | Post-launch unless deliberately reprioritised                |
+| Low      | Optional future improvement                                  |
 
-| Label            | Meaning                             |
-| ---------------- | ----------------------------------- |
-| `v1-launch`      | Must be done for the V1 launch      |
-| `native`         | Expo/React Native product migration |
-| `post-launch`    | After launch week                   |
-| `platform`       | Infrastructure, security, ops       |
-| `product`        | User-facing product work            |
-| `dev-experience` | Testing, structure, maintainability |
+Use `v1-launch`, `native`, `post-launch`, `platform`, `product`, `dev-experience`
+and `nfr` consistently. Fix versions are V1 Launch, Post-Launch and Backlog.
+Work is currently sequenced by priorities and release versions; story points are not used.
 
-## Versions (Fix Version)
+## Existing Ownership
 
-| Version     | Purpose                                                   |
-| ----------- | --------------------------------------------------------- |
-| V1 Launch   | Everything in this release ships before the public launch |
-| Post-Launch | The next wave after launch week                           |
-| Backlog     | Uncommitted future work                                   |
+| Epic                      | Key      | Scope                                                                                 |
+| ------------------------- | -------- | ------------------------------------------------------------------------------------- |
+| Launch readiness          | SCRUM-31 | Domain, store/public release and combined sign-off                                    |
+| Testing and observability | SCRUM-32 | Test/monitoring maturity                                                              |
+| Hardening                 | SCRUM-33 | Security and hardening; individual V1 story targets override the historical epic name |
+| Community and retention   | SCRUM-34 | Includes public-prayer expiry, SCRUM-98                                               |
+| Platform and operations   | SCRUM-35 | Notices, recovery, operations and workflow                                            |
+| Native iOS product        | SCRUM-62 | Mobile journeys/quality, distribution and supporting-site cutover                     |
+| Map foundations and scale | SCRUM-78 | V1 foundations 84-86; later growth 87-89                                              |
+| Android release           | SCRUM-79 | Post-iOS work only                                                                    |
 
-## Release order
+Reuse existing owners; do not create another documentation, website or architecture
+epic just because a scope needs clarification. Status names and category-based Jira
+charts may differ; verify actual issue status before making progress claims.
 
-Oratio launches publicly on the Apple App Store first. The native V1 sprint,
-TestFlight QA, and App Store submission therefore cover iOS only. Android work
-is intentionally isolated under `SCRUM-79`, labelled `post-launch`, and parked
-in the future sprint so it cannot become an implicit V1 dependency.
+## Feature Records
 
-## Estimation
+| Record                                               | Owns                                                                                          |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [Canonical places](./CANONICAL-PLACES.md)            | SCRUM-84 implementation, catalog provenance, rollout and device checks                        |
+| [Map foundations/scale](./MAP-SCALABILITY.md)        | SCRUM-84-89 criteria and boundaries                                                           |
+| [Expiry](./PUBLIC-PRAYER-EXPIRY.md)                  | SCRUM-98 lifecycle, rollout and renewal evidence                                              |
+| [Moderation](./MODERATION-LAUNCH.md)                 | SCRUM-71 reports, review/actions and operational acceptance                                   |
+| [Blocking](./USER-BLOCKING.md)                       | SCRUM-94 access/relationship enforcement and QA                                               |
+| [Monitoring](./NATIVE-MONITORING.md)                 | SCRUM-43 telemetry/privacy, controlled events and alert evidence                              |
+| [Network/session resilience](./NATIVE-RESILIENCE.md) | SCRUM-95 scoped implementation, fault tests and remaining signed-build/performance acceptance |
+| [Security](./SECURITY-REVIEW.md)                     | SCRUM-47 policy review, migrations and exact advisory treatment                               |
+| [Notices](./SERVICE-NOTICES.md)                      | SCRUM-97 independent banner/admin service and rollout                                         |
+| [iOS distribution](./IOS-BUILD-PIPELINE.md)          | SCRUM-72/75 future signing/TestFlight setup and deployment controls                           |
+| [Website](./WEB-PRESENCE.md)                         | SCRUM-74 retained services and later public-site conversion                                   |
+| [Android](./ANDROID-RELEASE.md)                      | SCRUM-79 post-iOS plan                                                                        |
 
-No story points while it is a solo team — priorities and versions carry the
-load. Introduce points (or T-shirt sizes) only when a second developer joins.
-
-## Epics
-
-| Epic                                       | Key      | Stories                            |
-| ------------------------------------------ | -------- | ---------------------------------- |
-| LAUNCH: Launch Readiness                   | SCRUM-31 | SCRUM-36…40                        |
-| TEST: Testing & Observability Maturity     | SCRUM-32 | SCRUM-41…44                        |
-| HARD: Post-Launch Hardening                | SCRUM-33 | SCRUM-45…48                        |
-| COMM: Community & Retention                | SCRUM-34 | SCRUM-49…52                        |
-| OPS: Platform & Operations                 | SCRUM-35 | SCRUM-53…56                        |
-| NATIVE: iOS Product Migration              | SCRUM-62 | SCRUM-63…77, SCRUM-80…83, SCRUM-94 |
-| MAP: Map Scalability & Canonical Locations | SCRUM-78 | SCRUM-84…89                        |
-| ANDROID: Android Release                   | SCRUM-79 | SCRUM-90…93 (post-launch)          |
-
-Each epic description contains an Outcome statement and Success metrics —
-track those, not task counts.
-
-The MAP story-level acceptance criteria live in
-[`MAP-SCALABILITY.md`](./MAP-SCALABILITY.md). The future Android release plan
-lives in [`ANDROID-RELEASE.md`](./ANDROID-RELEASE.md).
-
-## Native migration snapshot
-
-| Key      | Scope                                       | Jira status / repo state                                                                        |
-| -------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| SCRUM-63 | Monorepo foundation                         | Done                                                                                            |
-| SCRUM-64 | Shared platform-neutral logic               | Done                                                                                            |
-| SCRUM-65 | Native email/password auth                  | Done                                                                                            |
-| SCRUM-66 | Native feed, detail, and prayer interaction | Done; public filters, search/trending, save, and count integrity included                       |
-| SCRUM-67 | Native prayer submission and visibility     | Done across all three prayer spaces                                                             |
-| SCRUM-68 | Native comments and replies                 | Done; comments, replies, and private Notes included                                             |
-| SCRUM-69 | Native Circle management and updates        | Done; Circle management and live Updates included                                               |
-| SCRUM-70 | Native profile, settings, and avatar        | Done; profile edit, avatar upload, preferences, and sign-out included                           |
-| SCRUM-71 | Native reporting and moderation             | In Review; report-form/privacy QA recorded; remaining edge-case/enforcement/release checks open |
-| SCRUM-72 | EAS/TestFlight beta distribution            | To Do; waits for feature-complete beta and Apple membership                                     |
-| SCRUM-73 | Apple App Store submission                  | To Do                                                                                           |
-| SCRUM-74 | Reduce web to landing/web presence          | To Do; full PWA remains live during migration                                                   |
-| SCRUM-75 | Apple Developer membership                  | To Do; external prerequisite                                                                    |
-| SCRUM-76 | Native global prayer map                    | Done                                                                                            |
-| SCRUM-77 | Native Updates inbox                        | Done                                                                                            |
-| SCRUM-80 | Native light/dark/system themes             | Done; automated and physical iPhone QA complete                                                 |
-| SCRUM-81 | Native prayer owner actions and sharing     | In QA; iPhone share/copy retest passed; remaining owner/privacy QA open                         |
-| SCRUM-82 | Native saved-language translation           | Blocked; implementation complete, Google Cloud billing reactivation needed                      |
-| SCRUM-83 | Account deletion and legal support access   | Done; live disposable-account deletion and production links verified                            |
-| SCRUM-94 | Native user blocking and blocked accounts   | In Progress; automated/security review passed; live migration and iPhone QA pending             |
-
-The Jira workflow now has a correctly named `Done` status. Completed native
-stories `SCRUM-63`–`SCRUM-70`, `SCRUM-76`, `SCRUM-77`, and `SCRUM-80` were
-closed on 2026-09-12; `SCRUM-83` was closed after live deletion QA on
-2026-09-13. Remaining launch work stays open until implementation and QA meet
-the Definition of Done.
-
-`SCRUM-81` private-prayer follow-up (2026-09-14): the native composer now
-chooses audience before location, hides and clears location for Private, ignores
-stale location detection, and keeps private entry points and repeat submissions
-private by default. New private prayers omit location in the shared save layer;
-native private lists and detail show personal notes without location or social
-prayer counts. Physical iPhone QA of this follow-up is pending; the previously
-confirmed share/copy retest remains passed.
-
-Moderation follow-up (2026-09-23): report-scoped content review, required internal
-decision reasons, atomic Hide/Dismiss actions, reversible hiding, append-only
-decision history, bounded queue pages, and explicit load errors are implemented
-locally. Optional reporter details and explicit Submit are implemented on native
-and web. Migrations 039 and 040 passed disposable PostgreSQL tests and were
-applied to Oratio_DB with owner approval; live Circle report review now loads.
-No moderator role was granted or content action taken during the rollout. Deployment, physical-device
-report-form QA, live two-account enforcement QA, and remaining launch-safety work
-stay open. See [MODERATION-LAUNCH.md](./MODERATION-LAUNCH.md).
-
-Moderation QA follow-up (2026-09-24): the user confirmed public-prayer Restore,
-Dismiss without hiding the prayer, and fresh-report arrival within 30 seconds in
-the local web queue after reporting in Expo. Circle restoration, comment reports,
-privacy, and broader enforcement/release-device checks remained open at that point. The QA Google
-workbook's `MOD-002` evidence and migration record were updated without changing
-historical PWA pass statuses; this is not launch sign-off or a Jira status change.
-
-Moderation QA follow-up (2026-09-26): the user confirmed Hide/Restore after Expo
-refresh preserves the original audience, excludes an unconnected account, and
-retains Resolved status with both audit actions. The user also confirmed comment
-reporting with optional details, explicit Submit, moderator review, and duplicate
-feedback was already tested. Jonah's review update after Miriam dismisses a report
-shows the outcome without her internal decision note (user-confirmed). Offline
-submission retains the report draft with a clear error, and retry after reconnecting
-succeeds without duplicates (user-confirmed). Recorded in the local checklist and
-synced to the Google workbook's `REPORT-001` / `MOD-002` evidence notes. Reporter-details and other-reporter identity
-privacy, form limits, no-details submission, keyboard/authentication-error handling,
-and broader enforcement/release checks remain open.
-
-Report-length feedback fix (2026-09-26): native and web report forms retain text
-over 1000 characters, show the excess count, and block Submit until shortened.
-Exactly 1000 characters remain valid; shared Unicode counting matches the
-existing database length constraint. Automated suites/type-checks/lint/build and
-desktop/phone-width web checks passed. The user confirmed the new warning on the
-physical iPhone; full light/dark and keyboard coverage remains open.
-
-## Map and Android snapshot
-
-Jira sync (2026-09-28): SCRUM-71 now includes the confirmed QA evidence, including
-reason-only reporting, keyboard/light-dark usability and reporter-details privacy.
-It stays In Review; its incorrect Post-Launch fix version was corrected to V1 Launch.
-SCRUM-94 tracks blocking separately under SCRUM-62, which is now In Progress.
-SCRUM-74 is To Do and assigned to V1 Launch; its scope explicitly preserves protected
-web moderation, legal/support pages and shared-link fallbacks during the landing-page
-cutover. SCRUM-72/75 remain To Do and SCRUM-82 remains Blocked; no Apple membership,
-TestFlight distribution or translation-billing completion is assumed.
-See [USER-BLOCKING.md](./USER-BLOCKING.md) for blocking scope and rollout status.
-
-The latest reporting confirmations above are recorded locally and in Jira. They
-have not yet been added to the earlier 2026-09-26 Google workbook snapshot.
-
-Workflow configuration issue observed through Jira's transition metadata on
-2026-09-28: the status named Blocked has the Done category, while the status named
-Done has the To Do category. Issue status names above are accurate, but category-based
-charts may misreport progress. No workflow configuration was changed in this sync.
-
-| Keys        | Scope                                      | Jira status / release track       |
-| ----------- | ------------------------------------------ | --------------------------------- |
-| SCRUM-84…86 | Canonical places, hotspot contract, paging | To Do; High; V1 Launch            |
-| SCRUM-87…89 | Map aggregates, clustering, scale QA       | To Do; Medium; future sprint      |
-| SCRUM-90…93 | Android compatibility and Play release     | To Do; Medium; future/post-launch |
-
-## Import into JIRA (new instance / re-import)
-
-1. JIRA → Issues → **Import issues from CSV** → upload `docs/backlog/import.csv`
-2. Map columns: Issue Type, Summary, Epic Name, Priority, Labels, Description
-3. Epics appear with their stories attached by Epic Name
-
-(Or recreate programmatically with the REST API — the script used for the
-current board is `/tmp/rebuild-backlog.py` on the dev machine; keep a copy in
-`scripts/` if this becomes a routine.)
+Detailed chronological evidence belongs in these records and the
+[QA checklist](../QA-CHECKLIST.md). Do not copy it into this agreement or maintain
+parallel status tables here. The external QA workbook is a separately dated sync,
+not an automatically updated reflection of this repository.

@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -44,8 +44,13 @@ import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
 import { useTheme, type ThemeMode } from '../hooks/theme-context';
 import { ORATIO_EXTERNAL_LINKS } from '../services/external-links';
+import { canSendMonitoringTest, sendMonitoringTest } from '../services/monitoring';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
+import { useRecoverableWrite } from '../hooks/use-recoverable-write';
+import { WriteOutcomeError } from '@oratio/shared/write-outcome';
+import { withRequestTimeout } from '../services/request-timeout';
+import { WriteRecovery } from '../components/write-recovery';
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
 const BanIcon = asNativeIcon(Ban);
@@ -87,47 +92,68 @@ export function SettingsScreen({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [monitoringTestSent, setMonitoringTestSent] = useState(false);
+  const loadRequest = useRef(0);
+  const currentUser = useRef(user?.id);
+  currentUser.current = user?.id;
+  type SettingsIntent = {
+    next: Partial<ProfilePreferences>;
+    previous: ProfilePreferences;
+    previousTheme: ThemeMode;
+  };
+  const writes = useRecoverableWrite<SettingsIntent, SettingsIntent>(
+    'settings',
+    user?.id,
+    async (intent, attempt) => {
+      if (!(await updateProfilePreferences(intent.next, attempt)))
+        throw new WriteOutcomeError(false);
+      return intent;
+    }
+  );
 
   const load = useCallback(async () => {
+    const request = ++loadRequest.current;
+    const active = () => request === loadRequest.current && currentUser.current === user?.id;
     setError('');
     try {
-      setPrefs(await getProfilePreferences());
+      const next = await withRequestTimeout(getProfilePreferences({ throwOnError: true }));
+      if (active() && !writes.isLocked()) setPrefs(next);
     } catch {
-      setError("We couldn't load settings.");
+      if (active()) setError("We couldn't load settings.");
     } finally {
-      setLoading(false);
+      if (active()) setLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        loadRequest.current += 1;
+      };
     }, [load])
   );
 
+  const finishWrite = (result: Awaited<ReturnType<typeof writes.run>>, intent?: SettingsIntent) => {
+    if (result.status === 'ignored') return;
+    setSaving(false);
+    if (result.status === 'failed' && intent) {
+      setPrefs(intent.previous);
+      if (intent.next.theme) setThemeMode(intent.previousTheme);
+      setError("We couldn't save settings. Please try again.");
+    } else if (result.status === 'saved') {
+      void load();
+    }
+  };
   const update = async (next: Partial<ProfilePreferences>) => {
-    if (!prefs || saving) return;
-    const previous = prefs;
-    const previousThemeMode = themeMode;
+    if (!prefs || writes.isLocked()) return;
+    const intent = { next, previous: prefs, previousTheme: themeMode };
     const updated = { ...prefs, ...next };
     setPrefs(updated);
     if (next.theme) setThemeMode(next.theme);
     setSaving(true);
     setError('');
-    try {
-      const ok = await updateProfilePreferences(next);
-      if (!ok) {
-        setPrefs(previous);
-        if (next.theme) setThemeMode(previousThemeMode);
-        setError("We couldn't save settings.");
-      }
-    } catch {
-      setPrefs(previous);
-      if (next.theme) setThemeMode(previousThemeMode);
-      setError("We couldn't save settings.");
-    } finally {
-      setSaving(false);
-    }
+    finishWrite(await writes.run(intent), intent);
   };
 
   const confirmSignOut = () => {
@@ -233,6 +259,17 @@ export function SettingsScreen({
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error && !prefs ? (
+          <Pressable accessibilityRole="button" onPress={() => void load()}>
+            <Text style={styles.dim}>Retry settings</Text>
+          </Pressable>
+        ) : null}
+        {writes.uncertain ? (
+          <WriteRecovery
+            busy={writes.busy}
+            onRetry={() => void writes.retry().then((result) => finishWrite(result))}
+          />
+        ) : null}
 
         <View style={styles.section}>
           <SectionTitle
@@ -246,6 +283,7 @@ export function SettingsScreen({
                 <Pressable
                   accessibilityLabel={`${label} appearance`}
                   accessibilityRole="radio"
+                  disabled={writes.locked || !prefs}
                   accessibilityState={{ checked: selected }}
                   key={value}
                   onPress={() => void update({ theme: value })}
@@ -273,11 +311,13 @@ export function SettingsScreen({
         <View style={styles.section}>
           <SectionTitle icon={<BellIcon color={colors.textDim} size={15} />} label="Updates" />
           <ToggleRow
+            disabled={writes.locked || !prefs}
             label="Prayers offered"
             value={prefs?.notify_on_prayed ?? true}
             onValueChange={(value) => void update({ notify_on_prayed: value })}
           />
           <ToggleRow
+            disabled={writes.locked || !prefs}
             label="Comments and replies"
             value={prefs?.notify_on_comment ?? true}
             onValueChange={(value) => void update({ notify_on_comment: value })}
@@ -290,6 +330,7 @@ export function SettingsScreen({
             label="Prayer Defaults"
           />
           <ToggleRow
+            disabled={writes.locked || !prefs}
             label="Allow comments on new public prayers"
             value={prefs?.comments_enabled_default ?? true}
             onValueChange={(value) => void update({ comments_enabled_default: value })}
@@ -304,6 +345,7 @@ export function SettingsScreen({
               return (
                 <Pressable
                   accessibilityRole="button"
+                  disabled={writes.locked || !prefs}
                   accessibilityState={{ selected }}
                   key={language.value}
                   onPress={() => void update({ language: language.value })}
@@ -359,6 +401,38 @@ export function SettingsScreen({
             emergency services.
           </Text>
         </View>
+
+        {canSendMonitoringTest() && (
+          <View style={styles.section}>
+            <SectionTitle
+              icon={<MonitorIcon color={colors.textDim} size={15} />}
+              label="Diagnostics"
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Send test error"
+              disabled={monitoringTestSent}
+              style={[styles.linkRow, monitoringTestSent && styles.disabled]}
+              onPress={() => {
+                const eventId = sendMonitoringTest();
+                setMonitoringTestSent(Boolean(eventId));
+                Alert.alert(
+                  eventId ? 'Test error queued' : 'Test error not queued',
+                  eventId
+                    ? `Reference: ${eventId}\nDelivery and alerts still need to be confirmed in Sentry.`
+                    : 'Error reporting is unavailable. Try again later.'
+                );
+              }}
+            >
+              <View style={styles.linkIcon}>
+                <MonitorIcon color={colors.textDim} size={17} />
+              </View>
+              <View style={styles.linkCopy}>
+                <Text style={styles.linkLabel}>Send test error</Text>
+              </View>
+            </Pressable>
+          </View>
+        )}
 
         <View style={styles.section}>
           <SectionTitle icon={<LogOutIcon color={colors.textDim} size={15} />} label="Account" />
@@ -463,15 +537,18 @@ function ToggleRow({
   label,
   value,
   onValueChange,
+  disabled = false,
 }: {
   label: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <View style={styles.toggleRow}>
       <Text style={styles.toggleLabel}>{label}</Text>
       <Switch
+        disabled={disabled}
         accessibilityLabel={label}
         ios_backgroundColor={colors.surfaceHover}
         onValueChange={onValueChange}

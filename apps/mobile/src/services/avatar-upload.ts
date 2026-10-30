@@ -9,7 +9,7 @@ export type AvatarUploadResult =
   | { status: 'cancelled' }
   | { status: 'error'; message: string };
 
-export async function chooseAndUploadAvatar(): Promise<AvatarUploadResult> {
+export async function chooseAndUploadAvatar(expectedUserId?: string): Promise<AvatarUploadResult> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync(false);
   if (!permission.granted) {
     return { status: 'error', message: 'Allow photo access to choose a profile photo.' };
@@ -34,7 +34,8 @@ export async function chooseAndUploadAvatar(): Promise<AvatarUploadResult> {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return { status: 'error', message: 'Please sign in again before changing photo.' };
+    if (!user || (expectedUserId && user.id !== expectedUserId))
+      return { status: 'error', message: 'Please sign in again before changing photo.' };
 
     const prepared = asset.base64
       ? {
