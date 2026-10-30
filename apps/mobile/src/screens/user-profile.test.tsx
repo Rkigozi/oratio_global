@@ -129,7 +129,13 @@ describe('UserProfileScreen', () => {
       />
     );
     fireEvent.press(await screen.findByText('Invite to Prayer Circle'));
-    await waitFor(() => expect(sendPrayerCircleInvite).toHaveBeenCalledWith('miriam-id'));
+    await waitFor(() =>
+      expect(sendPrayerCircleInvite).toHaveBeenCalledWith(
+        'miriam-id',
+        undefined,
+        expect.objectContaining({ expectedUserId: expect.any(String) })
+      )
+    );
     expect(await screen.findByText('Invite sent to @miriam.')).toBeTruthy();
   });
 

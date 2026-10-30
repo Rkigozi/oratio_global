@@ -70,6 +70,7 @@ try {
     'prayer-places',
     'location-pagination',
     'prayer-submission-retries',
+    'mobile-write-retries',
   ]) {
     const assertions = readFileSync(join(root, `supabase/tests/${suite}.sql`), 'utf8');
     sql(assertions);

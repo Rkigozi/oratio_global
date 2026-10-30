@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -57,6 +57,9 @@ import { withRequestTimeout } from '../services/request-timeout';
 import { translatePrayerText, type PrayerTranslation } from '../services/prayer-translation';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
+import { useRecoverableWrite } from '../hooks/use-recoverable-write';
+import { WriteOutcomeError } from '@oratio/shared/write-outcome';
+import { WriteRecovery } from '../components/write-recovery';
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
 const BookmarkIcon = asNativeIcon(Bookmark);
@@ -112,6 +115,75 @@ export function PrayerDetailScreen({
   const [translating, setTranslating] = useState(false);
   const [translationMessage, setTranslationMessage] = useState('');
   const loadRequest = useRef(0);
+  const screenActive = useRef(false);
+  const [interactionError, setInteractionError] = useState('');
+  const [ownerError, setOwnerError] = useState('');
+  const editOriginal = useRef<{ text: string; editedAt?: string | null } | null>(null);
+  type OwnerIntent =
+    | { kind: 'edit'; text: string; expectedText: string; expectedEditedAt?: string | null }
+    | { kind: 'delete'; audience: string }
+    | { kind: 'renew'; expectedExpiresAt: string };
+  type OwnerValue =
+    | { kind: 'edit'; updated: { text: string; editedAt: string } }
+    | { kind: 'delete'; deleted: boolean; audience: string }
+    | { kind: 'renew'; expiresAt: string };
+  const ownership = useRecoverableWrite<OwnerIntent, OwnerValue>(
+    prayerId,
+    user?.id,
+    async (intent, attempt) => {
+      if (intent.kind === 'delete')
+        return {
+          kind: 'delete',
+          deleted: await deletePrayerRequest(prayerId, attempt),
+          audience: intent.audience,
+        };
+      if (intent.kind === 'renew') {
+        const expiresAt = await renewPublicPrayer(prayerId, {
+          ...attempt,
+          expectedExpiresAt: intent.expectedExpiresAt,
+        });
+        if (!expiresAt) throw new WriteOutcomeError(false);
+        return { kind: 'renew', expiresAt };
+      }
+      const updated = await updatePrayerRequest(prayerId, intent.text, {
+        ...attempt,
+        expectedText: intent.expectedText,
+        expectedEditedAt: intent.expectedEditedAt,
+      });
+      if (!updated) throw new WriteOutcomeError(false);
+      return { kind: 'edit', updated };
+    }
+  );
+  useEffect(() => {
+    setActionsOpen(false);
+    setEditOpen(false);
+    setEditText('');
+    setEditError('');
+    setEditBusy(false);
+    setDeleteBusy(false);
+    setRenewBusy(false);
+    setOwnerError('');
+    setRenewMessage('');
+    setInteractionError('');
+    setPrayBusy(false);
+    setSaveBusy(false);
+    editOriginal.current = null;
+  }, [prayerId, user?.id]);
+  type InteractionIntent = { kind: 'pray' | 'save'; desired: boolean };
+  const interactions = useRecoverableWrite<
+    InteractionIntent,
+    { intent: InteractionIntent; refreshed: PrayerRequest | null }
+  >(prayerId, user?.id, async (intent, attempt) => {
+    const ok =
+      intent.kind === 'pray'
+        ? await togglePray(prayerId, intent.desired, attempt)
+        : await toggleSavePrayer(prayerId, intent.desired, attempt);
+    if (!ok) throw new WriteOutcomeError(false);
+    const refreshed =
+      intent.kind === 'pray' ? await getPrayerById(prayerId, { throwOnError: true }) : null;
+    if (intent.kind === 'pray' && !refreshed) throw new WriteOutcomeError(true);
+    return { intent, refreshed };
+  });
 
   const targetLanguage = resolveTranslationLanguage(languagePreference, getDeviceLocale());
 
@@ -124,8 +196,8 @@ export function PrayerDetailScreen({
       const [fetched, prayedIds, savedIds, preferences] = await withRequestTimeout(
         Promise.all([
           getPrayerById(prayerId, { throwOnError: true }),
-          getMyPrayedIds(),
-          getMySavedIds(),
+          getMyPrayedIds({ throwOnError: true }),
+          getMySavedIds({ throwOnError: true }),
           getProfilePreferences(),
         ])
       );
@@ -147,43 +219,53 @@ export function PrayerDetailScreen({
 
   useFocusEffect(
     useCallback(() => {
+      screenActive.current = true;
+      if (!ownership.isLocked()) {
+        setEditBusy(false);
+        setDeleteBusy(false);
+        setRenewBusy(false);
+      }
       void load();
       return () => {
+        screenActive.current = false;
         loadRequest.current += 1;
         setPrayer(null);
       };
     }, [load])
   );
 
-  const handlePray = async () => {
-    if (!prayer || prayer.audience === 'private' || isPrayerArchived(prayer) || prayBusy) return;
-    setPrayBusy(true);
-    const next = !prayed;
-    try {
-      const ok = await togglePray(prayer.id, next);
-      if (ok) {
-        setPrayed(next);
-        setPrayer((prev) =>
-          prev
-            ? { ...prev, prayerCount: Math.max(0, (prev.prayerCount ?? 0) + (next ? 1 : -1)) }
-            : prev
-        );
-      }
-    } finally {
-      setPrayBusy(false);
+  const completeInteraction = (result: Awaited<ReturnType<typeof interactions.run>>) => {
+    if (result.status === 'ignored' || !screenActive.current) return;
+    setPrayBusy(false);
+    setSaveBusy(false);
+    if (result.status === 'failed') {
+      setInteractionError("We couldn't save that change. Please try again.");
+      return;
     }
+    if (result.status !== 'saved') return;
+    if (result.value.intent.kind === 'pray') {
+      setPrayed(result.value.intent.desired);
+      setPrayer((current) => (current?.id === prayerId ? result.value.refreshed : current));
+    } else setSaved(result.value.intent.desired);
+  };
+  const handlePray = async () => {
+    if (
+      !prayer ||
+      prayer.audience === 'private' ||
+      isPrayerArchived(prayer) ||
+      interactions.isLocked()
+    )
+      return;
+    setPrayBusy(true);
+    setInteractionError('');
+    completeInteraction(await interactions.run({ kind: 'pray', desired: !prayed }));
   };
 
   const handleSave = async () => {
-    if (!prayer || isPrayerArchived(prayer) || saveBusy) return;
+    if (!prayer || isPrayerArchived(prayer) || interactions.isLocked()) return;
     setSaveBusy(true);
-    const next = !saved;
-    try {
-      const ok = await toggleSavePrayer(prayer.id, next);
-      if (ok) setSaved(next);
-    } finally {
-      setSaveBusy(false);
-    }
+    setInteractionError('');
+    completeInteraction(await interactions.run({ kind: 'save', desired: !saved }));
   };
 
   const handleTranslate = async () => {
@@ -229,23 +311,67 @@ export function PrayerDetailScreen({
   const canReport = Boolean(prayer && !isOwner && prayer.audience !== 'private' && !archived);
   const isPrivate = prayer?.audience === 'private';
 
+  const completeOwnerWrite = (result: Awaited<ReturnType<typeof ownership.run>>) => {
+    if (result.status === 'ignored' || !screenActive.current) return;
+    setEditBusy(false);
+    setDeleteBusy(false);
+    setRenewBusy(false);
+    if (result.status === 'failed') {
+      const message =
+        "We couldn't save this change. It may have changed elsewhere. Refresh and try again.";
+      setEditError(message);
+      setOwnerError(message);
+      return;
+    }
+    if (result.status !== 'saved') return;
+    const value = result.value;
+    setOwnerError('');
+    if (value.kind === 'edit') {
+      setPrayer((current) =>
+        current?.id === prayerId ? { ...current, ...value.updated } : current
+      );
+      setTranslation(null);
+      setShowingOriginal(false);
+      setTranslationMessage('');
+      setEditOpen(false);
+    } else if (value.kind === 'renew') {
+      setPrayer((current) =>
+        current?.id === prayerId ? { ...current, expiresAt: value.expiresAt } : current
+      );
+      setRenewMessage('Your prayer is public again for 14 days.');
+    } else {
+      if (!value.deleted)
+        Alert.alert(
+          'Prayer unavailable',
+          'This prayer is no longer available. Return to My Prayers to check your history.'
+        );
+      setActionsOpen(false);
+      navigation.reset({
+        index: 1,
+        routes: [
+          { name: 'Main' },
+          {
+            name: 'MyPrayers',
+            params: { initialAudience: value.audience as 'public' | 'circle' | 'private' },
+          },
+        ],
+      });
+    }
+  };
+
   const handleRenew = async () => {
-    if (!prayer || !isOwner || !isPrayerArchived(prayer) || renewBusy) return;
+    if (
+      !prayer ||
+      !isOwner ||
+      !isPrayerArchived(prayer) ||
+      ownership.isLocked() ||
+      !prayer.expiresAt
+    )
+      return;
     setRenewBusy(true);
     setRenewMessage('');
-    try {
-      const expiresAt = await renewPublicPrayer(prayer.id);
-      if (!expiresAt) {
-        setRenewMessage("We couldn't renew this prayer. Refresh and try again.");
-        return;
-      }
-      setPrayer((current) => (current?.id === prayer.id ? { ...current, expiresAt } : current));
-      setRenewMessage('Your prayer is public again for 14 days.');
-    } catch {
-      setRenewMessage("We couldn't renew this prayer. Check your connection and try again.");
-    } finally {
-      setRenewBusy(false);
-    }
+    setOwnerError('');
+    completeOwnerWrite(await ownership.run({ kind: 'renew', expectedExpiresAt: prayer.expiresAt }));
   };
 
   const openAuthorProfile = () => {
@@ -258,7 +384,8 @@ export function PrayerDetailScreen({
   };
 
   const openEdit = () => {
-    if (!prayer || !isOwner) return;
+    if (!prayer || !isOwner || ownership.isLocked()) return;
+    editOriginal.current = { text: prayer.text, editedAt: prayer.editedAt };
     setActionsOpen(false);
     setEditText(prayer.text);
     setEditError('');
@@ -266,7 +393,7 @@ export function PrayerDetailScreen({
   };
 
   const handleEdit = async () => {
-    if (!prayer || !isOwner || editBusy) return;
+    if (!prayer || !isOwner || ownership.isLocked() || !editOriginal.current) return;
 
     const validation = validatePrayerSubmission({
       text: editText,
@@ -287,25 +414,15 @@ export function PrayerDetailScreen({
 
     setEditBusy(true);
     setEditError('');
-    try {
-      const updated = await updatePrayerRequest(prayer.id, text);
-      if (!updated) {
-        setEditError("We couldn't save your update. Please try again.");
-        return;
-      }
-
-      setPrayer((current) =>
-        current ? { ...current, text: updated.text, editedAt: updated.editedAt } : current
-      );
-      setTranslation(null);
-      setShowingOriginal(false);
-      setTranslationMessage('');
-      setEditOpen(false);
-    } catch {
-      setEditError("We couldn't save your update. Please try again.");
-    } finally {
-      setEditBusy(false);
-    }
+    setOwnerError('');
+    completeOwnerWrite(
+      await ownership.run({
+        kind: 'edit',
+        text,
+        expectedText: editOriginal.current.text,
+        expectedEditedAt: editOriginal.current.editedAt,
+      })
+    );
   };
 
   const handleShare = async () => {
@@ -350,35 +467,16 @@ export function PrayerDetailScreen({
   };
 
   const deletePrayer = async () => {
-    if (!prayer || !isOwner || deleteBusy) return;
+    if (!prayer || !isOwner || ownership.isLocked()) return;
     setDeleteBusy(true);
-    try {
-      const deleted = await deletePrayerRequest(prayer.id);
-      if (!deleted) {
-        Alert.alert('Prayer not deleted', "We couldn't delete this prayer. Please try again.");
-        return;
-      }
-
-      setActionsOpen(false);
-      navigation.reset({
-        index: 1,
-        routes: [
-          { name: 'Main' },
-          {
-            name: 'MyPrayers',
-            params: { initialAudience: prayer.audience || 'public' },
-          },
-        ],
-      });
-    } catch {
-      Alert.alert('Prayer not deleted', "We couldn't delete this prayer. Please try again.");
-    } finally {
-      setDeleteBusy(false);
-    }
+    setOwnerError('');
+    completeOwnerWrite(
+      await ownership.run({ kind: 'delete', audience: prayer.audience || 'public' })
+    );
   };
 
   const confirmDelete = () => {
-    if (!prayer || !isOwner) return;
+    if (!prayer || !isOwner || ownership.isLocked()) return;
     setActionsOpen(false);
     const detail =
       prayer.audience === 'private'
@@ -458,7 +556,7 @@ export function PrayerDetailScreen({
             <Pressable
               accessibilityLabel={saved ? 'Remove saved prayer' : 'Save prayer'}
               accessibilityRole="button"
-              disabled={saveBusy || archived}
+              disabled={saveBusy || archived || interactions.locked}
               onPress={() => void handleSave()}
               style={[styles.headerButton, saveBusy && styles.headerButtonDisabled]}
             >
@@ -523,7 +621,7 @@ export function PrayerDetailScreen({
               </Text>
               <Pressable
                 accessibilityRole="button"
-                disabled={renewBusy}
+                disabled={ownership.locked}
                 onPress={() => void handleRenew()}
                 style={[styles.renewButton, renewBusy && styles.headerButtonDisabled]}
               >
@@ -618,7 +716,7 @@ export function PrayerDetailScreen({
               {!archived && (
                 <Pressable
                   onPress={() => void handlePray()}
-                  disabled={prayBusy}
+                  disabled={prayBusy || interactions.locked}
                   style={[styles.prayButton, prayed && styles.prayedButton]}
                 >
                   {prayBusy ? (
@@ -633,12 +731,34 @@ export function PrayerDetailScreen({
             </>
           )}
 
+          {ownerError ? (
+            <Text accessibilityRole="alert" style={styles.archiveText}>
+              {ownerError}
+            </Text>
+          ) : null}
+          {ownership.uncertain && !editOpen ? (
+            <WriteRecovery
+              busy={ownership.busy}
+              onRetry={() => void ownership.retry().then(completeOwnerWrite)}
+            />
+          ) : null}
+          {interactionError ? (
+            <Text accessibilityRole="alert" style={styles.archiveText}>
+              {interactionError}
+            </Text>
+          ) : null}
+          {interactions.uncertain ? (
+            <WriteRecovery
+              busy={interactions.busy}
+              onRetry={() => void interactions.retry().then(completeInteraction)}
+            />
+          ) : null}
           <PrayerComments prayer={prayer} onBlocked={returnAfterBlock} readOnly={archived} />
         </ScrollView>
       </KeyboardAvoidingView>
 
       <PrayerActionsSheet
-        busy={shareBusy || blocking || renewBusy}
+        busy={shareBusy || blocking || ownership.locked}
         onBlock={
           canReport && prayer?.username && prayer.authorId
             ? () => confirmBlock(prayer.authorId!, prayer.username)
@@ -667,7 +787,17 @@ export function PrayerDetailScreen({
       />
       <PrayerEditSheet
         error={editError}
+        locked={ownership.locked}
+        recovery={
+          ownership.uncertain ? (
+            <WriteRecovery
+              busy={ownership.busy}
+              onRetry={() => void ownership.retry().then(completeOwnerWrite)}
+            />
+          ) : undefined
+        }
         onChangeText={(value) => {
+          if (ownership.isLocked()) return;
           setEditText(value);
           setEditError('');
         }}

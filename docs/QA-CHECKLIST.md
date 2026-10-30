@@ -313,6 +313,10 @@ checkpoint; the following checklist separates reported passes from open checks:
 - [ ] Prayer submission retains its draft without false success; an uncertain outcome locks the intent and Check and retry submission confirms only one matching prayer
 - [ ] Failed verification of an uncertain submission retains its original ID/intent, including after an authentication/network failure
 - [ ] Account change clears navigation, drafts and activity state; delayed old-account responses/token refreshes cannot restore previous-account state
+- [ ] On the current candidate, comments/replies/notes, reports and Circle actions retain their original intent after uncertain confirmation; Check and retry confirms one matching result
+- [ ] Pray/save retries retain their desired state and use the server prayer total; prayer edits/deletes/renewals do not overwrite concurrent text or restart an active expiry
+- [ ] Profile/settings failures retain drafts and lock uncertain changes; retrying a saved photo URL does not reopen the picker/upload
+- [ ] Failed comments/Circle/search/profile/settings reads show explicit retry and preserve loaded rows/drafts; genuine empty results remain distinct
 
 - [ ] Attach evidence for Beta NFR-01/02/05/06/08 before external TestFlight distribution
 - [ ] Attach evidence for Launch NFR-03/04/07 and revalidate Beta gates on the public release candidate

@@ -150,7 +150,10 @@ describe('SettingsScreen', () => {
     fireEvent(await screen.findByLabelText('Prayers offered'), 'valueChange', false);
 
     await waitFor(() =>
-      expect(updateProfilePreferences).toHaveBeenCalledWith({ notify_on_prayed: false })
+      expect(updateProfilePreferences).toHaveBeenCalledWith(
+        { notify_on_prayed: false },
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
     );
   });
 
@@ -159,7 +162,12 @@ describe('SettingsScreen', () => {
 
     fireEvent.press(await screen.findByText('Spanish'));
 
-    await waitFor(() => expect(updateProfilePreferences).toHaveBeenCalledWith({ language: 'es' }));
+    await waitFor(() =>
+      expect(updateProfilePreferences).toHaveBeenCalledWith(
+        { language: 'es' },
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
+    );
   });
 
   it('applies and saves the selected appearance', async () => {
@@ -167,7 +175,12 @@ describe('SettingsScreen', () => {
 
     fireEvent.press(await screen.findByLabelText('Dark appearance'));
 
-    await waitFor(() => expect(updateProfilePreferences).toHaveBeenCalledWith({ theme: 'dark' }));
+    await waitFor(() =>
+      expect(updateProfilePreferences).toHaveBeenCalledWith(
+        { theme: 'dark' },
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
+    );
     await waitFor(() => expect(mockSetThemeMode).toHaveBeenCalledWith('dark'));
   });
 
@@ -177,8 +190,27 @@ describe('SettingsScreen', () => {
 
     fireEvent.press(await screen.findByLabelText('Dark appearance'));
 
-    await waitFor(() => expect(screen.getByText("We couldn't save settings.")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText("We couldn't save settings. Please try again.")).toBeTruthy()
+    );
     expect(mockSetThemeMode).toHaveBeenLastCalledWith('system');
+  });
+
+  it('keeps an uncertain preference locked and retries the original desired value', async () => {
+    jest.mocked(updateProfilePreferences).mockRejectedValueOnce(new Error('lost confirmation'));
+    renderSettings();
+    fireEvent.press(await screen.findByLabelText('Dark appearance'));
+    const retry = await screen.findByText('Check and retry');
+    expect(mockSetThemeMode).toHaveBeenLastCalledWith('dark');
+    expect(screen.getByLabelText('Light appearance')).toBeDisabled();
+    fireEvent.press(retry);
+    await waitFor(() => expect(screen.queryByText('Check and retry')).toBeNull());
+    const calls = jest.mocked(updateProfilePreferences).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toEqual([
+      { theme: 'dark' },
+      expect.objectContaining({ requestId: calls[0][1]?.requestId, verifyExisting: true }),
+    ]);
   });
 
   it('confirms sign out before clearing the session', async () => {

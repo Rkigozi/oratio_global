@@ -194,7 +194,13 @@ describe('PrayerDetailScreen', () => {
     expect(screen.queryByLabelText('Post comment')).toBeNull();
     fireEvent.press(screen.getByText('Renew for 14 days'));
     expect(await screen.findByText('Your prayer is public again for 14 days.')).toBeTruthy();
-    expect(renewPublicPrayer).toHaveBeenCalledWith(prayer.id);
+    expect(renewPublicPrayer).toHaveBeenCalledWith(
+      prayer.id,
+      expect.objectContaining({
+        expectedExpiresAt: '2020-01-01T00:00:00Z',
+        expectedUserId: 'user-1',
+      })
+    );
     expect(screen.queryByText('Archived prayer')).toBeNull();
     expect(screen.getByText('4 people prayed')).toBeTruthy();
     expect(screen.getByLabelText('Post comment')).toBeTruthy();
@@ -209,9 +215,7 @@ describe('PrayerDetailScreen', () => {
     jest.mocked(renewPublicPrayer).mockResolvedValue(null);
     render(<PrayerDetailScreen navigation={navigation} route={route} />);
     fireEvent.press(await screen.findByText('Renew for 14 days'));
-    expect(
-      await screen.findByText("We couldn't renew this prayer. Refresh and try again.")
-    ).toBeTruthy();
+    expect(await screen.findByText(/We couldn't save this change/)).toBeTruthy();
     expect(screen.getByText('Archived prayer')).toBeTruthy();
     expect(screen.queryByLabelText('Post comment')).toBeNull();
   });
@@ -361,7 +365,11 @@ describe('PrayerDetailScreen', () => {
     fireEvent.press(screen.getByText(/Pray for this/));
 
     await waitFor(() => expect(screen.getByText(/Prayed for this/)).toBeTruthy());
-    expect(togglePray).toHaveBeenCalledWith('prayer-1', true);
+    expect(togglePray).toHaveBeenCalledWith(
+      'prayer-1',
+      true,
+      expect.objectContaining({ expectedUserId: 'user-1' })
+    );
   });
 
   it('starts in the prayed state when the user already prayed', async () => {
@@ -373,10 +381,11 @@ describe('PrayerDetailScreen', () => {
     expect(screen.getByText('4 people prayed')).toBeTruthy();
   });
 
-  it('increments the displayed total once after praying', async () => {
+  it('uses the confirmed server total after praying', async () => {
     render(<PrayerDetailScreen navigation={navigation} route={route} />);
 
     await waitFor(() => expect(screen.getByText('4 people prayed')).toBeTruthy());
+    jest.mocked(getPrayerById).mockResolvedValue({ ...prayer, prayerCount: 5 } as never);
     fireEvent.press(screen.getByText(/Pray for this/));
 
     await waitFor(() => expect(screen.getByText('5 people prayed')).toBeTruthy());
@@ -387,10 +396,72 @@ describe('PrayerDetailScreen', () => {
 
     fireEvent.press(await screen.findByLabelText('Save prayer'));
 
-    await waitFor(() => expect(toggleSavePrayer).toHaveBeenCalledWith('prayer-1', true));
+    await waitFor(() =>
+      expect(toggleSavePrayer).toHaveBeenCalledWith(
+        'prayer-1',
+        true,
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
+    );
     fireEvent.press(screen.getByLabelText('Remove saved prayer'));
 
-    await waitFor(() => expect(toggleSavePrayer).toHaveBeenCalledWith('prayer-1', false));
+    await waitFor(() =>
+      expect(toggleSavePrayer).toHaveBeenCalledWith(
+        'prayer-1',
+        false,
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
+    );
+  });
+
+  it('recovers the same desired prayer response and uses the server count after lost confirmation', async () => {
+    jest.mocked(togglePray).mockRejectedValueOnce(new Error('lost confirmation'));
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByText(/Pray for this/));
+    const retry = await screen.findByText('Check and retry');
+    expect(screen.getByText('4 people prayed')).toBeTruthy();
+    jest.mocked(getPrayerById).mockResolvedValue({ ...prayer, prayerCount: 5 } as never);
+    fireEvent.press(retry);
+    expect(await screen.findByText('5 people prayed')).toBeTruthy();
+    const calls = jest.mocked(togglePray).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toEqual([
+      'prayer-1',
+      true,
+      expect.objectContaining({ requestId: calls[0][2]?.requestId, verifyExisting: true }),
+    ]);
+  });
+
+  it('retains an uncertain edit in its sheet and checks the same update before closing', async () => {
+    jest.mocked(getPrayerById).mockResolvedValue({ ...prayer, authorId: 'user-1' } as never);
+    jest
+      .mocked(updatePrayerRequest)
+      .mockRejectedValueOnce(new Error('lost confirmation'))
+      .mockResolvedValueOnce({
+        text: 'Please pray for continued hope',
+        editedAt: new Date().toISOString(),
+      });
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('More prayer options'));
+    fireEvent.press(screen.getByText('Edit prayer'));
+    dismissActionsSheet();
+    fireEvent.changeText(screen.getByLabelText('Prayer text'), 'Please pray for continued hope');
+    fireEvent.press(screen.getByText('Save changes'));
+    const retry = await screen.findByText('Check and retry');
+    expect(screen.getByLabelText('Prayer text').props.editable).toBe(false);
+    expect(screen.getByLabelText('Prayer text').props.value).toBe('Please pray for continued hope');
+    fireEvent.press(retry);
+    expect(await screen.findByText('Please pray for continued hope')).toBeTruthy();
+    expect(screen.queryByLabelText('Prayer text')).toBeNull();
+    const calls = jest.mocked(updatePrayerRequest).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[1][2]).toEqual(
+      expect.objectContaining({
+        requestId: calls[0][2]?.requestId,
+        expectedText: prayer.text,
+        verifyExisting: true,
+      })
+    );
   });
 
   it('shows an unavailable state when the prayer is missing', async () => {
@@ -525,11 +596,14 @@ describe('PrayerDetailScreen', () => {
     fireEvent.press(screen.getByText('Submit report'));
 
     await waitFor(() =>
-      expect(createReport).toHaveBeenCalledWith({
-        reportable_type: 'prayer',
-        reportable_id: 'prayer-1',
-        reason: 'Harmful or unsafe',
-      })
+      expect(createReport).toHaveBeenCalledWith(
+        {
+          reportable_type: 'prayer',
+          reportable_id: 'prayer-1',
+          reason: 'Harmful or unsafe',
+        },
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
     );
     expect(await screen.findByText(/Report sent for review/)).toBeTruthy();
     expect(goBack).not.toHaveBeenCalled();
@@ -551,7 +625,8 @@ describe('PrayerDetailScreen', () => {
     await waitFor(() =>
       expect(updatePrayerRequest).toHaveBeenCalledWith(
         'prayer-1',
-        'Please pray for renewed hope today'
+        'Please pray for renewed hope today',
+        expect.objectContaining({ expectedUserId: 'user-1', expectedText: prayer.text })
       )
     );
     expect(await screen.findByText('Updated prayer body')).toBeTruthy();
@@ -595,7 +670,12 @@ describe('PrayerDetailScreen', () => {
       destructiveAction?.onPress?.();
     });
 
-    await waitFor(() => expect(deletePrayerRequest).toHaveBeenCalledWith('prayer-1'));
+    await waitFor(() =>
+      expect(deletePrayerRequest).toHaveBeenCalledWith(
+        'prayer-1',
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
+    );
     expect(reset).toHaveBeenCalledWith({
       index: 1,
       routes: [{ name: 'Main' }, { name: 'MyPrayers', params: { initialAudience: 'public' } }],

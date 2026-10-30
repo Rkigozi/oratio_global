@@ -106,6 +106,56 @@ describe('PrayerComments', () => {
     jest.mocked(blockUser).mockResolvedValue(undefined);
   });
 
+  it('retains and locks a comment after lost confirmation, then reconciles one saved row', async () => {
+    jest
+      .mocked(createComment)
+      .mockRejectedValueOnce(new Error('confirmation lost'))
+      .mockImplementationOnce(async (_input, attempt) => {
+        const saved = {
+          ...parentComment,
+          id: attempt!.requestId,
+          user_id: 'user-1',
+          body: 'Keep this encouragement',
+        };
+        jest.mocked(getComments).mockResolvedValue([saved]);
+        jest.mocked(getCommentCount).mockResolvedValue(1);
+        return saved;
+      });
+    render(<PrayerComments prayer={publicPrayer} />);
+    const input = await screen.findByPlaceholderText('Write an encouragement...');
+    fireEvent.changeText(input, 'Keep this encouragement');
+    const post = screen.getByLabelText('Post comment');
+    act(() => {
+      fireEvent.press(post);
+      fireEvent.press(post);
+    });
+    await screen.findByText('Check and retry');
+    expect(input.props.value).toBe('Keep this encouragement');
+    expect(input.props.editable).toBe(false);
+    fireEvent.press(screen.getByText('Check and retry'));
+    expect(await screen.findByText('Keep this encouragement')).toBeTruthy();
+    expect(screen.getByText('Comments (1)')).toBeTruthy();
+    expect(createComment).toHaveBeenCalledTimes(2);
+    const calls = jest.mocked(createComment).mock.calls;
+    expect(calls[1][1]).toEqual(
+      expect.objectContaining({ requestId: calls[0][1]?.requestId, verifyExisting: true })
+    );
+    expect(screen.getByPlaceholderText('Write an encouragement...').props.value).toBe('');
+  });
+
+  it('offers read retry without presenting a failed load as an empty comments list', async () => {
+    jest
+      .mocked(getComments)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue([parentComment]);
+    jest.mocked(getCommentCount).mockResolvedValue(1);
+    render(<PrayerComments prayer={publicPrayer} />);
+    const retry = await screen.findByText('Retry comments');
+    expect(screen.queryByText(/No comments yet/)).toBeNull();
+    fireEvent.press(retry);
+    expect(await screen.findByText(parentComment.body)).toBeTruthy();
+  });
+
   it('lets the prayer owner block a commenter without deleting their content', async () => {
     jest.mocked(useAuth).mockReturnValue({ user: { id: 'author-1' } } as never);
     jest.mocked(getComments).mockResolvedValue([parentComment] as never);
@@ -144,23 +194,31 @@ describe('PrayerComments', () => {
     fireEvent.press(screen.getByText('Submit report'));
 
     await waitFor(() =>
-      expect(createReport).toHaveBeenCalledWith({
-        reportable_type: 'comment',
-        reportable_id: 'comment-1',
-        reason: 'Spam or fake',
-      })
+      expect(createReport).toHaveBeenCalledWith(
+        {
+          reportable_type: 'comment',
+          reportable_id: 'comment-1',
+          reason: 'Spam or fake',
+        },
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
     );
     expect(await screen.findByText(/Report sent for review/)).toBeTruthy();
   });
 
   it('posts a new encouragement', async () => {
-    jest.mocked(createComment).mockResolvedValue({
+    const created = {
       ...parentComment,
       id: 'comment-new',
       user_id: 'user-1',
       body: 'Standing with you in prayer.',
       user: null,
-    } as never);
+    };
+    jest.mocked(createComment).mockImplementationOnce(async () => {
+      jest.mocked(getComments).mockResolvedValue([created] as never);
+      jest.mocked(getCommentCount).mockResolvedValue(1);
+      return created;
+    });
 
     render(<PrayerComments prayer={publicPrayer} />);
 
@@ -174,11 +232,18 @@ describe('PrayerComments', () => {
     fireEvent.press(screen.getByLabelText('Post comment'));
 
     await waitFor(() =>
-      expect(createComment).toHaveBeenCalledWith({
-        prayer_id: 'prayer-1',
-        body: 'Standing with you in prayer.',
-        parent_id: undefined,
-      })
+      expect(createComment).toHaveBeenCalledWith(
+        {
+          prayer_id: 'prayer-1',
+          body: 'Standing with you in prayer.',
+          parent_id: null,
+        },
+        expect.objectContaining({
+          expectedUserId: 'user-1',
+          verifyExisting: false,
+          requestId: expect.any(String),
+        })
+      )
     );
     expect(screen.getByText('Standing with you in prayer.')).toBeTruthy();
   });
@@ -202,11 +267,14 @@ describe('PrayerComments', () => {
     fireEvent.press(screen.getByLabelText('Post reply'));
 
     await waitFor(() =>
-      expect(createComment).toHaveBeenCalledWith({
-        prayer_id: 'prayer-1',
-        body: 'Thank you.',
-        parent_id: 'comment-1',
-      })
+      expect(createComment).toHaveBeenCalledWith(
+        {
+          prayer_id: 'prayer-1',
+          body: 'Thank you.',
+          parent_id: 'comment-1',
+        },
+        expect.objectContaining({ expectedUserId: 'user-1', verifyExisting: false })
+      )
     );
   });
 
@@ -234,11 +302,14 @@ describe('PrayerComments', () => {
     fireEvent.press(screen.getByLabelText('Save note'));
 
     await waitFor(() =>
-      expect(createComment).toHaveBeenCalledWith({
-        prayer_id: 'prayer-1',
-        body: 'A thought for later.',
-        parent_id: null,
-      })
+      expect(createComment).toHaveBeenCalledWith(
+        {
+          prayer_id: 'prayer-1',
+          body: 'A thought for later.',
+          parent_id: null,
+        },
+        expect.objectContaining({ expectedUserId: 'user-1', verifyExisting: false })
+      )
     );
   });
 
@@ -259,7 +330,14 @@ describe('PrayerComments', () => {
     fireEvent.changeText(screen.getByDisplayValue('Praying with you.'), 'Updated encouragement.');
     fireEvent.press(screen.getByText('Save'));
     await waitFor(() =>
-      expect(updateComment).toHaveBeenCalledWith('comment-1', 'Updated encouragement.')
+      expect(updateComment).toHaveBeenCalledWith(
+        'comment-1',
+        'Updated encouragement.',
+        expect.objectContaining({
+          expectedUserId: 'user-1',
+          expectedUpdatedAt: ownComment.updated_at,
+        })
+      )
     );
 
     fireEvent.press(screen.getByText('Delete'));
@@ -269,7 +347,12 @@ describe('PrayerComments', () => {
       destructive?.onPress?.();
     });
 
-    await waitFor(() => expect(deleteComment).toHaveBeenCalledWith('comment-1'));
+    await waitFor(() =>
+      expect(deleteComment).toHaveBeenCalledWith(
+        'comment-1',
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
+    );
     alert.mockRestore();
   });
 
@@ -284,7 +367,13 @@ describe('PrayerComments', () => {
     await waitFor(() => expect(screen.getByLabelText('Allow comments')).toBeTruthy());
     fireEvent(screen.getByLabelText('Allow comments'), 'valueChange', false);
 
-    await waitFor(() => expect(toggleCommentsEnabled).toHaveBeenCalledWith('prayer-1', false));
+    await waitFor(() =>
+      expect(toggleCommentsEnabled).toHaveBeenCalledWith(
+        'prayer-1',
+        false,
+        expect.objectContaining({ expectedUserId: 'author-1' })
+      )
+    );
     expect(screen.getByText('Comments are off for this prayer.')).toBeTruthy();
   });
 });

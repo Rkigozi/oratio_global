@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { PrayerCircleManagementScreen } from './prayer-circle-management';
 
@@ -50,6 +50,7 @@ import {
 
 const member = {
   id: 'member-1',
+  connection_id: 'connection-original',
   username: 'miriam',
   display_name: 'Miriam',
   avatar_url: null,
@@ -141,7 +142,11 @@ describe('PrayerCircleManagementScreen', () => {
     fireEvent.press(await screen.findByLabelText('Accept invite from @jonah'));
 
     await waitFor(() =>
-      expect(respondToPrayerCircleInvite).toHaveBeenCalledWith('invite-in', 'accepted')
+      expect(respondToPrayerCircleInvite).toHaveBeenCalledWith(
+        'invite-in',
+        'accepted',
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
     );
     await waitFor(() => expect(getPrayerCircle).toHaveBeenCalledTimes(2));
   });
@@ -162,7 +167,13 @@ describe('PrayerCircleManagementScreen', () => {
     );
     fireEvent.press(inviteButton);
 
-    await waitFor(() => expect(sendPrayerCircleInvite).toHaveBeenCalledWith('daniel-id'));
+    await waitFor(() =>
+      expect(sendPrayerCircleInvite).toHaveBeenCalledWith(
+        'daniel-id',
+        undefined,
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
+    );
     expect(await screen.findByText('Invite sent to @daniel.')).toBeTruthy();
     await waitFor(() => expect(getPrayerCircle).toHaveBeenCalledTimes(2));
   });
@@ -176,7 +187,52 @@ describe('PrayerCircleManagementScreen', () => {
 
     fireEvent.press(await screen.findByLabelText('Remove @miriam from Prayer Circle'));
 
-    await waitFor(() => expect(removeFromPrayerCircle).toHaveBeenCalledWith('member-1'));
+    await waitFor(() =>
+      expect(removeFromPrayerCircle).toHaveBeenCalledWith(
+        'member-1',
+        expect.objectContaining({ connectionId: 'connection-original', expectedUserId: 'user-1' })
+      )
+    );
     await waitFor(() => expect(getPrayerCircle).toHaveBeenCalledTimes(2));
+  });
+
+  it('distinguishes an initial read failure from an empty Circle and retries explicitly', async () => {
+    jest.mocked(getPrayerCircle).mockRejectedValueOnce(new Error('offline'));
+    render(<PrayerCircleManagementScreen navigation={navigation} route={route} />);
+    const retry = await screen.findByText('Retry Prayer Circle');
+    expect(screen.getByLabelText('Prayer Circle count unavailable')).toBeTruthy();
+    expect(screen.queryByText(/No one in your Prayer Circle/)).toBeNull();
+    fireEvent.press(retry);
+    expect(await screen.findByLabelText('1 of 12 spaces filled')).toBeTruthy();
+  });
+
+  it('retains existing members after a failed refresh', async () => {
+    render(<PrayerCircleManagementScreen navigation={navigation} route={route} />);
+    await screen.findByLabelText('1 of 12 spaces filled');
+    jest.mocked(getPrayerCircle).mockRejectedValueOnce(new Error('offline'));
+    const { ScrollView } = require('react-native');
+    await act(async () => {
+      await screen.UNSAFE_getByType(ScrollView).props.refreshControl.props.onRefresh();
+    });
+    await screen.findByText('Retry Prayer Circle');
+    expect(screen.getByLabelText("View @miriam's profile")).toBeTruthy();
+    expect(screen.getByLabelText('1 of 12 spaces filled')).toBeTruthy();
+  });
+
+  it('keeps the original invite response after uncertainty instead of offering an opposite action', async () => {
+    jest.mocked(respondToPrayerCircleInvite).mockRejectedValueOnce(new Error('lost confirmation'));
+    render(<PrayerCircleManagementScreen navigation={navigation} route={route} />);
+    fireEvent.press(await screen.findByLabelText('Accept invite from @jonah'));
+    const retry = await screen.findByText('Check and retry');
+    expect(screen.getByLabelText('Decline invite from @jonah')).toBeDisabled();
+    fireEvent.press(retry);
+    await screen.findByText('@jonah is now in your Prayer Circle.');
+    const calls = jest.mocked(respondToPrayerCircleInvite).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toEqual([
+      'invite-in',
+      'accepted',
+      expect.objectContaining({ requestId: calls[0][2]?.requestId, verifyExisting: true }),
+    ]);
   });
 });

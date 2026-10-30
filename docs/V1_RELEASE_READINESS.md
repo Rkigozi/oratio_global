@@ -1,6 +1,6 @@
 # Oratio V1 Release Readiness
 
-Last reviewed: 2026-10-23. Defines the V1 delivery stages, prerequisites and
+Last reviewed: 2026-10-30. Defines the V1 delivery stages, prerequisites and
 acceptance gates. The
 [documentation index](./README.md) defines platform responsibilities.
 
@@ -24,13 +24,14 @@ Complete the agreed V1 scope and development acceptance:
   monitoring/privacy, accessibility and reliability checks. Track quality proof
   in [NFR-CHECKLIST.md](./NFR-CHECKLIST.md), not as new features.
 - Network/session hardening (`SCRUM-95`) has a local deadline/read-retry,
-  account-boundary and same-ID prayer-submission checkpoint. Finish the remaining
+  account-boundary and write-recovery checkpoint for submission, comments/reports,
+  Circle actions, interactions and prayer/profile/settings ownership changes. Finish the remaining
   journeys and device acceptance in the [resilience record](./backlog/NATIVE-RESILIENCE.md).
 - Track the candidate in [draft PR #5](https://github.com/Rkigozi/oratio_global/pull/5)
-  and pass applicable automated/CI gates. The new Expo CLI dependency finding
-  remains unresolved in the [security record](./backlog/SECURITY-REVIEW.md).
-  A scoped
-  development dependency exception is not permission for external distribution.
+  and pass applicable automated/CI gates. The October 30 development dependency
+  approval covers only the pinned Expo CLI/Zod finding until November 13; strict
+  release treatment remains open in the [security record](./backlog/SECURITY-REVIEW.md).
+  That approval is not permission for external distribution.
 
 ### Current Evidence
 

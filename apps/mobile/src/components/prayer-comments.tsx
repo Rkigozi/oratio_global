@@ -21,11 +21,15 @@ import {
   type Comment,
 } from '@oratio/shared/queries';
 import { timeAgo, type PrayerRequest } from '@oratio/shared/prayer-data';
+import { WriteOutcomeError } from '@oratio/shared/write-outcome';
 import { useAuth } from '../hooks/auth-context';
 import { useBlockUser } from '../hooks/use-block-user';
 import { asNativeIcon } from './icon';
 import { Avatar } from './avatar';
 import { ContentReportSheet } from './content-report-sheet';
+import { useRecoverableWrite } from '../hooks/use-recoverable-write';
+import { withRequestTimeout } from '../services/request-timeout';
+import { WriteRecovery } from './write-recovery';
 import { colors, fontFamilies } from '../theme';
 
 const PAGE_SIZE = 20;
@@ -37,6 +41,17 @@ type ReplyTarget = {
   parentId: string;
   username: string;
 };
+
+type CommentIntent =
+  | { kind: 'create'; body: string; parentId: string | null }
+  | { kind: 'edit'; comment: Comment; body: string }
+  | { kind: 'delete'; comment: Comment }
+  | { kind: 'toggle'; enabled: boolean };
+type CommentResult =
+  | { kind: 'create'; comment: Comment; body: string }
+  | { kind: 'edit'; comment: Comment; body: string }
+  | { kind: 'delete'; comment: Comment }
+  | { kind: 'toggle'; enabled: boolean };
 
 export function PrayerComments({
   prayer,
@@ -61,11 +76,45 @@ export function PrayerComments({
   const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
   const [reportTargetId, setReportTargetId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [readError, setReadError] = useState('');
   const [commentsEnabled, setCommentsEnabled] = useState(prayer.commentsEnabled !== false);
   const [togglingComments, setTogglingComments] = useState(false);
   const loadedLimitRef = useRef(PAGE_SIZE);
-  const submittingRef = useRef(false);
+  const readRequest = useRef(0);
+  const readBusy = useRef(false);
+  const currentScope = useRef('');
+  const scope = `${user?.id ?? ''}:${prayer.id}`;
+  currentScope.current = scope;
   const isPrivate = prayer.audience === 'private';
+  const writes = useRecoverableWrite<CommentIntent, CommentResult>(
+    prayer.id,
+    user?.id,
+    async (intent, attempt) => {
+      if (intent.kind === 'create') {
+        const comment = await createComment(
+          { prayer_id: prayer.id, body: intent.body, parent_id: intent.parentId },
+          attempt
+        );
+        if (!comment) throw new WriteOutcomeError(false);
+        return { kind: 'create', comment, body: intent.body };
+      }
+      if (intent.kind === 'edit') {
+        const comment = await updateComment(intent.comment.id, intent.body, {
+          ...attempt,
+          expectedUpdatedAt: intent.comment.updated_at,
+        });
+        if (!comment) throw new WriteOutcomeError(false);
+        return { kind: 'edit', comment, body: intent.body };
+      }
+      if (intent.kind === 'delete') {
+        if (!(await deleteComment(intent.comment.id, attempt))) throw new WriteOutcomeError(false);
+        return intent;
+      }
+      if (!(await toggleCommentsEnabled(prayer.id, intent.enabled, attempt)))
+        throw new WriteOutcomeError(false);
+      return intent;
+    }
+  );
   const commentsAvailable = readOnly || prayer.audience !== 'public' || commentsEnabled;
   const canModerate =
     !!user &&
@@ -87,41 +136,53 @@ export function PrayerComments({
 
   const load = useCallback(
     async (limit = loadedLimitRef.current) => {
-      const [nextComments, nextTotal] = await Promise.all([
-        getComments(prayer.id, limit, 0),
-        getCommentCount(prayer.id),
-      ]);
-      setComments(nextComments);
-      setTotal(nextTotal);
-      loadedLimitRef.current = Math.max(PAGE_SIZE, nextComments.length);
-    },
-    [prayer.id]
-  );
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError('');
-
-    void Promise.all([getComments(prayer.id, PAGE_SIZE, 0), getCommentCount(prayer.id)])
-      .then(([nextComments, nextTotal]) => {
-        if (!active) return;
+      const request = ++readRequest.current;
+      const active = () => request === readRequest.current && currentScope.current === scope;
+      readBusy.current = true;
+      setLoadingMore(false);
+      setReadError('');
+      try {
+        const [nextComments, nextTotal] = await withRequestTimeout(
+          Promise.all([
+            getComments(prayer.id, limit, 0, { throwOnError: true }),
+            getCommentCount(prayer.id, { throwOnError: true }),
+          ])
+        );
+        if (!active()) return;
         setComments(nextComments);
         setTotal(nextTotal);
         loadedLimitRef.current = Math.max(PAGE_SIZE, nextComments.length);
-      })
-      .catch(() => {
-        if (active)
-          setError(isPrivate ? "We couldn't load your notes." : "We couldn't load comments.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      } catch {
+        if (active())
+          setReadError(isPrivate ? "We couldn't load your notes." : "We couldn't load comments.");
+      } finally {
+        if (active()) {
+          readBusy.current = false;
+          setLoading(false);
+        }
+      }
+    },
+    [isPrivate, prayer.id, scope]
+  );
 
+  useEffect(() => {
+    setLoading(true);
+    setError('');
+    setComments([]);
+    setDraft('');
+    setReplyTo(null);
+    setEditingId(null);
+    setEditText('');
+    setSubmitting(false);
+    setSavingEdit(false);
+    setBusyDeleteId(null);
+    setTogglingComments(false);
+    loadedLimitRef.current = PAGE_SIZE;
+    void load(PAGE_SIZE);
     return () => {
-      active = false;
+      readRequest.current += 1;
     };
-  }, [isPrivate, prayer.id]);
+  }, [load]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -137,75 +198,119 @@ export function PrayerComments({
   }, [load, prayer.id]);
 
   const loadMore = async () => {
-    if (loadingMore || comments.length >= total) return;
+    if (readBusy.current || comments.length >= total) return;
+    const request = ++readRequest.current;
+    const active = () => request === readRequest.current && currentScope.current === scope;
+    readBusy.current = true;
     setLoadingMore(true);
-    setError('');
+    setReadError('');
     try {
-      const more = await getComments(prayer.id, PAGE_SIZE, comments.length);
-      setComments((current) => [...current, ...more]);
+      const more = await withRequestTimeout(
+        getComments(prayer.id, PAGE_SIZE, comments.length, { throwOnError: true })
+      );
+      if (!active()) return;
+      setComments((current) => [
+        ...current,
+        ...more.filter((item) => !current.some((existing) => existing.id === item.id)),
+      ]);
       loadedLimitRef.current = Math.max(PAGE_SIZE, comments.length + more.length);
     } catch {
-      setError("We couldn't load more comments.");
+      if (active())
+        setReadError(
+          isPrivate ? "We couldn't load more notes." : "We couldn't load more comments."
+        );
     } finally {
-      setLoadingMore(false);
+      if (active()) {
+        readBusy.current = false;
+        setLoadingMore(false);
+      }
     }
   };
 
-  const submit = async () => {
-    const body = draft.trim();
-    if (!body || submittingRef.current) return;
-
-    submittingRef.current = true;
-    setSubmitting(true);
-    setError('');
-    try {
-      const created = await createComment({
-        prayer_id: prayer.id,
-        body,
-        parent_id: isPrivate ? null : replyTo?.parentId,
-      });
-      if (!created) {
-        setError(isPrivate ? "We couldn't save that note." : "We couldn't post that comment.");
-        return;
-      }
-
+  const completeWrite = (result: Awaited<ReturnType<typeof writes.run>>) => {
+    if (result.status === 'failed') {
+      setError("We couldn't save that change. Your draft has been kept.");
+      return;
+    }
+    if (result.status !== 'saved') return;
+    const value = result.value;
+    if (value.kind === 'create') {
+      const created = value.comment;
       const withProfile = created.user
         ? created
         : {
             ...created,
             user: profile
-              ? {
-                  username: profile.username,
-                  display_name: profile.display_name,
-                  avatar_url: null,
-                }
+              ? { username: profile.username, display_name: profile.display_name, avatar_url: null }
               : null,
           };
-      setComments((current) => [...current, withProfile]);
-      setTotal((current) => current + 1);
+      setComments((current) =>
+        current.some((item) => item.id === created.id)
+          ? current.map((item) => (item.id === created.id ? withProfile : item))
+          : [...current, withProfile]
+      );
+      setTotal((current) =>
+        Math.max(
+          current,
+          comments.length + (comments.some((item) => item.id === created.id) ? 0 : 1)
+        )
+      );
       loadedLimitRef.current += 1;
-      setDraft('');
+      setDraft((current) => (current.trim() === value.body ? '' : current));
       setReplyTo(null);
-    } catch {
-      setError(isPrivate ? "We couldn't save that note." : "We couldn't post that comment.");
-    } finally {
-      submittingRef.current = false;
-      setSubmitting(false);
+    } else if (value.kind === 'edit') {
+      setComments((current) =>
+        current.map((item) =>
+          item.id === value.comment.id
+            ? { ...value.comment, user: value.comment.user ?? item.user }
+            : item
+        )
+      );
+      setEditingId(null);
+      setEditText('');
+    } else if (value.kind === 'delete') {
+      setComments((current) =>
+        current.filter(
+          (item) => item.id !== value.comment.id && item.parent_id !== value.comment.id
+        )
+      );
+      if (replyTo?.parentId === value.comment.id) setReplyTo(null);
+    } else {
+      setCommentsEnabled(value.enabled);
     }
+    void load();
+  };
+
+  const submit = async () => {
+    const body = draft.trim();
+    if (!body || writes.isLocked()) return;
+    setSubmitting(true);
+    setError('');
+    const result = await writes.run({
+      kind: 'create',
+      body,
+      parentId: isPrivate ? null : (replyTo?.parentId ?? null),
+    });
+    if (result.status === 'ignored') return;
+    completeWrite(result);
+    setSubmitting(false);
   };
 
   const startEdit = (comment: Comment) => {
+    if (writes.isLocked()) return;
     setEditingId(comment.id);
     setEditText(comment.body);
     setError('');
   };
 
   const cancelEdit = () => {
+    if (writes.isLocked()) return;
     setEditingId(null);
     setEditText('');
   };
 
   const saveEdit = async (comment: Comment) => {
+    if (writes.isLocked()) return;
     const body = editText.trim();
     if (!body) {
       setError(isPrivate ? 'A note cannot be empty.' : 'A comment cannot be empty.');
@@ -218,50 +323,24 @@ export function PrayerComments({
 
     setSavingEdit(true);
     setError('');
-    try {
-      const updated = await updateComment(comment.id, body);
-      if (!updated) {
-        setError(isPrivate ? "We couldn't update that note." : "We couldn't update that comment.");
-        return;
-      }
-      setComments((current) =>
-        current.map((item) =>
-          item.id === comment.id ? { ...updated, user: updated.user ?? item.user } : item
-        )
-      );
-      cancelEdit();
-    } catch {
-      setError(isPrivate ? "We couldn't update that note." : "We couldn't update that comment.");
-    } finally {
-      setSavingEdit(false);
-    }
+    const result = await writes.run({ kind: 'edit', comment, body });
+    if (result.status === 'ignored') return;
+    completeWrite(result);
+    setSavingEdit(false);
   };
 
   const remove = async (comment: Comment) => {
+    if (writes.isLocked()) return;
     setBusyDeleteId(comment.id);
     setError('');
-    try {
-      const ok = await deleteComment(comment.id);
-      if (!ok) {
-        setError(isPrivate ? "We couldn't delete that note." : "We couldn't delete that comment.");
-        return;
-      }
-      setComments((current) => {
-        const next = current.filter(
-          (item) => item.id !== comment.id && item.parent_id !== comment.id
-        );
-        setTotal((currentTotal) => Math.max(0, currentTotal - (current.length - next.length)));
-        return next;
-      });
-      if (replyTo?.parentId === comment.id) setReplyTo(null);
-    } catch {
-      setError(isPrivate ? "We couldn't delete that note." : "We couldn't delete that comment.");
-    } finally {
-      setBusyDeleteId(null);
-    }
+    const result = await writes.run({ kind: 'delete', comment });
+    if (result.status === 'ignored') return;
+    completeWrite(result);
+    setBusyDeleteId(null);
   };
 
   const confirmDelete = (comment: Comment) => {
+    if (writes.isLocked()) return;
     const own = comment.user_id === user?.id;
     const noun = isPrivate ? 'note' : 'comment';
     Alert.alert(
@@ -279,23 +358,13 @@ export function PrayerComments({
   };
 
   const toggleComments = async (enabled: boolean) => {
-    if (!canToggleComments || togglingComments) return;
-    const previous = commentsEnabled;
-    setCommentsEnabled(enabled);
+    if (!canToggleComments || writes.isLocked()) return;
     setTogglingComments(true);
     setError('');
-    try {
-      const ok = await toggleCommentsEnabled(prayer.id, enabled);
-      if (!ok) {
-        setCommentsEnabled(previous);
-        setError("We couldn't update that setting.");
-      }
-    } catch {
-      setCommentsEnabled(previous);
-      setError("We couldn't update that setting.");
-    } finally {
-      setTogglingComments(false);
-    }
+    const result = await writes.run({ kind: 'toggle', enabled });
+    if (result.status === 'ignored') return;
+    completeWrite(result);
+    setTogglingComments(false);
   };
 
   const topLevel = comments.filter((comment) => !comment.parent_id);
@@ -312,7 +381,7 @@ export function PrayerComments({
         {canToggleComments ? (
           <Switch
             accessibilityLabel="Allow comments"
-            disabled={togglingComments}
+            disabled={togglingComments || writes.locked}
             onValueChange={(enabled) => void toggleComments(enabled)}
             thumbColor={commentsEnabled ? colors.accent : colors.textDim}
             trackColor={{ false: colors.surfaceBorder, true: colors.accentDark }}
@@ -322,6 +391,23 @@ export function PrayerComments({
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+      {writes.uncertain ? (
+        <WriteRecovery busy={writes.busy} onRetry={() => void writes.retry().then(completeWrite)} />
+      ) : null}
+      {readError ? (
+        <View>
+          <Text accessibilityRole="alert" style={styles.error}>
+            {readError}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => void load()}
+            style={styles.loadMoreButton}
+          >
+            <Text style={styles.loadMoreText}>{isPrivate ? 'Retry notes' : 'Retry comments'}</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {!commentsAvailable ? (
         <Text style={styles.emptyText}>Comments are off for this prayer.</Text>
@@ -331,7 +417,7 @@ export function PrayerComments({
         </View>
       ) : (
         <>
-          {topLevel.length === 0 ? (
+          {topLevel.length === 0 && !readError ? (
             <Text style={styles.emptyText}>
               {isPrivate ? 'No notes yet.' : 'No comments yet. Be the first to encourage them.'}
             </Text>
@@ -350,11 +436,14 @@ export function PrayerComments({
                   readOnly={readOnly}
                   onCancelEdit={cancelEdit}
                   onChangeEdit={(value) => {
+                    if (writes.isLocked()) return;
                     setEditText(value);
                     setError('');
                   }}
                   onDelete={confirmDelete}
-                  onReply={(parentId, username) => setReplyTo({ parentId, username })}
+                  onReply={(parentId, username) => {
+                    if (!writes.isLocked()) setReplyTo({ parentId, username });
+                  }}
                   onReport={setReportTargetId}
                   onBlock={(comment) => {
                     if (!blocking) confirmBlock(comment.user_id, comment.user?.username);
@@ -362,7 +451,7 @@ export function PrayerComments({
                   onSaveEdit={(target) => void saveEdit(target)}
                   onStartEdit={startEdit}
                   replies={repliesFor(comment.id)}
-                  savingEdit={savingEdit}
+                  savingEdit={savingEdit || writes.locked}
                 />
               ))}
             </View>
@@ -392,6 +481,7 @@ export function PrayerComments({
                 accessibilityLabel="Cancel reply"
                 accessibilityRole="button"
                 hitSlop={8}
+                disabled={writes.locked}
                 onPress={() => setReplyTo(null)}
                 style={styles.cancelReplyButton}
               >
@@ -404,6 +494,7 @@ export function PrayerComments({
             <View style={styles.composer}>
               <View style={styles.inputShell}>
                 <TextInput
+                  editable={!writes.locked}
                   maxLength={500}
                   multiline
                   onChangeText={(value) => {
@@ -429,7 +520,7 @@ export function PrayerComments({
                   isPrivate ? 'Save note' : replyTo ? 'Post reply' : 'Post comment'
                 }
                 accessibilityRole="button"
-                disabled={!draft.trim() || submitting}
+                disabled={!draft.trim() || submitting || writes.locked}
                 onPress={() => void submit()}
                 style={({ pressed }) => [
                   styles.sendButton,

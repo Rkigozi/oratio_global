@@ -16,6 +16,7 @@
     "./service-notice": "./src/service-notice.ts",
     "./client": "./src/client.ts",
     "./logger": "./src/logger.ts",
+    "./write-outcome": "./src/write-outcome.ts",
     "./queries": "./src/queries/index.ts"
   },
   "dependencies": {

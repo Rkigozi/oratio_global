@@ -428,6 +428,7 @@ describe('LocationPrayersScreen', () => {
         placeId: 'geonames:2643743',
       })
     );
+    expect(await screen.findByText('Please pray for my family')).toBeTruthy();
   });
 
   it('loads the selected location and opens a prayer', async () => {
@@ -443,7 +444,7 @@ describe('LocationPrayersScreen', () => {
         placeId: undefined,
       })
     );
-    fireEvent.press(screen.getByText('Please pray for my family'));
+    fireEvent.press(await screen.findByText('Please pray for my family'));
 
     expect(mockNavigation.navigate).toHaveBeenCalledWith('PrayerDetail', {
       prayerId: 'prayer-1',

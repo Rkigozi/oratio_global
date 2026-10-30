@@ -10,6 +10,14 @@ import { normalizePrayerLocation, type PrayerRequest } from '../prayer-data';
 import { mapHotspotTotal, type MapHotspot } from '../map-hotspots';
 import { getProfileByUsername } from './profiles';
 import { logError } from '../logger';
+import {
+  assertWriteDeadline,
+  getWriteUser,
+  withWriteSignal,
+  writeOutcomeError,
+  WriteOutcomeError,
+  type WriteAttempt,
+} from '../write-outcome';
 
 const supabase = getSupabaseClient();
 
@@ -381,8 +389,54 @@ export async function createPrayerRequest(
 
 export async function updatePrayerRequest(
   prayerId: string,
-  body: string
+  body: string,
+  attempt?: WriteAttempt & { expectedText: string; expectedEditedAt?: string | null }
 ): Promise<{ text: string; editedAt: string } | null> {
+  if (attempt) {
+    let writeStarted = false;
+    try {
+      const user = await getWriteUser(attempt);
+      const { data: current, error: readError } = await withWriteSignal(
+        supabase
+          .from('prayer_requests')
+          .select('id, body, edited_at')
+          .eq('id', prayerId)
+          .eq('user_id', user.id),
+        attempt
+      ).maybeSingle();
+      if (readError) throw readError;
+      if (!current || current.id !== prayerId) throw new WriteOutcomeError(attempt.verifyExisting);
+      if (current.body === body) return { text: body, editedAt: current.edited_at as string };
+      if (
+        current.body !== attempt.expectedText ||
+        (current.edited_at ?? null) !== (attempt.expectedEditedAt ?? null)
+      )
+        throw new WriteOutcomeError(attempt.verifyExisting);
+      assertWriteDeadline(attempt);
+      let query = supabase
+        .from('prayer_requests')
+        .update({ body })
+        .eq('id', prayerId)
+        .eq('user_id', user.id)
+        .eq('body', attempt.expectedText);
+      query =
+        attempt.expectedEditedAt == null
+          ? query.is('edited_at', null)
+          : query.eq('edited_at', attempt.expectedEditedAt);
+      writeStarted = true;
+      const { data, error } = await withWriteSignal(
+        query.select('id, body, edited_at'),
+        attempt
+      ).single();
+      if (error) throw error;
+      if (!data || data.id !== prayerId || data.body !== body) throw new WriteOutcomeError(true);
+      return { text: data.body as string, editedAt: data.edited_at as string };
+    } catch (cause) {
+      const error = writeOutcomeError(cause, attempt, writeStarted);
+      logError('update prayer', error);
+      throw error;
+    }
+  }
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -407,7 +461,44 @@ export async function updatePrayerRequest(
   };
 }
 
-export async function deletePrayerRequest(prayerId: string): Promise<boolean> {
+export async function deletePrayerRequest(
+  prayerId: string,
+  attempt?: WriteAttempt
+): Promise<boolean> {
+  if (attempt) {
+    let writeStarted = false;
+    try {
+      const user = await getWriteUser(attempt);
+      if (attempt.verifyExisting) {
+        const { data, error } = await withWriteSignal(
+          supabase.from('prayer_requests').select('id').eq('id', prayerId).eq('user_id', user.id),
+          attempt
+        ).maybeSingle();
+        if (error) throw error;
+        // Absence confirms unavailability, not that this attempt erased a row.
+        if (!data) return false;
+        if (data.id !== prayerId) throw new WriteOutcomeError(true);
+      }
+      assertWriteDeadline(attempt);
+      writeStarted = true;
+      const { data, error } = await withWriteSignal(
+        supabase
+          .from('prayer_requests')
+          .delete()
+          .eq('id', prayerId)
+          .eq('user_id', user.id)
+          .select('id'),
+        attempt
+      ).maybeSingle();
+      if (error) throw error;
+      if (data?.id !== prayerId) throw new WriteOutcomeError(true);
+      return true;
+    } catch (cause) {
+      const error = writeOutcomeError(cause, attempt, writeStarted);
+      logError('delete prayer', error);
+      throw error;
+    }
+  }
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -428,7 +519,51 @@ export async function deletePrayerRequest(prayerId: string): Promise<boolean> {
   return Boolean(data);
 }
 
-export async function renewPublicPrayer(prayerId: string): Promise<string | null> {
+export async function renewPublicPrayer(
+  prayerId: string,
+  attempt?: WriteAttempt & { expectedExpiresAt: string }
+): Promise<string | null> {
+  if (attempt) {
+    let writeStarted = false;
+    try {
+      const user = await getWriteUser(attempt);
+      const { data: current, error: readError } = await withWriteSignal(
+        supabase
+          .from('prayer_requests')
+          .select('id, audience, public_expires_at')
+          .eq('id', prayerId)
+          .eq('user_id', user.id),
+        attempt
+      ).maybeSingle();
+      if (readError) throw readError;
+      if (!current || current.id !== prayerId || current.audience !== 'public')
+        throw new WriteOutcomeError(attempt.verifyExisting);
+      const expiry = Date.parse(current.public_expires_at);
+      if (!Number.isFinite(expiry)) throw new WriteOutcomeError(attempt.verifyExisting);
+      // An already-active prayer needs no renewal. Never restart its clock on retry.
+      if (expiry > Date.now()) return current.public_expires_at as string;
+      if (current.public_expires_at !== attempt.expectedExpiresAt)
+        throw new WriteOutcomeError(attempt.verifyExisting);
+      assertWriteDeadline(attempt);
+      writeStarted = true;
+      const { data, error } = await withWriteSignal(
+        supabase.rpc('renew_public_prayer', { p_prayer_id: prayerId }),
+        attempt
+      );
+      if (error) throw error;
+      if (
+        typeof data !== 'string' ||
+        !Number.isFinite(Date.parse(data)) ||
+        Date.parse(data) <= Date.now()
+      )
+        throw new WriteOutcomeError(true);
+      return data;
+    } catch (cause) {
+      const error = writeOutcomeError(cause, attempt, writeStarted);
+      logError('renew prayer', error);
+      throw error;
+    }
+  }
   const { data, error } = await supabase.rpc('renew_public_prayer', { p_prayer_id: prayerId });
   if (error || typeof data !== 'string' || !Number.isFinite(Date.parse(data))) {
     logError('renew prayer', error || new Error('Invalid renewal response'));
@@ -437,7 +572,48 @@ export async function renewPublicPrayer(prayerId: string): Promise<string | null
   return data;
 }
 
-export async function toggleCommentsEnabled(prayerId: string, enabled: boolean): Promise<boolean> {
+export async function toggleCommentsEnabled(
+  prayerId: string,
+  enabled: boolean,
+  attempt?: WriteAttempt
+): Promise<boolean> {
+  if (attempt) {
+    let writeStarted = false;
+    try {
+      const user = await getWriteUser(attempt);
+      if (attempt.verifyExisting) {
+        const { data, error } = await withWriteSignal(
+          supabase
+            .from('prayer_requests')
+            .select('id, comments_enabled')
+            .eq('id', prayerId)
+            .eq('user_id', user.id),
+          attempt
+        ).maybeSingle();
+        if (error || !data) throw new WriteOutcomeError(true);
+        if (data.comments_enabled === enabled) return true;
+      }
+      assertWriteDeadline(attempt);
+      writeStarted = true;
+      const { data, error } = await withWriteSignal(
+        supabase
+          .from('prayer_requests')
+          .update({ comments_enabled: enabled })
+          .eq('id', prayerId)
+          .eq('user_id', user.id)
+          .select('id, comments_enabled'),
+        attempt
+      ).single();
+      if (error) throw error;
+      if (!data || data.id !== prayerId || data.comments_enabled !== enabled)
+        throw new WriteOutcomeError(true);
+      return true;
+    } catch (cause) {
+      const error = writeOutcomeError(cause, attempt, writeStarted);
+      logError('toggle comments', error);
+      throw error;
+    }
+  }
   const { error } = await supabase
     .from('prayer_requests')
     .update({ comments_enabled: enabled })

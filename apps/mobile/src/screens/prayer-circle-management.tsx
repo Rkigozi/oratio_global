@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -28,6 +28,10 @@ import {
 } from '@oratio/shared/queries';
 import { timeAgo } from '@oratio/shared/prayer-data';
 import { useAuth } from '../hooks/auth-context';
+import { useRecoverableWrite } from '../hooks/use-recoverable-write';
+import { assertWriteDeadline, type WriteAttempt } from '@oratio/shared/write-outcome';
+import { withRequestTimeout } from '../services/request-timeout';
+import { WriteRecovery } from '../components/write-recovery';
 import { Avatar } from '../components/avatar';
 import { asNativeIcon } from '../components/icon';
 import { ScreenHeaderTitle } from '../components/screen-header-title';
@@ -50,7 +54,7 @@ type SearchResult = {
 export function PrayerCircleManagementScreen({
   navigation,
 }: NativeStackScreenProps<RootStackParamList, 'PrayerCircleManagement'>) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [circle, setCircle] = useState<PrayerCircleUser[]>([]);
   const [incoming, setIncoming] = useState<PrayerCircleInvite[]>([]);
   const [outgoing, setOutgoing] = useState<PrayerCircleInvite[]>([]);
@@ -62,26 +66,68 @@ export function PrayerCircleManagementScreen({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [searchError, setSearchError] = useState('');
+  const [searchRevision, setSearchRevision] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const readRequest = useRef(0);
+  const active = useRef(false);
+  const actor = useRef(user?.id);
+  actor.current = user?.id;
+  type ActionIntent = {
+    operation: (attempt: WriteAttempt) => Promise<boolean>;
+    failureMessage: string;
+    successMessage?: string;
+  };
+  const writes = useRecoverableWrite<
+    ActionIntent,
+    { ok: boolean; failureMessage: string; successMessage?: string }
+  >('circle-management', user?.id, async (intent, attempt) => ({
+    ok: await intent.operation(attempt),
+    failureMessage: intent.failureMessage,
+    successMessage: intent.successMessage,
+  }));
   const circleIsFull = circle.length >= PRAYER_CIRCLE_LIMIT;
 
-  const load = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
-    setError('');
-    try {
-      const [members, invites] = await Promise.all([getPrayerCircle(), getPrayerCircleInvites()]);
-      setCircle(members);
-      setIncoming(invites.incoming);
-      setOutgoing(invites.outgoing);
-    } catch {
-      setError("We couldn't load your Prayer Circle. Try again.");
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  }, []);
+  const load = useCallback(
+    async (showLoading = true) => {
+      const request = ++readRequest.current;
+      const current = () =>
+        active.current && request === readRequest.current && actor.current === user?.id;
+      if (showLoading) setLoading(true);
+      setLoadError('');
+      try {
+        const [members, invites] = await withRequestTimeout(
+          Promise.all([
+            getPrayerCircle({ throwOnError: true }),
+            getPrayerCircleInvites({ throwOnError: true }),
+          ])
+        );
+        if (!current()) return;
+        setCircle(members);
+        setIncoming(invites.incoming);
+        setOutgoing(invites.outgoing);
+        setLoaded(true);
+      } catch {
+        if (current()) setLoadError("We couldn't load your Prayer Circle. Try again.");
+      } finally {
+        if (current()) {
+          if (showLoading) setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    },
+    [user?.id]
+  );
 
   useFocusEffect(
     useCallback(() => {
+      active.current = true;
       void load();
+      return () => {
+        active.current = false;
+        readRequest.current += 1;
+      };
     }, [load])
   );
 
@@ -90,16 +136,24 @@ export function PrayerCircleManagementScreen({
     if (normalized.length < 2) {
       setResults([]);
       setSearching(false);
+      setSearchError('');
       return;
     }
 
     let active = true;
+    setResults([]);
+    setSearchError('');
+    setSearching(true);
     const timer = setTimeout(() => {
       setSearching(true);
-      void searchUsers(normalized)
+      void withRequestTimeout(searchUsers(normalized, { throwOnError: true }))
         .then((users) => {
           if (!active) return;
           setResults(users.filter((user) => user.username !== profile?.username));
+        })
+        .catch(() => {
+          if (active)
+            setSearchError("We couldn't search for people. Check your connection and try again.");
         })
         .finally(() => {
           if (active) setSearching(false);
@@ -110,7 +164,7 @@ export function PrayerCircleManagementScreen({
       active = false;
       clearTimeout(timer);
     };
-  }, [profile?.username, query]);
+  }, [profile?.username, query, searchRevision, user?.id]);
 
   const memberNames = useMemo(() => new Set(circle.map((person) => person.username)), [circle]);
   const incomingNames = useMemo(
@@ -125,59 +179,61 @@ export function PrayerCircleManagementScreen({
   const refresh = useCallback(async () => {
     setRefreshing(true);
     await load(false);
-    setRefreshing(false);
   }, [load]);
+
+  const completeWrite = async (
+    result: Awaited<ReturnType<typeof writes.run>>,
+    failureMessage = "We couldn't update your Prayer Circle."
+  ) => {
+    if (result.status === 'ignored') return;
+    setBusyId(null);
+    if (result.status === 'failed') {
+      setError(failureMessage);
+      return;
+    }
+    if (result.status !== 'saved') return;
+    if (!result.value.ok) setError(result.value.failureMessage);
+    else if (result.value.successMessage) setNotice(result.value.successMessage);
+    await load(false);
+  };
 
   const completeAction = async (
     key: string,
-    operation: () => Promise<boolean>,
+    operation: (attempt: WriteAttempt) => Promise<boolean>,
     failureMessage: string,
     successMessage?: string
   ) => {
+    if (writes.isLocked() || !loaded) return;
     setBusyId(key);
     setError('');
     setNotice('');
-    try {
-      const ok = await operation();
-      if (!ok) {
-        setError(failureMessage);
-        return;
-      }
-      if (successMessage) setNotice(successMessage);
-      await load(false);
-    } catch {
-      setError(failureMessage);
-    } finally {
-      setBusyId(null);
-    }
+    await completeWrite(
+      await writes.run({ operation, failureMessage, successMessage }),
+      failureMessage
+    );
   };
 
   const invite = async (result: SearchResult) => {
     const key = `search:${result.username}`;
-    setBusyId(key);
-    setError('');
-    setNotice('');
-    try {
-      const recipient = await getProfileByUsername(result.username);
-      const ok = recipient ? await sendPrayerCircleInvite(recipient.id) : false;
-      if (!ok) {
-        setError(
-          "We couldn't send that invite. They may already have a pending invite or a full Circle."
-        );
-        return;
-      }
-      setNotice(`Invite sent to @${result.username}.`);
-      setQuery('');
-      setResults([]);
-      await load(false);
-    } catch {
-      setError("We couldn't send that invite. Try again.");
-    } finally {
-      setBusyId(null);
-    }
+    let recipientId: string | undefined;
+    await completeAction(
+      key,
+      async (attempt) => {
+        if (!recipientId) {
+          const recipient = await getProfileByUsername(result.username);
+          assertWriteDeadline(attempt);
+          if (!recipient) return false;
+          recipientId = recipient.id;
+        }
+        return sendPrayerCircleInvite(recipientId, undefined, attempt);
+      },
+      "We couldn't send that invite. It may have changed or a Circle may be full.",
+      `Invite sent to @${result.username}.`
+    );
   };
 
   const confirmRemove = (person: PrayerCircleUser) => {
+    if (writes.isLocked()) return;
     Alert.alert(
       'Remove from Prayer Circle?',
       `You and @${person.username} will no longer see each other's Prayer Circle prayers.`,
@@ -189,7 +245,11 @@ export function PrayerCircleManagementScreen({
           onPress: () =>
             void completeAction(
               person.id,
-              () => removeFromPrayerCircle(person.id),
+              (attempt) =>
+                removeFromPrayerCircle(person.id, {
+                  ...attempt,
+                  connectionId: person.connection_id,
+                }),
               "We couldn't remove this person. Try again."
             ),
         },
@@ -239,8 +299,13 @@ export function PrayerCircleManagementScreen({
               <Text style={styles.summaryTitle}>Your Prayer Circle</Text>
               <Text style={styles.summaryText}>Mutual connections, with 12 spaces.</Text>
             </View>
-            <Text accessibilityLabel={`${circle.length} of 12 spaces filled`} style={styles.count}>
-              {circle.length}/{PRAYER_CIRCLE_LIMIT}
+            <Text
+              accessibilityLabel={
+                loaded ? `${circle.length} of 12 spaces filled` : 'Prayer Circle count unavailable'
+              }
+              style={styles.count}
+            >
+              {loaded ? `${circle.length}/${PRAYER_CIRCLE_LIMIT}` : '—/12'}
             </Text>
           </View>
 
@@ -248,6 +313,7 @@ export function PrayerCircleManagementScreen({
           <View style={styles.searchShell}>
             <SearchIcon color={colors.textDim} size={17} strokeWidth={1.7} />
             <TextInput
+              editable={!writes.locked}
               autoCapitalize="none"
               autoCorrect={false}
               onChangeText={(value) => {
@@ -264,9 +330,46 @@ export function PrayerCircleManagementScreen({
           </View>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {loadError ? (
+            <View>
+              <Text accessibilityRole="alert" style={styles.errorText}>
+                {loadError}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void load(false)}
+                style={styles.secondaryButton}
+              >
+                <Text style={styles.secondaryButtonText}>Retry Prayer Circle</Text>
+              </Pressable>
+            </View>
+          ) : null}
+          {searchError ? (
+            <View>
+              <Text accessibilityRole="alert" style={styles.errorText}>
+                {searchError}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setSearchRevision((value) => value + 1)}
+                style={styles.secondaryButton}
+              >
+                <Text style={styles.secondaryButtonText}>Retry search</Text>
+              </Pressable>
+            </View>
+          ) : null}
+          {writes.uncertain ? (
+            <WriteRecovery
+              busy={writes.busy}
+              onRetry={() => void writes.retry().then((result) => completeWrite(result))}
+            />
+          ) : null}
           {notice ? <Text style={styles.noticeText}>{notice}</Text> : null}
 
-          {query.trim().replace(/^@/, '').length >= 2 && !searching && results.length === 0 ? (
+          {query.trim().replace(/^@/, '').length >= 2 &&
+          !searching &&
+          !searchError &&
+          results.length === 0 ? (
             <Text style={styles.searchEmpty}>No matching usernames.</Text>
           ) : null}
 
@@ -297,7 +400,7 @@ export function PrayerCircleManagementScreen({
                         <Pressable
                           accessibilityLabel={`Invite @${result.username} to your Prayer Circle`}
                           accessibilityRole="button"
-                          disabled={busy || circleIsFull}
+                          disabled={busy || circleIsFull || writes.locked || !loaded}
                           onPress={() => void invite(result)}
                           style={({ pressed }) => [
                             styles.secondaryButton,
@@ -341,11 +444,12 @@ export function PrayerCircleManagementScreen({
                         <Pressable
                           accessibilityLabel={`Accept invite from @${circleInvite.requester.username}`}
                           accessibilityRole="button"
-                          disabled={busy || circleIsFull}
+                          disabled={busy || circleIsFull || writes.locked}
                           onPress={() =>
                             void completeAction(
                               circleInvite.id,
-                              () => respondToPrayerCircleInvite(circleInvite.id, 'accepted'),
+                              (attempt) =>
+                                respondToPrayerCircleInvite(circleInvite.id, 'accepted', attempt),
                               "We couldn't accept that invite. Try again.",
                               `@${circleInvite.requester.username} is now in your Prayer Circle.`
                             )
@@ -363,11 +467,12 @@ export function PrayerCircleManagementScreen({
                         <Pressable
                           accessibilityLabel={`Decline invite from @${circleInvite.requester.username}`}
                           accessibilityRole="button"
-                          disabled={busy}
+                          disabled={busy || writes.locked}
                           onPress={() =>
                             void completeAction(
                               circleInvite.id,
-                              () => respondToPrayerCircleInvite(circleInvite.id, 'declined'),
+                              (attempt) =>
+                                respondToPrayerCircleInvite(circleInvite.id, 'declined', attempt),
                               "We couldn't decline that invite. Try again."
                             )
                           }
@@ -402,11 +507,11 @@ export function PrayerCircleManagementScreen({
                       <Pressable
                         accessibilityLabel={`Cancel invite to @${circleInvite.recipient.username}`}
                         accessibilityRole="button"
-                        disabled={busy}
+                        disabled={busy || writes.locked}
                         onPress={() =>
                           void completeAction(
                             circleInvite.id,
-                            () => cancelPrayerCircleInvite(circleInvite.id),
+                            (attempt) => cancelPrayerCircleInvite(circleInvite.id, attempt),
                             "We couldn't cancel that invite. Try again."
                           )
                         }
@@ -440,7 +545,7 @@ export function PrayerCircleManagementScreen({
                     <Pressable
                       accessibilityLabel={`Remove @${person.username} from Prayer Circle`}
                       accessibilityRole="button"
-                      disabled={busyId === person.id}
+                      disabled={busyId === person.id || writes.locked}
                       onPress={() => confirmRemove(person)}
                       style={[styles.roundButton, busyId === person.id && styles.disabled]}
                     >
@@ -453,7 +558,7 @@ export function PrayerCircleManagementScreen({
                   }
                 />
               ))
-            ) : (
+            ) : !loadError && loaded ? (
               <View style={styles.emptyState}>
                 <UsersIcon color={colors.textDim} size={24} strokeWidth={1.5} />
                 <Text style={styles.emptyTitle}>Your Prayer Circle is empty</Text>
@@ -461,7 +566,7 @@ export function PrayerCircleManagementScreen({
                   Search for someone above to send your first invite.
                 </Text>
               </View>
-            )}
+            ) : null}
           </View>
         </ScrollView>
       )}
