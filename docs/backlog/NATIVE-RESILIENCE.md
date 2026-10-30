@@ -1,6 +1,6 @@
 # Native Network And Session Resilience
 
-Jira: `SCRUM-95` (In Progress, 2026-10-23).
+Jira: `SCRUM-95` (In Progress, 2026-10-27).
 Acceptance source: [NFR-02/03](../NFR-CHECKLIST.md). Parent design:
 [identity](../design/lld/IDENTITY-AND-ACCESS.md) and
 [prayer/discovery](../design/lld/PRAYERS-AND-DISCOVERY.md).
@@ -82,9 +82,11 @@ composer, inspect My Prayers before starting another submission. Comments, repor
 Circle invitations and other write actions do not inherit this submission-ID
 contract merely because the transport has a timeout.
 
-`expo-modules-core` is now a direct dependency at its already-resolved version
-57.0.21 for its existing native UUID API. The lockfile adds only that dependency
-edge; no resolved package version or new native plugin changes.
+The 2026-10-21 checkpoint added `expo-modules-core` directly at its already-resolved
+57.0.21 version for the native UUID API. The
+[SDK 58 upgrade](./IOS-BUILD-PIPELINE.md#sdk-58-development-upgrade-2026-10-26)
+uses the public `expo` UUID export and removes that direct dependency. The
+same-ID submission contract is unchanged.
 
 ## Verification
 
@@ -128,13 +130,33 @@ or physical-device acceptance.
 Use synthetic test prayers and the latest Expo Go candidate. Do not inject faults,
 seed bulk data or change access policies on the shared live backend.
 
+Reported checkpoint (2026-10-27, **maintainer-reported**): the SDK 58 project
+opened in iOS Expo Go and the previously outlined Private-prayer
+disconnect/submit/reconnect/retry test passed. Candidate: local working tree
+based on `a3e755a` with the uncommitted SDK 58 upgrade. Exact iPhone/iOS,
+per-step timings and independent saved-row evidence were not recorded.
+This confirms the reported offline/reconnect smoke journey, not a controlled
+write-committed/confirmation-lost fault or whole NFR acceptance.
+
+Account-switch checkpoint (2026-10-29, **maintainer-reported**): signing out of
+Jonah and signing in as Miriam on the same iPhone showed Miriam's profile and
+only Miriam's Private prayers. Candidate: the same local `a3e755a` working tree
+with the uncommitted SDK 58 upgrade. Exact iPhone/iOS and independent screen
+evidence were not recorded. Composer drafts, activity, navigation and delayed
+old-account responses/token refreshes remain separate acceptance checks.
+
 - [ ] Load Public/Circle, disconnect while keeping the app open, refresh, reconnect
       and Retry. Verify errors are distinct from empty success and navigation stays usable.
-- [ ] Compose a synthetic Private prayer, disconnect and submit. No success may be
-      claimed on failure; text remains. Reconnect and retry. If an uncertain state
-      is shown, use Check and retry submission; confirm one matching prayer only.
-- [ ] Sign out with content/drafts open, then use another QA account. No previous
-      profile, composer, private list or activity state may remain.
+- [x] Private-prayer offline submission and reconnect/retry smoke check
+      (maintainer-reported, 2026-10-27; checkpoint above).
+- [ ] Separately inject a committed-write/lost-confirmation fault in a controlled
+      environment; verify locked intent and Check and retry submission confirm
+      one matching prayer only.
+- [x] Jonah-to-Miriam sign-out/sign-in shows only the new account's profile and
+      Private prayers (maintainer-reported, 2026-10-29; checkpoint above).
+- [ ] Repeat account switching with a composer draft and activity open. Verify
+      navigation, draft and activity state reset; delayed old-account responses
+      and token refreshes cannot restore previous-account state.
 - [ ] Verify read/submission recovery on slow/blackholed connections and through
       background/foreground transitions in a controlled test environment.
 - [ ] Record candidate SHA/build, iPhone/iOS, conditions and results before closure.

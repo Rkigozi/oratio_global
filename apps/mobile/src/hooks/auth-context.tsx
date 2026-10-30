@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState } from 'react-native';
 import { supabase } from '../services/supabase';
 import { withRequestTimeout } from '../services/request-timeout';
 
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const updateAutoRefresh = (state: AppStateStatus) => {
+    const updateAutoRefresh = (state: typeof AppState.currentState) => {
       if (state === 'active') {
         supabase.auth.startAutoRefresh();
       } else {

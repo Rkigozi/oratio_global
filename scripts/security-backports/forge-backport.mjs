@@ -21,6 +21,8 @@ export const FORGE_BASE_HASH = 'fd4740238145ec26470eb3f06a627c72039538ce1307dbdc
 export const FORGE_PATCHED_HASH =
   'c7b72e7ef41f4fc0e5228dce3e37851e9ca064c789365d5e392c25d1c5f6e710';
 export const FORGE_PATCH_HASH = 'be8e74c1d011bab844d9e2705f7a5f6428f444b28fa174cdad1572a45ef8f618';
+export const FORGE_UPSTREAM_HASH =
+  '6632e195295ce76f6bb9131ee770dcd6cc1ee4ffac7906302208b00faf95a87f';
 export const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const patchFile = fileURLToPath(new URL('./forge-1159-rsa.patch', import.meta.url));
 export const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -40,16 +42,22 @@ function installedCopies(root, required) {
       'Forge source is outside the workspace'
     );
     const pkg = JSON.parse(readFileSync(join(folder, 'package.json'), 'utf8'));
-    assert.equal(metadata.version, '1.4.0', 'Review the backport before upgrading Forge');
+    assert(
+      ['1.4.0', '1.4.2'].includes(metadata.version),
+      'Review the backport before upgrading Forge'
+    );
     assert.equal(pkg.name, 'node-forge');
-    assert.equal(pkg.version, '1.4.0');
+    assert.equal(pkg.version, metadata.version);
     assert.equal(pkg.main, 'lib/index.js', 'Only the verified Node implementation is covered');
     const hash = sha256(readFileSync(file));
     assert(
-      [FORGE_BASE_HASH, FORGE_PATCHED_HASH].includes(hash),
+      (pkg.version === '1.4.2'
+        ? [FORGE_UPSTREAM_HASH]
+        : [FORGE_BASE_HASH, FORGE_PATCHED_HASH]
+      ).includes(hash),
       'Unexpected Forge RSA source; refusing to overwrite it'
     );
-    copies.push({ path, file, hash });
+    copies.push({ path, file, hash, version: pkg.version });
   }
   if (required) assert(copies.length > 0, 'The verified Forge installation is missing');
   return copies;
@@ -96,7 +104,7 @@ export function verifyForgeBackport(root = ROOT, { required = true } = {}) {
   for (const copy of copies)
     assert.equal(
       copy.hash,
-      FORGE_PATCHED_HASH,
+      copy.version === '1.4.2' ? FORGE_UPSTREAM_HASH : FORGE_PATCHED_HASH,
       'Forge backport is missing; run npm run install:security-backport'
     );
   return copies.map(({ path }) => path);
@@ -135,7 +143,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const result = values['verify-only']
       ? { installed: 0, verified: verifyForgeBackport().length }
       : installForgeBackport();
-    console.log(`Forge Node backport: ${result.installed} applied, ${result.verified} verified.`);
+    console.log(
+      `Forge Node security: ${result.installed} backports applied, ${result.verified} sources verified.`
+    );
   } catch (error) {
     console.error(`Forge backport verification failed: ${error.message}`);
     process.exitCode = 1;

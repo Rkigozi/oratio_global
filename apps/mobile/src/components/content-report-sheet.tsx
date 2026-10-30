@@ -112,7 +112,9 @@ export function ContentReportSheet({
   return (
     <Modal
       animationType="fade"
-      onRequestClose={() => !submitting && onClose()}
+      onRequestClose={() => {
+        if (!submitting) onClose();
+      }}
       transparent
       visible={visible}
     >

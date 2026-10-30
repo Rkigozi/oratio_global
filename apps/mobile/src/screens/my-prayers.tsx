@@ -220,7 +220,7 @@ export function MyPrayersScreen({
                   </Text>
                 </Pressable>
               </View>
-            ) : null
+            ) : undefined
           }
           ListEmptyComponent={
             <View style={styles.center}>

@@ -439,7 +439,7 @@ function PrayerFeedScreen({
                   <Text style={styles.retryText}>Retry refresh</Text>
                 </Pressable>
               </View>
-            ) : null
+            ) : undefined
           }
           renderItem={({ item }) => (
             <PrayerCard
@@ -482,7 +482,7 @@ function PrayerFeedScreen({
                   <Text style={styles.retryText}>Retry loading more</Text>
                 </Pressable>
               </View>
-            ) : null
+            ) : undefined
           }
         />
       )}

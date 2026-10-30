@@ -303,13 +303,16 @@ Non-functional acceptance is tracked in [NFR-CHECKLIST.md](./NFR-CHECKLIST.md).
 Reuse the dated functional results above without treating them as a full NFR pass.
 
 The [resilience record](./backlog/NATIVE-RESILIENCE.md) tracks the local SCRUM-95
-checkpoint; the following new device checks remain unconfirmed:
+checkpoint; the following checklist separates reported passes from open checks:
 
+- [x] SDK 58 project opens in iOS Expo Go (maintainer-reported, 2026-10-27; local `a3e755a` working tree plus the uncommitted SDK upgrade; exact device/iOS not recorded)
+- [x] Private-prayer disconnect/submit/reconnect/retry smoke test passed (maintainer-reported, 2026-10-27). See the [scoped evidence](./backlog/NATIVE-RESILIENCE.md#device-acceptance); committed-write/lost-confirmation fault injection remains open.
+- [x] Signing out of Jonah and signing in as Miriam on the same iPhone shows Miriam's profile and only Miriam's Private prayers (maintainer-reported, 2026-10-29; local SDK 58 candidate). See the [scoped evidence](./backlog/NATIVE-RESILIENCE.md#device-acceptance).
 - [ ] Offline/slow feed, map/location and prayer-detail loading reach a retryable state; failed reads are not displayed as genuine empty results
 - [ ] Failed feed refresh/page loading preserves appropriate rows/cursor with explicit retry; superseded responses cannot replace newer filters/routes
 - [ ] Prayer submission retains its draft without false success; an uncertain outcome locks the intent and Check and retry submission confirms only one matching prayer
 - [ ] Failed verification of an uncertain submission retains its original ID/intent, including after an authentication/network failure
-- [ ] Logout/account change removes previous profile, navigation, drafts and activity state; delayed old-account responses/token refreshes cannot restore it
+- [ ] Account change clears navigation, drafts and activity state; delayed old-account responses/token refreshes cannot restore previous-account state
 
 - [ ] Attach evidence for Beta NFR-01/02/05/06/08 before external TestFlight distribution
 - [ ] Attach evidence for Launch NFR-03/04/07 and revalidate Beta gates on the public release candidate

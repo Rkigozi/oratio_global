@@ -1,4 +1,4 @@
-import { uuid } from 'expo-modules-core';
+import { uuid } from 'expo';
 
 export function createSubmissionId(): string {
   return uuid.v4();

@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import type { ReactNativeOptions } from '@sentry/react-native';
 
 const mockInit = jest.fn<(options: ReactNativeOptions) => void>();
-const mockCapture = jest.fn<() => string>().mockReturnValue('c'.repeat(32));
+const mockCapture = jest
+  .fn<typeof import('@sentry/react-native').captureException>()
+  .mockReturnValue('c'.repeat(32));
 const mockIntegration = jest.fn().mockReturnValue({ name: 'ReactNativeErrorHandlers' });
 const mockLoadSdk = jest.fn();
 let sdkIntervals: jest.SpiedFunction<typeof setInterval> | undefined;
@@ -171,7 +173,7 @@ describe('native-app monitoring lifecycle', () => {
     expect(payload).not.toMatch(/PRIVATE|private@example|private-token|private\.txt/);
     expect(payload).toContain('Application error (details withheld)');
     expect(payload).toContain('"infer_ip":"never"');
-    expect(payload).toContain('7.11.0');
+    expect(payload).toContain(require('@sentry/react-native/package.json').version);
     await client.close();
   });
 });

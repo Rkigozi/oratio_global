@@ -77,7 +77,7 @@ jobs:
         working-directory: apps/mobile
         run: npm test
 
-      - name: Verify installed backport, controls and isolated comparison
+      - name: Verify dependency source, RSA controls and audit policy
         run: npm run test:security-backports
 
       - name: Verify iOS release bundling (not a distributable build)

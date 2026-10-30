@@ -8,13 +8,14 @@ import {
   sign,
   verify,
 } from 'node:crypto';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { after, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { FORGE_BASE_HASH, FORGE_PATCHED_HASH, verifyForgeBackport } from './forge-backport.mjs';
+import { FORGE_BASE_HASH, FORGE_UPSTREAM_HASH, verifyForgeBackport } from './forge-backport.mjs';
+import { historicalForgeRsa } from './forge-control-fixture.mjs';
 
 // Comparison patches only touch disposable copies; installed source is verified too.
 const require = createRequire(import.meta.url);
@@ -30,17 +31,17 @@ const sourceFiles = [
 ];
 const originalHashes = sourceFiles.map(digest);
 
-assert.equal(require('node-forge/package.json').version, '1.4.0');
-assert.equal(require('@expo/code-signing-certificates/package.json').version, '0.0.6');
+assert.equal(require('node-forge/package.json').version, '1.4.2');
+assert.equal(require('@expo/code-signing-certificates/package.json').version, '0.0.7');
 assert.equal(
   originalHashes[1],
-  FORGE_PATCHED_HASH,
+  FORGE_UPSTREAM_HASH,
   'Forge source changed: review the candidate patches before updating this pin'
 );
 verifyForgeBackport();
 assert.equal(
   originalHashes[2],
-  '3670cfbd69934b475257649886517d0314890ca4139708d2c812efaab04bc6d1',
+  '677bb9dab63300b52ead2263e54f1ffbbd292faaa1d7f166d0535a49eec54a74',
   'Expo helper source changed: review compatibility before updating this pin'
 );
 
@@ -54,7 +55,7 @@ after(() => {
 });
 
 const variants = [
-  { name: 'Published 1.4.0 control', patch: null },
+  { name: '1.4.0 RSA control with current support files', patch: null },
   {
     name: 'PR #1152 count-only',
     patch: 'forge-1152-rsa.patch',
@@ -65,7 +66,7 @@ const variants = [
     patch: 'forge-1159-rsa.patch',
     hash: 'be8e74c1d011bab844d9e2705f7a5f6428f444b28fa174cdad1572a45ef8f618',
   },
-  { name: 'Installed verified Node backport', installed: true },
+  { name: 'Installed published 1.4.2', installed: true },
 ].map((variant) => {
   if (variant.installed) {
     return {
@@ -86,10 +87,10 @@ const variants = [
     cpSync(join(expoRoot, file), join(fixtureExpo, file), { recursive: true });
   }
   execFileSync('git', ['init', '--quiet', fixtureForge]);
-  const canonical = join(here, 'forge-1159-rsa.patch');
-  execFileSync('git', ['-c', 'core.autocrlf=false', 'apply', '--reverse', canonical], {
-    cwd: fixtureForge,
-  });
+  writeFileSync(
+    join(fixtureForge, 'lib/rsa.js'),
+    historicalForgeRsa(readFileSync(join(forgeRoot, 'lib/rsa.js')))
+  );
   assert.equal(digest(join(fixtureForge, 'lib/rsa.js')), FORGE_BASE_HASH);
   if (variant.patch) {
     const path = join(here, variant.patch);
@@ -271,6 +272,41 @@ for (const [index, variant] of variants.entries()) {
           Buffer.from(signature, 'base64')
         ),
         false
+      );
+    });
+    test(`${variant.name}: Expo CSR verification and missing-key guard, e=${key.exponent}`, () => {
+      const keyPair = expo.convertKeyPairPEMToKeyPair({
+        privateKeyPEM: key.privateKey,
+        publicKeyPEM: key.publicKey,
+      });
+      const now = Date.now();
+      const issuer = expo.generateSelfSignedCodeSigningCertificate({
+        keyPair,
+        validityNotBefore: new Date(now - 60_000),
+        validityNotAfter: new Date(now + 60_000),
+        commonName: 'Oratio isolated CSR fixture',
+      });
+      const csr = expo.generateCSR(keyPair, 'Oratio isolated CSR fixture');
+      const appId = '72000000-0000-4000-8000-000000000001';
+      const scopeKey = '@oratio/synthetic-fixture';
+      const child = expo.generateDevelopmentCertificateFromCSR(
+        keyPair.privateKey,
+        issuer,
+        csr,
+        appId,
+        scopeKey
+      );
+      assert.equal(issuer.verify(child), true);
+      assert.throws(
+        () =>
+          expo.generateDevelopmentCertificateFromCSR(
+            keyPair.privateKey,
+            issuer,
+            { verify: () => true, publicKey: null },
+            appId,
+            scopeKey
+          ),
+        /CSR must have a public key/
       );
     });
   }

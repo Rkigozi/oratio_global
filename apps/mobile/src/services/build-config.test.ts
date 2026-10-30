@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import { describe, expect, it } from '@jest/globals';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -7,6 +9,11 @@ const appRoot = resolve(__dirname, '../..');
 const config = JSON.parse(readFileSync(resolve(appRoot, 'eas.json'), 'utf8'));
 const app = JSON.parse(readFileSync(resolve(appRoot, 'app.json'), 'utf8')).expo;
 const pkg = JSON.parse(readFileSync(resolve(appRoot, 'package.json'), 'utf8'));
+const rootPkg = JSON.parse(readFileSync(resolve(appRoot, '../../package.json'), 'utf8'));
+const webPkg = JSON.parse(readFileSync(resolve(appRoot, '../web/package.json'), 'utf8'));
+const nativeVersions = JSON.parse(
+  readFileSync(require.resolve('expo/bundledNativeModules.json'), 'utf8')
+);
 const validEnv = {
   EXPO_PUBLIC_SUPABASE_URL: 'https://ci-preflight.supabase.co',
   EXPO_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_ci_build_check_only',
@@ -22,6 +29,43 @@ const jwt = (role: string) =>
     .join('.');
 
 describe('iOS build configuration', () => {
+  it('aligns SDK 58 native modules and the shared React/test runtime', () => {
+    expect(pkg.dependencies.expo).toMatch(/^~58\./);
+    expect(rootPkg.devDependencies.expo).toBe(pkg.dependencies.expo);
+    for (const name of [
+      '@sentry/react-native',
+      'expo-application',
+      'expo-clipboard',
+      'expo-constants',
+      'expo-font',
+      'expo-image-picker',
+      'expo-location',
+      'expo-status-bar',
+      'react',
+      'react-native',
+      'react-native-maps',
+      'react-native-safe-area-context',
+      'react-native-screens',
+      'react-native-svg',
+    ]) {
+      expect(pkg.dependencies[name]).toBe(nativeVersions[name]);
+    }
+    expect(pkg.devDependencies['jest-expo']).toBe(nativeVersions['jest-expo']);
+    expect(pkg.dependencies['expo-modules-core']).toBeUndefined();
+    for (const name of ['react', 'react-dom']) {
+      expect(rootPkg.devDependencies[name]).toBe(nativeVersions[name]);
+      expect(rootPkg.overrides[name]).toBe(nativeVersions[name]);
+      expect(webPkg.dependencies[name]).toBe(nativeVersions[name]);
+      expect(webPkg.peerDependencies[name]).toBe(nativeVersions[name]);
+    }
+    expect(rootPkg.devDependencies['react-native']).toBe(nativeVersions['react-native']);
+    expect(rootPkg.overrides['react-native']).toBe(nativeVersions['react-native']);
+    expect(rootPkg.devDependencies['react-test-renderer']).toBe(nativeVersions.react);
+    expect(rootPkg.overrides['@testing-library/react-native']['react-test-renderer']).toBe(
+      nativeVersions.react
+    );
+  });
+
   it('uses a committed store release with remote build-number increments', () => {
     expect(config.cli).toMatchObject({ requireCommit: true, appVersionSource: 'remote' });
     expect(config.build.production).toMatchObject({

@@ -1,39 +1,22 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
 import {
   FORGE_BASE_HASH,
   FORGE_PATCHED_HASH,
+  FORGE_UPSTREAM_HASH,
   installForgeBackport,
   sha256,
   verifyForgeBackport,
 } from './forge-backport.mjs';
+import { historicalForgeRsa } from './forge-control-fixture.mjs';
 
 const require = createRequire(import.meta.url);
 const current = readFileSync(require.resolve('node-forge/lib/rsa.js'));
-const patch = fileURLToPath(new URL('./forge-1159-rsa.patch', import.meta.url));
-function baseline() {
-  if (sha256(current) === FORGE_BASE_HASH) return current;
-  assert.equal(sha256(current), FORGE_PATCHED_HASH);
-  const dir = mkdtempSync(join(tmpdir(), 'oratio-forge-baseline-'));
-  try {
-    mkdirSync(join(dir, 'lib'));
-    writeFileSync(join(dir, 'lib/rsa.js'), current);
-    execFileSync('git', ['init', '--quiet', dir]);
-    execFileSync('git', ['apply', '--reverse', patch], { cwd: dir });
-    const bytes = readFileSync(join(dir, 'lib/rsa.js'));
-    assert.equal(sha256(bytes), FORGE_BASE_HASH);
-    return bytes;
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
-const base = baseline();
+const base = historicalForgeRsa(current);
 
 function fixture(t, copies = [{ path: 'node_modules/node-forge', version: '1.4.0', bytes: base }]) {
   const root = mkdtempSync(join(tmpdir(), 'oratio-forge-fixture-'));
@@ -98,6 +81,22 @@ test('unknown source is preserved and preflight prevents partial patching', (t) 
 test('an upstream version change requires review instead of force-patching', (t) => {
   const root = fixture(t, [{ path: 'node_modules/node-forge', version: '1.4.1', bytes: base }]);
   assert.throws(() => installForgeBackport(root), /Review the backport before upgrading/);
+});
+
+test('reviewed upstream 1.4.2 is verified without changing published source', (t) => {
+  assert.equal(sha256(current), FORGE_UPSTREAM_HASH);
+  const root = fixture(t, [{ path: 'node_modules/node-forge', version: '1.4.2', bytes: current }]);
+  assert.deepEqual(installForgeBackport(root), { installed: 0, verified: 1 });
+  assert.deepEqual(verifyForgeBackport(root), ['node_modules/node-forge']);
+  assert.deepEqual(readFileSync(join(root, 'node_modules/node-forge/lib/rsa.js')), current);
+});
+
+test('changed upstream source is preserved and cannot pass verification', (t) => {
+  const changed = Buffer.concat([current, Buffer.from('\n// local change\n')]);
+  const root = fixture(t, [{ path: 'node_modules/node-forge', version: '1.4.2', bytes: changed }]);
+  assert.throws(() => installForgeBackport(root), /Unexpected Forge RSA source/);
+  assert.throws(() => verifyForgeBackport(root), /Unexpected Forge RSA source/);
+  assert.deepEqual(readFileSync(join(root, 'node_modules/node-forge/lib/rsa.js')), changed);
 });
 
 test('a pre-existing staging file is never removed or overwritten', (t) => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Alert, Modal } from 'react-native';
+import type { PrayerRequest } from '@oratio/shared/prayer-data';
 import { PrayerActionsSheet } from '../components/prayer-owner-actions';
 import { PrayerDetailScreen } from './prayer-detail';
 
@@ -97,7 +98,7 @@ const prayer = {
   createdAt: new Date().toISOString(),
   commentsEnabled: true,
   audience: 'public',
-};
+} satisfies PrayerRequest;
 
 const goBack = jest.fn();
 const navigate = jest.fn();

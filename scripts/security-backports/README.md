@@ -1,9 +1,37 @@
 # Verified Node Backport And Audit Policy
 
+## Current Dependency Checkpoint (2026-10-29)
+
+The lockfile now installs published `node-forge@1.4.2`. Its reviewed Node RSA
+source includes canonical DigestInfo verification and has SHA-256
+`6632e195295ce76f6bb9131ee770dcd6cc1ee4ffac7906302208b00faf95a87f`.
+The root hook verifies this source without rewriting it. It retains support for
+the previously approved, exact 1.4.0 backport; unknown versions or source changes
+still fail without overwriting local files. The npm package's SHA-512 integrity
+is recorded in the root lockfile.
+
+The offline harness tests installed 1.4.2 directly with Expo's certificate helper
+0.0.7 (`build/main.js` SHA-256
+`677bb9dab63300b52ead2263e54f1ffbbd292faaa1d7f166d0535a49eec54a74`).
+It reconstructs historical **RSA-only** controls using the hash-pinned
+`forge-140-to-142-rsa.patch` in temporary directories. Supporting library files
+remain from 1.4.2, so these controls are not full 1.4.0 distribution tests.
+The reconstruction diff has SHA-256
+`ca88156f6407c4c8ab9eb514cc4cc42f09711f864738b5d6dfeda257a5db9dd5`;
+the original baseline and proposal hashes below remain unchanged.
+
+The temporary audit approval below is historical and remains unchanged. It does
+not cover the current Zod advisory in Expo CLI. See the dated
+[security review](../../docs/backlog/SECURITY-REVIEW.md#dependency-remediation-2026-10-29)
+for current findings and verification. No new risk acceptance is implied by
+installing an upstream patch.
+
+## Development Backport Approval (2026-10-14)
+
 The release owner explicitly approved the bounded development-review approach
-on 2026-10-14. Forge's canonical RSA patch is now applied by the root npm
-`postinstall` hook, with a hash/version-checked, idempotent installer. The mobile
-EAS post-install hook verifies it before the existing build-environment check.
+on 2026-10-14. That checkpoint applied Forge's canonical RSA patch through the
+root npm `postinstall` hook, with a hash/version-checked, idempotent installer.
+The mobile EAS post-install hook verifies the reviewed source before the existing build-environment check.
 No cloud/native build or public release is implied by these hooks.
 
 ```bash
@@ -23,7 +51,7 @@ fails closed. The exception does not waive moderate findings or authorize
 external beta/public distribution. See `mobile-audit-exceptions.json` and
 [the approval record](../../docs/backlog/SECURITY-REVIEW.md).
 
-The Node RSA source after installation must have SHA-256
+The approved 1.4.0 Node RSA source after backport installation has SHA-256
 `c7b72e7ef41f4fc0e5228dce3e37851e9ca064c789365d5e392c25d1c5f6e710`.
 The installer checks every present lockfile-listed copy, preserves unknown/local
 source changes, and verifies repeat installs. Forge's version metadata and
@@ -41,7 +69,7 @@ npm run test:security-backports
 This comparison harness is separate from the installer and policy gate.
 Passing means the expected baseline and candidate behavior was reproduced,
 including explicitly labelled `ACCEPTS` results for the unsafe candidates.
-The canonical candidate and the actually installed backport must both reject
+The canonical candidate and the actually installed upstream version must both reject
 every malformed fixture. Installer/policy tests additionally exercise tampering,
 expiry, release mode, dependency changes and failure handling.
 
@@ -49,7 +77,7 @@ The harness copies the installed Forge library and Expo certificate helper to
 disposable directories, applies each proposal there with `git apply`, and loads
 each separate copy. Installed dependency files and the lockfile are hash-checked
 before and after the comparison. Unpatched/count-only controls are reconstructed
-only in disposable copies; the installed backport is also tested directly.
+only in disposable copies; the installed upstream version is also tested directly.
 Temporary copies are removed; no network, credentials,
 environment files, real certificates, app builds or telemetry are used.
 
@@ -72,9 +100,9 @@ these immutable commits, with standard file headers added:
   commit `db05494352dd3c9a5a07c5270333dcc78866cad2`: canonical-encoding proposal.
   Patch SHA-256: `be8e74c1d011bab844d9e2705f7a5f6428f444b28fa174cdad1572a45ef8f618`.
 
-Forge is `1.4.0`, original published RSA source SHA-256:
+The original 2026-10-14 assessment used Forge `1.4.0`, with published RSA source SHA-256:
 `fd4740238145ec26470eb3f06a627c72039538ce1307dbdce40521f94dfd0a50`.
-Expo helper is `0.0.6`, main source SHA-256:
+That assessment used Expo helper `0.0.6`, with main source SHA-256:
 `3670cfbd69934b475257649886517d0314890ca4139708d2c812efaab04bc6d1`.
 Unexpected version/source changes fail the assessment rather than silently
 reapplying an outdated patch. Review the evidence before updating those pins.
@@ -132,10 +160,10 @@ added to Oratio's lockfile. Keep the candidate's adoption decision separate.
 
 ## Adoption Boundary
 
-The count-only candidate is rejected: NULL-with-content and non-minimal length
-fixtures still verify. Only the canonical Node backport is installed. Full
-upstream Node evidence and the installed comparison support it; actual EAS
-archive/install, browser/native-binary and signed-artifact acceptance remain
-separate. The `braces` finding is risk-accepted for development review during the
-recorded window, not patched. Public-release review stays strict. See
+The count-only candidate remains rejected: NULL-with-content and non-minimal
+length fixtures still verify. The current installation uses published 1.4.2;
+the canonical 1.4.0 backport remains a historical control and supported fallback.
+Actual EAS archive/install, browser/native-binary and signed-artifact acceptance
+remain separate. The historical `braces` approval covers only its recorded
+versions and window; it cannot cover the new Zod finding. Public-release review stays strict. See
 [the security review](../../docs/backlog/SECURITY-REVIEW.md).

@@ -181,7 +181,9 @@ export function PrayerEditSheet({
   return (
     <Modal
       animationType="slide"
-      onRequestClose={() => !saving && onClose()}
+      onRequestClose={() => {
+        if (!saving) onClose();
+      }}
       transparent
       visible={visible}
     >

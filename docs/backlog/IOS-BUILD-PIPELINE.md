@@ -1,6 +1,6 @@
 # iOS Build Pipeline
 
-Last reviewed: 2026-10-21. Tracking: `SCRUM-72` (distribution), `SCRUM-75` (Apple setup).
+Last reviewed: 2026-10-30. Tracking: `SCRUM-72` (distribution), `SCRUM-75` (Apple setup).
 
 ## Distribution Status
 
@@ -11,6 +11,59 @@ require a generated Xcode project or cloud build. See
 [release readiness](../V1_RELEASE_READINESS.md) for distribution entry criteria.
 
 ## Prepared Configuration
+
+### SDK 58 Development Upgrade (2026-10-26)
+
+The local working tree based on `a3e755a` upgrades Expo 57 to 58.0.19 to match
+the installed iOS Expo Go client. The supported matrix comes from the packaged
+`expo/bundledNativeModules.json`: React 19.3.0, React Native 0.88.0,
+Jest 30/jest-expo 58 and Sentry React Native 8.28.0, with matching native modules.
+Root overrides, test renderer, React types and the supporting web workspace share
+the same React version. No website feature or deployment is included.
+
+SDK 58 requires Node 22.13+, 24.3+ or a later supported release line; use
+`.nvmrc` and the root engine constraint. The composer uses Expo's public UUID
+export instead of a direct `expo-modules-core` dependency. Native strict types
+remain enabled; modal callbacks, absent FlatList components and test fixtures
+were adapted without a legacy-type opt-out or type-check suppression.
+
+Local verification passed: Expo dependency check; Expo Doctor 20/20; both app
+type checks; 369 mobile tests/33 suites; 649 web/shared tests/55 files with
+coverage; web lint/build; and the CI-style iOS JS/Hermes export (9.9 MB).
+All 166 Forge/backport/policy tests passed, including eight new CSR checks for
+the SDK's reviewed signing helper. Real Sentry SDK envelope tests retain the
+private-content/IP allowlist checks. These are local results, not hosted CI,
+provider delivery, physical-device acceptance or signed-build performance.
+
+The upgrade is not committed or pushed by this development step. No database
+changes, Xcode generation, EAS build/update, TestFlight or Netlify deployment
+are performed. Audit failures remain open in the
+[security follow-up](./SECURITY-REVIEW.md#sdk-58-audit-follow-up-2026-10-26);
+the existing exception is not expanded. Reload the current Expo Go candidate
+and record core-journey, permissions, theme, map and lifecycle smoke results
+before accepting the upgraded phone experience.
+
+Sources: [Expo upgrade guide](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/)
+and [SDK 58 release notes](https://expo.dev/changelog/sdk-58).
+
+Phone follow-up (2026-10-27, **maintainer-reported**): the SDK 58 project opens
+in iOS Expo Go. The Private-prayer offline/reconnect submission smoke also
+passed; [the resilience record](./NATIVE-RESILIENCE.md#device-acceptance)
+states its scope and missing device metadata. Wider upgrade/device acceptance,
+dependency audits and signed distribution remain open.
+
+Dependency follow-up (2026-10-29/30): the final local candidate uses Expo
+58.0.21/React Native 0.88.1, published Forge 1.4.2 and patched supporting web
+tooling. Expo Doctor passes 20/20. Clean install, both type checks,
+369 mobile tests, 649 web/shared tests, 168 security checks, web lint/build and
+the iOS JS/Hermes export pass. The web high/critical audit gate passes; the mobile
+gate remains failing on Expo CLI's Zod 3 dependency. The
+[security record](./SECURITY-REVIEW.md#dependency-remediation-2026-10-29)
+owns the exact findings, artifact evidence and proposed review-only treatment.
+The earlier phone checks remain scoped reports against the then-local candidate;
+they do not establish complete device or signed-build acceptance.
+
+### Project And Build Profiles
 
 - Linked project: [Oratio Global](https://expo.dev/accounts/oratioglobals-team/projects/oratio-global),
   `@oratioglobals-team/oratio-global`, ID `7a80432c-c964-448f-a42c-b42268268bf3`.

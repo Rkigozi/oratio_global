@@ -1,8 +1,113 @@
 # iOS Launch Security Review
 
-Last updated: 2026-10-23. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
+Last updated: 2026-10-30. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
 Status: **In Progress**, not security sign-off. Supports NFR-01 in
 [the NFR checklist](../NFR-CHECKLIST.md).
+
+## Dependency Remediation (2026-10-29)
+
+The local SDK 58 candidate now installs published `node-forge@1.4.2` through
+Expo's existing compatible `^1.4.0` requirement. The reviewed RSA implementation
+retains canonical DigestInfo verification; the root install hook verifies its
+exact source without applying the historical 1.4.0 patch to it. Unknown source
+or versions still fail. The offline comparison retains the unsafe RSA controls,
+the count-only and canonical proposals, and tests installed 1.4.2 directly with
+Expo helper 0.0.7. Fixture provenance and hashes are in the
+[security harness](../../scripts/security-backports/README.md).
+
+Supporting web tooling updates to Happy DOM 21.0.4, Vite 6.4.5, fast-uri 3.1.9
+and serialize-javascript 7.1.4. Vite stays on its existing major; a shared root
+development dependency and override pin its peer consumers to 6.4.5. The test
+environment remains jsdom. Sources: the
+[Happy DOM security release](https://github.com/capricorn86/happy-dom/releases/tag/v21.0.4),
+[Vite advisory](https://github.com/vitejs/vite/security/advisories/GHSA-8g5g-mxqh-grgj)
+and published [Forge RSA source](https://github.com/digitalbazaar/forge/blob/v1.4.2/lib/rsa.js).
+
+The web high/critical tooling gate passes with four low affected-package entries
+through deepmerge. The mobile gate still fails with three high entries:
+`zod@3.25.76`, `@expo/cli@58.1.17` and its `expo@58.0.21` parent. Five low
+deepmerge-related entries also remain reported. Forge and the changed signing
+helper no longer appear as high findings. These counts include propagated
+parents, not independent vulnerabilities.
+
+The final SDK 58.0.21 candidate uses React Native 0.88.1 and the patch versions
+required by its published native-module matrix. Expo CLI 58.1.17 still requires
+`zod@^3.25.76`; the registry
+has no newer Zod 3 release. The
+[upstream Zod 3 issue](https://github.com/colinhacks/zod/issues/6653)
+remains open. Installing Zod 4's `zod/v3` compatibility entry point does not fix
+the old collection parser. Do not force a major override, suppress the advisory
+or expand the existing development exception without explicit release-owner
+review. Strict beta/public-release acceptance remains open.
+
+Verification of the final 58.0.21 candidate completed on 2026-10-30:
+a clean npm 10.9.9 install verified
+one published Forge source and applied zero backports; all 168 security checks,
+369 mobile tests/33 suites and 649 web/shared tests/55 files with coverage
+passed. Expo Doctor passed 20/20. Both type checks, web lint/build and the
+iOS JS/Hermes export passed. One initial mobile run under concurrent build load
+timed out during the real Sentry SDK envelope test; the complete mobile suite
+passed on an isolated serial rerun, retaining the same 15-second test timeout
+and all privacy assertions. This is not an application-performance measurement.
+The export contains 4,545 source entries and no CLI-nested Zod 3, Forge or braces
+source. It does contain Expo's Metro require helper and the application's Zod 4
+implementation; this is scoped JavaScript evidence, not a native-binary audit.
+Bundle SHA-256: `b99987ca7cb41243e3a88035539f561d9d6262794518318553eafef7c2a08ac9`.
+
+### Remaining Zod Decision — Proposed, Not Approved
+
+The inspected CLI imports Zod in `DevToolsPlugin.schema.js` and
+`createMCPDevToolsExtensionSchema.js`. These define local development-plugin
+metadata and generated command schemas; neither uses a collection `.max()`.
+Their source SHA-256 values are, respectively,
+`22c5eaac593a317f3319b5941d43aeffd17fcf0ea9ad3720ba0cde6ddd298b94` and
+`3f1f99350323211cf2c63f9e9ee5a6d5d03f17246715a3d945e648f60501417d`.
+This narrows observed exposure; it does not establish that Zod 3 is fixed or
+safe for arbitrary plugin input. A bounded four-element synthetic collection
+with `.max(2)` still parsed all four elements and returned five issues.
+
+The proposed development-only treatment requires explicit release-owner approval:
+
+- Cover only `GHSA-mrhx-c7xc-m3w5` at the three exact paths/versions:
+  `node_modules/@expo/cli/node_modules/zod` 3.25.76,
+  `node_modules/@expo/cli` 58.1.17 and `node_modules/expo` 58.0.21.
+- Replace the obsolete Forge/braces development exception; preserve its historical
+  approval record. Do not extend the existing `2026-11-13T00:00:00Z` deadline.
+- Keep all raw findings visible and reject changed versions/paths, new high or
+  critical advisories, incomplete reports and expiry. Use trusted local plugins
+  and configuration; do not expose development tooling to untrusted networks.
+- Keep `audit:mobile:release` strict. This treatment cannot approve TestFlight,
+  public release, deployment, signing or a merge to `main`. Recheck upstream
+  remediation before expiry and before any distribution decision.
+
+No policy change is applied by this checkpoint. The mobile review gate remains
+failing until compatible remediation or an approved treatment is implemented
+and tested. SCRUM-47 and NFR-01 remain open.
+
+## SDK 58 Audit Follow-Up (2026-10-26)
+
+The local [SDK 58 upgrade](./IOS-BUILD-PIPELINE.md#sdk-58-development-upgrade-2026-10-26)
+does not establish release-security acceptance. The mobile audit still fails:
+five high affected-package entries, zero critical and zero moderate. Expo CLI
+58.1.15 still depends on Zod 3.25.76. The existing exception also correctly
+rejects the changed `@expo/code-signing-certificates@0.0.7` parent version.
+Neither the approved package/version list nor its expiry was changed.
+
+The signing-helper regression pin was reviewed separately from risk acceptance.
+Comparing 0.0.6 and 0.0.7 found generated export changes, a parameterless
+`csr.verify()` call and an explicit missing-public-key assertion. The exact
+0.0.7 `build/main.js` SHA-256 is
+`677bb9dab63300b52ead2263e54f1ffbbd292faaa1d7f166d0535a49eec54a74`.
+The tests pin that version/hash, retain the original Forge comparison controls,
+and add valid CSR/missing-key checks across both RSA exponents and four variants.
+All 166 tests passed; the Node Forge backport remains unchanged and verified.
+This verifies compatibility, not a waiver for the changed dependency parent.
+
+The current web-tooling audit also fails on a newly reported high Happy DOM
+finding, with moderate fast-uri and low serialize-javascript findings reported.
+These remain separate dependency remediation; the passing web regression suite
+is not an audit pass. The SDK upgrade does not silently change web DOM-test
+frameworks, lower thresholds or grant a new exception. No whole NFR is signed off.
 
 ## Dependency Review Follow-Up (2026-10-23)
 

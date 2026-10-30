@@ -77,13 +77,18 @@ describe('sharePrayer', () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action, activityType });
 
     expect(await sharePrayer(prayer)).toBe(expected);
-    expect(share).toHaveBeenCalledWith(buildPrayerShareContent(prayer));
+    const content = buildPrayerShareContent(prayer);
+    if (!content) throw new Error('Expected public prayer share content');
+    expect(share).toHaveBeenCalledWith(content);
     expect(Clipboard.setStringAsync).not.toHaveBeenCalled();
   });
 
   it('does not claim a message was sent when the Android chooser opens', async () => {
     jest.replaceProperty(Platform, 'OS', 'android');
-    jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
+    jest.spyOn(Share, 'share').mockResolvedValue({
+      action: Share.sharedAction,
+      activityType: undefined,
+    });
     expect(await sharePrayer(prayer)).toBe('opened');
   });
 

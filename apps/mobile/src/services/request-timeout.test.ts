@@ -6,6 +6,8 @@ import {
   withRequestTimeout,
 } from './request-timeout';
 
+type FetchTransport = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
 describe('bounded mobile requests', () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -43,7 +45,7 @@ describe('bounded mobile requests', () => {
   });
 
   it('aborts fetch and settles even if the platform ignores cancellation', async () => {
-    const transport = jest.fn<typeof fetch>().mockImplementation(() => new Promise(() => {}));
+    const transport = jest.fn<FetchTransport>().mockImplementation(() => new Promise(() => {}));
     const result = createTimeoutFetch(transport)('https://example.invalid');
     const check = expect(result).rejects.toBeInstanceOf(RequestTimeoutError);
     await jest.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
@@ -56,7 +58,7 @@ describe('bounded mobile requests', () => {
     const caller = new AbortController();
     const remove = jest.spyOn(caller.signal, 'removeEventListener');
     let finish!: (value: Response) => void;
-    const transport = jest.fn<typeof fetch>().mockImplementation(
+    const transport = jest.fn<FetchTransport>().mockImplementation(
       () =>
         new Promise((resolve) => {
           finish = resolve;

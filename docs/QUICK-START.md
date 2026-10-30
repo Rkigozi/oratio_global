@@ -1,6 +1,6 @@
 # Oratio Quick Start
 
-Use Node 22 from `.nvmrc`, then run commands from the repository root. The normal
+Use Node 22.13 or newer on the 22 line from `.nvmrc`, then run commands from the repository root. The normal
 development workflow is the iOS app in Expo Go; no Apple membership is needed
 for this workflow.
 
@@ -19,6 +19,11 @@ or signing credentials. Local environment files are not automatically EAS setup.
 Open the terminal's QR code in Expo Go using an account with access to
 `@oratioglobals-team/oratio-global`. The phone must be able to reach the development
 host. Use the `exp://` URL from the active Metro session; local addresses can change.
+
+The current development baseline is Expo SDK 58. Expo Go and the project must
+support the same SDK; restarting Metro cannot fix an SDK-version mismatch.
+See the [SDK 58 upgrade record](./backlog/IOS-BUILD-PIPELINE.md#sdk-58-development-upgrade-2026-10-26)
+for the dependency/test baseline and remaining acceptance.
 
 Stop the server with Ctrl+C in its terminal. To reset Metro's cache:
 
