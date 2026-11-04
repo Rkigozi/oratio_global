@@ -74,15 +74,22 @@ export function evaluateMobileAudit(
     if (!['info', 'low', 'moderate', 'high', 'critical'].includes(entry.severity))
       throw new Error('Unknown audit severity');
     const ranks = { info: 0, low: 1, moderate: 2, high: 3, critical: 4 };
-    if (!['high', 'critical'].includes(entry.severity)) {
-      if (roots(name).some((via) => ranks[via.severity] > ranks[entry.severity]))
-        throw new Error('Audit severity is below its advisory severity');
+    let severity = entry.severity;
+    if (!['high', 'critical'].includes(severity)) {
+      const highestAdvisoryRank = Math.max(...roots(name).map((via) => ranks[via.severity]));
+      if (highestAdvisoryRank > ranks[severity]) {
+        if (highestAdvisoryRank !== ranks.high)
+          throw new Error('Audit severity is below its advisory severity');
+        // npm can assign a lower severity to a propagated parent. Assess it as
+        // high, requiring every existing package/path/advisory approval below.
+        severity = 'high';
+      }
     }
-    if (!['high', 'critical'].includes(entry.severity)) continue;
+    if (!['high', 'critical'].includes(severity)) continue;
     let reason = active
       ? ''
       : 'Release mode, expired/inactive approval, or missing verified dependency source';
-    if (entry.severity === 'critical') reason = 'Critical findings never qualify for the exception';
+    if (severity === 'critical') reason = 'Critical findings never qualify for the exception';
     const approvedNodes = Object.hasOwn(policy.packages, name) ? policy.packages[name] : null;
     if (
       !approvedNodes ||
@@ -112,7 +119,12 @@ export function evaluateMobileAudit(
     } catch {
       reason = 'Incomplete or cyclic audit dependency path';
     }
-    (reason ? blocked : accepted).push({ name, severity: entry.severity, reason });
+    (reason ? blocked : accepted).push({
+      name,
+      severity,
+      ...(severity !== entry.severity ? { reportedSeverity: entry.severity } : {}),
+      reason,
+    });
   }
   const counts = report.metadata.vulnerabilities;
   const actual = Object.values(report.vulnerabilities);

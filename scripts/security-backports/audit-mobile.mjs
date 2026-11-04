@@ -46,6 +46,10 @@ try {
     console.log(`${name}: ${finding.severity}`);
   }
   for (const finding of [...verdict.accepted, ...verdict.blocked]) {
+    if (finding.reportedSeverity)
+      console.log(
+        `${finding.name}: assessed as ${finding.severity} from its advisory chain (npm reports ${finding.reportedSeverity}).`
+      );
     console.log(
       `${finding.name}: ${finding.reason ? `BLOCKED - ${finding.reason}` : 'KNOWN TOOLING FINDING - temporarily accepted for development review'}`
     );

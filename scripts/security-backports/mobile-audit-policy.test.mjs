@@ -52,6 +52,52 @@ test('only the reviewed Zod parents and advisory qualify, including dependency c
   assert.equal(verdict.counts.high, 3);
 });
 
+test('a lower-severity approved parent receives the full high-advisory assessment', () => {
+  const result = report();
+  result.vulnerabilities.expo.severity = 'moderate';
+  update(result);
+  const original = structuredClone(result);
+  const verdict = evaluate(result);
+  assert.equal(verdict.passed, true);
+  assert.deepEqual(
+    verdict.accepted.find((finding) => finding.name === 'expo'),
+    {
+      name: 'expo',
+      severity: 'high',
+      reportedSeverity: 'moderate',
+      reason: '',
+    }
+  );
+  assert.equal(verdict.counts.high, 2);
+  assert.equal(verdict.counts.moderate, 1);
+  assert.deepEqual(result, original);
+  assert.equal(evaluate(result, { release: true }).passed, false);
+  assert.equal(evaluate(result, { now: new Date(policy.expiresAt) }).passed, false);
+  assert.equal(evaluate(result, { forgeVerified: false }).passed, false);
+  assert.equal(
+    evaluate(result, { versions: { ...versions, 'node_modules/expo': '58.0.22' } }).passed,
+    false
+  );
+  result.vulnerabilities.expo.nodes = ['node_modules/unreviewed/expo'];
+  assert.equal(evaluate(result).passed, false);
+});
+
+test('lower-severity parents cannot hide an unreviewed package or high advisory', () => {
+  const result = report();
+  result.vulnerabilities.unreviewed = entry('unreviewed', ['zod'], 'moderate');
+  let verdict = evaluate(update(result));
+  assert.equal(verdict.passed, false);
+  assert.equal(verdict.blocked.find((finding) => finding.name === 'unreviewed')?.severity, 'high');
+  delete result.vulnerabilities.unreviewed;
+  result.vulnerabilities.expo.severity = 'moderate';
+  result.vulnerabilities.zod.via.push(
+    advisory('zod', 'https://github.com/advisories/GHSA-new1-new2-new3')
+  );
+  verdict = evaluate(update(result));
+  assert.equal(verdict.passed, false);
+  assert.equal(verdict.blocked.find((finding) => finding.name === 'expo')?.severity, 'high');
+});
+
 test('new high advisory inside an already reviewed package fails', () => {
   const result = report();
   result.vulnerabilities.zod.via.push(

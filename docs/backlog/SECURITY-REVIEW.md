@@ -1,8 +1,44 @@
 # iOS Launch Security Review
 
-Last updated: 2026-10-30. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
+Last updated: 2026-11-04. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
 Status: **In Progress**, not security sign-off. Supports NFR-01 in
 [the NFR checklist](../NFR-CHECKLIST.md).
+
+## Audit Report Handling (2026-11-04)
+
+Hosted [CI for 9147eae](https://github.com/Rkigozi/oratio_global/actions/runs/41930941726)
+passed mobile tests, type checking, the security harness, iOS JS/Hermes export
+and database-security. The mobile audit then rejected npm's report because the
+`expo` parent was labelled moderate while its dependency chain still contained
+the approved high-severity Zod advisory. This was a report-handling failure,
+not a new high-severity approval.
+
+The evaluator now assesses such a parent as high and applies every existing
+package, path, version, advisory, source and date check. It preserves npm's raw
+findings/counts and prints the stronger assessment explicitly. New high
+advisories or unreviewed parents remain blocked; a critical advisory cannot be
+hidden by a lower parent severity. The policy JSON, exact three approved paths
+and `2026-11-13T00:00:00Z` deadline are unchanged. Release mode still rejects
+the reviewed high finding.
+
+The live development audit on 2026-11-04 passed with **two high, nine moderate
+and one low affected-package entries** still reported. The strict release audit
+exited 1 as required. Counts differ from the dated October checkpoint below;
+they include propagated parents, not independent advisories. Moderate findings
+now include
+[glob cancellation handling](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4)
+and [minimatch resource amplification](https://github.com/advisories/GHSA-g3hv-75wg-m249).
+They require release review/remediation and are not covered by the Zod approval.
+No dependency or installed-source version was changed in this follow-up.
+
+Local verification passed **174 security checks**. New cases cover lower-labelled
+parents without changing raw reports, strict release/expiry/source/version/path
+rejection and unreviewed package/advisory rejection. The supporting moderator
+refresh regression passed in isolation after the hosted failure; its follow-up
+waits for initial React effects before dispatching focus and verifies failed-read
+and reconnect request counts. The full web/shared coverage run passed **717
+tests / 56 files**. Hosted verification of these follow-up changes is separate.
+SCRUM-47 and NFR-01 remain In Progress; no distribution approval is implied.
 
 ## Dependency Remediation (2026-10-29)
 

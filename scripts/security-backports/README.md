@@ -44,9 +44,13 @@ development tooling off untrusted networks.
 
 The superseded Forge/braces JSON is preserved in
 [approval history](./approval-history/2026-10-14.json) and cannot activate under
-the current evaluator. All 172 security checks pass. The actual development
-audit passes with three high and five low affected-package entries still
-reported; the release audit rejects those same high findings.
+the current evaluator. At the 2026-10-30 checkpoint, 172 security checks passed;
+the development audit reported three high and five low affected-package entries
+and the release audit rejected those high findings. The
+[2026-11-04 follow-up](../../docs/backlog/SECURITY-REVIEW.md#audit-report-handling-2026-11-04)
+records 174 checks and the changed live report. Lower-labelled parents with a
+high advisory chain receive the full high-severity assessment, preserving raw
+counts and every existing approval restriction. No approval or deadline changes.
 
 ```bash
 npm run install:security-backport
