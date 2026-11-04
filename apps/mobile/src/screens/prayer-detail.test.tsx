@@ -609,6 +609,35 @@ describe('PrayerDetailScreen', () => {
     expect(goBack).not.toHaveBeenCalled();
   });
 
+  it('keeps the save action named and exposes its busy state until an edit finishes', async () => {
+    let finishSave!: (result: Awaited<ReturnType<typeof updatePrayerRequest>>) => void;
+    jest.mocked(updatePrayerRequest).mockReturnValueOnce(
+      new Promise<Awaited<ReturnType<typeof updatePrayerRequest>>>((resolve) => {
+        finishSave = resolve;
+      })
+    );
+    jest.mocked(getPrayerById).mockResolvedValue({ ...prayer, authorId: 'user-1' } as never);
+    render(<PrayerDetailScreen navigation={navigation} route={route} />);
+
+    fireEvent.press(await screen.findByLabelText('More prayer options'));
+    fireEvent.press(screen.getByText('Edit prayer'));
+    dismissActionsSheet();
+    fireEvent.changeText(screen.getByLabelText('Prayer text'), 'Please pray for renewed hope');
+    fireEvent.press(screen.getByRole('button', { name: 'Save changes' }));
+
+    expect(
+      await screen.findByRole('button', { name: 'Save changes', busy: true, disabled: true })
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Prayer text').props.editable).toBe(false);
+
+    await act(async () => {
+      finishSave({ text: 'Please pray for renewed hope', editedAt: '2026-11-04T22:00:00Z' });
+    });
+    await waitFor(() => expect(screen.queryByLabelText('Prayer text')).toBeNull());
+    expect(screen.getByText('Please pray for renewed hope')).toBeTruthy();
+    expect(updatePrayerRequest).toHaveBeenCalledTimes(1);
+  });
+
   it('lets the owner edit the prayer wording', async () => {
     jest.mocked(getPrayerById).mockResolvedValue({ ...prayer, authorId: 'user-1' } as never);
     render(<PrayerDetailScreen navigation={navigation} route={route} />);

@@ -992,7 +992,7 @@ const styles = StyleSheet.create({
   },
   prayButton: {
     marginTop: 16,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentDark,
     borderRadius: 999,
     paddingVertical: 15,
     alignItems: 'center',

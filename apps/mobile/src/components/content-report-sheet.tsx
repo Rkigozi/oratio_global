@@ -149,26 +149,26 @@ export function ContentReportSheet({
         />
         <SafeAreaView edges={['bottom']} style={styles.sheetSafeArea}>
           <View style={styles.sheet}>
-            <View style={styles.header}>
-              <View style={styles.titleRow}>
-                <FlagIcon color={colors.warning} size={18} strokeWidth={1.7} />
-                <View style={styles.headerCopy}>
-                  <Text style={styles.title}>Report {reportableType}</Text>
-                  <Text style={styles.subtitle}>Why are you reporting this?</Text>
-                </View>
-              </View>
-              <Pressable
-                accessibilityLabel={`Close report ${reportableType}`}
-                accessibilityRole="button"
-                disabled={submitting || writes.busy}
-                onPress={onClose}
-                style={styles.closeButton}
-              >
-                <XIcon color={colors.textMuted} size={19} strokeWidth={1.7} />
-              </Pressable>
-            </View>
-
             <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
+              <View style={styles.header}>
+                <View style={styles.titleRow}>
+                  <FlagIcon color={colors.warning} size={18} strokeWidth={1.7} />
+                  <View style={styles.headerCopy}>
+                    <Text style={styles.title}>Report {reportableType}</Text>
+                    <Text style={styles.subtitle}>Why are you reporting this?</Text>
+                  </View>
+                </View>
+                <Pressable
+                  accessibilityLabel={`Close report ${reportableType}`}
+                  accessibilityRole="button"
+                  disabled={submitting || writes.busy}
+                  onPress={onClose}
+                  style={styles.closeButton}
+                >
+                  <XIcon color={colors.textMuted} size={19} strokeWidth={1.7} />
+                </Pressable>
+              </View>
+
               {outcome ? <ReportNotice outcome={outcome} reportableType={reportableType} /> : null}
               {writes.uncertain ? (
                 <WriteRecovery

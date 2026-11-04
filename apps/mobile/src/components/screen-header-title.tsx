@@ -4,14 +4,10 @@ import { colors, fontFamilies } from '../theme';
 export function ScreenHeaderTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <View style={styles.copy}>
-      <Text adjustsFontSizeToFit minimumFontScale={0.82} numberOfLines={1} style={styles.title}>
+      <Text accessibilityRole="header" style={styles.title}>
         {title}
       </Text>
-      {subtitle ? (
-        <Text numberOfLines={1} style={styles.subtitle}>
-          {subtitle}
-        </Text>
-      ) : null}
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
   );
 }

@@ -14,7 +14,9 @@ export function BrandLockup({ align = 'left', size = 'header', subtitle }: Brand
   return (
     <View style={[styles.lockup, centered && styles.lockupCentered]}>
       <View style={styles.brandRow}>
-        <Text style={[styles.wordmark, hero && styles.wordmarkHero]}>ORATIO</Text>
+        <Text allowFontScaling={false} style={[styles.wordmark, hero && styles.wordmarkHero]}>
+          ORATIO
+        </Text>
         <View accessibilityLabel="Beta" style={[styles.badge, hero && styles.badgeHero]}>
           <Text style={styles.badgeText}>Beta</Text>
         </View>
