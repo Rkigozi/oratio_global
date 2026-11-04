@@ -91,6 +91,7 @@ charts may differ; verify actual issue status before making progress claims.
 | [Blocking](./USER-BLOCKING.md)                       | SCRUM-94 access/relationship enforcement and QA                                               |
 | [Monitoring](./NATIVE-MONITORING.md)                 | SCRUM-43 telemetry/privacy, controlled events and alert evidence                              |
 | [Network/session resilience](./NATIVE-RESILIENCE.md) | SCRUM-95 scoped implementation, fault tests and remaining signed-build/performance acceptance |
+| [Native accessibility](./NATIVE-ACCESSIBILITY.md)    | SCRUM-96 scoped layout, contrast, accessibility semantics and remaining device acceptance     |
 | [Security](./SECURITY-REVIEW.md)                     | SCRUM-47 policy review, migrations and exact advisory treatment                               |
 | [Notices](./SERVICE-NOTICES.md)                      | SCRUM-97 independent banner/admin service and rollout                                         |
 | [iOS distribution](./IOS-BUILD-PIPELINE.md)          | SCRUM-72/75 future signing/TestFlight setup and deployment controls                           |

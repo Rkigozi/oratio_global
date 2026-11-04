@@ -133,6 +133,19 @@ The launch cost budget and provider changes require explicit operational approva
 
 ## Existing Evidence To Reuse
 
+- [Native accessibility](./backlog/NATIVE-ACCESSIBILITY.md), 2026-11-04:
+  measured source-colour regressions and maximum-text preflight at app font scale
+  3.571. Public branding and Settings appearance reflow were inspected; Settings
+  was checked in light/dark and its original theme restored. Spoken VoiceOver,
+  final sheet/keyboard checks and signed-device acceptance remain open.
+- [Native recovery follow-up](./backlog/NATIVE-RESILIENCE.md#device-acceptance),
+  2026-11-04: controlled read-failure/retry smoke checks and local Settings/editor
+  improvements. Read errors remain retryable after preferences load; the editor
+  form scrolls within a bounded sheet, and its Save action remains named while
+  busy. Current-text dark-theme editor open/cancel was observed on iPhone;
+  maximum Dynamic Type, software keyboard, VoiceOver, measured contrast and the
+  full target-size matrix remain unverified. 393 native tests and mobile
+  type-check pass locally; this is partial development evidence for NFR-04.
 - [Functional QA](./QA-CHECKLIST.md): dated share/copy, private-account isolation,
   report details/limit/keyboard/theme and offline report-retry confirmations.
   Reuse those results for their tested build and scope, not as whole-NFR sign-off.
@@ -153,8 +166,11 @@ Post-Launch; SCRUM-40 owns aggregate sign-off. New SCRUM-95 and SCRUM-96 are und
 the native epic SCRUM-62. All seven have **Highest** priority and label `nfr`.
 SCRUM-47 is **In Progress** following the first tested security batch, and
 SCRUM-43 is **In Progress** for the local monitoring foundation (2026-10-08).
-SCRUM-95 is **In Progress** for the scoped resilience implementation; the other
-four remain **To Do**. Existing functional story statuses are unchanged.
+SCRUM-95 is **In Progress** for the scoped resilience implementation. At that
+checkpoint the other four stories remained **To Do**. On 2026-11-04, SCRUM-96
+moved to **In Progress** for the scoped accessibility review and Settings/editor
+improvements above; its signed-device acceptance remains open. Other functional
+story statuses were not changed by this follow-up.
 SCRUM-47 retains its existing
 hardening epic for continuity; its story-level release target now governs timing.
 
