@@ -79,6 +79,19 @@ phone text size: Larger Accessibility Sizes off and the fourth of seven slider
 positions. That restoration is maintainer-reported; the System theme was
 independently verified as described above.
 
+### VoiceOver Navigation Check (2026-11-04)
+
+The maintainer reported that VoiceOver announced the bottom-tab/control names
+clearly and completed **Me → Settings → Back** using selection and activation
+gestures. On another user's Public prayer, the maintainer then reported reaching
+and understanding the reporting reasons, additional-details input and Close
+control, and returning to the prayer without submitting a report.
+
+These are scoped Expo Go navigation/report-control checks on the same source
+checkpoint, not independently captured audio or whole-journey accessibility
+acceptance. The exact focus-return target, systematic modal confinement and error
+announcements were not separately established.
+
 ## Automated Verification
 
 Local final run on 2026-11-04: **401 native tests / 37 suites**, mobile type-check,
