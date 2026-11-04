@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -87,11 +88,14 @@ export function SettingsScreen({
 }: NativeStackScreenProps<RootStackParamList, 'Settings'>) {
   const { user, signOut } = useAuth();
   const { themeMode, setThemeMode } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const expandedText = fontScale > 1.5;
   const [prefs, setPrefs] = useState<ProfilePreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [readError, setReadError] = useState('');
   const [monitoringTestSent, setMonitoringTestSent] = useState(false);
   const loadRequest = useRef(0);
   const currentUser = useRef(user?.id);
@@ -114,12 +118,12 @@ export function SettingsScreen({
   const load = useCallback(async () => {
     const request = ++loadRequest.current;
     const active = () => request === loadRequest.current && currentUser.current === user?.id;
-    setError('');
+    setReadError('');
     try {
       const next = await withRequestTimeout(getProfilePreferences({ throwOnError: true }));
       if (active() && !writes.isLocked()) setPrefs(next);
     } catch {
-      if (active()) setError("We couldn't load settings.");
+      if (active()) setReadError("We couldn't load settings.");
     } finally {
       if (active()) setLoading(false);
     }
@@ -258,11 +262,24 @@ export function SettingsScreen({
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {error && !prefs ? (
-          <Pressable accessibilityRole="button" onPress={() => void load()}>
-            <Text style={styles.dim}>Retry settings</Text>
-          </Pressable>
+        {error ? (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {error}
+          </Text>
+        ) : null}
+        {readError ? (
+          <View>
+            <Text accessibilityRole="alert" style={styles.error}>
+              {readError}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void load()}
+              style={styles.retryButton}
+            >
+              <Text style={styles.retryText}>Retry settings</Text>
+            </Pressable>
+          </View>
         ) : null}
         {writes.uncertain ? (
           <WriteRecovery
@@ -276,7 +293,10 @@ export function SettingsScreen({
             icon={<PaletteIcon color={colors.textDim} size={15} />}
             label="Appearance"
           />
-          <View accessibilityRole="radiogroup" style={styles.appearanceControl}>
+          <View
+            accessibilityRole="radiogroup"
+            style={[styles.appearanceControl, expandedText && styles.appearanceControlExpanded]}
+          >
             {appearanceOptions.map(({ value, label, icon: Icon }) => {
               const selected = themeMode === value;
               return (
@@ -287,7 +307,11 @@ export function SettingsScreen({
                   accessibilityState={{ checked: selected }}
                   key={value}
                   onPress={() => void update({ theme: value })}
-                  style={[styles.appearanceOption, selected && styles.appearanceOptionSelected]}
+                  style={[
+                    styles.appearanceOption,
+                    expandedText && styles.appearanceOptionExpanded,
+                    selected && styles.appearanceOptionSelected,
+                  ]}
                 >
                   <Icon
                     color={selected ? colors.accent : colors.textDim}
@@ -610,6 +634,19 @@ const styles = StyleSheet.create({
     marginTop: 18,
     textAlign: 'center',
   },
+  retryButton: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  retryText: {
+    color: colors.accent,
+    fontFamily: fontFamilies.bodySemiBold,
+    fontSize: 14,
+    textAlign: 'center',
+  },
   section: {
     marginTop: 24,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -637,14 +674,23 @@ const styles = StyleSheet.create({
     borderColor: colors.surfaceBorder,
     backgroundColor: colors.surface,
   },
+  appearanceControlExpanded: {
+    flexDirection: 'column',
+    gap: 4,
+  },
   appearanceOption: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     borderRadius: 6,
+  },
+  appearanceOptionExpanded: {
+    flex: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   appearanceOptionSelected: {
     backgroundColor: colors.accentTint,
@@ -652,6 +698,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accentBorder,
   },
   appearanceOptionText: {
+    flexShrink: 1,
     color: colors.textMuted,
     fontFamily: fontFamilies.bodyMedium,
     fontSize: 12,
