@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ban, Copy, Flag, Pencil, Share2, Trash2, X } from 'lucide-react-native';
@@ -185,6 +186,9 @@ export function PrayerEditSheet({
   text: string;
   visible: boolean;
 }) {
+  const { fontScale } = useWindowDimensions();
+  const expandedText = fontScale > 1.5;
+
   return (
     <Modal
       animationType="slide"
@@ -235,12 +239,12 @@ export function PrayerEditSheet({
                 <Text style={styles.editCounter}>{text.length}/500</Text>
               </View>
               {recovery}
-              <View style={styles.editActions}>
+              <View style={[styles.editActions, expandedText && styles.editActionsExpanded]}>
                 <Pressable
                   accessibilityRole="button"
                   disabled={saving}
                   onPress={onClose}
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, expandedText && styles.expandedButton]}
                 >
                   <Text style={styles.secondaryButtonText}>Cancel</Text>
                 </Pressable>
@@ -250,7 +254,11 @@ export function PrayerEditSheet({
                   accessibilityState={{ busy: saving, disabled: saving || locked }}
                   disabled={saving || locked}
                   onPress={onSave}
-                  style={[styles.primaryButton, saving && styles.disabled]}
+                  style={[
+                    styles.primaryButton,
+                    expandedText && styles.expandedButton,
+                    saving && styles.disabled,
+                  ]}
                 >
                   {saving ? (
                     <ActivityIndicator color={colors.white} size="small" />
@@ -451,6 +459,14 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 8,
   },
+  editActionsExpanded: {
+    flexDirection: 'column',
+  },
+  expandedButton: {
+    flex: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   secondaryButton: {
     minHeight: 48,
     flex: 1,
@@ -461,6 +477,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.control,
   },
   secondaryButtonText: {
+    textAlign: 'center',
     color: colors.textSecondary,
     fontFamily: fontFamilies.bodyMedium,
     fontSize: 14,
@@ -474,6 +491,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.control,
   },
   primaryButtonText: {
+    textAlign: 'center',
     color: colors.white,
     fontFamily: fontFamilies.bodySemiBold,
     fontSize: 14,
