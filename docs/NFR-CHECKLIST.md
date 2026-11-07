@@ -1,6 +1,6 @@
 # Oratio iOS Launch NFR Checklist
 
-Last updated: 2026-10-30 (review evidence; acceptance targets unchanged)
+Last updated: 2026-11-05 (review evidence; acceptance targets unchanged)
 
 Non-functional requirements define how safely, reliably and accessibly Oratio
 must work, alongside the features in [functional QA](./QA-CHECKLIST.md).
@@ -26,7 +26,7 @@ signed-build measurements remain open until the distribution stage.
   target after a failed test.
 - **Partial** means scoped evidence exists, not that the whole requirement passed.
   **Open** means acceptance evidence has not been established. All eight gates
-  remain unsigned as of this update; no new device, load or restore tests were run.
+  remain unsigned; the dated development checks below provide partial evidence.
 - Record date/tester, Git SHA, app version/build and EAS build ID, device/iOS,
   backend environment/migration revision, conditions, expected/actual result,
   artifact link and defect key in the owning Jira ticket. Never attach passwords,
@@ -133,11 +133,14 @@ The launch cost budget and provider changes require explicit operational approva
 
 ## Existing Evidence To Reuse
 
-- [Native accessibility](./backlog/NATIVE-ACCESSIBILITY.md), 2026-11-04:
+- [Native accessibility](./backlog/NATIVE-ACCESSIBILITY.md), 2026-11-04–05:
   measured source-colour regressions and maximum-text preflight at app font scale
   3.571. Public branding and Settings appearance reflow were inspected; Settings
-  was checked in light/dark and its original theme restored. Spoken VoiceOver,
-  final sheet/keyboard checks and signed-device acceptance remain open.
+  was checked in light/dark and its original theme restored. Scoped VoiceOver
+  navigation/report controls were maintainer-reported as passed. Maximum-text
+  editor/report layouts were inspected with hardware input in both themes, and
+  editor action wrapping was fixed. Visible software-keyboard, broader VoiceOver,
+  validation/recovery, target-size and signed-device acceptance remain open.
 - [Native recovery follow-up](./backlog/NATIVE-RESILIENCE.md#device-acceptance),
   2026-11-04: controlled read-failure/retry smoke checks and local Settings/editor
   improvements. Read errors remain retryable after preferences load; the editor

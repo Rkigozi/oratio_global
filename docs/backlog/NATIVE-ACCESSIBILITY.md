@@ -69,8 +69,9 @@ Observed after the relevant fixes and Expo reloads:
 - System appearance was restored through the app; a separate read-only backend
   query confirmed the QA account's original System preference.
 
-The final prayer-sheet Close/scroll changes need a matching maximum-text
-reinspection. Normal-text dark editor open/cancel was observed earlier in the
+At this checkpoint, the final prayer-sheet Close/scroll changes needed a matching
+maximum-text reinspection; the November 5 review below records the follow-up.
+Normal-text dark editor open/cancel was observed earlier in the
 [read-recovery follow-up](./NATIVE-RESILIENCE.md#device-acceptance), not counted as
 maximum-text or software-keyboard acceptance. Spoken VoiceOver labels, actual
 focus order/return focus and error announcements require the separate manual
@@ -92,6 +93,43 @@ checkpoint, not independently captured audio or whole-journey accessibility
 acceptance. The exact focus-return target, systematic modal confinement and error
 announcements were not separately established.
 
+## Maximum-Text Sheet Review (2026-11-05)
+
+Environment: agent-operated physical iPhone through Mirroring (target labelled
+`iPhone 13`), Expo Go, iOS **26.6.1**, app font scale **3.571**. The local inspector
+verified iOS/font scale. Metro identified base `143168b`; the source follow-up
+tested through Fast Refresh is committed as **`875c1ac`**.
+
+The editor's side-by-side actions split Cancel and Save changes mid-word at the
+largest text size. The actions now stack above font scale 1.5, with full-width
+space, padding and centred labels. At maximum text size in both Light and Dark,
+Cancel fits on one line and Save changes wraps between its words. The input,
+header Close control and scrolled action controls were visible. Light-mode Cancel
+returned to the prayer without saving. No prayer edit was submitted.
+
+In both themes, the report header/Close and all reason choices remained readable.
+Scrolling reached Additional details, its character feedback and the complete
+Submit report control. Selecting a reason and entering synthetic `QA` text showed
+`2/1000`. Scrolling back to Close returned to the prayer in both themes; no report
+was submitted. The temporary feed search was cleared.
+
+**Software-keyboard acceptance remains open.** Mirroring accepted Mac keyboard
+input while the phone's on-screen keyboard stayed hidden. Its View menu exposes
+no keyboard-display control, and the remote key API rejected the Eject key used
+by [Apple's external-keyboard guidance](https://support.apple.com/en-gb/guide/iphone/iph5948b3f2e/27/ios/27).
+These observations verify the maximum-text layouts with hardware input, not
+occlusion/reflow with a visible software keyboard. Validation and uncertain-write
+messages were not exercised in this maximum-text pass.
+
+The recorded pre-test settings were System appearance, Larger Accessibility Sizes
+off and the fourth of seven normal text-size positions. System appearance was
+restored in the app and its completed save was observed. Larger Accessibility Sizes
+was switched off. Mirroring slider gestures did not restore the exact midpoint;
+the last observed position was the smallest normal size. Mirroring then
+disconnected because the physical phone was in use, and the device check was
+paused. Restore the original fourth-of-seven position and verify it at resume.
+The phone text-size cleanup is incomplete; no restoration is claimed.
+
 ## Automated Verification
 
 Local final run on 2026-11-04: **401 native tests / 37 suites**, mobile type-check,
@@ -101,10 +139,17 @@ and lock, Settings retry and large-text appearance selection. Screen-render
 tests do not measure native layout or spoken VoiceOver output. Settings/theme
 regressions were also rerun after review tightened their retry/contrast assertions.
 
+The 2026-11-05 follow-up passed **402 native tests / 38 suites**, mobile type-check,
+changed-file formatting and whitespace checks. Its new editor regression failed
+against the previous shared-width actions, then passed with the full-width
+large-text controls, text-change callback and separate Save/Cancel callbacks.
+The focused editor/detail/report run passed 47 tests before the complete suite.
+
 ## Remaining Acceptance
 
-- Reinspect the final sheets with maximum text, software keyboard and validation/
-  uncertain-write messages, in both themes; verify every action remains reachable.
+- Complete the visible software-keyboard and validation/uncertain-write message
+  checks at maximum text in both themes. The November 5 hardware-input layout
+  observations above do not close these cases.
 - Use VoiceOver to complete navigation, reading/composition, Circle, reporting/
   blocking and profile/settings; verify modal entry, focus confinement, return
   focus and error announcements. Reuse the
