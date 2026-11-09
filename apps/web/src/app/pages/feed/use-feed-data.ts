@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   getPrayerLocationKey,
+  isPrayerArchived,
   normalizePrayerLocation,
   type PrayerRequest,
 } from '../../services/prayer-data';
@@ -11,6 +12,7 @@ import {
   getPrayerCircleMemberIds,
   togglePray,
 } from '../../services/supabase-queries';
+import { usePrayerClock } from '../../hooks/use-prayer-clock';
 
 type NormalizedLocation = { city: string; country: string };
 
@@ -32,6 +34,7 @@ export function useFeedData({
   activeSearch,
 }: UseFeedDataArgs) {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const now = usePrayerClock(prayers);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -93,6 +96,13 @@ export function useFeedData({
 
       if (!belongsInCurrentView) return;
 
+      // Submission events may not carry server timestamps. Reload rather than
+      // inventing a local deadline or caching a public request indefinitely.
+      if (prayerAudience === 'public' && !prayer.expiresAt) {
+        void loadPrayers();
+        return;
+      }
+
       setPrayers((prev) => {
         if (prev.some((p) => p.id === prayer.id)) return prev;
         return [prayer, ...prev];
@@ -122,16 +132,19 @@ export function useFeedData({
     window.addEventListener('oratio-prayer-added', handleAdd);
     window.addEventListener('oratio-prayer-removed', handleRemove);
     window.addEventListener('oratio-prayer-updated', handleUpdate);
+    const renew = () => void loadPrayers();
+    window.addEventListener('oratio-prayer-renewed', renew);
 
     return () => {
       window.removeEventListener('oratio-prayer-added', handleAdd);
       window.removeEventListener('oratio-prayer-removed', handleRemove);
       window.removeEventListener('oratio-prayer-updated', handleUpdate);
+      window.removeEventListener('oratio-prayer-renewed', renew);
     };
-  }, [showPrayerCircle]);
+  }, [showPrayerCircle, loadPrayers]);
 
   const filteredPrayers = useMemo(() => {
-    let result = prayers;
+    let result = prayers.filter((prayer) => !isPrayerArchived(prayer, now));
 
     if (showPrayerCircle && prayerCircleMemberIds.length <= 1) {
       return [];
@@ -172,6 +185,7 @@ export function useFeedData({
     return result;
   }, [
     prayers,
+    now,
     locationCity,
     locationCountry,
     normalizedLocationFilter,

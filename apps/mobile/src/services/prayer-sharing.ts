@@ -1,6 +1,6 @@
 import { Platform, Share, type ShareContent } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import type { PrayerRequest } from '@oratio/shared/prayer-data';
+import { isPrayerArchived, type PrayerRequest } from '@oratio/shared/prayer-data';
 import { ORATIO_WEB_URL } from './external-links';
 
 function getShareAttribution(prayer: PrayerRequest): string | null {
@@ -10,7 +10,7 @@ function getShareAttribution(prayer: PrayerRequest): string | null {
 }
 
 export function getPrayerShareUrl(prayer: PrayerRequest): string | null {
-  if (prayer.audience === 'private') return null;
+  if (prayer.audience === 'private' || isPrayerArchived(prayer)) return null;
   return `${ORATIO_WEB_URL}/prayer/${encodeURIComponent(prayer.id)}`;
 }
 

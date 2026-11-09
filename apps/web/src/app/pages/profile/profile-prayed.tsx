@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { MapPin } from 'lucide-react';
 import { Drawer } from 'vaul';
 import { useNavigate } from 'react-router';
-import { timeAgo, getAttributionText } from '../../services/prayer-data';
+import { timeAgo, getAttributionText, isPrayerArchived } from '../../services/prayer-data';
+import { usePrayerClock } from '../../hooks/use-prayer-clock';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { PrayerRow } from '../../components/feed/prayer-row';
 import { getMyPrayedForPrayers, togglePray, getMyPrayedIds } from '../../services/supabase-queries';
@@ -16,7 +17,9 @@ export function ProfilePrayed() {
   // Prayer detail / action drawer
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
 
-  const [myPrayed, setMyPrayed] = useState<PrayerRequest[]>([]);
+  const [allPrayed, setMyPrayed] = useState<PrayerRequest[]>([]);
+  const now = usePrayerClock(allPrayed);
+  const myPrayed = allPrayed.filter((prayer) => !isPrayerArchived(prayer, now));
   const [prayedIds, setPrayedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -107,7 +110,7 @@ export function ProfilePrayed() {
 
       {/* Prayer Action Drawer */}
       <Drawer.Root
-        open={!!selectedPrayer}
+        open={!!selectedPrayer && !isPrayerArchived(selectedPrayer, now)}
         onOpenChange={(o) => {
           if (!o) {
             setSelectedPrayer(null);
@@ -133,7 +136,7 @@ export function ProfilePrayed() {
             </div>
 
             <div className="max-w-md w-full mx-auto p-6 pt-2 flex-1 overflow-auto">
-              {selectedPrayer && (
+              {selectedPrayer && !isPrayerArchived(selectedPrayer, now) && (
                 <AnimatePresence mode="wait">
                   <motion.div
                     key="options"

@@ -153,7 +153,7 @@ describe('moderation workflow', () => {
   });
 
   it('refreshes on returning to the tab and keeps rows visible while loading', async () => {
-    mount();
+    await act(async () => mount());
     await screen.findByText('Spam or fake');
     let finish!: (reports: ReportRecord[]) => void;
     vi.mocked(getReports).mockReturnValueOnce(
@@ -170,14 +170,16 @@ describe('moderation workflow', () => {
   });
 
   it('retains rows with a stale-data warning after refresh failure and retries on reconnect', async () => {
-    mount();
+    await act(async () => mount());
     await screen.findByText('Spam or fake');
     vi.mocked(getReports).mockRejectedValueOnce(new Error('Offline'));
     await act(async () => fireEvent.focus(window));
     expect(await screen.findByRole('alert')).toHaveTextContent('last loaded reports');
+    expect(getReports).toHaveBeenCalledTimes(2);
     expect(screen.getByText('Spam or fake')).toBeInTheDocument();
     await act(async () => window.dispatchEvent(new Event('online')));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(getReports).toHaveBeenCalledTimes(3);
   });
 
   it('polls only while visible, coalesces refreshes, and cleans up on unmount', async () => {

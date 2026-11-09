@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import { motion } from 'motion/react';
 import { Loader, X } from 'lucide-react';
 
@@ -26,7 +27,7 @@ export function EditPrayerDialog({ text, error, saving, onClose, onChange, onSav
         exit={{ y: 24, opacity: 0 }}
         className="w-full max-w-md rounded-t-2xl p-5 sm:rounded-2xl border border-accent/10"
         style={{ background: 'rgba(var(--rgb-surface), 0.98)' }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <p className="text-text-secondary text-sm">Edit prayer</p>

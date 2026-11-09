@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ComponentProps } from 'react';
+import { useCallback, useMemo, useRef, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +23,10 @@ import { useAuth } from '../hooks/auth-context';
 import { chooseAndUploadAvatar } from '../services/avatar-upload';
 import { colors, fontFamilies, radii } from '../theme';
 import type { RootStackParamList } from '../navigation';
+import { useRecoverableWrite } from '../hooks/use-recoverable-write';
+import { WriteOutcomeError } from '@oratio/shared/write-outcome';
+import { withRequestTimeout } from '../services/request-timeout';
+import { WriteRecovery } from '../components/write-recovery';
 
 type ProfileDetails = Awaited<ReturnType<typeof getMyProfile>>;
 type ProfileStats = { public: number; circle: number; private: number };
@@ -35,7 +39,7 @@ const XIcon = asNativeIcon(X);
 
 export function ProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { refreshProfile } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<ProfileDetails>(null);
   const [stats, setStats] = useState<ProfileStats>({ public: 0, circle: 0, private: 0 });
   const [loading, setLoading] = useState(true);
@@ -48,6 +52,30 @@ export function ProfileScreen() {
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [location, setLocation] = useState('');
+  const loadRequest = useRef(0);
+  const currentUser = useRef(user?.id);
+  const active = useRef(false);
+  const uploadLock = useRef(false);
+  const editingRef = useRef(editing);
+  const editOriginal = useRef<ProfileDetails>(null);
+  editingRef.current = editing;
+  currentUser.current = user?.id;
+  type ProfileIntent = {
+    fields: Parameters<typeof updateProfile>[0];
+    expectedValues: NonNullable<Parameters<typeof updateProfile>[1]>['expectedValues'];
+    photo: boolean;
+  };
+  const writes = useRecoverableWrite<ProfileIntent, ProfileIntent>(
+    'profile',
+    user?.id,
+    async (intent, attempt) => {
+      if (
+        !(await updateProfile(intent.fields, { ...attempt, expectedValues: intent.expectedValues }))
+      )
+        throw new WriteOutcomeError(false);
+      return intent;
+    }
+  );
 
   const name = profile?.display_name || profile?.username || 'Friend';
   const accountSince = useMemo(() => formatMonthYear(profile?.created_at), [profile?.created_at]);
@@ -62,48 +90,81 @@ export function ProfileScreen() {
   }, []);
 
   const load = useCallback(async () => {
+    const request = ++loadRequest.current;
+    const current = () =>
+      active.current && request === loadRequest.current && currentUser.current === user?.id;
     setError('');
     try {
-      const [nextProfile, publicPrayers, circlePrayers, privatePrayers] = await Promise.all([
-        getMyProfile(),
-        getMyPrayers('public'),
-        getMyPrayers('circle'),
-        getMyPrayers('private'),
-      ]);
-
-      if (!nextProfile) {
-        setError("We couldn't load your profile.");
-        return;
-      }
-
+      const [nextProfile, publicPrayers, circlePrayers, privatePrayers] = await withRequestTimeout(
+        Promise.all([
+          getMyProfile({ throwOnError: true }),
+          getMyPrayers('public', { throwOnError: true }),
+          getMyPrayers('circle', { throwOnError: true }),
+          getMyPrayers('private', { throwOnError: true }),
+        ])
+      );
+      if (!current()) return;
+      if (!nextProfile || nextProfile.id !== user?.id) throw new Error('Profile unavailable');
       setProfile(nextProfile);
       setStats({
         public: publicPrayers.length,
         circle: circlePrayers.length,
         private: privatePrayers.length,
       });
-      syncForm(nextProfile);
+      if (!editingRef.current && !writes.isLocked()) syncForm(nextProfile);
     } catch {
-      setError("We couldn't load your profile.");
+      if (current()) setError("We couldn't load your profile. Please try again.");
     } finally {
-      setLoading(false);
+      if (current()) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, [syncForm]);
+  }, [syncForm, user?.id]);
 
   const refresh = useCallback(async () => {
+    if (writes.isLocked() || uploadLock.current) return;
     setRefreshing(true);
     await load();
-    setRefreshing(false);
   }, [load]);
 
   useFocusEffect(
     useCallback(() => {
+      active.current = true;
       void load();
+      return () => {
+        active.current = false;
+        loadRequest.current += 1;
+      };
     }, [load])
   );
 
+  const finishWrite = async (result: Awaited<ReturnType<typeof writes.run>>) => {
+    if (result.status === 'ignored') return;
+    setSaving(false);
+    if (result.status === 'failed') {
+      setError(
+        "We couldn't save your changes. The details may have changed or the username may be taken. Your draft has been kept."
+      );
+      return;
+    }
+    if (result.status !== 'saved') return;
+    const completion = ++loadRequest.current;
+    const intent = result.value;
+    setProfile((current) =>
+      current && current.id === user?.id ? { ...current, ...intent.fields } : current
+    );
+    if (!intent.photo) setEditing(false);
+    try {
+      await withRequestTimeout(refreshProfile());
+    } catch {
+      if (active.current && currentUser.current === user?.id && completion === loadRequest.current)
+        setError('Your changes were saved. Refresh your profile to update the account details.');
+    }
+  };
+
   const handleSave = async () => {
-    if (saving) return;
+    if (writes.isLocked() || uploadLock.current || !profile) return;
     setError('');
 
     const trimmedUsername = username.trim().toLowerCase();
@@ -129,59 +190,63 @@ export function ProfileScreen() {
     }
 
     setSaving(true);
-    try {
-      const ok = await updateProfile({
-        username: validation.data?.username || trimmedUsername,
-        display_name: trimmedDisplayName,
-        bio: trimmedBio,
-        location: trimmedLocation,
-      });
-
-      if (!ok) {
-        setError("We couldn't save your changes. The username may already be taken.");
-        return;
-      }
-
-      const [nextProfile] = await Promise.all([getMyProfile(), refreshProfile()]);
-      if (nextProfile) {
-        setProfile(nextProfile);
-        syncForm(nextProfile);
-      }
-      setEditing(false);
-    } finally {
-      setSaving(false);
-    }
+    loadRequest.current += 1;
+    const original = editOriginal.current || profile;
+    await finishWrite(
+      await writes.run({
+        fields: {
+          username: validation.data?.username || trimmedUsername,
+          display_name: trimmedDisplayName,
+          bio: trimmedBio,
+          location: trimmedLocation,
+        },
+        expectedValues: {
+          username: original.username,
+          display_name: original.display_name,
+          bio: original.bio,
+          location: original.location,
+        },
+        photo: false,
+      })
+    );
   };
 
   const cancelEdit = () => {
+    if (writes.isLocked()) return;
     syncForm(profile);
     setEditing(false);
+    editOriginal.current = null;
     setError('');
   };
 
   const handleAvatarUpload = async () => {
-    if (uploading) return;
-
+    if (uploadLock.current || writes.isLocked() || !user?.id || !profile) return;
+    const actorId = user.id;
+    uploadLock.current = true;
     setUploading(true);
     setError('');
     try {
-      const result = await chooseAndUploadAvatar();
-      if (result.status === 'cancelled') return;
+      const result = await chooseAndUploadAvatar(actorId);
+      if (!active.current || currentUser.current !== actorId || result.status === 'cancelled')
+        return;
       if (result.status === 'error') {
         Alert.alert('Photo not updated', result.message);
         return;
       }
-
-      const ok = await updateProfile({ avatar_url: result.url });
-      if (!ok) {
-        Alert.alert('Photo not updated', "We couldn't save that photo to your profile.");
-        return;
-      }
-
-      const [nextProfile] = await Promise.all([getMyProfile(), refreshProfile()]);
-      if (nextProfile) setProfile(nextProfile);
+      loadRequest.current += 1;
+      await finishWrite(
+        await writes.run({
+          fields: { avatar_url: result.url },
+          expectedValues: { avatar_url: profile.avatar_url },
+          photo: true,
+        })
+      );
+    } catch {
+      if (active.current && currentUser.current === actorId)
+        setError("We couldn't choose or upload that photo. Please try again.");
     } finally {
-      setUploading(false);
+      uploadLock.current = false;
+      if (currentUser.current === actorId) setUploading(false);
     }
   };
 
@@ -235,7 +300,24 @@ export function ProfileScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <View>
+            <Text accessibilityRole="alert" style={styles.error}>
+              {error}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              disabled={writes.locked || uploading}
+              onPress={() => void load()}
+              style={styles.editButton}
+            >
+              <Text style={styles.editButtonText}>Refresh profile</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {writes.uncertain ? (
+          <WriteRecovery busy={writes.busy} onRetry={() => void writes.retry().then(finishWrite)} />
+        ) : null}
 
         <View style={styles.identity}>
           <View style={styles.avatarWrap}>
@@ -243,7 +325,7 @@ export function ProfileScreen() {
             <Pressable
               accessibilityLabel="Change profile photo"
               accessibilityRole="button"
-              disabled={uploading}
+              disabled={uploading || writes.locked || editing || !profile}
               onPress={() => void handleAvatarUpload()}
               style={styles.cameraButton}
             >
@@ -265,17 +347,17 @@ export function ProfileScreen() {
           <Stat
             label="Public"
             onPress={() => navigation.navigate('MyPrayers', { initialAudience: 'public' })}
-            value={stats.public}
+            value={profile ? stats.public : '—'}
           />
           <Stat
             label="Circle"
             onPress={() => navigation.navigate('MyPrayers', { initialAudience: 'circle' })}
-            value={stats.circle}
+            value={profile ? stats.circle : '—'}
           />
           <Stat
             label="Private"
             onPress={() => navigation.navigate('MyPrayers', { initialAudience: 'private' })}
-            value={stats.private}
+            value={profile ? stats.private : '—'}
           />
         </View>
 
@@ -286,7 +368,7 @@ export function ProfileScreen() {
               <Pressable
                 accessibilityLabel="Cancel profile edit"
                 accessibilityRole="button"
-                disabled={saving}
+                disabled={saving || writes.locked || uploading}
                 onPress={cancelEdit}
                 style={styles.smallIconButton}
               >
@@ -295,7 +377,7 @@ export function ProfileScreen() {
               <Pressable
                 accessibilityLabel="Save profile"
                 accessibilityRole="button"
-                disabled={saving}
+                disabled={saving || writes.locked || uploading}
                 onPress={() => void handleSave()}
                 style={[styles.smallIconButton, styles.saveButton]}
               >
@@ -310,7 +392,11 @@ export function ProfileScreen() {
             <Pressable
               accessibilityLabel="Edit profile"
               accessibilityRole="button"
-              onPress={() => setEditing(true)}
+              disabled={writes.locked || uploading || !profile}
+              onPress={() => {
+                editOriginal.current = profile;
+                setEditing(true);
+              }}
               style={styles.editButton}
             >
               <Text style={styles.editButtonText}>Edit</Text>
@@ -321,13 +407,20 @@ export function ProfileScreen() {
         {editing ? (
           <View style={styles.form}>
             <ProfileField
+              editable={!writes.locked && !uploading}
               label="Username"
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
             />
-            <ProfileField label="Display name" value={displayName} onChangeText={setDisplayName} />
             <ProfileField
+              editable={!writes.locked && !uploading}
+              label="Display name"
+              value={displayName}
+              onChangeText={setDisplayName}
+            />
+            <ProfileField
+              editable={!writes.locked && !uploading}
               label="Bio"
               value={bio}
               onChangeText={setBio}
@@ -336,6 +429,7 @@ export function ProfileScreen() {
               style={styles.multiline}
             />
             <ProfileField
+              editable={!writes.locked && !uploading}
               label="Location"
               value={location}
               onChangeText={setLocation}
@@ -372,7 +466,15 @@ export function ProfileScreen() {
   );
 }
 
-function Stat({ label, onPress, value }: { label: string; onPress: () => void; value: number }) {
+function Stat({
+  label,
+  onPress,
+  value,
+}: {
+  label: string;
+  onPress: () => void;
+  value: number | string;
+}) {
   return (
     <Pressable
       accessibilityLabel={`View my ${label.toLowerCase()} prayers`}

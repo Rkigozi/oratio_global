@@ -13,8 +13,10 @@ import {
   Pencil,
   Users,
   Lock,
+  RotateCcw,
 } from 'lucide-react';
-import { timeAgo, getAttributionText } from '../../services/prayer-data';
+import { timeAgo, getAttributionText, isPrayerArchived } from '../../services/prayer-data';
+import { usePrayerClock } from '../../hooks/use-prayer-clock';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { CommentSection } from '../../components/comments/comment-section';
 import { reportContent } from '../../services/supabase-queries';
@@ -25,6 +27,7 @@ import { AvatarImage } from '../../components/avatar-image';
 import {
   getPrayerById,
   updatePrayerRequest,
+  renewPublicPrayer,
   togglePray,
   toggleSavePrayer,
   getProfileByUsername,
@@ -60,11 +63,12 @@ export function PrayerDetail() {
 
     const loadPrayer = async () => {
       setLoading(true);
+      setLocalPrayer(undefined);
       setError(null);
 
       try {
         const fetchedPrayer = await getPrayerById(id);
-        if (active && fetchedPrayer) setLocalPrayer(fetchedPrayer);
+        if (active) setLocalPrayer(fetchedPrayer || undefined);
       } catch {
         if (active) setError('Failed to load prayer');
       } finally {
@@ -80,6 +84,10 @@ export function PrayerDetail() {
   }, [id]);
 
   const prayer = localPrayer;
+  const now = usePrayerClock(prayer ? [prayer] : []);
+  const archived = Boolean(prayer && isPrayerArchived(prayer, now));
+  const [renewing, setRenewing] = useState(false);
+  const [renewMessage, setRenewMessage] = useState('');
   const [prayedIds, setPrayedIds] = useState<string[]>([]);
   const [commentCount, setCommentCount] = useState(0);
   const [saved, setSaved] = useState(false);
@@ -153,6 +161,28 @@ export function PrayerDetail() {
     setEditText(prayer.text);
     setEditError('');
     setShowEdit(true);
+  };
+
+  const handleRenew = async () => {
+    if (!prayer || !isAuthor || !isPrayerArchived(prayer) || renewing) return;
+    setRenewing(true);
+    setRenewMessage('');
+    try {
+      const expiresAt = await renewPublicPrayer(prayer.id);
+      if (!expiresAt) {
+        setRenewMessage("We couldn't renew this prayer. Refresh and try again.");
+        return;
+      }
+      setLocalPrayer((current) =>
+        current?.id === prayer.id ? { ...current, expiresAt } : current
+      );
+      setRenewMessage('Your prayer is public again for 14 days.');
+      window.dispatchEvent(new CustomEvent('oratio-prayer-renewed'));
+    } catch {
+      setRenewMessage("We couldn't renew this prayer. Check your connection and try again.");
+    } finally {
+      setRenewing(false);
+    }
   };
 
   const handleSavePrayerEdit = async () => {
@@ -284,10 +314,11 @@ export function PrayerDetail() {
   };
 
   const toggleSave = () => {
+    if (!prayer || isPrayerArchived(prayer)) return;
     const newSaved = !saved;
     setSaved(newSaved);
-    void toggleSavePrayer(prayer!.id, newSaved);
-    captureEvent(newSaved ? 'prayer_saved' : 'prayer_unsaved', { prayerId: prayer!.id });
+    void toggleSavePrayer(prayer.id, newSaved);
+    captureEvent(newSaved ? 'prayer_saved' : 'prayer_unsaved', { prayerId: prayer.id });
   };
 
   const handleReport = async (reason: string, details?: string) => {
@@ -342,8 +373,8 @@ export function PrayerDetail() {
 
   const isPrayed = prayer ? prayedIds.includes(prayer.id) : false;
   const commentsAreAvailable =
-    prayer?.audience === 'circle' || prayer?.audience === 'private' || commentsEnabled;
-  const canToggleComments = isAuthor && prayer?.audience === 'public';
+    archived || prayer?.audience === 'circle' || prayer?.audience === 'private' || commentsEnabled;
+  const canToggleComments = isAuthor && prayer?.audience === 'public' && !archived;
 
   const togglePrayed = useCallback((prayerId: string) => {
     setPrayedIds((prev) => {
@@ -358,7 +389,7 @@ export function PrayerDetail() {
   }, []);
 
   const handleShare = async () => {
-    if (!prayer) return;
+    if (!prayer || isPrayerArchived(prayer) || prayer.audience === 'private') return;
     const url = `${window.location.origin}/prayer/${prayer.id}`;
     const attribution = getAttributionText(prayer);
     const c = prayer.prayerCount ?? 0;
@@ -422,7 +453,7 @@ export function PrayerDetail() {
     );
   }
 
-  if (!prayer) {
+  if (!prayer || (archived && !isAuthor)) {
     return (
       <div
         className="flex flex-col items-center justify-center h-full w-full"
@@ -431,7 +462,7 @@ export function PrayerDetail() {
         <div className="text-center px-6 mb-4">
           <p className="text-text text-sm font-medium">Prayer unavailable</p>
           <p className="text-text-muted text-xs mt-2">
-            It may have been removed, or you may not have access to it.
+            It may have expired, been removed, or no longer be shared with you.
           </p>
         </div>
         <button
@@ -485,7 +516,7 @@ export function PrayerDetail() {
                     backdropFilter: 'blur(16px)',
                   }}
                 >
-                  {prayer.audience !== 'circle' && (
+                  {!archived && prayer.audience === 'public' && (
                     <button
                       onClick={() => {
                         setShowMenu(false);
@@ -498,6 +529,7 @@ export function PrayerDetail() {
                     </button>
                   )}
                   <button
+                    disabled={archived}
                     onClick={() => {
                       setShowMenu(false);
                       toggleSave();
@@ -543,23 +575,24 @@ export function PrayerDetail() {
                       {commentsEnabled ? 'Turn off comments' : 'Turn on comments'}
                     </button>
                   )}
-                  {!reported ? (
-                    <button
-                      onClick={() => {
-                        setShowMenu(false);
-                        setShowReport(true);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
-                    >
-                      <Flag size={12} />
-                      Report
-                    </button>
-                  ) : (
-                    <div className="w-full px-4 py-2.5 text-xs text-text-dim flex items-center gap-2">
-                      <Flag size={12} />
-                      Report sent
-                    </div>
-                  )}
+                  {!archived &&
+                    (!reported ? (
+                      <button
+                        onClick={() => {
+                          setShowMenu(false);
+                          setShowReport(true);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-xs text-text-secondary hover:bg-accent/8 transition-colors cursor-pointer flex items-center gap-2"
+                      >
+                        <Flag size={12} />
+                        Report
+                      </button>
+                    ) : (
+                      <div className="w-full px-4 py-2.5 text-xs text-text-dim flex items-center gap-2">
+                        <Flag size={12} />
+                        Report sent
+                      </div>
+                    ))}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -599,6 +632,40 @@ export function PrayerDetail() {
           )}
 
           {/* Full prayer text */}
+          {archived ? (
+            <section className="my-4 border-y border-accent/12 py-4">
+              <h2 className="text-text-secondary text-sm font-medium">Archived prayer</h2>
+              <p className="text-text-muted text-xs mt-1">
+                No longer public. Your prayer and its history are kept here.
+              </p>
+              <button
+                type="button"
+                disabled={renewing}
+                onClick={() => void handleRenew()}
+                className="mt-3 min-h-11 inline-flex items-center gap-2 rounded-md border border-accent/20 px-3 text-accent text-xs disabled:opacity-50"
+              >
+                <RotateCcw size={15} />
+                {renewing ? 'Renewing...' : 'Renew for 14 days'}
+              </button>
+            </section>
+          ) : prayer.audience === 'public' && prayer.expiresAt ? (
+            <p className="text-text-muted text-xs mb-4">
+              Public until{' '}
+              {new Date(prayer.expiresAt).toLocaleString(undefined, {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short',
+              })}
+            </p>
+          ) : null}
+          {renewMessage && (
+            <p role="status" className="text-text-muted text-xs mb-4">
+              {renewMessage}
+            </p>
+          )}
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -670,19 +737,21 @@ export function PrayerDetail() {
           </div>
 
           {/* Pray button */}
-          <div className="flex justify-center mb-4">
-            <motion.button
-              onClick={() => togglePrayed(prayer.id)}
-              whileTap={{ scale: 0.96 }}
-              className={`flex items-center gap-2.5 px-8 py-3 rounded-full text-sm transition-all duration-500 cursor-pointer ${
-                isPrayed ? 'oratio-surface' : 'oratio-primary-pill'
-              }`}
-              style={isPrayed ? { color: 'rgb(var(--rgb-accent))' } : undefined}
-            >
-              <span className="text-base">🙏</span>
-              {isPrayed ? 'Prayed for this' : 'Pray for this'}
-            </motion.button>
-          </div>
+          {!archived && (
+            <div className="flex justify-center mb-4">
+              <motion.button
+                onClick={() => togglePrayed(prayer.id)}
+                whileTap={{ scale: 0.96 }}
+                className={`flex items-center gap-2.5 px-8 py-3 rounded-full text-sm transition-all duration-500 cursor-pointer ${
+                  isPrayed ? 'oratio-surface' : 'oratio-primary-pill'
+                }`}
+                style={isPrayed ? { color: 'rgb(var(--rgb-accent))' } : undefined}
+              >
+                <span className="text-base">🙏</span>
+                {isPrayed ? 'Prayed for this' : 'Pray for this'}
+              </motion.button>
+            </div>
+          )}
 
           {(reportNotice || reportError) && (
             <div className="flex justify-center mb-8">
@@ -712,6 +781,7 @@ export function PrayerDetail() {
                 prayer={prayer}
                 commentCount={commentCount}
                 onCommentCountChange={setCommentCount}
+                readOnly={archived}
               />
             ) : (
               <div className="text-center py-6">

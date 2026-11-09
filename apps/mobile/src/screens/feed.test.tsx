@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { FlatList } from 'react-native';
 import { CircleScreen, FeedScreen } from './feed';
 
 jest.mock('@react-navigation/native-stack', () => ({
@@ -130,6 +131,37 @@ describe('FeedScreen', () => {
     await waitFor(() => expect(screen.getByText('Retry')).toBeTruthy());
   });
 
+  it('retains rows and offers an explicit retry when the next page fails', async () => {
+    const first = Array.from({ length: 20 }, (_, n) => ({ ...prayers[0], id: `fixture-${n}` }));
+    jest
+      .mocked(getFeedPrayers)
+      .mockResolvedValueOnce(first as never)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce([prayers[1]] as never);
+    render(<FeedScreen />);
+    await screen.findAllByText(prayers[0].text);
+    fireEvent(screen.UNSAFE_getByType(FlatList), 'endReached');
+    await screen.findByText('Retry loading more');
+    expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(20);
+    fireEvent.press(screen.getByText('Retry loading more'));
+    await waitFor(() => expect(screen.UNSAFE_getByType(FlatList).props.data).toHaveLength(21));
+  });
+
+  it('keeps loaded rows visible with a retry warning after failed refresh', async () => {
+    jest
+      .mocked(getFeedPrayers)
+      .mockResolvedValueOnce(prayers as never)
+      .mockRejectedValueOnce(new Error('offline'));
+    render(<FeedScreen />);
+    await screen.findByText(prayers[0].text);
+    await act(async () => {
+      await screen.UNSAFE_getByType(FlatList).props.refreshControl.props.onRefresh();
+    });
+    expect(screen.getByText('Retry refresh')).toBeTruthy();
+    expect(screen.getByText(prayers[0].text)).toBeTruthy();
+    expect(screen.queryByText('No public prayers yet.')).toBeNull();
+  });
+
   it('navigates to prayer detail when a card is tapped', async () => {
     jest.mocked(getFeedPrayers).mockResolvedValue(prayers as never);
 
@@ -163,7 +195,15 @@ describe('FeedScreen', () => {
 
     render(<CircleScreen />);
 
-    await waitFor(() => expect(getFeedPrayers).toHaveBeenCalledWith(undefined, 20, 'circle'));
+    await waitFor(() =>
+      expect(getFeedPrayers).toHaveBeenCalledWith(
+        undefined,
+        20,
+        'circle',
+        {},
+        { throwOnError: true }
+      )
+    );
     expect(screen.getByText('No prayers have been shared with your circle yet.')).toBeTruthy();
   });
 
@@ -199,9 +239,15 @@ describe('FeedScreen', () => {
     fireEvent.press(await screen.findByLabelText('Show saved prayers'));
 
     await waitFor(() =>
-      expect(getFeedPrayers).toHaveBeenLastCalledWith(undefined, 20, 'public', {
-        savedOnly: true,
-      })
+      expect(getFeedPrayers).toHaveBeenLastCalledWith(
+        undefined,
+        20,
+        'public',
+        {
+          savedOnly: true,
+        },
+        { throwOnError: true }
+      )
     );
     expect(screen.getAllByText('Saved').length).toBeGreaterThan(0);
   });
@@ -215,9 +261,15 @@ describe('FeedScreen', () => {
     fireEvent.press(screen.getByText('Nigeria'));
 
     await waitFor(() =>
-      expect(getFeedPrayers).toHaveBeenLastCalledWith(undefined, 20, 'public', {
-        country: 'Nigeria',
-      })
+      expect(getFeedPrayers).toHaveBeenLastCalledWith(
+        undefined,
+        20,
+        'public',
+        {
+          country: 'Nigeria',
+        },
+        { throwOnError: true }
+      )
     );
     expect(screen.getByText('Prayers in Nigeria')).toBeTruthy();
   });
@@ -230,9 +282,15 @@ describe('FeedScreen', () => {
     fireEvent.changeText(await screen.findByLabelText('Search public prayers'), 'peace');
 
     await waitFor(() =>
-      expect(getFeedPrayers).toHaveBeenLastCalledWith(undefined, 20, 'public', {
-        search: 'peace',
-      })
+      expect(getFeedPrayers).toHaveBeenLastCalledWith(
+        undefined,
+        20,
+        'public',
+        {
+          search: 'peace',
+        },
+        { throwOnError: true }
+      )
     );
     expect(screen.getByText('Search: peace')).toBeTruthy();
   });
@@ -246,10 +304,16 @@ describe('FeedScreen', () => {
     fireEvent.changeText(screen.getByLabelText('Search public prayers'), 'family');
 
     await waitFor(() =>
-      expect(getFeedPrayers).toHaveBeenLastCalledWith(undefined, 20, 'public', {
-        savedOnly: true,
-        search: 'family',
-      })
+      expect(getFeedPrayers).toHaveBeenLastCalledWith(
+        undefined,
+        20,
+        'public',
+        {
+          savedOnly: true,
+          search: 'family',
+        },
+        { throwOnError: true }
+      )
     );
     expect(screen.getByText('No saved prayers match "family".')).toBeTruthy();
   });
@@ -264,9 +328,15 @@ describe('FeedScreen', () => {
     fireEvent.press(await screen.findByLabelText('Search prayers tagged family'));
 
     await waitFor(() =>
-      expect(getFeedPrayers).toHaveBeenLastCalledWith(undefined, 20, 'public', {
-        search: 'family',
-      })
+      expect(getFeedPrayers).toHaveBeenLastCalledWith(
+        undefined,
+        20,
+        'public',
+        {
+          search: 'family',
+        },
+        { throwOnError: true }
+      )
     );
     expect(screen.getByDisplayValue('family')).toBeTruthy();
   });

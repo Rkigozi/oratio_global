@@ -1,6 +1,6 @@
 # MAP: Map Scalability and Canonical Locations
 
-Status: Planned
+Status: In progress (canonical-place and hotspot foundations); scale work planned
 Jira epic: `SCRUM-78`
 Priority: High foundations; Medium scale work
 Labels: `native`, `product`, `platform`, `post-launch`
@@ -48,11 +48,29 @@ Stories 1-3 are beta-safe foundations and can be delivered independently.
 Stories 4-6 are growth work and should be implemented before map volume makes
 global aggregation or all-city rendering operationally expensive.
 
+### Review Checkpoint (2026-10-23)
+
+Stories 1-3 are tracked on `codex/ios-launch-readiness` in
+[draft PR #5](https://github.com/Rkigozi/oratio_global/pull/5). Dated local results
+below retain their original provenance. Current candidate checks and the
+unresolved Expo tooling advisory are recorded in the
+[security follow-up](./SECURITY-REVIEW.md#dependency-review-follow-up-2026-10-23).
+Device acceptance remains open except for the reported hotspot smoke check.
+This checkpoint does not redeploy the database, website or an iPhone binary.
+
 ## Story 1: Replace free-text map identity with canonical places
 
 Jira: `SCRUM-84`
 Priority: High
 Fix Version: V1 Launch
+
+Implementation checkpoint (2026-10-21): native picker, shared place queries,
+server-derived fixed centroids, place-ID hotspot grouping/drill-down and legacy
+rollout tests are implemented locally. Approved migrations 044/045 are
+applied and verified on Oratio_DB. Device acceptance remains open; the review
+checkpoint above supersedes the local-only state. See the [canonical-place record](./CANONICAL-PLACES.md) for data
+provenance, limits, automated results and the exact Expo Go test steps. This does
+not complete stories 2/3 or the map-scale success metrics.
 
 ### User Story
 
@@ -94,6 +112,29 @@ Jira: `SCRUM-85`
 Priority: High
 Fix Version: V1 Launch
 
+Implementation checkpoint (2026-10-21): shared/native use a dedicated
+`MapHotspot` contract backed only by `get_map_hotspot_totals`. Invalid, missing,
+duplicated or unavailable aggregates cannot fall back to individual prayer rows.
+Native failures clear previous counts/selection and expose Retry; superseded
+responses are ignored after navigation changes. Marker diameter uses only recent
+request activity on a bounded logarithmic scale, independent of engagement.
+
+The current recent-activity window is the existing server-managed 14-day public
+visibility window, including active renewals. `recentRequestCount` therefore
+equals the active `requestCount`; neither field is an all-time count. A separate
+historical/rolling-window metric remains growth work. Contract semantics are in
+the [discovery LLD](../design/lld/PRAYERS-AND-DISCOVERY.md#hotspot-client-contract).
+
+Local verification: 336 mobile tests, 608 web/shared tests with coverage, both
+type checks, web lint/build and CI-style iOS JS export passed. No database schema,
+live prayer data, hosting configuration or dependency versions changed. The web
+query shim adapts the aggregate shape solely for existing renderer compatibility.
+At that checkpoint implementation was uncommitted/unpushed. A maintainer-reported Expo Go iPhone smoke
+check confirmed hotspot selection and offline → reconnect → Retry on 2026-10-21;
+device/iOS details were not recorded. The wider map acceptance cases, code review
+and candidate CI remain open. `SCRUM-85` is not Done. Pagination is tracked below;
+post-launch scale work is unchanged.
+
 ### User Story
 
 As a map user, I want hotspots and their counts to remain accurate when services
@@ -128,6 +169,32 @@ degrade, so that the map never misrepresents individual prayers as aggregates.
 Jira: `SCRUM-86`
 Priority: High
 Fix Version: V1 Launch
+
+Implementation checkpoint (2026-10-21): native location detail uses
+`getPublicPrayersAtLocationPage`, with descending original creation timestamp and
+UUID cursors. Raw PostgreSQL timestamp precision is preserved. A bounded 51-row
+lookahead yields 50 loaded rows and a continuation cursor; subsequent pages do
+not repeat the exact-count query. Newer insertions appear on refresh, without
+offset shifts during paging. Existing single-page web callers are unchanged.
+
+The first page obtains an exact caller-visible active-public total separately
+from its loaded rows. The UI labels this as **at last refresh**, not live or
+all-time activity. Expired cached rows are excluded from the loaded count.
+Refresh atomically replaces rows, cursor and total; request generations reject
+superseded results after refresh/navigation. A failed next page keeps existing
+rows and cursor with an explicit retry, without automatic retry loops.
+
+Local verification: 344 mobile tests, 630 web/shared tests with coverage, both
+type checks, web lint/build, CI-style iOS JS export and formatting passed.
+All migrations applied in a disposable database; 226 SQL
+assertions and 11 concurrency scenarios passed, including 12 pagination
+assertions. With 2,060 generated prayer rows, an authenticated RLS-aware city
+query used `prayer_requests_place_created_idx` without forced planner settings;
+tied timestamps, microseconds, 55 reachable matches and an insertion between
+pages were checked. This is an index-plan check, not the map-scale latency
+benchmark. No new migration or live data change was required. Physical-iPhone
+pagination acceptance, review/commit/push and hosted candidate CI remain open.
+`SCRUM-86` is In Progress, not Done.
 
 ### User Story
 

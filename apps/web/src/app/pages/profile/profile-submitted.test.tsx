@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ComponentProps, ReactNode } from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import type { PrayerRequest } from '../../services/prayer-data';
 
@@ -99,6 +99,31 @@ describe('ProfileSubmitted', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getMyPrayers).mockResolvedValue([privatePrayer, circlePrayer, sharedPrayer]);
+  });
+
+  it('loads older archived prayers beyond the first page', async () => {
+    vi.mocked(getMyPrayers)
+      .mockResolvedValueOnce(
+        Array.from({ length: 50 }, (_, index) => ({
+          ...sharedPrayer,
+          id: `p-${index}`,
+          text: `Recent prayer ${index}`,
+        }))
+      )
+      .mockResolvedValueOnce([
+        {
+          ...sharedPrayer,
+          id: 'old',
+          text: 'Older archived prayer',
+          expiresAt: '2020-01-01T00:00:00Z',
+        },
+      ]);
+    renderSubmitted();
+    fireEvent.click(await screen.findByRole('button', { name: 'Load earlier prayers' }));
+    expect(await screen.findByText('Older archived prayer')).toBeInTheDocument();
+    expect(screen.getByText('Archived')).toBeInTheDocument();
+    expect(getMyPrayers).toHaveBeenCalledWith('public', { offset: 50, throwOnError: true });
+    expect(screen.getByText('Recent prayer 0')).toBeInTheDocument();
   });
 
   it('shows private prayers as a dedicated list without anonymous attribution', async () => {

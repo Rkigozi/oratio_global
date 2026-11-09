@@ -1,9 +1,4 @@
-import {
-  getPrayerLocationKey,
-  hasMappablePrayerLocation,
-  normalizePrayerLocation,
-  type PrayerRequest,
-} from '../prayer-data';
+import { normalizePrayerLocation, type PrayerRequest } from '../prayer-data';
 
 export type PrayerAudience = 'public' | 'circle' | 'private';
 export type FeedAudienceMode = Exclude<PrayerAudience, 'private'>;
@@ -14,8 +9,6 @@ export type PrayerProfileRow = {
   avatar_url?: string | null;
 };
 
-export type MapHotspotTotalRow = Record<string, unknown>;
-
 export type RpcResponse<T> = {
   data: T | null;
   error: unknown;
@@ -24,7 +17,8 @@ export type RpcResponse<T> = {
 export const PRAYER_SELECT_COLUMNS = `
   id, user_id, body, category,
   location_city, location_country, location_lat, location_lng,
-  is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled
+  is_anonymous, audience, prayer_count, comment_count, created_at, edited_at, comments_enabled,
+  public_expires_at, location_place_id, location_country_code
 `;
 
 export const PRAYER_SELECT = `${PRAYER_SELECT_COLUMNS},
@@ -48,6 +42,9 @@ export function mapPrayerRequest(
     id: row.id as string,
     city: location.city,
     country: location.country,
+    placeId: typeof row.location_place_id === 'string' ? row.location_place_id : undefined,
+    countryCode:
+      typeof row.location_country_code === 'string' ? row.location_country_code : undefined,
     text: row.body as string,
     audience: (row.audience as PrayerAudience | null) || 'public',
     name: isAnonymous ? undefined : attribution,
@@ -59,6 +56,7 @@ export function mapPrayerRequest(
     category: (row.category as string) || undefined,
     createdAt: row.created_at as string,
     editedAt: (row.edited_at as string | null) || undefined,
+    expiresAt: (row.public_expires_at as string | null) || undefined,
     isAnonymous,
     commentCount: (row.comment_count as number) || 0,
     commentsEnabled: row.comments_enabled !== false,
@@ -73,26 +71,3 @@ export function mapOwnedPrayerRequest(row: Record<string, unknown>): PrayerReque
     isAnonymous: row.is_anonymous === true,
   };
 }
-
-export function mapHotspotTotal(row: Record<string, unknown>): PrayerRequest {
-  const location = normalizePrayerLocation(
-    (row.location_city as string | null) || 'Unknown',
-    (row.location_country as string | null) || 'Unknown'
-  );
-
-  return {
-    id: `location:${getPrayerLocationKey(location.city, location.country)}`,
-    city: location.city,
-    country: location.country,
-    text: '',
-    // The RPC keeps this legacy column name, but it now contains the number
-    // of distinct people who prayed for requests at this location.
-    prayerCount: Number(row.prayer_count || 0),
-    requestCount: Number(row.request_count || 0),
-    lat: Number(row.location_lat || 0),
-    lng: Number(row.location_lng || 0),
-    createdAt: row.latest_created_at as string,
-  };
-}
-
-export { hasMappablePrayerLocation };

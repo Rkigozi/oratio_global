@@ -154,7 +154,9 @@ export function BlockedAccountsScreen({
               tintColor={colors.accent}
             />
           }
-          ListEmptyComponent={!error ? <Text style={styles.empty}>No blocked accounts</Text> : null}
+          ListEmptyComponent={
+            !error ? <Text style={styles.empty}>No blocked accounts</Text> : undefined
+          }
           ListFooterComponent={
             hasMore ? (
               <Pressable
@@ -165,7 +167,7 @@ export function BlockedAccountsScreen({
               >
                 <Text style={styles.actionText}>{refreshing ? 'Loading...' : 'Load more'}</Text>
               </Pressable>
-            ) : null
+            ) : undefined
           }
           renderItem={({ item }) => (
             <View style={styles.row}>

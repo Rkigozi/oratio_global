@@ -55,9 +55,13 @@ export function MyPrayersScreen({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [hasMore, setHasMore] = useState({ public: false, circle: false, private: false });
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [moreError, setMoreError] = useState('');
 
   const load = useCallback(async () => {
     setError('');
+    setMoreError('');
     try {
       const [publicPrayers, circlePrayers, privatePrayers] = await Promise.all([
         getMyPrayers('public'),
@@ -68,6 +72,11 @@ export function MyPrayersScreen({
         public: publicPrayers,
         circle: circlePrayers,
         private: privatePrayers,
+      });
+      setHasMore({
+        public: publicPrayers.length === 50,
+        circle: circlePrayers.length === 50,
+        private: privatePrayers.length === 50,
       });
     } catch {
       setError("We couldn't load your prayers. Check your connection and try again.");
@@ -89,6 +98,29 @@ export function MyPrayersScreen({
   );
 
   const visiblePrayers = prayers[audience];
+  const loadMore = async () => {
+    if (loadingMore || !hasMore[audience]) return;
+    setLoadingMore(true);
+    setMoreError('');
+    try {
+      const next = await getMyPrayers(audience, {
+        offset: visiblePrayers.length,
+        throwOnError: true,
+      });
+      setPrayers((current) => {
+        const ids = new Set(current[audience].map((prayer) => prayer.id));
+        return {
+          ...current,
+          [audience]: [...current[audience], ...next.filter((prayer) => !ids.has(prayer.id))],
+        };
+      });
+      setHasMore((current) => ({ ...current, [audience]: next.length === 50 }));
+    } catch {
+      setMoreError("We couldn't load earlier prayers. Please try again.");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
   const emptyCopy = EMPTY_COPY[audience];
   const total = useMemo(
     () => prayers.public.length + prayers.circle.length + prayers.private.length,
@@ -131,7 +163,10 @@ export function MyPrayersScreen({
               accessibilityRole="tab"
               accessibilityState={{ selected }}
               key={option.value}
-              onPress={() => setAudience(option.value)}
+              onPress={() => {
+                setAudience(option.value);
+                setMoreError('');
+              }}
               style={({ pressed }) => [
                 styles.tab,
                 selected && styles.tabSelected,
@@ -166,6 +201,27 @@ export function MyPrayersScreen({
           data={visiblePrayers}
           key={audience}
           keyExtractor={(prayer) => prayer.id}
+          ListFooterComponent={
+            hasMore[audience] ? (
+              <View style={styles.historyFooter}>
+                {moreError ? (
+                  <Text accessibilityRole="alert" style={styles.dim}>
+                    {moreError}
+                  </Text>
+                ) : null}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={loadingMore}
+                  onPress={() => void loadMore()}
+                  style={styles.retry}
+                >
+                  <Text style={styles.retryText}>
+                    {loadingMore ? 'Loading earlier prayers...' : 'Load earlier prayers'}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : undefined
+          }
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={styles.emptyTitle}>{emptyCopy.title}</Text>
@@ -192,6 +248,7 @@ export function MyPrayersScreen({
 }
 
 const styles = StyleSheet.create({
+  historyFooter: { paddingVertical: 16, alignItems: 'center', gap: 8 },
   screen: {
     flex: 1,
     backgroundColor: colors.bg,

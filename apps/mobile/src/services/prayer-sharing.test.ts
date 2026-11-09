@@ -48,6 +48,16 @@ describe('buildPrayerShareContent', () => {
     expect(buildPrayerShareContent({ ...prayer, audience: 'private' })).toBeNull();
   });
 
+  it('does not share or copy an archived public prayer', async () => {
+    const archived = { ...prayer, expiresAt: '2020-01-01T00:00:00Z' };
+    const share = jest.spyOn(Share, 'share');
+    expect(buildPrayerShareContent(archived)).toBeNull();
+    expect(await sharePrayer(archived)).toBe('unavailable');
+    expect(await copyPrayerLink(archived)).toBe(false);
+    expect(share).not.toHaveBeenCalled();
+    expect(Clipboard.setStringAsync).not.toHaveBeenCalled();
+  });
+
   it('includes the link in the message on Android, where the URL field is unsupported', () => {
     jest.replaceProperty(Platform, 'OS', 'android');
     expect(buildPrayerShareContent(prayer)).toEqual({
@@ -67,13 +77,18 @@ describe('sharePrayer', () => {
     const share = jest.spyOn(Share, 'share').mockResolvedValue({ action, activityType });
 
     expect(await sharePrayer(prayer)).toBe(expected);
-    expect(share).toHaveBeenCalledWith(buildPrayerShareContent(prayer));
+    const content = buildPrayerShareContent(prayer);
+    if (!content) throw new Error('Expected public prayer share content');
+    expect(share).toHaveBeenCalledWith(content);
     expect(Clipboard.setStringAsync).not.toHaveBeenCalled();
   });
 
   it('does not claim a message was sent when the Android chooser opens', async () => {
     jest.replaceProperty(Platform, 'OS', 'android');
-    jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
+    jest.spyOn(Share, 'share').mockResolvedValue({
+      action: Share.sharedAction,
+      activityType: undefined,
+    });
     expect(await sharePrayer(prayer)).toBe('opened');
   });
 

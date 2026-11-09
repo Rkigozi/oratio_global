@@ -5,6 +5,7 @@ const fake = vi.hoisted(() => {
     const qb: Record<string, ReturnType<typeof vi.fn>> = {};
     qb.select = vi.fn().mockReturnThis();
     qb.eq = vi.fn().mockReturnThis();
+    qb.gt = vi.fn().mockReturnThis();
     qb.neq = vi.fn().mockReturnThis();
     qb.is = vi.fn().mockReturnThis();
     qb.order = vi.fn().mockReturnThis();
@@ -98,6 +99,7 @@ beforeEach(() => {
 
   qb.select.mockReturnThis();
   qb.eq.mockReturnThis();
+  qb.gt.mockReturnThis();
   qb.neq.mockReturnThis();
   qb.is.mockReturnThis();
   qb.order.mockReturnThis();
@@ -141,121 +143,73 @@ describe('subscribeToPrayerCommentChanges', () => {
 });
 
 describe('getMapHotspots', () => {
-  it('uses aggregated map totals when the RPC is available', async () => {
+  it('adapts canonical aggregates for the existing web renderer', async () => {
     rpc.mockResolvedValueOnce({
       data: [
         {
+          location_place_id: 'geonames:2643743',
+          location_country_code: 'GB',
           location_city: 'London',
           location_country: 'United Kingdom',
-          location_lat: 51.5,
-          location_lng: -0.1,
+          location_lat: 51.51,
+          location_lng: -0.13,
           request_count: 3,
           prayer_count: 7,
-          latest_created_at: '2024-01-03',
-        },
-        {
-          location_city: 'Unknown',
-          location_country: 'Unknown',
-          location_lat: 0,
-          location_lng: 0,
-          request_count: 1,
-          prayer_count: 1,
-          latest_created_at: '2024-01-04',
+          latest_created_at: '2024-01-03T12:00:00Z',
+          next_expires_at: '2024-01-17T12:00:00Z',
         },
       ],
       error: null,
     });
-
-    const result = await m.getMapHotspots();
-
-    expect(result).toEqual([
-      expect.objectContaining({
-        id: 'location:london|united kingdom',
+    expect(await m.getMapHotspots()).toEqual([
+      {
+        id: 'location:geonames:2643743',
+        placeId: 'geonames:2643743',
+        countryCode: 'GB',
         city: 'London',
         country: 'United Kingdom',
+        lat: 51.51,
+        lng: -0.13,
+        text: '',
         requestCount: 3,
         prayerCount: 7,
-        createdAt: '2024-01-03',
-      }),
+        createdAt: '2024-01-03T12:00:00Z',
+        expiresAt: '2024-01-17T12:00:00Z',
+      },
     ]);
     expect(qb.select).not.toHaveBeenCalled();
   });
 
-  it('returns mapped mappable prayers on fallback success', async () => {
-    setAlways([
-      {
-        id: 'p1',
-        body: 'Prayer 1',
-        category: 'Health',
-        location_city: 'London',
-        location_country: 'UK',
-        location_lat: 51.5,
-        location_lng: -0.1,
-        is_anonymous: false,
-        prayer_count: 5,
-        created_at: '2024-01-01',
-        comments_enabled: true,
-        profiles: { username: 'user1', display_name: 'User One' },
-      },
-      {
-        id: 'unknown-location',
-        body: 'Prayer without a mappable location',
-        category: 'Family',
-        location_city: 'Unknown',
-        location_country: 'Unknown',
-        location_lat: 0,
-        location_lng: 0,
-        is_anonymous: true,
-        prayer_count: 1,
-        created_at: '2024-01-02',
-        comments_enabled: false,
-        profiles: { username: 'user2', display_name: 'User Two' },
-      },
-    ]);
-    const result = await m.getMapHotspots();
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('p1');
-    expect(result[0].username).toBe('user1');
-    expect(result[0].name).toBe('User One');
-    expect(result[0].commentsEnabled).toBe(true);
-  });
-
-  it('normalizes London location variants from existing rows', async () => {
-    setAlways([
-      {
-        id: 'p-london',
-        body: 'Prayer',
-        category: null,
-        location_city: 'Greater London',
-        location_country: 'England',
-        location_lat: 51.5,
-        location_lng: -0.1,
-        is_anonymous: false,
-        prayer_count: 1,
-        created_at: '2024-01-01',
-        comments_enabled: true,
-        profiles: { username: 'user1', display_name: 'User One' },
-      },
-    ]);
-
-    const result = await m.getMapHotspots();
-
-    expect(result[0].city).toBe('London');
-    expect(result[0].country).toBe('United Kingdom');
-  });
-
-  it('returns empty array on error', async () => {
-    setAlways(null, new Error('DB error'));
+  it('does not replace unavailable aggregates with individual prayers', async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: new Error('RPC missing') });
+    setAlways([{ id: 'raw-prayer', body: 'Not an aggregate' }]);
     expect(await m.getMapHotspots()).toEqual([]);
+    expect(qb.select).not.toHaveBeenCalled();
   });
 
-  it('returns empty array when data is null', async () => {
-    setAlways(null);
-    expect(await m.getMapHotspots()).toEqual([]);
+  it('propagates the explicit failure option for callers with retry UI', async () => {
+    rpc.mockRejectedValueOnce(new Error('offline'));
+    await expect(m.getMapHotspots({ throwOnError: true })).rejects.toThrow(
+      'Prayer map is unavailable'
+    );
+    expect(qb.select).not.toHaveBeenCalled();
   });
 });
 
 describe('getPublicPrayersAtLocation', () => {
+  it('filters by canonical place identity without reinterpreting display labels', async () => {
+    setAlways([]);
+    await m.getPublicPrayersAtLocation('Greater London', 'UK', 50, {
+      placeId: 'geonames:2643743',
+      throwOnError: true,
+    });
+    expect(qb.eq).toHaveBeenCalledWith('audience', 'public');
+    expect(qb.eq).toHaveBeenCalledWith('location_place_id', 'geonames:2643743');
+    expect(qb.eq).not.toHaveBeenCalledWith('location_city', expect.anything());
+    expect(qb.eq).not.toHaveBeenCalledWith('location_country', expect.anything());
+    expect(qb.limit).toHaveBeenCalledWith(50);
+  });
+
   it('normalizes and applies an indexed public location filter', async () => {
     setAlways([
       {
@@ -285,6 +239,14 @@ describe('getPublicPrayersAtLocation', () => {
 });
 
 describe('getFeedPrayers', () => {
+  it('filters public expiry before pagination, but leaves Circle unchanged', async () => {
+    setAlways([]);
+    await m.getFeedPrayers();
+    expect(qb.gt).toHaveBeenCalledWith('public_expires_at', expect.any(String));
+    qb.gt.mockClear();
+    await m.getFeedPrayers(undefined, 20, 'circle');
+    expect(qb.gt).not.toHaveBeenCalled();
+  });
   it('returns mapped prayers on success', async () => {
     setAlways([
       {
@@ -479,8 +441,8 @@ describe('createPrayerRequest', () => {
         audience: 'circle',
         location_city: 'London',
         location_country: 'United Kingdom',
-        location_lat: 51.5,
-        location_lng: -0.1,
+        location_lat: null,
+        location_lng: null,
       })
     );
   });
@@ -516,6 +478,42 @@ describe('createPrayerRequest', () => {
         location_country: 'United Kingdom',
       })
     );
+  });
+
+  it('sends a selected place identity but never caller coordinates', async () => {
+    setAlways({ id: 'new-id' });
+    await m.createPrayerRequest({
+      ...prayer,
+      placeId: 'geonames:2643743',
+      lat: 51.512345,
+      lng: -0.123456,
+    });
+    expect(qb.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        location_place_id: 'geonames:2643743',
+        location_lat: null,
+        location_lng: null,
+      })
+    );
+  });
+
+  it('does not infer a country from a city alone', async () => {
+    setAlways({ id: 'new-id' });
+    await m.createPrayerRequest({ ...prayer, country: '' });
+    expect(qb.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        location_city: 'London',
+        location_country: 'Unknown',
+        location_lat: null,
+        location_lng: null,
+      })
+    );
+  });
+
+  it('strips a selected place identity from private prayers', async () => {
+    setAlways({ id: 'new-id' });
+    await m.createPrayerRequest({ ...prayer, audience: 'private', placeId: 'geonames:2643743' });
+    expect(qb.insert.mock.calls[0][0]).not.toHaveProperty('location_place_id');
   });
 
   it('returns null if no user', async () => {
@@ -1491,6 +1489,21 @@ describe('getUserPrayers', () => {
   });
 });
 
+describe('renewPublicPrayer', () => {
+  it('uses only the owner-authorized RPC and returns its server deadline', async () => {
+    rpc.mockResolvedValueOnce({ data: '2026-11-01T12:00:00Z', error: null });
+    expect(await m.renewPublicPrayer('p1')).toBe('2026-11-01T12:00:00Z');
+    expect(rpc).toHaveBeenCalledWith('renew_public_prayer', { p_prayer_id: 'p1' });
+    expect(qb.update).not.toHaveBeenCalled();
+  });
+  it('does not report renewal success after failure or an invalid response', async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: { code: '42501' } });
+    expect(await m.renewPublicPrayer('p1')).toBeNull();
+    rpc.mockResolvedValueOnce({ data: 'invalid-date', error: null });
+    expect(await m.renewPublicPrayer('p1')).toBeNull();
+  });
+});
+
 describe('searchUsers', () => {
   it('returns matching users on success', async () => {
     setAlways([{ username: 'testuser', display_name: 'Test User' }]);
@@ -1571,6 +1584,32 @@ describe('getSavedPrayers', () => {
 });
 
 describe('getMyPrayers', () => {
+  it('loads earlier owner history in bounded, stable-order pages', async () => {
+    setAlways([]);
+    await m.getMyPrayers('public', { offset: 50 });
+    expect(qb.range).toHaveBeenCalledWith(50, 99);
+    expect(qb.order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(qb.order).toHaveBeenCalledWith('id', { ascending: false });
+    expect(qb.gt).not.toHaveBeenCalled();
+  });
+  it('does not mistake a failed history page for the end of the archive', async () => {
+    const error = new Error('offline');
+    setAlways(null, error);
+    await expect(m.getMyPrayers('public', { offset: 50, throwOnError: true })).rejects.toBe(error);
+  });
+  it('retains public archives in owner history and maps their server deadline', async () => {
+    setAlways([
+      {
+        id: 'old',
+        body: 'Archived prayer',
+        audience: 'public',
+        public_expires_at: '2026-01-01T00:00:00Z',
+      },
+    ]);
+    const rows = await m.getMyPrayers('public');
+    expect(rows[0].expiresAt).toBe('2026-01-01T00:00:00Z');
+    expect(qb.gt).not.toHaveBeenCalled();
+  });
   it('returns my prayers on success', async () => {
     setAlways([
       {

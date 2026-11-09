@@ -1,7 +1,9 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { SubmitScreen } from './submit';
+
+jest.mock('../services/submission-id', () => ({ createSubmissionId: jest.fn() }));
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
@@ -11,6 +13,8 @@ jest.mock('lucide-react-native', () => ({
   EyeOff: () => null,
   RefreshCw: () => null,
   UsersRound: () => null,
+  MapPin: () => null,
+  X: () => null,
 }));
 
 let mockFocused = true;
@@ -30,8 +34,17 @@ jest.mock('../hooks/auth-context', () => ({
 }));
 
 jest.mock('@oratio/shared/queries', () => ({
+  PrayerSubmissionError: class extends Error {
+    uncertain: boolean;
+    constructor(value: boolean) {
+      super('Submission failed');
+      this.uncertain = value;
+    }
+  },
   createPrayerRequest: jest.fn(),
   getPrayerCircleCount: jest.fn(),
+  searchPrayerPlaces: jest.fn(),
+  findPrayerPlace: jest.fn(),
 }));
 
 jest.mock('expo-location', () => ({
@@ -44,8 +57,15 @@ jest.mock('expo-location', () => ({
 }));
 
 import { useAuth } from '../hooks/auth-context';
-import { createPrayerRequest, getPrayerCircleCount } from '@oratio/shared/queries';
-import { getApproximateCoordinates } from '@oratio/shared/prayer-data';
+import { createSubmissionId } from '../services/submission-id';
+import {
+  createPrayerRequest,
+  PrayerSubmissionError,
+  findPrayerPlace,
+  getPrayerCircleCount,
+  searchPrayerPlaces,
+  type PrayerPlace,
+} from '@oratio/shared/queries';
 import * as Location from 'expo-location';
 
 function mockAuth() {
@@ -63,18 +83,51 @@ function mockAuth() {
 
 const navigation = { navigate: jest.fn(), goBack: jest.fn(), reset: jest.fn() } as never;
 const route = {} as never;
+const london: PrayerPlace = {
+  id: 'geonames:2643743',
+  city: 'London',
+  region: 'England',
+  country: 'United Kingdom',
+  countryCode: 'GB',
+  lat: 51.51,
+  lng: -0.13,
+};
+const nairobi: PrayerPlace = {
+  id: 'geonames:184745',
+  city: 'Nairobi',
+  region: 'Nairobi County',
+  country: 'Kenya',
+  countryCode: 'KE',
+  lat: -1.28,
+  lng: 36.82,
+};
+async function selectCity(city = 'London') {
+  fireEvent.changeText(screen.getByLabelText('Search for a city'), city);
+  const place = city === 'Nairobi' ? nairobi : london;
+  fireEvent.press(
+    await screen.findByLabelText(`Select ${place.city}, ${place.region}, ${place.country}`)
+  );
+}
 
 function fillForm(text: string) {
   fireEvent.changeText(screen.getByLabelText('Prayer'), text);
 }
 
 describe('SubmitScreen', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
   beforeEach(() => {
     jest.resetAllMocks();
+    jest.mocked(createSubmissionId).mockReturnValue('72000000-0000-4000-8000-000000000001');
     mockFocused = true;
     mockAuth();
     jest.mocked(createPrayerRequest).mockResolvedValue('prayer-new' as never);
     jest.mocked(getPrayerCircleCount).mockResolvedValue(1);
+    jest
+      .mocked(searchPrayerPlaces)
+      .mockImplementation(async (query) => (query === 'Nairobi' ? [nairobi] : [london]));
+    jest.mocked(findPrayerPlace).mockResolvedValue(london);
     jest.mocked(Location.getForegroundPermissionsAsync).mockResolvedValue({
       granted: true,
       canAskAgain: true,
@@ -94,12 +147,94 @@ describe('SubmitScreen', () => {
       .mockResolvedValue([{ city: 'London', country: 'United Kingdom' }] as never);
   });
 
+  it('locks an uncertain draft and retries the same submission ID', async () => {
+    jest.mocked(createPrayerRequest).mockRejectedValueOnce(new Error('response lost'));
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fillForm('A prayer whose confirmation was lost');
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    await screen.findByText('Check and retry submission');
+    expect(screen.getByLabelText('Prayer').props.editable).toBe(false);
+    expect(screen.getByRole('radio', { name: 'Private' })).toBeDisabled();
+    expect(screen.queryByText('Your prayer is live.')).toBeNull();
+    fireEvent.press(screen.getByText('Check and retry submission'));
+    await screen.findByText('Your prayer is live.');
+    const calls = jest.mocked(createPrayerRequest).mock.calls;
+    expect(calls[0][0]).toEqual(calls[1][0]);
+    expect(calls[1][1]).toEqual({ ...calls[0][1], verifyExisting: true });
+    expect(createSubmissionId).toHaveBeenCalledTimes(1);
+  });
+
+  it('recovers from a stalled submission without accepting a late success', async () => {
+    jest.useFakeTimers();
+    let finish!: (id: string) => void;
+    jest.mocked(createPrayerRequest).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        })
+    );
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fillForm('A stalled prayer remains safe to check');
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(18_000);
+    });
+    expect(screen.getByText('Check and retry submission')).toBeTruthy();
+    expect(screen.getByLabelText('Prayer').props.value).toBe(
+      'A stalled prayer remains safe to check'
+    );
+    await act(async () => finish('late-success'));
+    expect(screen.queryByText('Your prayer is live.')).toBeNull();
+    fireEvent.press(screen.getByText('Check and retry submission'));
+    await screen.findByText('Your prayer is live.');
+    expect(jest.mocked(createPrayerRequest).mock.calls[1][1]?.requestId).toBe(
+      jest.mocked(createPrayerRequest).mock.calls[0][1]?.requestId
+    );
+  });
+
+  it('keeps the same uncertain attempt when verification cannot finish', async () => {
+    jest
+      .mocked(createPrayerRequest)
+      .mockRejectedValueOnce(new Error('response lost'))
+      .mockRejectedValueOnce(new PrayerSubmissionError(false));
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fillForm('An uncertain draft must keep its identity');
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    await screen.findByText('Check and retry submission');
+    fireEvent.press(screen.getByText('Check and retry submission'));
+    await waitFor(() => expect(screen.getByText('Check and retry submission')).toBeEnabled());
+    expect(screen.getByLabelText('Prayer').props.editable).toBe(false);
+    fireEvent.press(screen.getByText('Check and retry submission'));
+    await screen.findByText('Your prayer is live.');
+    expect(
+      new Set(jest.mocked(createPrayerRequest).mock.calls.map((call) => call[1]?.requestId)).size
+    ).toBe(1);
+  });
+
+  it('unlocks a definitively rejected draft for editing and starts a new attempt', async () => {
+    jest
+      .mocked(createSubmissionId)
+      .mockReturnValueOnce('72000000-0000-4000-8000-000000000001')
+      .mockReturnValueOnce('72000000-0000-4000-8000-000000000002');
+    jest.mocked(createPrayerRequest).mockRejectedValueOnce(new PrayerSubmissionError(false));
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fillForm('A rejected draft can still be edited');
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    await screen.findByText("We couldn't share your prayer. Please try again.");
+    expect(screen.getByLabelText('Prayer').props.editable).toBe(true);
+    fillForm('An edited draft after a definite rejection');
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    await screen.findByText('Your prayer is live.');
+    expect(jest.mocked(createPrayerRequest).mock.calls[1][1]?.requestId).not.toBe(
+      jest.mocked(createPrayerRequest).mock.calls[0][1]?.requestId
+    );
+  });
+
   it('renders the prayer, location, audience, and public preferences', () => {
     render(<SubmitScreen navigation={navigation} route={route} />);
 
     expect(screen.getByPlaceholderText("Share what's on your heart…")).toBeTruthy();
-    expect(screen.getByPlaceholderText('e.g. London')).toBeTruthy();
-    expect(screen.getByPlaceholderText('e.g. United Kingdom')).toBeTruthy();
+    expect(screen.getByLabelText('Search for a city')).toBeTruthy();
     expect(screen.getByText('Public')).toBeTruthy();
     expect(screen.getByText('Prayer Circle')).toBeTruthy();
     expect(screen.getByText('Private')).toBeTruthy();
@@ -125,8 +260,8 @@ describe('SubmitScreen', () => {
 
     fireEvent.press(screen.getByLabelText('Use my current location'));
 
-    expect(await screen.findByDisplayValue('London')).toBeTruthy();
-    expect(screen.getByDisplayValue('United Kingdom')).toBeTruthy();
+    expect(await screen.findByText('London')).toBeTruthy();
+    expect(screen.getByText('England, United Kingdom')).toBeTruthy();
     expect(Location.reverseGeocodeAsync).toHaveBeenCalledWith({
       latitude: 51.51,
       longitude: -0.12,
@@ -136,16 +271,19 @@ describe('SubmitScreen', () => {
     fireEvent.press(screen.getByText('Submit Prayer'));
 
     await waitFor(() => expect(createPrayerRequest).toHaveBeenCalled());
-    const coarseCoordinates = getApproximateCoordinates('London', 'United Kingdom');
+    const coarseCoordinates = { lat: london.lat, lng: london.lng };
     expect(jest.mocked(createPrayerRequest).mock.calls[0][0]).toEqual(
       expect.objectContaining({
         city: 'London',
         country: 'United Kingdom',
         lat: coarseCoordinates.lat,
         lng: coarseCoordinates.lng,
+        placeId: london.id,
+        countryCode: 'GB',
       })
     );
     expect(coarseCoordinates).not.toEqual({ lat: 51.51, lng: -0.12 });
+    expect(findPrayerPlace).toHaveBeenCalledWith('London', 'United Kingdom');
   });
 
   it('explains when location access is unavailable without blocking manual entry', async () => {
@@ -161,19 +299,86 @@ describe('SubmitScreen', () => {
     await waitFor(() =>
       expect(alertSpy).toHaveBeenCalledWith(
         'Location access is off',
-        expect.stringContaining('enter')
+        expect.stringContaining('search')
       )
     );
-    expect(screen.getByPlaceholderText('e.g. London')).toBeTruthy();
+    expect(screen.getByLabelText('Search for a city')).toBeTruthy();
     alertSpy.mockRestore();
+  });
+
+  it('uses the detected ISO country code rather than a localized country name', async () => {
+    jest
+      .mocked(Location.reverseGeocodeAsync)
+      .mockResolvedValue([
+        { city: 'London', country: 'Royaume-Uni', isoCountryCode: 'GB' },
+      ] as never);
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fireEvent.press(screen.getByLabelText('Use my current location'));
+
+    expect(await screen.findByText('London')).toBeTruthy();
+    expect(findPrayerPlace).toHaveBeenCalledWith('London', 'GB');
+  });
+
+  it('allows submission without a location when the detected city is unsupported', async () => {
+    jest.mocked(findPrayerPlace).mockResolvedValue(null);
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fillForm('Please pray for my family during this hard season');
+    fireEvent.press(screen.getByLabelText('Use my current location'));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Location unavailable',
+        expect.stringContaining('continue without a location')
+      )
+    );
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    await waitFor(() => expect(createPrayerRequest).toHaveBeenCalled());
+    expect(jest.mocked(createPrayerRequest).mock.calls[0][0]).toEqual(
+      expect.objectContaining({ city: 'Unknown', country: 'Unknown', lat: 0, lng: 0 })
+    );
+    expect(jest.mocked(createPrayerRequest).mock.calls[0][0].placeId).toBeUndefined();
+    alertSpy.mockRestore();
+  });
+
+  it('asks for a selection or cleared search before submitting an unfinished city search', async () => {
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fillForm('Please pray for my family during this hard season');
+    fireEvent.changeText(screen.getByLabelText('Search for a city'), 'London');
+    fireEvent.press(screen.getByText('Submit Prayer'));
+
+    expect(
+      screen.getByText('Select a city from the results or clear the location search.')
+    ).toBeTruthy();
+    expect(createPrayerRequest).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByLabelText('Clear location'));
+    fireEvent.press(screen.getByText('Submit Prayer'));
+    expect(await screen.findByText('Your prayer is live.')).toBeTruthy();
+  });
+
+  it('does not replace a manual selection when an older auto-detect lookup completes', async () => {
+    let resolvePlace!: (value: PrayerPlace | null) => void;
+    jest.mocked(findPrayerPlace).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePlace = resolve;
+        })
+    );
+    render(<SubmitScreen navigation={navigation} route={route} />);
+    fireEvent.press(screen.getByLabelText('Use my current location'));
+    await waitFor(() => expect(findPrayerPlace).toHaveBeenCalled());
+    await selectCity('Nairobi');
+    await act(async () => resolvePlace(london));
+
+    expect(screen.getByText('Nairobi')).toBeTruthy();
+    expect(screen.queryByText('London')).toBeNull();
   });
 
   it("submits a public prayer with the user's username", async () => {
     render(<SubmitScreen navigation={navigation} route={route} />);
 
     fillForm('Please pray for my family during this hard season');
-    fireEvent.changeText(screen.getByPlaceholderText('e.g. London'), 'London');
-    fireEvent.changeText(screen.getByPlaceholderText('e.g. United Kingdom'), 'United Kingdom');
+    await selectCity();
 
     fireEvent.press(screen.getByText('Submit Prayer'));
 
@@ -192,8 +397,7 @@ describe('SubmitScreen', () => {
     render(<SubmitScreen navigation={navigation} route={route} />);
 
     fillForm('A prayer shared without my name on it');
-    fireEvent.changeText(screen.getByPlaceholderText('e.g. London'), 'Nairobi');
-    fireEvent.changeText(screen.getByPlaceholderText('e.g. United Kingdom'), 'Kenya');
+    await selectCity('Nairobi');
 
     fireEvent(screen.getByLabelText('Share anonymously'), 'valueChange', true);
 
@@ -224,8 +428,7 @@ describe('SubmitScreen', () => {
     expect(screen.queryByText('Share anonymously')).toBeNull();
     expect(screen.queryByText('Let people encourage me')).toBeNull();
     expect(screen.queryByLabelText('Use my current location')).toBeNull();
-    expect(screen.queryByPlaceholderText('e.g. London')).toBeNull();
-    expect(screen.queryByPlaceholderText('e.g. United Kingdom')).toBeNull();
+    expect(screen.queryByLabelText('Search for a city')).toBeNull();
 
     fireEvent.press(screen.getByText('Save Prayer'));
 
@@ -234,6 +437,8 @@ describe('SubmitScreen', () => {
     expect(payload.audience).toBe('private');
     expect(payload.commentsEnabled).toBe(true);
     expect(payload).toEqual(expect.objectContaining({ city: '', country: '', lat: 0, lng: 0 }));
+    expect(payload.placeId).toBeUndefined();
+    expect(payload.countryCode).toBeUndefined();
     expect(Location.getForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(getPrayerCircleCount).not.toHaveBeenCalled();
     expect(await screen.findByText('Your private prayer is saved.')).toBeTruthy();
@@ -242,13 +447,11 @@ describe('SubmitScreen', () => {
   it('clears a previously entered location when switching to Private', async () => {
     render(<SubmitScreen navigation={navigation} route={route} />);
     fillForm('A private prayer only for me to keep');
-    fireEvent.changeText(screen.getByPlaceholderText('e.g. London'), 'London');
-    fireEvent.changeText(screen.getByPlaceholderText('e.g. United Kingdom'), 'United Kingdom');
+    await selectCity();
     fireEvent.press(screen.getByText('Private'));
     fireEvent.press(screen.getByText('Prayer Circle'));
 
-    expect(screen.getByPlaceholderText('e.g. London').props.value).toBe('');
-    expect(screen.getByPlaceholderText('e.g. United Kingdom').props.value).toBe('');
+    expect(screen.getByLabelText('Search for a city').props.value).toBe('');
     expect(screen.getByLabelText('Prayer').props.value).toBe(
       'A private prayer only for me to keep'
     );
@@ -263,6 +466,11 @@ describe('SubmitScreen', () => {
           country: '',
           lat: 0,
           lng: 0,
+        }),
+        expect.objectContaining({
+          requestId: expect.any(String),
+          expectedUserId: 'user-1',
+          throwOnError: true,
         })
       )
     );
@@ -322,10 +530,9 @@ describe('SubmitScreen', () => {
     fireEvent.press(screen.getByText('Public'));
     await act(async () => resolveGeocode([{ city: 'London', country: 'United Kingdom' }] as never));
 
-    expect(screen.getByPlaceholderText('e.g. London').props.value).toBe('');
-    expect(screen.getByPlaceholderText('e.g. United Kingdom').props.value).toBe('');
+    expect(screen.getByLabelText('Search for a city').props.value).toBe('');
     fireEvent.press(screen.getByLabelText('Use my current location'));
-    expect(await screen.findByDisplayValue('London')).toBeTruthy();
+    expect(await screen.findByText('London')).toBeTruthy();
   });
 
   it('does not show stale geolocation errors on a private prayer', async () => {
@@ -497,7 +704,8 @@ describe('SubmitScreen', () => {
     fireEvent.press(screen.getByText('Save Prayer'));
     expect(await screen.findByText('Your private prayer is saved.')).toBeTruthy();
     expect(createPrayerRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ audience: 'private' })
+      expect.objectContaining({ audience: 'private' }),
+      expect.any(Object)
     );
   });
 
@@ -513,7 +721,8 @@ describe('SubmitScreen', () => {
     fireEvent.press(screen.getByText('Submit Prayer'));
     expect(await screen.findByText('Shared with your Prayer Circle.')).toBeTruthy();
     expect(createPrayerRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ audience: 'circle', username: 'testuser' })
+      expect.objectContaining({ audience: 'circle', username: 'testuser' }),
+      expect.any(Object)
     );
     expect(getPrayerCircleCount).toHaveBeenCalledTimes(2);
   });
@@ -674,7 +883,8 @@ describe('SubmitScreen', () => {
     fireEvent.press(screen.getByText('Save Prayer'));
     expect(await screen.findByText('Your private prayer is saved.')).toBeTruthy();
     expect(createPrayerRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ audience: 'private' })
+      expect.objectContaining({ audience: 'private' }),
+      expect.any(Object)
     );
   });
 

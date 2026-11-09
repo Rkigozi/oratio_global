@@ -1,7 +1,7 @@
 # Moderation Launch Follow-Up
 
 Scope: SCRUM-71 reporting/moderation, with launch-safety gaps tracked separately
-from the user-confirmed native report success and duplicate checks.
+from the maintainer-reported native report success and duplicate checks.
 
 ## Implemented (Updated 2026-09-24)
 
@@ -48,7 +48,7 @@ from the user-confirmed native report success and duplicate checks.
 ## Rollout And Live QA
 
 1. Migrations 039 and 040 were applied to Oratio_DB on 2026-09-23 with explicit
-   owner approval after automated checks. The missing `get_report_review` RPC
+   recorded deployment approval after automated checks. The missing `get_report_review` RPC
    caused the live review-load error. The existing signed-in moderator now loads
    a real Circle report's content and decision controls successfully. No role was
    granted and no content was hidden, restored, or dismissed during this rollout.
@@ -58,7 +58,7 @@ from the user-confirmed native report success and duplicate checks.
    verification remains open. Old moderation UIs
    lose direct report-update permission after the migration and fail safely;
    do not restore those grants to make an old client work.
-3. Confirm the launch moderator account and review ownership with the owner.
+3. Record the launch moderator account, review responsibility and access approval.
    The currently signed-in account already has moderation access. Do not grant
    additional roles without approval, elevate shared QA accounts, or ship an admin key.
 4. Sign in to `/moderate`. Verify a normal account is denied at both UI and RPC
@@ -79,7 +79,7 @@ Queue follow-up verification on 2026-09-24: 479 web tests, web/mobile type-check
 web lint and build passed. No database, account-role, or content changes were
 needed for this follow-up.
 
-User-confirmed QA on 2026-09-24: restoring the recent public test prayer makes it
+Maintainer-reported QA on 2026-09-24: restoring the recent public test prayer makes it
 visible again to Miriam and Jonah after refreshing Expo. The report remains
 Resolved and its history shows Hide and Restore. A fresh report appears in the
 visible Pending / Newest reports queue within 30 seconds without manual refresh.
@@ -87,17 +87,17 @@ Dismissing that report moves it to Dismissed while the prayer remains visible in
 Expo. Circle audience restoration and comment-report QA remained open at that point; these passes
 do not close the broader enforcement or release-device checklist.
 
-User-confirmed QA on 2026-09-26: a disposable Circle prayer disappears after Hide
+Maintainer-reported QA on 2026-09-26: a disposable Circle prayer disappears after Hide
 and refreshing Expo. After Restore and another refresh, the author and accepted
 Circle member can see it again while an unconnected account still cannot. The
-report remains Resolved and its history records Hide and Restore. The user also
-confirmed the comment-report flow was already tested: reason and optional details,
+report remains Resolved and its history records Hide and Restore. The maintainer also
+reported the comment-report flow was already tested: reason and optional details,
 explicit Submit, success confirmation, correct content/details in moderator review,
 and duplicate-report feedback. Jonah, acting as a non-moderator reporter, also
 received the review outcome in Updates after Miriam dismissed a disposable report,
 without seeing her distinctive internal decision note. Offline report submission
 shows a clear error and retains the reason/details draft; reconnecting and retrying
-succeeds without duplicates (user-confirmed). Reporter-details and other-reporter
+succeeds without duplicates (maintainer-reported). Reporter-details and other-reporter
 identity privacy, form limits, no-details submission, keyboard/authentication-error
 handling, and broader enforcement/release checks remain open.
 These follow-ups are recorded locally and in the 2026-09-26 workbook sync below.
@@ -106,13 +106,13 @@ Report-length fix verification on 2026-09-26: 485 web tests, 190 mobile tests,
 both type-checks, web lint and production build passed. Web screenshots at
 1280x720 and 390x844 show readable feedback; the exact-limit state remains
 submittable. Browser checks did not send reports. The build retains the existing
-large-chunk warning. The user confirmed the new warning works on the physical
+large-chunk warning. The maintainer reported the new warning works on the physical
 iPhone. Full light/dark and keyboard coverage remains open.
 
 QA workbook sync on 2026-09-24: `Smoke Test Matrix!S32` (`MOD-002`) now includes
 these dated results and a note listing the remaining native/privacy/release checks.
 The release checklist records migrations through 040; the dashboard refresh date
-explicitly notes this partial sync. Historical PWA results and dashboard formulas
+explicitly notes this partial sync. Earlier workbook results and dashboard formulas
 were preserved. Separate native follow-up rows have not been added.
 
 QA workbook sync on 2026-09-26: `Smoke Test Matrix!S30` (`REPORT-001`) and `S32`
@@ -120,7 +120,7 @@ QA workbook sync on 2026-09-26: `Smoke Test Matrix!S30` (`REPORT-001`) and `S32`
 offline-recovery and iPhone limit-warning results. Their notes distinguish open
 coverage from these passes. Account guidance now uses Jonah/Sofia for access-denial
 checks and identifies Miriam as the existing QA moderator, not a launch account.
-The partial-refresh date is updated; historical PWA statuses and formulas remain
+The partial-refresh date is updated; earlier workbook statuses and formulas remain
 unchanged. This does not close SCRUM-71 or constitute release sign-off.
 
 Local checks: `node scripts/test-moderation-db.mjs` requires PostgreSQL 14+
@@ -132,7 +132,7 @@ hosted Supabase/PostgREST/Realtime and physical-device QA.
 
 ## Still Open Before Launch Sign-Off
 
-Latest confirmation and Jira sync (2026-09-28): Robert confirmed reason-only
+Latest confirmation and Jira sync (2026-09-28): The maintainer reported reason-only
 prayer/comment reports, keyboard scrolling/readability in light and dark mode,
 and reporter-details isolation from authors/unrelated accounts on 2026-09-26.
 Those checks are passed in `docs/QA-CHECKLIST.md` and SCRUM-71's QA comment;
@@ -144,7 +144,8 @@ blocking implementation separately as In Progress.
 
 - Alerting, urgency/escalation, and an owned review schedule with backup coverage.
   Do not put prayer text or reporter identity in external alert messages.
-- User blocking (SCRUM-94, local implementation in progress; see
+- User blocking (SCRUM-94, implementation pushed and migration 041 applied with
+  recorded deployment approval on 2026-09-28; physical iPhone QA remains open; see
   [USER-BLOCKING.md](./USER-BLOCKING.md)), administrator enforcement for abusive
   accounts, and objectionable content filtering before publication. Validate
   against Apple Guideline 1.2.

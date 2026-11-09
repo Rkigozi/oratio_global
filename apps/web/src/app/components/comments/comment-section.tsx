@@ -19,11 +19,17 @@ interface Props {
   prayer: PrayerRequest;
   commentCount: number;
   onCommentCountChange: (count: number) => void;
+  readOnly?: boolean;
 }
 
 const PAGE_SIZE = 20;
 
-export function CommentSection({ prayer, commentCount, onCommentCountChange }: Props) {
+export function CommentSection({
+  prayer,
+  commentCount,
+  onCommentCountChange,
+  readOnly = false,
+}: Props) {
   const { profile, user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,6 +253,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
               onDelete={(id) => void handleDelete(id)}
               onUpdate={handleUpdate}
               canModerateComments={canModerateComments}
+              readOnly={readOnly}
             />
           ))}
           {hasMore && (
@@ -262,7 +269,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
       )}
 
       <AnimatePresence>
-        {replyTo && (
+        {!readOnly && replyTo && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -283,7 +290,7 @@ export function CommentSection({ prayer, commentCount, onCommentCountChange }: P
         )}
       </AnimatePresence>
 
-      {!profile ? (
+      {readOnly ? null : !profile ? (
         <p className="text-text-dim text-xs text-center py-3">
           <a href="/login" className="text-accent hover:underline">
             Sign in

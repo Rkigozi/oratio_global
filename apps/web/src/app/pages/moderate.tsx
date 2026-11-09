@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader, RefreshCw, ShieldCheck } from 'lucide-react';
 import { getReports, isCurrentUserModerator } from '../services/supabase-queries';
 import type {
@@ -159,6 +159,14 @@ export function Moderate() {
             </button>
           )}
         </header>
+        {authorized && !selected && (
+          <Link
+            to="/admin/service-notices"
+            className="inline-flex items-center min-h-11 mb-3 text-sm text-accent"
+          >
+            Service notices
+          </Link>
+        )}
         {notice && (
           <p role="status" className="border-l-2 border-success pl-3 py-2 mb-5 text-sm">
             {notice}

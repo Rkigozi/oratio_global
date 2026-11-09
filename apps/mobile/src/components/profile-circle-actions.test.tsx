@@ -84,7 +84,10 @@ describe('ProfileCircleActions', () => {
     jest.mocked(getPrayerCircleStatus).mockResolvedValue({ state: 'none' });
     fireEvent.press(cancel);
     expect(await screen.findByText('Invite cancelled.')).toBeTruthy();
-    expect(cancelPrayerCircleInvite).toHaveBeenCalledWith('invite-out');
+    expect(cancelPrayerCircleInvite).toHaveBeenCalledWith(
+      'invite-out',
+      expect.objectContaining({ expectedUserId: 'viewer-id' })
+    );
     expect(await screen.findByText('Invite to Prayer Circle')).toBeTruthy();
   });
 
@@ -97,7 +100,11 @@ describe('ProfileCircleActions', () => {
     jest.mocked(getPrayerCircleStatus).mockResolvedValue({ state: 'connected' });
     fireEvent.press(accept);
     expect(await screen.findByText('In your Prayer Circle')).toBeTruthy();
-    expect(respondToPrayerCircleInvite).toHaveBeenCalledWith('invite-in', 'accepted');
+    expect(respondToPrayerCircleInvite).toHaveBeenCalledWith(
+      'invite-in',
+      'accepted',
+      expect.objectContaining({ expectedUserId: 'viewer-id' })
+    );
     expect(props.onAccepted).toHaveBeenCalledTimes(1);
     fireEvent.press(screen.getByText('Manage Prayer Circle'));
     expect(props.onManage).toHaveBeenCalledTimes(1);
@@ -112,7 +119,11 @@ describe('ProfileCircleActions', () => {
     jest.mocked(getPrayerCircleStatus).mockResolvedValue({ state: 'none' });
     fireEvent.press(decline);
     expect(await screen.findByText('Invite declined.')).toBeTruthy();
-    expect(respondToPrayerCircleInvite).toHaveBeenCalledWith('invite-in', 'declined');
+    expect(respondToPrayerCircleInvite).toHaveBeenCalledWith(
+      'invite-in',
+      'declined',
+      expect.objectContaining({ expectedUserId: 'viewer-id' })
+    );
     expect(props.onAccepted).not.toHaveBeenCalled();
   });
 
@@ -158,11 +169,23 @@ describe('ProfileCircleActions', () => {
       else jest.mocked(sendPrayerCircleInvite).mockResolvedValueOnce(false);
       render(<ProfileCircleActions {...props} />);
       fireEvent.press(await screen.findByText('Invite to Prayer Circle'));
-      await screen.findByText(/We couldn't send the invite/);
+      await screen.findByText(
+        result === 'rejected' ? 'Check and retry' : /We couldn't send the invite/
+      );
       expect(screen.queryByText('Invite sent to @miriam.')).toBeNull();
-      fireEvent.press(await screen.findByText('Invite to Prayer Circle'));
+      fireEvent.press(
+        await screen.findByText(
+          result === 'rejected' ? 'Check and retry' : 'Invite to Prayer Circle'
+        )
+      );
       expect(await screen.findByText('Invite sent to @miriam.')).toBeTruthy();
       expect(sendPrayerCircleInvite).toHaveBeenCalledTimes(2);
+      if (result === 'rejected') {
+        const calls = jest.mocked(sendPrayerCircleInvite).mock.calls;
+        expect(calls[1][2]).toEqual(
+          expect.objectContaining({ requestId: calls[0][2]?.requestId, verifyExisting: true })
+        );
+      }
     }
   );
 

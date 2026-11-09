@@ -2,6 +2,8 @@ export interface PrayerRequest {
   id: string;
   city: string;
   country: string;
+  placeId?: string;
+  countryCode?: string;
   text: string;
   audience?: 'public' | 'circle' | 'private';
   name?: string; // Legacy field - use displayName instead
@@ -13,12 +15,19 @@ export interface PrayerRequest {
   category?: string;
   createdAt?: string; // ISO timestamp
   editedAt?: string; // ISO timestamp for prayer wording edits
+  expiresAt?: string; // Server-managed public visibility deadline; absent for Circle/Private
   isAnonymous?: boolean; // Preserve privacy intent even when an owner can see their identity
   commentsEnabled?: boolean;
   avatarUrl?: string;
   commentCount?: number;
   authorId?: string;
   requestCount?: number;
+}
+
+export function isPrayerArchived(prayer: PrayerRequest, now = Date.now()): boolean {
+  if ((prayer.audience || 'public') !== 'public' || !prayer.expiresAt) return false;
+  const expiry = Date.parse(prayer.expiresAt);
+  return !Number.isFinite(expiry) || expiry <= now;
 }
 
 export interface PrayerLocation {

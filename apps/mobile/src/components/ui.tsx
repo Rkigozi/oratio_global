@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   buttonPressed: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentPressed,
   },
   buttonDisabled: {
     opacity: 0.6,

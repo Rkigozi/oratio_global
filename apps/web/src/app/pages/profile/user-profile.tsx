@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { ArrowLeft, Check, Clock, Send, UserPlus, Users, X } from 'lucide-react';
-import { timeAgo } from '../../services/prayer-data';
+import { timeAgo, isPrayerArchived } from '../../services/prayer-data';
+import { usePrayerClock } from '../../hooks/use-prayer-clock';
 import type { PrayerRequest } from '../../services/prayer-data';
 import { useAuth } from '../../hooks/auth-context';
 import { AvatarImage } from '../../components/avatar-image';
@@ -30,7 +31,9 @@ export function UserProfile() {
     avatar_url: string | null;
     created_at: string;
   } | null>(null);
-  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const [allPrayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const now = usePrayerClock(allPrayers);
+  const prayers = allPrayers.filter((prayer) => !isPrayerArchived(prayer, now));
 
   const resolvedUsername = profile?.username || username;
   const isOwnProfile = currentProfile?.username === resolvedUsername;

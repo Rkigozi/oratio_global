@@ -95,7 +95,7 @@ describe('Feed prayer event integration', () => {
     setupFeed();
   });
 
-  it('prepends a prayer when the submit page dispatches oratio-prayer-added', async () => {
+  it('reloads a submitted public prayer with its authoritative server deadline', async () => {
     renderFeed();
     await screen.findByText('Pray for patience today');
 
@@ -111,12 +111,15 @@ describe('Feed prayer event integration', () => {
       createdAt: new Date().toISOString(),
       commentsEnabled: true,
     };
+    const expiresAt = new Date(Date.now() + 14 * 86400000).toISOString();
+    vi.mocked(getFeedPrayers).mockResolvedValue([{ ...newPrayer, expiresAt }, ...basePrayers]);
 
     await act(async () => {
       window.dispatchEvent(new CustomEvent('oratio-prayer-added', { detail: newPrayer }));
     });
 
-    expect(screen.getByText('A freshly submitted prayer request')).toBeInTheDocument();
+    expect(await screen.findByText('A freshly submitted prayer request')).toBeInTheDocument();
+    expect(getFeedPrayers).toHaveBeenCalledTimes(2);
   });
 
   it('does not duplicate a prayer that is already in the feed', async () => {

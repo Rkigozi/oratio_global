@@ -15,6 +15,7 @@ export type ThemeColors = {
   textFaint: string;
   accent: string;
   accentDark: string;
+  accentPressed: string;
   accentLight: string;
   accentTint: string;
   accentTintSoft: string;
@@ -45,11 +46,12 @@ export const lightColors: ThemeColors = {
   divider: 'rgba(38, 51, 89, 0.1)',
   text: '#18233F',
   textSecondary: '#35405E',
-  textMuted: '#65708F',
-  textDim: '#8992A8',
-  textFaint: '#A4ACBE',
-  accent: '#5267D8',
+  textMuted: '#58627D',
+  textDim: '#596482',
+  textFaint: '#5B6684',
+  accent: '#495DC9',
   accentDark: '#4156C2',
+  accentPressed: '#3446A2',
   accentLight: '#7183E8',
   accentTint: 'rgba(82, 103, 216, 0.1)',
   accentTintSoft: 'rgba(82, 103, 216, 0.05)',
@@ -81,10 +83,11 @@ export const darkColors: ThemeColors = {
   text: '#E2E4F0',
   textSecondary: '#C5CBE2',
   textMuted: '#8890B5',
-  textDim: '#4E5573',
-  textFaint: '#3E4460',
+  textDim: '#8993B8',
+  textFaint: '#8993B8',
   accent: '#7C8FFF',
-  accentDark: '#5A6FD6',
+  accentDark: '#5266C9',
+  accentPressed: '#485CBE',
   accentLight: '#A0B4FF',
   accentTint: 'rgba(124, 143, 255, 0.12)',
   accentTintSoft: 'rgba(124, 143, 255, 0.06)',

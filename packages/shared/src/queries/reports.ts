@@ -1,6 +1,14 @@
 import { getSupabaseClient } from '../client';
 import { logError } from '../logger';
 import { countReportDetailsCharacters, REPORT_DETAILS_MAX_LENGTH } from '../validation';
+import {
+  assertWriteDeadline,
+  getWriteUser,
+  withWriteSignal,
+  writeOutcomeError,
+  WriteOutcomeError,
+  type WriteAttempt,
+} from '../write-outcome';
 
 const supabase = getSupabaseClient();
 
@@ -78,12 +86,16 @@ function mapReportProfile(row: Record<string, unknown>): ReportProfile {
   };
 }
 
-export async function createReport(input: {
-  reportable_type: 'prayer' | 'comment';
-  reportable_id: string;
-  reason: string;
-  details?: string;
-}): Promise<CreateReportResult> {
+export async function createReport(
+  input: {
+    reportable_type: 'prayer' | 'comment';
+    reportable_id: string;
+    reason: string;
+    details?: string;
+  },
+  attempt?: WriteAttempt
+): Promise<CreateReportResult> {
+  if (attempt) return createReportAttempt(input, attempt);
   const details = input.details?.trim() || null;
   if (details && countReportDetailsCharacters(details) > REPORT_DETAILS_MAX_LENGTH) return 'failed';
   const {
@@ -130,6 +142,87 @@ export async function createReport(input: {
     return 'failed';
   }
   return 'created';
+}
+
+async function createReportAttempt(
+  input: {
+    reportable_type: 'prayer' | 'comment';
+    reportable_id: string;
+    reason: string;
+    details?: string;
+  },
+  attempt: WriteAttempt
+): Promise<CreateReportResult> {
+  let writeStarted = false;
+  try {
+    const user = await getWriteUser(attempt);
+    const details = input.details?.trim() || null;
+    if (
+      !input.reason.trim() ||
+      !input.reportable_id ||
+      (details && countReportDetailsCharacters(details) > REPORT_DETAILS_MAX_LENGTH)
+    )
+      throw new WriteOutcomeError(false);
+    const recover = async () => {
+      const { data, error } = await withWriteSignal(
+        supabase
+          .from('reports')
+          .select('id, reported_by, reportable_type, reportable_id, reason, reporter_details')
+          .eq('id', attempt.requestId)
+          .eq('reported_by', user.id),
+        attempt
+      ).maybeSingle();
+      if (error) throw new WriteOutcomeError(true);
+      if (!data) return false;
+      if (
+        data.id !== attempt.requestId ||
+        data.reported_by !== user.id ||
+        data.reportable_type !== input.reportable_type ||
+        data.reportable_id !== input.reportable_id ||
+        data.reason !== input.reason ||
+        (data.reporter_details || null) !== details
+      )
+        throw new WriteOutcomeError(true);
+      return true;
+    };
+    if (attempt.verifyExisting && (await recover())) return 'already_reported';
+    const { data: pending, error: pendingError } = await withWriteSignal(
+      supabase
+        .from('reports')
+        .select('id')
+        .eq('reportable_type', input.reportable_type)
+        .eq('reportable_id', input.reportable_id)
+        .eq('reported_by', user.id)
+        .eq('status', 'pending'),
+      attempt
+    ).maybeSingle();
+    if (pendingError) throw pendingError;
+    if (pending) return 'already_reported';
+    assertWriteDeadline(attempt);
+    writeStarted = true;
+    const { error } = await withWriteSignal(
+      supabase.from('reports').insert({
+        id: attempt.requestId,
+        reportable_type: input.reportable_type,
+        reportable_id: input.reportable_id,
+        reported_by: user.id,
+        reason: input.reason,
+        ...(details ? { reporter_details: details } : {}),
+      }),
+      attempt
+    );
+    if (error?.code === '23505') {
+      if (await recover()) return 'already_reported';
+      throw new WriteOutcomeError(true);
+    }
+    if (error && ['42703', 'PGRST204'].includes(error.code)) return 'setup_required';
+    if (error) throw error;
+    return 'created';
+  } catch (cause) {
+    const error = writeOutcomeError(cause, attempt, writeStarted);
+    logError('create report', error);
+    throw error;
+  }
 }
 
 export async function reportContent(report: {

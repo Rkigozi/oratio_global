@@ -5,9 +5,11 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ban, Copy, Flag, Pencil, Share2, Trash2, X } from 'lucide-react-native';
@@ -98,62 +100,64 @@ export function PrayerActionsSheet({
         />
         <SafeAreaView edges={['bottom']} style={styles.sheetSafeArea}>
           <View style={styles.sheet}>
-            <SheetHeader
-              onClose={onClose}
-              subtitle={isOwner ? 'Manage or share your prayer' : 'Share or report this prayer'}
-              title="Prayer actions"
-            />
-
-            {canShare ? (
-              <>
-                <PrayerAction
-                  disabled={busy || closing}
-                  icon={<ShareIcon color={colors.accent} size={19} strokeWidth={1.7} />}
-                  label="Share prayer"
-                  onPress={() => runAfterClose(onShare)}
-                />
-                <PrayerAction
-                  disabled={busy || closing}
-                  icon={<CopyIcon color={colors.accent} size={19} strokeWidth={1.7} />}
-                  label="Copy link"
-                  onPress={() => runAfterClose(onCopyLink)}
-                />
-              </>
-            ) : null}
-            {canReport ? (
-              <PrayerAction
-                disabled={busy || closing}
-                icon={<FlagIcon color={colors.warning} size={19} strokeWidth={1.7} />}
-                label="Report prayer"
-                onPress={() => runAfterClose(onReport)}
+            <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
+              <SheetHeader
+                onClose={onClose}
+                subtitle={isOwner ? 'Manage or share your prayer' : 'Share or report this prayer'}
+                title="Prayer actions"
               />
-            ) : null}
-            {isOwner ? (
-              <>
+
+              {canShare ? (
+                <>
+                  <PrayerAction
+                    disabled={busy || closing}
+                    icon={<ShareIcon color={colors.accent} size={19} strokeWidth={1.7} />}
+                    label="Share prayer"
+                    onPress={() => runAfterClose(onShare)}
+                  />
+                  <PrayerAction
+                    disabled={busy || closing}
+                    icon={<CopyIcon color={colors.accent} size={19} strokeWidth={1.7} />}
+                    label="Copy link"
+                    onPress={() => runAfterClose(onCopyLink)}
+                  />
+                </>
+              ) : null}
+              {canReport ? (
                 <PrayerAction
                   disabled={busy || closing}
-                  icon={<PencilIcon color={colors.textSecondary} size={19} strokeWidth={1.7} />}
-                  label="Edit prayer"
-                  onPress={() => runAfterClose(onEdit)}
+                  icon={<FlagIcon color={colors.warning} size={19} strokeWidth={1.7} />}
+                  label="Report prayer"
+                  onPress={() => runAfterClose(onReport)}
                 />
+              ) : null}
+              {isOwner ? (
+                <>
+                  <PrayerAction
+                    disabled={busy || closing}
+                    icon={<PencilIcon color={colors.textSecondary} size={19} strokeWidth={1.7} />}
+                    label="Edit prayer"
+                    onPress={() => runAfterClose(onEdit)}
+                  />
+                  <PrayerAction
+                    destructive
+                    disabled={deleting || busy || closing}
+                    icon={<TrashIcon color={colors.danger} size={19} strokeWidth={1.7} />}
+                    label={deleting ? 'Deleting prayer...' : 'Delete prayer'}
+                    onPress={() => runAfterClose(onDelete)}
+                  />
+                </>
+              ) : null}
+              {onBlock && !isOwner ? (
                 <PrayerAction
                   destructive
-                  disabled={deleting || busy || closing}
-                  icon={<TrashIcon color={colors.danger} size={19} strokeWidth={1.7} />}
-                  label={deleting ? 'Deleting prayer...' : 'Delete prayer'}
-                  onPress={() => runAfterClose(onDelete)}
+                  disabled={busy || closing}
+                  icon={<BanIcon color={colors.danger} size={19} strokeWidth={1.7} />}
+                  label="Block user"
+                  onPress={() => runAfterClose(onBlock)}
                 />
-              </>
-            ) : null}
-            {onBlock && !isOwner ? (
-              <PrayerAction
-                destructive
-                disabled={busy || closing}
-                icon={<BanIcon color={colors.danger} size={19} strokeWidth={1.7} />}
-                label="Block user"
-                onPress={() => runAfterClose(onBlock)}
-              />
-            ) : null}
+              ) : null}
+            </ScrollView>
           </View>
         </SafeAreaView>
       </View>
@@ -163,6 +167,8 @@ export function PrayerActionsSheet({
 
 export function PrayerEditSheet({
   error,
+  locked = false,
+  recovery,
   onChangeText,
   onClose,
   onSave,
@@ -171,6 +177,8 @@ export function PrayerEditSheet({
   visible,
 }: {
   error: string;
+  locked?: boolean;
+  recovery?: ReactNode;
   onChangeText: (value: string) => void;
   onClose: () => void;
   onSave: () => void;
@@ -178,10 +186,15 @@ export function PrayerEditSheet({
   text: string;
   visible: boolean;
 }) {
+  const { fontScale } = useWindowDimensions();
+  const expandedText = fontScale > 1.5;
+
   return (
     <Modal
       animationType="slide"
-      onRequestClose={() => !saving && onClose()}
+      onRequestClose={() => {
+        if (!saving) onClose();
+      }}
       transparent
       visible={visible}
     >
@@ -198,51 +211,63 @@ export function PrayerEditSheet({
         />
         <SafeAreaView edges={['bottom']} style={styles.sheetSafeArea}>
           <View style={styles.sheet}>
-            <SheetHeader
-              disabled={saving}
-              onClose={onClose}
-              subtitle="Keep the heart of your request clear"
-              title="Edit prayer"
-            />
+            <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
+              <SheetHeader
+                disabled={saving}
+                onClose={onClose}
+                subtitle="Keep the heart of your request clear"
+                title="Edit prayer"
+              />
 
-            <TextInput
-              accessibilityLabel="Prayer text"
-              autoFocus
-              maxLength={500}
-              multiline
-              onChangeText={onChangeText}
-              placeholder="Share what's on your heart..."
-              placeholderTextColor={colors.textDim}
-              style={[styles.editInput, error ? styles.editInputError : null]}
-              textAlignVertical="top"
-              value={text}
-            />
-            <View style={styles.editMeta}>
-              <Text style={styles.editError}>{error}</Text>
-              <Text style={styles.editCounter}>{text.length}/500</Text>
-            </View>
-            <View style={styles.editActions}>
-              <Pressable
-                accessibilityRole="button"
-                disabled={saving}
-                onPress={onClose}
-                style={styles.secondaryButton}
-              >
-                <Text style={styles.secondaryButtonText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={saving}
-                onPress={onSave}
-                style={[styles.primaryButton, saving && styles.disabled]}
-              >
-                {saving ? (
-                  <ActivityIndicator color={colors.white} size="small" />
-                ) : (
-                  <Text style={styles.primaryButtonText}>Save changes</Text>
-                )}
-              </Pressable>
-            </View>
+              <TextInput
+                editable={!saving && !locked}
+                accessibilityLabel="Prayer text"
+                autoFocus
+                maxLength={500}
+                multiline
+                onChangeText={onChangeText}
+                placeholder="Share what's on your heart..."
+                placeholderTextColor={colors.textDim}
+                style={[styles.editInput, error ? styles.editInputError : null]}
+                textAlignVertical="top"
+                value={text}
+              />
+              <View style={styles.editMeta}>
+                <Text accessibilityRole={error ? 'alert' : undefined} style={styles.editError}>
+                  {error}
+                </Text>
+                <Text style={styles.editCounter}>{text.length}/500</Text>
+              </View>
+              {recovery}
+              <View style={[styles.editActions, expandedText && styles.editActionsExpanded]}>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={saving}
+                  onPress={onClose}
+                  style={[styles.secondaryButton, expandedText && styles.expandedButton]}
+                >
+                  <Text style={styles.secondaryButtonText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Save changes"
+                  accessibilityRole="button"
+                  accessibilityState={{ busy: saving, disabled: saving || locked }}
+                  disabled={saving || locked}
+                  onPress={onSave}
+                  style={[
+                    styles.primaryButton,
+                    expandedText && styles.expandedButton,
+                    saving && styles.disabled,
+                  ]}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Save changes</Text>
+                  )}
+                </Pressable>
+              </View>
+            </ScrollView>
           </View>
         </SafeAreaView>
       </KeyboardAvoidingView>
@@ -263,8 +288,10 @@ function SheetHeader({
 }) {
   return (
     <View style={styles.sheetHeader}>
-      <View>
-        <Text style={styles.sheetTitle}>{title}</Text>
+      <View style={styles.sheetHeaderCopy}>
+        <Text accessibilityRole="header" style={styles.sheetTitle}>
+          {title}
+        </Text>
         <Text style={styles.sheetSubtitle}>{subtitle}</Text>
       </View>
       <Pressable
@@ -326,9 +353,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.scrim,
   },
   sheetSafeArea: {
+    maxHeight: '90%',
     backgroundColor: colors.mapSheet,
   },
   sheet: {
+    flexShrink: 1,
     backgroundColor: colors.mapSheet,
     borderTopWidth: 1,
     borderTopColor: colors.surfaceBorder,
@@ -348,6 +377,10 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.headingMedium,
     fontSize: 17,
   },
+  sheetHeaderCopy: {
+    flex: 1,
+    paddingRight: 8,
+  },
   sheetSubtitle: {
     color: colors.textMuted,
     fontFamily: fontFamilies.body,
@@ -355,6 +388,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sheetClose: {
+    flexShrink: 0,
     width: 44,
     height: 44,
     alignItems: 'center',
@@ -425,6 +459,14 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 8,
   },
+  editActionsExpanded: {
+    flexDirection: 'column',
+  },
+  expandedButton: {
+    flex: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   secondaryButton: {
     minHeight: 48,
     flex: 1,
@@ -435,6 +477,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.control,
   },
   secondaryButtonText: {
+    textAlign: 'center',
     color: colors.textSecondary,
     fontFamily: fontFamilies.bodyMedium,
     fontSize: 14,
@@ -448,6 +491,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.control,
   },
   primaryButtonText: {
+    textAlign: 'center',
     color: colors.white,
     fontFamily: fontFamilies.bodySemiBold,
     fontSize: 14,

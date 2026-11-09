@@ -5,7 +5,10 @@ These templates are for Supabase Auth emails used by the hosted Oratio project.
 Hosted project:
 
 - Supabase project ref: `tfwgoavbbudkxthjhnrx`
-- Current V1 app URL: `https://oratiotest.netlify.app`
+- Current web recovery host: `https://oratiotest.netlify.app`
+
+This is an auth/supporting-web responsibility, not the iOS product's app URL.
+Preserve and test recovery links during the later [website conversion](../backlog/WEB-PRESENCE.md).
 
 ## Password Reset
 

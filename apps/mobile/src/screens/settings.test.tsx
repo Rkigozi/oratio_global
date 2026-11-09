@@ -1,11 +1,19 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Alert, Linking } from 'react-native';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import * as ReactNative from 'react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { SettingsScreen } from './settings';
+import { canSendMonitoringTest, sendMonitoringTest } from '../services/monitoring';
 
 const navigation = { goBack: jest.fn(), navigate: jest.fn() };
 const mockSignOut = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
 const mockSetThemeMode = jest.fn();
+let mockFocusEffect: (() => void | (() => void)) | undefined;
+
+jest.mock('../services/monitoring', () => ({
+  canSendMonitoringTest: jest.fn(() => false),
+  sendMonitoringTest: jest.fn(),
+}));
 
 jest.mock('lucide-react-native', () => ({
   ArrowLeft: () => null,
@@ -31,7 +39,10 @@ jest.mock('@react-navigation/native', () => {
   const { useEffect } = require('react');
   return {
     useFocusEffect: (callback: () => void | (() => void)) => {
-      useEffect(callback, [callback]);
+      useEffect(() => {
+        mockFocusEffect = callback;
+        return callback();
+      }, [callback]);
     },
   };
 });
@@ -79,6 +90,8 @@ function renderSettings() {
 describe('SettingsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFocusEffect = undefined;
+    jest.mocked(canSendMonitoringTest).mockReturnValue(false);
     jest.mocked(getProfilePreferences).mockResolvedValue(preferences as never);
     jest.mocked(updateProfilePreferences).mockResolvedValue(true as never);
     jest.mocked(deleteAccount).mockResolvedValue(null as never);
@@ -96,6 +109,82 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('miriam@example.com')).toBeTruthy();
   });
 
+  it('retries an initial settings read failure without saving default preferences', async () => {
+    jest.mocked(getProfilePreferences).mockRejectedValueOnce(new Error('connection unavailable'));
+    renderSettings();
+
+    fireEvent.press(await screen.findByRole('button', { name: 'Retry settings' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Prayers offered')).not.toBeDisabled());
+    await waitFor(() => expect(screen.queryByText("We couldn't load settings.")).toBeNull());
+    expect(getProfilePreferences).toHaveBeenCalledTimes(2);
+    expect(screen.getByLabelText('Prayers offered').props.value).toBe(true);
+    expect(updateProfilePreferences).not.toHaveBeenCalled();
+  });
+
+  it('retains loaded preferences and offers retry after a later focus read fails', async () => {
+    const savedPreferences = { ...preferences, notify_on_prayed: false, language: 'es' };
+    jest.mocked(getProfilePreferences).mockResolvedValue(savedPreferences as never);
+    renderSettings();
+    await screen.findByRole('button', { name: 'Spanish', selected: true });
+    jest.mocked(getProfilePreferences).mockRejectedValueOnce(new Error('connection unavailable'));
+
+    act(() => {
+      mockFocusEffect?.();
+    });
+
+    await screen.findByText("We couldn't load settings.");
+    expect(screen.getByLabelText('Prayers offered').props.value).toBe(false);
+    expect(screen.getByRole('button', { name: 'Spanish', selected: true })).toBeTruthy();
+    jest.mocked(getProfilePreferences).mockResolvedValueOnce({
+      ...savedPreferences,
+      notify_on_prayed: true,
+      language: 'pt',
+    } as never);
+    fireEvent.press(screen.getByRole('button', { name: 'Retry settings' }));
+
+    await screen.findByRole('button', { name: 'Portuguese', selected: true });
+    await waitFor(() => expect(screen.queryByText("We couldn't load settings.")).toBeNull());
+    expect(screen.getByLabelText('Prayers offered').props.value).toBe(true);
+    expect(getProfilePreferences).toHaveBeenCalledTimes(3);
+    expect(updateProfilePreferences).not.toHaveBeenCalled();
+  });
+
+  it('does not show diagnostics when reporting is off or on a production build', async () => {
+    renderSettings();
+    await screen.findByText('Prayers offered');
+    expect(screen.queryByLabelText('Send test error')).toBeNull();
+  });
+
+  it('queues a non-production test once and explicitly requires delivery verification', async () => {
+    jest.mocked(canSendMonitoringTest).mockReturnValue(true);
+    jest.mocked(sendMonitoringTest).mockReturnValue('c'.repeat(32));
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    renderSettings();
+    await screen.findByText('Prayers offered');
+    fireEvent.press(screen.getByLabelText('Send test error'));
+    expect(alert).toHaveBeenCalledWith(
+      'Test error queued',
+      expect.stringContaining('confirmed in Sentry')
+    );
+    expect(screen.getByLabelText('Send test error')).toBeDisabled();
+    fireEvent.press(screen.getByLabelText('Send test error'));
+    expect(sendMonitoringTest).toHaveBeenCalledTimes(1);
+    alert.mockRestore();
+  });
+
+  it('allows retry after a test could not be queued', async () => {
+    jest.mocked(canSendMonitoringTest).mockReturnValue(true);
+    jest.mocked(sendMonitoringTest).mockReturnValue(null);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    renderSettings();
+    await screen.findByText('Prayers offered');
+    fireEvent.press(screen.getByLabelText('Send test error'));
+    expect(alert).toHaveBeenCalledWith('Test error not queued', expect.any(String));
+    expect(screen.getByLabelText('Send test error')).not.toBeDisabled();
+    alert.mockRestore();
+  });
+
   it('opens blocked accounts from Settings', async () => {
     renderSettings();
     fireEvent.press(await screen.findByLabelText('Blocked accounts'));
@@ -108,7 +197,10 @@ describe('SettingsScreen', () => {
     fireEvent(await screen.findByLabelText('Prayers offered'), 'valueChange', false);
 
     await waitFor(() =>
-      expect(updateProfilePreferences).toHaveBeenCalledWith({ notify_on_prayed: false })
+      expect(updateProfilePreferences).toHaveBeenCalledWith(
+        { notify_on_prayed: false },
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
     );
   });
 
@@ -117,7 +209,12 @@ describe('SettingsScreen', () => {
 
     fireEvent.press(await screen.findByText('Spanish'));
 
-    await waitFor(() => expect(updateProfilePreferences).toHaveBeenCalledWith({ language: 'es' }));
+    await waitFor(() =>
+      expect(updateProfilePreferences).toHaveBeenCalledWith(
+        { language: 'es' },
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
+    );
   });
 
   it('applies and saves the selected appearance', async () => {
@@ -125,8 +222,38 @@ describe('SettingsScreen', () => {
 
     fireEvent.press(await screen.findByLabelText('Dark appearance'));
 
-    await waitFor(() => expect(updateProfilePreferences).toHaveBeenCalledWith({ theme: 'dark' }));
+    await waitFor(() =>
+      expect(updateProfilePreferences).toHaveBeenCalledWith(
+        { theme: 'dark' },
+        expect.objectContaining({ expectedUserId: 'user-1' })
+      )
+    );
     await waitFor(() => expect(mockSetThemeMode).toHaveBeenCalledWith('dark'));
+  });
+
+  it('keeps every appearance choice operable with maximum accessibility text', async () => {
+    const dimensions = jest.spyOn(ReactNative, 'useWindowDimensions').mockReturnValue({
+      width: 390,
+      height: 844,
+      scale: 3,
+      fontScale: 3.571,
+    });
+    try {
+      renderSettings();
+      await screen.findByRole('radio', { name: 'System appearance', checked: true });
+      expect(screen.getByRole('radio', { name: 'Dark appearance' })).not.toBeDisabled();
+      fireEvent.press(screen.getByRole('radio', { name: 'Light appearance' }));
+
+      await waitFor(() =>
+        expect(updateProfilePreferences).toHaveBeenCalledWith(
+          { theme: 'light' },
+          expect.objectContaining({ expectedUserId: 'user-1' })
+        )
+      );
+      expect(mockSetThemeMode).toHaveBeenCalledWith('light');
+    } finally {
+      dimensions.mockRestore();
+    }
   });
 
   it('restores the previous appearance when saving fails', async () => {
@@ -135,8 +262,27 @@ describe('SettingsScreen', () => {
 
     fireEvent.press(await screen.findByLabelText('Dark appearance'));
 
-    await waitFor(() => expect(screen.getByText("We couldn't save settings.")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByText("We couldn't save settings. Please try again.")).toBeTruthy()
+    );
     expect(mockSetThemeMode).toHaveBeenLastCalledWith('system');
+  });
+
+  it('keeps an uncertain preference locked and retries the original desired value', async () => {
+    jest.mocked(updateProfilePreferences).mockRejectedValueOnce(new Error('lost confirmation'));
+    renderSettings();
+    fireEvent.press(await screen.findByLabelText('Dark appearance'));
+    const retry = await screen.findByText('Check and retry');
+    expect(mockSetThemeMode).toHaveBeenLastCalledWith('dark');
+    expect(screen.getByLabelText('Light appearance')).toBeDisabled();
+    fireEvent.press(retry);
+    await waitFor(() => expect(screen.queryByText('Check and retry')).toBeNull());
+    const calls = jest.mocked(updateProfilePreferences).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toEqual([
+      { theme: 'dark' },
+      expect.objectContaining({ requestId: calls[0][1]?.requestId, verifyExisting: true }),
+    ]);
   });
 
   it('confirms sign out before clearing the session', async () => {

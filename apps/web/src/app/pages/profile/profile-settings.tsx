@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type MouseEvent } from 'react';
 import {
   Bell,
   Globe,
@@ -267,7 +267,7 @@ export function ProfileSettings() {
                 exit={{ scale: 0.92, opacity: 0 }}
                 className="w-full max-w-sm rounded-2xl p-5 border border-accent/10"
                 style={{ background: 'rgba(15, 22, 55, 0.98)' }}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
               >
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-danger/10">

@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -44,8 +45,13 @@ import { ScreenHeaderTitle } from '../components/screen-header-title';
 import { useAuth } from '../hooks/auth-context';
 import { useTheme, type ThemeMode } from '../hooks/theme-context';
 import { ORATIO_EXTERNAL_LINKS } from '../services/external-links';
+import { canSendMonitoringTest, sendMonitoringTest } from '../services/monitoring';
 import { colors, fontFamilies } from '../theme';
 import type { RootStackParamList } from '../navigation';
+import { useRecoverableWrite } from '../hooks/use-recoverable-write';
+import { WriteOutcomeError } from '@oratio/shared/write-outcome';
+import { withRequestTimeout } from '../services/request-timeout';
+import { WriteRecovery } from '../components/write-recovery';
 
 const ArrowLeftIcon = asNativeIcon(ArrowLeft);
 const BanIcon = asNativeIcon(Ban);
@@ -82,52 +88,76 @@ export function SettingsScreen({
 }: NativeStackScreenProps<RootStackParamList, 'Settings'>) {
   const { user, signOut } = useAuth();
   const { themeMode, setThemeMode } = useTheme();
+  const { fontScale } = useWindowDimensions();
+  const expandedText = fontScale > 1.5;
   const [prefs, setPrefs] = useState<ProfilePreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [readError, setReadError] = useState('');
+  const [monitoringTestSent, setMonitoringTestSent] = useState(false);
+  const loadRequest = useRef(0);
+  const currentUser = useRef(user?.id);
+  currentUser.current = user?.id;
+  type SettingsIntent = {
+    next: Partial<ProfilePreferences>;
+    previous: ProfilePreferences;
+    previousTheme: ThemeMode;
+  };
+  const writes = useRecoverableWrite<SettingsIntent, SettingsIntent>(
+    'settings',
+    user?.id,
+    async (intent, attempt) => {
+      if (!(await updateProfilePreferences(intent.next, attempt)))
+        throw new WriteOutcomeError(false);
+      return intent;
+    }
+  );
 
   const load = useCallback(async () => {
-    setError('');
+    const request = ++loadRequest.current;
+    const active = () => request === loadRequest.current && currentUser.current === user?.id;
+    setReadError('');
     try {
-      setPrefs(await getProfilePreferences());
+      const next = await withRequestTimeout(getProfilePreferences({ throwOnError: true }));
+      if (active() && !writes.isLocked()) setPrefs(next);
     } catch {
-      setError("We couldn't load settings.");
+      if (active()) setReadError("We couldn't load settings.");
     } finally {
-      setLoading(false);
+      if (active()) setLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useFocusEffect(
     useCallback(() => {
       void load();
+      return () => {
+        loadRequest.current += 1;
+      };
     }, [load])
   );
 
+  const finishWrite = (result: Awaited<ReturnType<typeof writes.run>>, intent?: SettingsIntent) => {
+    if (result.status === 'ignored') return;
+    setSaving(false);
+    if (result.status === 'failed' && intent) {
+      setPrefs(intent.previous);
+      if (intent.next.theme) setThemeMode(intent.previousTheme);
+      setError("We couldn't save settings. Please try again.");
+    } else if (result.status === 'saved') {
+      void load();
+    }
+  };
   const update = async (next: Partial<ProfilePreferences>) => {
-    if (!prefs || saving) return;
-    const previous = prefs;
-    const previousThemeMode = themeMode;
+    if (!prefs || writes.isLocked()) return;
+    const intent = { next, previous: prefs, previousTheme: themeMode };
     const updated = { ...prefs, ...next };
     setPrefs(updated);
     if (next.theme) setThemeMode(next.theme);
     setSaving(true);
     setError('');
-    try {
-      const ok = await updateProfilePreferences(next);
-      if (!ok) {
-        setPrefs(previous);
-        if (next.theme) setThemeMode(previousThemeMode);
-        setError("We couldn't save settings.");
-      }
-    } catch {
-      setPrefs(previous);
-      if (next.theme) setThemeMode(previousThemeMode);
-      setError("We couldn't save settings.");
-    } finally {
-      setSaving(false);
-    }
+    finishWrite(await writes.run(intent), intent);
   };
 
   const confirmSignOut = () => {
@@ -232,24 +262,56 @@ export function SettingsScreen({
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {error}
+          </Text>
+        ) : null}
+        {readError ? (
+          <View>
+            <Text accessibilityRole="alert" style={styles.error}>
+              {readError}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void load()}
+              style={styles.retryButton}
+            >
+              <Text style={styles.retryText}>Retry settings</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {writes.uncertain ? (
+          <WriteRecovery
+            busy={writes.busy}
+            onRetry={() => void writes.retry().then((result) => finishWrite(result))}
+          />
+        ) : null}
 
         <View style={styles.section}>
           <SectionTitle
             icon={<PaletteIcon color={colors.textDim} size={15} />}
             label="Appearance"
           />
-          <View accessibilityRole="radiogroup" style={styles.appearanceControl}>
+          <View
+            accessibilityRole="radiogroup"
+            style={[styles.appearanceControl, expandedText && styles.appearanceControlExpanded]}
+          >
             {appearanceOptions.map(({ value, label, icon: Icon }) => {
               const selected = themeMode === value;
               return (
                 <Pressable
                   accessibilityLabel={`${label} appearance`}
                   accessibilityRole="radio"
+                  disabled={writes.locked || !prefs}
                   accessibilityState={{ checked: selected }}
                   key={value}
                   onPress={() => void update({ theme: value })}
-                  style={[styles.appearanceOption, selected && styles.appearanceOptionSelected]}
+                  style={[
+                    styles.appearanceOption,
+                    expandedText && styles.appearanceOptionExpanded,
+                    selected && styles.appearanceOptionSelected,
+                  ]}
                 >
                   <Icon
                     color={selected ? colors.accent : colors.textDim}
@@ -273,11 +335,13 @@ export function SettingsScreen({
         <View style={styles.section}>
           <SectionTitle icon={<BellIcon color={colors.textDim} size={15} />} label="Updates" />
           <ToggleRow
+            disabled={writes.locked || !prefs}
             label="Prayers offered"
             value={prefs?.notify_on_prayed ?? true}
             onValueChange={(value) => void update({ notify_on_prayed: value })}
           />
           <ToggleRow
+            disabled={writes.locked || !prefs}
             label="Comments and replies"
             value={prefs?.notify_on_comment ?? true}
             onValueChange={(value) => void update({ notify_on_comment: value })}
@@ -290,6 +354,7 @@ export function SettingsScreen({
             label="Prayer Defaults"
           />
           <ToggleRow
+            disabled={writes.locked || !prefs}
             label="Allow comments on new public prayers"
             value={prefs?.comments_enabled_default ?? true}
             onValueChange={(value) => void update({ comments_enabled_default: value })}
@@ -304,6 +369,7 @@ export function SettingsScreen({
               return (
                 <Pressable
                   accessibilityRole="button"
+                  disabled={writes.locked || !prefs}
                   accessibilityState={{ selected }}
                   key={language.value}
                   onPress={() => void update({ language: language.value })}
@@ -359,6 +425,38 @@ export function SettingsScreen({
             emergency services.
           </Text>
         </View>
+
+        {canSendMonitoringTest() && (
+          <View style={styles.section}>
+            <SectionTitle
+              icon={<MonitorIcon color={colors.textDim} size={15} />}
+              label="Diagnostics"
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Send test error"
+              disabled={monitoringTestSent}
+              style={[styles.linkRow, monitoringTestSent && styles.disabled]}
+              onPress={() => {
+                const eventId = sendMonitoringTest();
+                setMonitoringTestSent(Boolean(eventId));
+                Alert.alert(
+                  eventId ? 'Test error queued' : 'Test error not queued',
+                  eventId
+                    ? `Reference: ${eventId}\nDelivery and alerts still need to be confirmed in Sentry.`
+                    : 'Error reporting is unavailable. Try again later.'
+                );
+              }}
+            >
+              <View style={styles.linkIcon}>
+                <MonitorIcon color={colors.textDim} size={17} />
+              </View>
+              <View style={styles.linkCopy}>
+                <Text style={styles.linkLabel}>Send test error</Text>
+              </View>
+            </Pressable>
+          </View>
+        )}
 
         <View style={styles.section}>
           <SectionTitle icon={<LogOutIcon color={colors.textDim} size={15} />} label="Account" />
@@ -463,15 +561,18 @@ function ToggleRow({
   label,
   value,
   onValueChange,
+  disabled = false,
 }: {
   label: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <View style={styles.toggleRow}>
       <Text style={styles.toggleLabel}>{label}</Text>
       <Switch
+        disabled={disabled}
         accessibilityLabel={label}
         ios_backgroundColor={colors.surfaceHover}
         onValueChange={onValueChange}
@@ -533,6 +634,19 @@ const styles = StyleSheet.create({
     marginTop: 18,
     textAlign: 'center',
   },
+  retryButton: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  retryText: {
+    color: colors.accent,
+    fontFamily: fontFamilies.bodySemiBold,
+    fontSize: 14,
+    textAlign: 'center',
+  },
   section: {
     marginTop: 24,
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -560,14 +674,23 @@ const styles = StyleSheet.create({
     borderColor: colors.surfaceBorder,
     backgroundColor: colors.surface,
   },
+  appearanceControlExpanded: {
+    flexDirection: 'column',
+    gap: 4,
+  },
   appearanceOption: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     borderRadius: 6,
+  },
+  appearanceOptionExpanded: {
+    flex: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   appearanceOptionSelected: {
     backgroundColor: colors.accentTint,
@@ -575,6 +698,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accentBorder,
   },
   appearanceOptionText: {
+    flexShrink: 1,
     color: colors.textMuted,
     fontFamily: fontFamilies.bodyMedium,
     fontSize: 12,
