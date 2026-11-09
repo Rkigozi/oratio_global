@@ -1,6 +1,6 @@
 # Oratio V1 Release Readiness
 
-Last reviewed: 2026-10-30. Defines the V1 delivery stages, prerequisites and
+Last reviewed: 2026-11-09. Defines the V1 delivery stages, prerequisites and
 acceptance gates. The
 [documentation index](./README.md) defines platform responsibilities.
 
@@ -28,10 +28,10 @@ Complete the agreed V1 scope and development acceptance:
   Circle actions, interactions and prayer/profile/settings ownership changes. Finish the remaining
   journeys and device acceptance in the [resilience record](./backlog/NATIVE-RESILIENCE.md).
 - Track the candidate in [draft PR #5](https://github.com/Rkigozi/oratio_global/pull/5)
-  and pass applicable automated/CI gates. The October 30 development dependency
-  approval covers only the pinned Expo CLI/Zod finding until November 13; strict
-  release treatment remains open in the [security record](./backlog/SECURITY-REVIEW.md).
-  That approval is not permission for external distribution.
+  and pass applicable automated/CI gates. The November 9 compatible Expo CLI/SDK
+  patch retires the temporary Zod approval. Both mobile audit commands are strict;
+  remaining moderate-finding and deployed-policy review stays open in the
+  [security record](./backlog/SECURITY-REVIEW.md).
 
 ### Current Evidence
 
@@ -42,7 +42,7 @@ Complete the agreed V1 scope and development acceptance:
 | Public expiry          | 042/043 applied; client checkpoint on review branch; remaining acceptance is scoped in the [expiry record](./backlog/PUBLIC-PRAYER-EXPIRY.md)                                                              |
 | Moderation/blocking    | Implemented journeys and dated confirmations in [moderation](./backlog/MODERATION-LAUNCH.md), [blocking](./backlog/USER-BLOCKING.md) and [QA](./QA-CHECKLIST.md); not whole-release sign-off               |
 | Monitoring             | Expo Go error/email and scrubbed follow-up verified; wider privacy/native/signed-build checks open. [Monitoring record](./backlog/NATIVE-MONITORING.md)                                                    |
-| Security               | 042 deployed; exact advisory treatment and outstanding deployed-policy review in the [security record](./backlog/SECURITY-REVIEW.md)                                                                       |
+| Security               | Strict dependency gates; 042 deployed; moderate findings and deployed-policy review remain open in the [security record](./backlog/SECURITY-REVIEW.md)                                                     |
 | Distribution           | Existing Expo team project linked and local EAS profiles prepared; no TestFlight release. [Build runbook](./backlog/IOS-BUILD-PIPELINE.md)                                                                 |
 
 Keep automated counts in the dated feature record and link them here, so this

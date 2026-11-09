@@ -1,30 +1,23 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { evaluateMobileAudit } from './mobile-audit-policy.mjs';
 
-const policy = JSON.parse(
-  readFileSync(new URL('./mobile-audit-exceptions.json', import.meta.url), 'utf8')
-);
-const versions = Object.assign({}, ...Object.values(policy.packages));
 const zodUrl = 'https://github.com/advisories/GHSA-mrhx-c7xc-m3w5';
-const advisory = (name, url, severity = 'high') => ({ name, url, severity });
+const advisory = (name, severity = 'high') => ({
+  name,
+  url: name === 'zod' ? zodUrl : 'https://github.com/advisories/GHSA-test-test-test',
+  severity,
+});
 const entry = (name, via, severity = 'high') => ({
   name,
   via,
   severity,
   nodes: [name === 'zod' ? 'node_modules/@expo/cli/node_modules/zod' : `node_modules/${name}`],
 });
-function report() {
-  return update({
-    auditReportVersion: 2,
-    vulnerabilities: {
-      zod: entry('zod', [advisory('zod', zodUrl)]),
-      '@expo/cli': entry('@expo/cli', ['expo', 'zod']),
-      expo: entry('expo', ['@expo/cli']),
-    },
-    metadata: {},
-  });
+function report(vulnerabilities = {}) {
+  return update({ auditReportVersion: 2, vulnerabilities, metadata: {} });
 }
 function update(result) {
   const counts = { info: 0, low: 0, moderate: 0, high: 0, critical: 0, total: 0 };
@@ -35,230 +28,171 @@ function update(result) {
   result.metadata.vulnerabilities = counts;
   return result;
 }
-function evaluate(result = report(), options = {}) {
-  return evaluateMobileAudit(result, {
-    policy: structuredClone(policy),
-    versions: { ...versions },
-    forgeVerified: true,
-    now: new Date('2026-10-30T12:00:00Z'),
-    ...options,
+function zodReport() {
+  return report({
+    zod: entry('zod', [advisory('zod')]),
+    '@expo/cli': entry('@expo/cli', ['expo', 'zod']),
+    expo: entry('expo', ['@expo/cli']),
   });
 }
 
-test('only the reviewed Zod parents and advisory qualify, including dependency cycles', () => {
-  const verdict = evaluate();
-  assert.equal(verdict.passed, true);
-  assert.equal(verdict.accepted.length, 3);
-  assert.equal(verdict.counts.high, 3);
+test('an empty complete audit passes without approvals', () => {
+  assert.deepEqual(evaluateMobileAudit(report()), {
+    passed: true,
+    blocked: [],
+    counts: { info: 0, low: 0, moderate: 0, high: 0, critical: 0, total: 0 },
+  });
 });
 
-test('a lower-severity approved parent receives the full high-advisory assessment', () => {
-  const result = report();
-  result.vulnerabilities.expo.severity = 'moderate';
-  update(result);
-  const original = structuredClone(result);
-  const verdict = evaluate(result);
+test('low and moderate findings remain visible and unchanged for release review', () => {
+  const input = report({
+    low: entry('low', [advisory('low', 'low')], 'low'),
+    moderate: entry('moderate', [advisory('moderate', 'moderate')], 'moderate'),
+  });
+  const original = structuredClone(input);
+  const verdict = evaluateMobileAudit(input);
   assert.equal(verdict.passed, true);
+  assert.equal(verdict.counts.low, 1);
+  assert.equal(verdict.counts.moderate, 1);
+  assert.deepEqual(input, original);
+});
+
+test('the formerly approved advisory and all propagated parents are blocked', () => {
+  const verdict = evaluateMobileAudit(zodReport());
+  assert.equal(verdict.passed, false);
+  assert.deepEqual(verdict.blocked.map((finding) => finding.name).sort(), [
+    '@expo/cli',
+    'expo',
+    'zod',
+  ]);
+  assert.ok(verdict.blocked.every((finding) => finding.severity === 'high'));
+});
+
+test('archived approval inputs, dates and release flags cannot activate an exception', () => {
+  const policy = JSON.parse(
+    readFileSync(new URL('./approval-history/2026-10-30.json', import.meta.url), 'utf8')
+  );
+  const versions = Object.assign({}, ...Object.values(policy.packages));
+  for (const release of [false, true]) {
+    for (const now of ['2026-10-30T12:00:00Z', '2026-11-13T00:00:00Z']) {
+      const verdict = evaluateMobileAudit(zodReport(), {
+        policy,
+        versions,
+        forgeVerified: true,
+        now: new Date(now),
+        release,
+      });
+      assert.equal(verdict.passed, false);
+      assert.equal(verdict.blocked.length, 3);
+    }
+  }
+});
+
+test('a lower-labelled parent receives the full high-advisory assessment', () => {
+  const input = zodReport();
+  input.vulnerabilities.expo.severity = 'moderate';
+  update(input);
+  const original = structuredClone(input);
+  const verdict = evaluateMobileAudit(input);
+  assert.equal(verdict.passed, false);
+  assert.equal(verdict.blocked.length, 3);
   assert.deepEqual(
-    verdict.accepted.find((finding) => finding.name === 'expo'),
+    verdict.blocked.find((finding) => finding.name === 'expo'),
     {
       name: 'expo',
       severity: 'high',
       reportedSeverity: 'moderate',
-      reason: '',
+      reason: 'High and critical findings are blocked; no active exceptions',
     }
   );
   assert.equal(verdict.counts.high, 2);
   assert.equal(verdict.counts.moderate, 1);
-  assert.deepEqual(result, original);
-  assert.equal(evaluate(result, { release: true }).passed, false);
-  assert.equal(evaluate(result, { now: new Date(policy.expiresAt) }).passed, false);
-  assert.equal(evaluate(result, { forgeVerified: false }).passed, false);
-  assert.equal(
-    evaluate(result, { versions: { ...versions, 'node_modules/expo': '58.0.22' } }).passed,
-    false
-  );
-  result.vulnerabilities.expo.nodes = ['node_modules/unreviewed/expo'];
-  assert.equal(evaluate(result).passed, false);
+  assert.deepEqual(input, original);
 });
 
-test('lower-severity parents cannot hide an unreviewed package or high advisory', () => {
-  const result = report();
-  result.vulnerabilities.unreviewed = entry('unreviewed', ['zod'], 'moderate');
-  let verdict = evaluate(update(result));
+test('critical advisories cannot be hidden by lower package labels', () => {
+  const input = report({ zod: entry('zod', [advisory('zod', 'critical')], 'moderate') });
+  const verdict = evaluateMobileAudit(input);
   assert.equal(verdict.passed, false);
-  assert.equal(verdict.blocked.find((finding) => finding.name === 'unreviewed')?.severity, 'high');
-  delete result.vulnerabilities.unreviewed;
-  result.vulnerabilities.expo.severity = 'moderate';
-  result.vulnerabilities.zod.via.push(
-    advisory('zod', 'https://github.com/advisories/GHSA-new1-new2-new3')
-  );
-  verdict = evaluate(update(result));
-  assert.equal(verdict.passed, false);
-  assert.equal(verdict.blocked.find((finding) => finding.name === 'expo')?.severity, 'high');
-});
-
-test('new high advisory inside an already reviewed package fails', () => {
-  const result = report();
-  result.vulnerabilities.zod.via.push(
-    advisory('zod', 'https://github.com/advisories/GHSA-new1-new2-new3')
-  );
-  assert.equal(evaluate(result).passed, false);
-});
-
-test('all critical findings fail, including a formerly approved advisory elevated to critical', () => {
-  const result = report();
-  result.vulnerabilities.zod.severity = 'critical';
-  result.vulnerabilities.zod.via[0].severity = 'critical';
-  assert.equal(evaluate(update(result)).passed, false);
-});
-
-test('a new parent package cannot inherit the exception', () => {
-  const result = report();
-  result.vulnerabilities.unreviewed = entry('unreviewed', ['zod']);
-  assert.equal(evaluate(update(result)).passed, false);
-});
-
-test('changed versions, new install paths and missing paths fail', () => {
-  for (const path of Object.keys(versions)) {
-    assert.equal(evaluate(report(), { versions: { ...versions, [path]: '0.0.0' } }).passed, false);
-  }
-  const result = report();
-  result.vulnerabilities.zod.nodes = ['node_modules/zod'];
-  assert.equal(evaluate(result).passed, false);
-  delete result.vulnerabilities.zod.nodes;
-  assert.equal(evaluate(result).passed, false);
-});
-
-test('exception expires exactly at the deadline and cannot activate before approval', () => {
-  assert.equal(evaluate(report(), { now: new Date(policy.expiresAt) }).passed, false);
-  assert.equal(evaluate(report(), { now: new Date('2026-11-14T00:00:00Z') }).passed, false);
-  assert.equal(evaluate(report(), { now: new Date('2026-10-29T23:59:59Z') }).passed, false);
-  assert.equal(evaluate(report(), { now: new Date('2026-11-12T23:59:59Z') }).passed, true);
-});
-
-test('release mode and absent verified source never use the exception', () => {
-  assert.equal(evaluate(report(), { release: true }).passed, false);
-  assert.equal(evaluate(report(), { forgeVerified: false }).passed, false);
-});
-
-test('network/error reports, count mismatches and unknown severities fail closed', () => {
-  assert.throws(() => evaluate({ error: { code: 'ENOTFOUND' } }), /complete supported report/);
-  const result = report();
-  result.metadata.vulnerabilities.high = 0;
-  assert.throws(() => evaluate(result), /counts do not match/);
-  result.vulnerabilities.zod.severity = 'unknown';
-  assert.throws(() => evaluate(result), /Unknown audit severity/);
-});
-
-test('dangling dependency paths and cycles without an advisory leaf fail', () => {
-  const result = report();
-  result.vulnerabilities.zod.via = ['missing'];
-  assert.equal(evaluate(result).passed, false);
-  result.vulnerabilities.zod.via = ['zod'];
-  assert.equal(evaluate(result).passed, false);
-});
-
-test('invalid dates, longer approvals and an extra advisory rule are rejected', () => {
-  assert.throws(
-    () => evaluate(report(), { now: new Date('invalid') }),
-    /Invalid audit policy date/
-  );
-  const changed = structuredClone(policy);
-  changed.expiresAt = '2026-12-14T00:00:00Z';
-  assert.throws(() => evaluate(report(), { policy: changed }), /30-day bound/);
-  changed.expiresAt = policy.expiresAt;
-  changed.advisories['https://github.com/advisories/GHSA-new1-new2-new3'] = { package: 'zod' };
-  assert.throws(() => evaluate(report(), { policy: changed }), /Unapproved advisory/);
-});
-
-test('moderate findings stay visible, without being silently removed or waived', () => {
-  const result = report();
-  result.vulnerabilities.example = entry(
-    'example',
-    [advisory('example', 'https://github.com/advisories/GHSA-mod1-mod2-mod3', 'moderate')],
-    'moderate'
-  );
-  const verdict = evaluate(update(result));
-  assert.equal(verdict.passed, true);
+  assert.equal(verdict.blocked[0].severity, 'critical');
+  assert.equal(verdict.counts.critical, 0);
   assert.equal(verdict.counts.moderate, 1);
-  assert.equal(Object.keys(result.vulnerabilities).length, 4);
 });
 
-test('a falsely downgraded report cannot hide a critical advisory', () => {
-  const result = report();
-  result.vulnerabilities.zod.severity = 'moderate';
-  result.vulnerabilities.zod.via[0].severity = 'critical';
-  assert.throws(() => evaluate(update(result)), /below its advisory severity/);
-});
-
-test('prototype property names cannot qualify as an approved advisory URL', () => {
-  for (const url of ['constructor', '__proto__', 'toString']) {
-    const result = report();
-    result.vulnerabilities.zod.via = [advisory('zod', url)];
-    assert.equal(evaluate(result).passed, false);
+test('new high findings and conservatively high package labels are blocked', () => {
+  for (const severity of ['high', 'moderate']) {
+    const input = report({ example: entry('example', [advisory('example', severity)]) });
+    assert.equal(evaluateMobileAudit(input).passed, false);
   }
 });
 
-test('malformed advisory identities fail instead of inheriting a rule', () => {
-  const result = report();
-  delete result.vulnerabilities.zod.via[0].name;
-  assert.equal(evaluate(result).passed, false);
-});
-
-test('the replaced Forge and braces approvals cannot accept new findings', () => {
-  for (const [name, url] of [
-    ['braces', 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm'],
-    ['node-forge', 'https://github.com/advisories/GHSA-86w9-cpqp-85rv'],
+test('incomplete, failed and unsupported reports fail closed', () => {
+  for (const input of [
+    null,
+    {},
+    { error: { code: 'ENOTFOUND' } },
+    { ...report(), auditReportVersion: 1 },
+    { ...report(), vulnerabilities: [] },
   ]) {
-    const result = report();
-    result.vulnerabilities[name] = entry(name, [advisory(name, url)]);
-    assert.equal(evaluate(update(result)).passed, false);
-  }
-  const historical = JSON.parse(
-    readFileSync(new URL('./approval-history/2026-10-14.json', import.meta.url), 'utf8')
-  );
-  assert.throws(() => evaluate(report(), { policy: historical }), /Invalid temporary audit policy/);
-});
-
-test('the approval window cannot be moved or extended even within the 30-day maximum', () => {
-  for (const changes of [
-    { expiresAt: '2026-11-14T00:00:00Z' },
-    { approvedAt: '2026-10-29T00:00:00Z' },
-  ]) {
-    assert.throws(
-      () => evaluate(report(), { policy: { ...structuredClone(policy), ...changes } }),
-      /reviewed window/
-    );
+    assert.throws(() => evaluateMobileAudit(input), /complete supported report/);
   }
 });
 
-test('editing the configured versions or adding approved paths cannot expand the exception', () => {
+test('severity and total count mismatches fail closed', () => {
+  for (const severity of ['info', 'low', 'moderate', 'high', 'critical', 'total']) {
+    const input = zodReport();
+    input.metadata.vulnerabilities[severity]++;
+    assert.throws(() => evaluateMobileAudit(input), /counts do not match/);
+  }
+});
+
+test('unknown severities and malformed finding/advisory fields fail closed', () => {
   for (const change of [
-    (p) => {
-      p.packages.zod['node_modules/@expo/cli/node_modules/zod'] = '3.25.77';
+    (input) => {
+      input.vulnerabilities.zod.severity = 'unknown';
     },
-    (p) => {
-      p.packages.zod['node_modules/zod'] = '3.25.76';
+    (input) => {
+      input.vulnerabilities.zod.name = 'different';
     },
-    (p) => {
-      p.packages.unreviewed = { 'node_modules/unreviewed': '1.0.0' };
+    (input) => {
+      input.vulnerabilities.zod.nodes = [];
     },
-    (p) => {
-      delete p.packages.expo;
+    (input) => {
+      input.vulnerabilities.zod.nodes = [null];
+    },
+    (input) => {
+      input.vulnerabilities.zod.via = [];
+    },
+    (input) => {
+      input.vulnerabilities.zod.via = [null];
+    },
+    (input) => {
+      input.vulnerabilities.zod.via[0].severity = 'unknown';
+    },
+    (input) => {
+      input.vulnerabilities.zod.via[0].name = '';
+    },
+    (input) => {
+      input.vulnerabilities.zod.via[0].url = '';
     },
   ]) {
-    const changed = structuredClone(policy);
-    change(changed);
-    assert.throws(() => evaluate(report(), { policy: changed }), /Unapproved package/);
+    const input = zodReport();
+    change(input);
+    assert.throws(() => evaluateMobileAudit(input));
   }
 });
 
-test('the approved URL cannot be reused for a different advisory package', () => {
-  const changed = structuredClone(policy);
-  changed.advisories[zodUrl].package = 'example';
-  assert.throws(() => evaluate(report(), { policy: changed }), /Unapproved advisory/);
-  const result = report();
-  result.vulnerabilities.zod.via[0].name = 'example';
-  assert.equal(evaluate(result).passed, false);
+test('dangling, inherited and advisory-free cyclic paths fail closed', () => {
+  for (const path of ['missing', 'constructor', '__proto__', 'zod']) {
+    const input = report({ zod: entry('zod', [path]) });
+    assert.throws(() => evaluateMobileAudit(input), /dependency path/);
+  }
+});
+
+test('the retired approval record is preserved byte-for-byte', () => {
+  const bytes = readFileSync(new URL('./approval-history/2026-10-30.json', import.meta.url));
+  assert.equal(
+    createHash('sha256').update(bytes).digest('hex'),
+    '8cf296cbe913d3ef4648de00febd494e441e0b4edd4e22960bbb369ea6fc4dd9'
+  );
 });

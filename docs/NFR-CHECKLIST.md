@@ -1,6 +1,6 @@
 # Oratio iOS Launch NFR Checklist
 
-Last updated: 2026-11-05 (review evidence; acceptance targets unchanged)
+Last updated: 2026-11-09 (review evidence; acceptance targets unchanged)
 
 Non-functional requirements define how safely, reliably and accessibly Oratio
 must work, alongside the features in [functional QA](./QA-CHECKLIST.md).
@@ -33,11 +33,12 @@ signed-build measurements remain open until the distribution stage.
   tokens or real private prayer/report text.
 
 The release owner signs off through [SCRUM-40](https://oratio.atlassian.net/browse/SCRUM-40).
-Development-only approval (2026-10-30): the exact pinned Expo CLI/Zod findings
-are accepted for development review until `2026-11-13T00:00:00Z`. Published Forge
-1.4.2 replaces the earlier backport; the superseded approval is archived. The
-strict release audit and every NFR sign-off remain separate. See
-[the active approval record](./backlog/SECURITY-REVIEW.md#approved-zod-development-exception-2026-10-30).
+The temporary Expo CLI/Zod development approval was retired on 2026-11-09 after
+a compatible upstream patch removed the CLI's production Zod dependency. Both
+mobile audit commands now reject high/critical findings without exceptions.
+Published Forge 1.4.2 remains source-verified. Moderate findings, deployed-policy
+review and every NFR sign-off remain separate; see the
+[current security record](./backlog/SECURITY-REVIEW.md).
 Confirmed unauthorized access, data-loss defects and crashes or accessibility
 failures preventing an essential journey block release. Any other unmet gate
 needs an explicit, time-limited risk decision and follow-up; it is not a pass.

@@ -49,7 +49,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
-    "expo": "~58.0.21"
+    "expo": "~58.0.23"
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx}": [
@@ -64,6 +64,7 @@
     ]
   },
   "overrides": {
+    "@expo/cli": "58.1.19",
     "vite": "6.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",

@@ -20,44 +20,39 @@ The reconstruction diff has SHA-256
 `ca88156f6407c4c8ab9eb514cc4cc42f09711f864738b5d6dfeda257a5db9dd5`;
 the original baseline and proposal hashes below remain unchanged.
 
-The original backport approval below is historical. The current Zod treatment
-is a separate, explicitly approved development-only exception. See the dated
-[security review](../../docs/backlog/SECURITY-REVIEW.md#dependency-remediation-2026-10-29)
-for current findings and verification. No new risk acceptance is implied by
-installing an upstream patch.
+The original backport approval below is historical. All temporary audit
+approvals are retired; see the strict gate below and the dated
+[security review](../../docs/backlog/SECURITY-REVIEW.md) for current findings.
 
-## Current Development Audit Approval (2026-10-30)
+## Strict Mobile Audit (2026-11-09)
 
-The release owner approved only `GHSA-mrhx-c7xc-m3w5` for the reviewed Expo CLI
-dependency: Zod 3.25.76 at `node_modules/@expo/cli/node_modules/zod`, CLI 58.1.17
-at `node_modules/@expo/cli` and Expo 58.0.21 at `node_modules/expo`. The schema-2
-policy pins those entries and the window from `2026-10-30T00:00:00Z` until
-`2026-11-13T00:00:00Z` (exclusive). No deadline extension is granted.
+The root override pins published Expo CLI **58.1.19**, within SDK 58's declared
+compatible range. Its DevTools metadata validation uses `@expo/schema-utils`;
+the CLI no longer installs production Zod 3. The optional `expo-mcp` integration
+is absent from this project. The supported SDK patch matrix is recorded in the
+[build runbook](../../docs/backlog/IOS-BUILD-PIPELINE.md).
 
-The development audit reports raw findings and applies only this exception.
-Changed packages/paths/versions, new high/critical advisories, inactive dates,
-missing verified source and incomplete audits fail. The policy evaluator also
-rejects expanding the configured package table or moving its approved dates.
-Release mode never accepts this exception; it does not approve beta/distribution
-or repair Zod 3. Use trusted local development plugins/configuration and keep
-development tooling off untrusted networks.
+`audit:mobile` and `audit:mobile:release` now enforce the same strict high/critical
+gate with **no exceptions**. The `--release` flag remains compatible. The runner
+first verifies the canonical installed Forge source, then audits the complete
+mobile production dependency graph. Malformed/incomplete reports and count
+mismatches fail closed. A lower-labelled parent is assessed against its highest
+advisory severity; raw findings/counts are preserved. Moderate findings remain
+visible and require separate release review.
 
-The superseded Forge/braces JSON is preserved in
-[approval history](./approval-history/2026-10-14.json) and cannot activate under
-the current evaluator. At the 2026-10-30 checkpoint, 172 security checks passed;
-the development audit reported three high and five low affected-package entries
-and the release audit rejected those high findings. The
-[2026-11-04 follow-up](../../docs/backlog/SECURITY-REVIEW.md#audit-report-handling-2026-11-04)
-records 174 checks and the changed live report. Lower-labelled parents with a
-high advisory chain receive the full high-severity assessment, preserving raw
-counts and every existing approval restriction. No approval or deadline changes.
+The October 30 approval is preserved byte-for-byte in
+[approval history](./approval-history/2026-10-30.json); its original November 13
+deadline is historical and was not extended. The earlier
+[Forge/braces record](./approval-history/2026-10-14.json) also remains archived.
+The runtime evaluator does not load either approval. Tests reject the previously
+approved advisory even when supplied its old versions, dates and release flags.
 
 ```bash
 npm run install:security-backport
 npm run verify:security-backport
-npm run audit:mobile          # owner-approved development/code-review policy
-npm run audit:mobile:raw      # unchanged npm findings, without policy treatment
-npm run audit:mobile:release  # strict gate; never uses the temporary exception
+npm run audit:mobile          # strict high/critical gate; no exceptions
+npm run audit:mobile:raw      # npm's unfiltered audit
+npm run audit:mobile:release  # same strict gate; no exceptions
 ```
 
 ## Development Backport Approval (2026-10-14)
@@ -97,7 +92,7 @@ Passing means the expected baseline and candidate behavior was reproduced,
 including explicitly labelled `ACCEPTS` results for the unsafe candidates.
 The canonical candidate and the actually installed upstream version must both reject
 every malformed fixture. Installer/policy tests additionally exercise tampering,
-expiry, release mode, dependency changes and failure handling.
+strict audit rejection, archived approval inputs, dependency changes and failure handling.
 
 The harness copies the installed Forge library and Expo certificate helper to
 disposable directories, applies each proposal there with `git apply`, and loads

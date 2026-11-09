@@ -1,43 +1,23 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { ROOT, verifyForgeBackport } from './forge-backport.mjs';
 import { evaluateMobileAudit } from './mobile-audit-policy.mjs';
 
 try {
-  const { values } = parseArgs({ options: { release: { type: 'boolean' } } });
-  const release = values.release === true;
+  // Keep --release compatible; both commands now enforce the same strict gate.
+  parseArgs({ options: { release: { type: 'boolean' } } });
   const verified = verifyForgeBackport();
-  const policy = JSON.parse(
-    readFileSync(new URL('./mobile-audit-exceptions.json', import.meta.url), 'utf8')
-  );
-  const lock = JSON.parse(readFileSync(join(ROOT, 'package-lock.json'), 'utf8'));
-  const versions = {};
-  for (const nodes of Object.values(policy.packages)) {
-    for (const path of Object.keys(nodes)) {
-      if (!path.startsWith('node_modules/') || path.split('/').includes('..'))
-        throw new Error('Invalid approved package path');
-      const pkg = JSON.parse(readFileSync(join(ROOT, path, 'package.json'), 'utf8'));
-      if (pkg.version !== lock.packages[path]?.version)
-        throw new Error('Installed version differs from the lockfile');
-      versions[path] = pkg.version;
-    }
-  }
+  if (!verified.includes('node_modules/node-forge'))
+    throw new Error('Expected verified Expo signing dependency source');
   const result = spawnSync(
     process.platform === 'win32' ? 'npm.cmd' : 'npm',
     ['audit', '-w', '@oratio/mobile', '--omit=dev', '--audit-level=high', '--json'],
     { cwd: ROOT, encoding: 'utf8', timeout: 120_000, maxBuffer: 10_000_000 }
   );
   if (result.error || ![0, 1].includes(result.status))
-    throw new Error('npm audit failed to complete; no exception applied');
+    throw new Error('npm audit failed to complete');
   const report = JSON.parse(result.stdout);
-  const verdict = evaluateMobileAudit(report, {
-    policy,
-    versions,
-    forgeVerified: verified.includes('node_modules/node-forge'),
-    release,
-  });
+  const verdict = evaluateMobileAudit(report);
   console.log(
     `Raw mobile audit: ${verdict.counts.high} high, ${verdict.counts.critical} critical, ${verdict.counts.moderate} moderate, ${verdict.counts.low} low, ${verdict.counts.info} informational affected-package entries.`
   );
@@ -45,23 +25,17 @@ try {
   for (const [name, finding] of Object.entries(report.vulnerabilities)) {
     console.log(`${name}: ${finding.severity}`);
   }
-  for (const finding of [...verdict.accepted, ...verdict.blocked]) {
+  for (const finding of verdict.blocked) {
     if (finding.reportedSeverity)
       console.log(
         `${finding.name}: assessed as ${finding.severity} from its advisory chain (npm reports ${finding.reportedSeverity}).`
       );
-    console.log(
-      `${finding.name}: ${finding.reason ? `BLOCKED - ${finding.reason}` : 'KNOWN TOOLING FINDING - temporarily accepted for development review'}`
-    );
+    console.log(`${finding.name}: BLOCKED - ${finding.reason}`);
   }
-  if (verdict.accepted.length)
-    console.log(
-      `Owner-approved review exception expires ${verdict.expiresAt}. Findings remain reported; this is not public-release approval.`
-    );
   console.log('Moderate findings remain reported and require their separate release review.');
   console.log(
     verdict.passed
-      ? 'Mobile high/critical review gate passed under the recorded policy.'
+      ? 'Strict mobile high/critical gate passed; no exceptions applied.'
       : 'Mobile security gate failed.'
   );
   process.exitCode = verdict.passed ? 0 : 1;

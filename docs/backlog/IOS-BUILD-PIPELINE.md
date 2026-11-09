@@ -1,6 +1,6 @@
 # iOS Build Pipeline
 
-Last reviewed: 2026-10-30. Tracking: `SCRUM-72` (distribution), `SCRUM-75` (Apple setup).
+Last reviewed: 2026-11-09. Tracking: `SCRUM-72` (distribution), `SCRUM-75` (Apple setup).
 
 ## Distribution Status
 
@@ -11,6 +11,21 @@ require a generated Xcode project or cloud build. See
 [release readiness](../V1_RELEASE_READINESS.md) for distribution entry criteria.
 
 ## Prepared Configuration
+
+### SDK 58 Security Patch (2026-11-09)
+
+The candidate uses Expo **58.0.23**, root-pinned CLI **58.1.19**, Constants
+**58.0.15**, Screens **4.30.1**, Safe Area Context **5.11.1** and jest-expo
+**58.0.14**, following Expo's supported patch matrix. React 19.3.0 and React
+Native 0.88.1 remain the SDK baseline. CLI 58.1.18 removed its production Zod
+dependency; 58.1.19 includes that change. The optional CLI MCP package is absent.
+
+Both mobile audit commands now reject high/critical findings without exceptions.
+The retired approval is archived with its original deadline. The
+[security record](./SECURITY-REVIEW.md) owns dated verification and remaining
+moderate-finding review. Earlier device reports below retain their original
+candidate provenance; a phone smoke check on this patched candidate is separate.
+No signed build, website deployment or database change accompanies this patch.
 
 ### SDK 58 Development Upgrade (2026-10-26)
 
@@ -121,9 +136,9 @@ From `apps/mobile`, `npx expo-doctor` checks local compatibility. None of these
 commands starts a cloud build or closes device/release acceptance.
 
 Applicable advisory controls are in [SECURITY-REVIEW.md](./SECURITY-REVIEW.md).
-The pinned development-only exception expires at `2026-11-13T00:00:00Z` exclusive;
-`npm run audit:mobile:release` stays strict. Do not copy historical audit counts
-into a current release clearance claim.
+`npm run audit:mobile` and `npm run audit:mobile:release` both enforce the strict
+high/critical gate without exceptions. Moderate findings require separate release
+review. Do not copy historical audit counts into a current release clearance claim.
 
 ## First Signed Build
 

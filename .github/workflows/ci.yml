@@ -90,7 +90,7 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://ci-preflight.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_ci_build_check_only
 
-      # Review exceptions expire; the separate audit:mobile:release command stays strict.
+      # Development and release reject high/critical findings without exceptions.
       - name: Audit mobile dependencies
         if: ${{ !cancelled() }}
         run: npm run audit:mobile

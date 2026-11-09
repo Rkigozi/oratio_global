@@ -1,8 +1,69 @@
 # iOS Launch Security Review
 
-Last updated: 2026-11-04. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
+Last updated: 2026-11-09. Jira: [SCRUM-47](https://oratio.atlassian.net/browse/SCRUM-47).
 Status: **In Progress**, not security sign-off. Supports NFR-01 in
 [the NFR checklist](../NFR-CHECKLIST.md).
+
+## Compatible CLI And SDK Remediation (2026-11-09)
+
+The candidate pins published **Expo CLI 58.1.19** through the root override.
+Expo's [CLI changelog](https://github.com/expo/expo/blob/sdk-58/packages/@expo/cli/CHANGELOG.md)
+records removal of production Zod in 58.1.18. The inspected 58.1.19 package uses
+`@expo/schema-utils` for DevTools metadata validation. Optional MCP loads Zod from
+an explicitly installed `expo-mcp` peer; that package is absent from Oratio's
+lockfile and installation. The former CLI-nested Zod 3 entry is removed. The
+application's separate Zod 4 validation remains in place.
+
+The supported patch matrix uses Expo **58.0.23**, Constants **58.0.15**, Screens
+**4.30.1**, Safe Area Context **5.11.1** and jest-expo **58.0.14**, with React
+19.3.0 and React Native 0.88.1. The CLI override satisfies Expo's declared
+compatible range; no incompatible major override or rewritten package source is
+used. See the [SDK changelog](https://github.com/expo/expo/blob/sdk-58/packages/expo/CHANGELOG.md)
+and [build runbook](./IOS-BUILD-PIPELINE.md#sdk-58-security-patch-2026-11-09).
+
+### Strict Audit And Approval Retirement
+
+Both `audit:mobile` and `audit:mobile:release` now reject every high/critical
+finding. The runtime no longer reads an exception configuration, approved version
+table or approval dates. It retains canonical Forge source verification and
+fails closed on malformed reports, incomplete advisory paths and mismatched
+counts. Lower-labelled parents are assessed using the highest advisory severity;
+the raw report and counts are preserved. Moderate findings remain visible for
+separate release review.
+
+The October 30 approval was retired before its original November 13 deadline,
+without extending it. Its JSON is preserved byte-for-byte in
+[approval history](../../scripts/security-backports/approval-history/2026-10-30.json),
+SHA-256 `8cf296cbe913d3ef4648de00febd494e441e0b4edd4e22960bbb369ea6fc4dd9`.
+The older Forge/braces approval remains archived. Neither can activate through
+the current evaluator. Regressions reject the formerly approved advisory and
+parents even when passed the old policy, matching versions, dates and release
+flags. Other tests cover current DevTools schema acceptance/rejection without
+loading a plugin, missing/invalid report fields, cycles, severity propagation and
+source verification.
+
+### Verification
+
+Local verification on 2026-11-09 used Node 24.22.1 / npm 10.9.2 and a clean
+`npm ci`: zero backports applied, one published Forge source verified.
+All **402 mobile tests / 38 suites**, **169 security checks**, mobile type
+checking and **20/20 Expo Doctor checks** passed. The security count reflects
+replacement of obsolete approval cases with strict rejection and CLI-schema
+regressions, not continued reliance on the archived exception.
+
+Both mobile audit commands passed with **zero high, zero critical, seven moderate
+and zero low affected-package entries**. These are propagated package entries,
+not seven independent advisories. Build-environment validation and a clean iOS
+JS/Hermes export passed using nonfunctional CI client values with dotenv disabled.
+This is bundle verification, not a signed build or physical-device acceptance.
+Hosted current-head results are recorded in [draft PR #5](https://github.com/Rkigozi/oratio_global/pull/5).
+
+The remaining mobile moderate findings concern glob/minimatch and propagated
+Expo/Sentry build-tool entries. They are not waived by this remediation. Full
+deployed-policy, privacy and moderate-finding review remain open under NFR-01.
+Earlier phone QA keeps its original candidate provenance; patched-candidate
+device acceptance is separate. No live migration, provider configuration, website
+deployment or signed distribution accompanies this change.
 
 ## Audit Report Handling (2026-11-04)
 
