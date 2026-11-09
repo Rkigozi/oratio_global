@@ -446,7 +446,7 @@ belongs to this earlier read-recovery checkpoint.
       and token refreshes cannot restore previous-account state.
 - [ ] Verify read/submission recovery on slow/blackholed connections and through
       background/foreground transitions in a controlled test environment.
-- [ ] On the current SDK 58.0.21 candidate, submit a synthetic comment/reply/note,
+- [ ] On the committed candidate identified in the [build runbook](./IOS-BUILD-PIPELINE.md), submit a synthetic comment/reply/note,
       report and Circle invite/response under interruption. Verify retained intent,
       locked controls and explicit recovery. Controlled lost-confirmation injection
       is separate from simply submitting while already offline.

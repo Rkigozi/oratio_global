@@ -1,6 +1,6 @@
 # LLD: Operations And Delivery
 
-Last reviewed: 2026-10-21. FR-12 and NFR-01 through NFR-08.
+Last reviewed: 2026-11-09 (dependency and rollout references). FR-12 and NFR-01 through NFR-08.
 Parent: [HLD](../../ARCHITECTURE.md). Exact owners: [traceability](../TRACEABILITY.md).
 
 ## Independent Service Notices
@@ -65,8 +65,8 @@ approval. Supporting website conversion belongs to release preparation; see
 [release readiness](../../V1_RELEASE_READINESS.md) and
 [website boundaries](../../backlog/WEB-PRESENCE.md).
 
-One root npm lockfile covers the workspaces. CI uses Node 22; installation applies
-and verifies the existing scoped Forge Node backport. CI has separate web,
+One root npm lockfile covers the workspaces. CI uses Node 22; installation verifies
+the published Forge 1.4.2 Node source without applying the historical backport. CI has separate web,
 mobile and disposable PostgreSQL jobs. Native export uses nonfunctional public
 CI configuration with dotenv disabled; it is not a cloud signing operation.
 
@@ -79,15 +79,18 @@ CI configuration with dotenv disabled; it is not a cloud signing operation.
 | Database           | New numbered migrations, explicit approved rollout before dependent client                          | Verify target/history/dry-run, before/after preservation and effective permissions |
 | Backend correction | Reviewed forward migration                                                                          | Never edit applied history or reset retained user data as rollback                 |
 
-Backend rollout through 045 is recorded in the relevant feature records. Expiry UI
-is checkpointed in `817b4b8`; current place-picker changes remain local. A
-documentation or feature branch is not a production deploy.
+Approved backend rollouts, including migration 046, are recorded in the
+[security](../../backlog/SECURITY-REVIEW.md),
+[place](../../backlog/CANONICAL-PLACES.md) and
+[resilience](../../backlog/NATIVE-RESILIENCE.md) records. Client changes remain on
+the review branch. A documentation or feature branch is not a production deploy.
 EAS `preview` configuration does not provision an isolated backend automatically.
 
-`audit:mobile` is the bounded development-review gate. The exact two-advisory
-exception expires at `2026-11-13T00:00:00Z` exclusive, under pinned controls.
-`audit:mobile:release` never uses that exception. No silent expansion/renewal or
-public-release waiver is created by this LLD. Use the
+`audit:mobile` and `audit:mobile:release` reject high/critical findings without
+exceptions. The compatible November 9 Expo CLI patch removed its production Zod
+dependency and retired the temporary development approval; historical records
+remain archived. Moderate findings and wider release-security review remain
+separate. Use the
 [security record](../../backlog/SECURITY-REVIEW.md) for exact evidence/scope.
 
 ## Recovery, Operations And Quality
